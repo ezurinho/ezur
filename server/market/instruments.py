@@ -41,7 +41,8 @@ class RollPlan:
         else:
             year, month = day.year, expiry_month
         expiry = third_friday(year, month)
-        if day > expiry - timedelta(days=self.roll_days_before):
+        # An expiring contract cannot be held on its expiry day: roll on it.
+        if day >= expiry - timedelta(days=self.roll_days_before):
             following = QUARTER_MONTHS.index(month) + 1
             if following == len(QUARTER_MONTHS):
                 year, month = year + 1, QUARTER_MONTHS[0]
