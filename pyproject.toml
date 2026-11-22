@@ -24,3 +24,11 @@ packages = ["server", "server.strategy", "server.market"]
 testpaths = ["tests"]
 addopts = "-q"
 filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.coverage.run]
+source = ["server"]
+omit = ["server/strategy/null_strategy.py"]
+
+[tool.coverage.report]
+skip_covered = false
+exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:", "raise SystemExit"]
