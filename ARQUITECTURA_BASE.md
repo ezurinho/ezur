@@ -1,7 +1,7 @@
 # Arquitectura base (agnóstica de estrategia)
 
 **Plantilla:** terminal local de trading algorítmico, reutilizable para cualquier estrategia.
-**Estado:** esqueleto. La lógica de estrategia no existe todavía; su único punto de entrada está reservado en el bloque final `# Aquí va la estrategia`.
+**Estado:** esqueleto implementado y operativo. La estrategia real todavía no existe: su único punto de entrada sigue siendo el bloque final `# Aquí va la estrategia`. La estrategia de referencia (`reference`) existe solo para ejercitar el pipeline y está marcada como no validada.
 
 **Invariante central:** todo lo descrito aquí funciona igual con cualquier estrategia, cualquier conjunto de instrumentos y cualquier temporalidad, porque ni el motor, ni el snapshot, ni React conocen nombres de activos, fases concretas ni reglas de entrada.
 
@@ -95,11 +95,14 @@ server/
   reset.py                     reinicio operativo con archivo de backups
   timeutil.py                  utilidades de zona horaria y sesión
   funnel.py                    registro y resumen del embudo de evaluación
+  gates.py                     puertas de validación como datos + veredicto
+  simulation.py                simulación multi-sesión determinista
   strategy/                    ← ÚNICO punto donde vive la lógica de estrategia
     base.py                    BaseStrategy, MarketData, StrategyOutput, Signal,
                                Phase, Zone, Marker, Metric
     registry.py                resolve_strategy(id) + validación de params
     null_strategy.py           NullStrategy: no emite señal (placeholder del esqueleto)
+    reference.py               referencia sin validar (cruce SMA + ATR)
   market/
     feed.py                    MarketFeed, SimulatedFeed, CSVFeed, LiveFeed
     csv_data.py                carga, alineación y validación multi-serie

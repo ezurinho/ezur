@@ -89,3 +89,29 @@ def test_aggregate_can_filter_by_window():
     payload = aggregate(trades, 0.0, start=BASE + timedelta(hours=1))
     assert payload["closed"]["trades"] == 1
     assert payload["closed"]["pnl_net"] == 20.0
+
+
+def test_loss_streak_is_counted():
+    trades = [_trade(0, -5.0), _trade(1, -5.0), _trade(2, -5.0), _trade(3, 6.0), _trade(4, -5.0)]
+    stats = compute_stats(trades)
+    assert stats["max_loss_streak"] == 3
+
+
+def test_concentration_metrics():
+    trades = [_trade(0, 100.0)] + [_trade(index + 1, -10.0) for index in range(9)]
+    stats = compute_stats(trades)
+    assert stats["pnl_net"] == 10.0
+    assert stats["top5_share"] == 1.0
+    assert stats["pnl_without_top5"] == -90.0
+
+
+def test_bootstrap_low_is_negative_for_a_losing_sample():
+    trades = [_trade(index, -10.0) for index in range(20)]
+    stats = compute_stats(trades)
+    assert stats["expectancy_ci80_low"] < 0
+
+
+def test_ambiguous_trades_are_counted():
+    trade = _trade(0, -10.0)
+    trade.diagnostics = {"ambiguous_bar": True}
+    assert compute_stats([trade])["ambiguous_trades"] == 1

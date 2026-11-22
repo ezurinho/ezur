@@ -43,7 +43,21 @@ export const api = {
   trades: (limit = 100) => request<Record<string, unknown>[]>(`/api/trades?limit=${limit}`),
   events: (limit = 200) =>
     request<Record<string, unknown>[]>(`/api/events?limit=${limit}`),
-  stats: () => request<{ closed: Record<string, number>; equity: { ts: string; equity: number }[] }>("/api/stats"),
+  stats: () => request<Record<string, unknown>>("/api/stats"),
+  validation: () =>
+    request<{
+      verdict: string;
+      failed: string[];
+      not_measured: string[];
+      outcomes: {
+        id: string;
+        description: string;
+        status: string;
+        measured: number | null;
+        threshold: string;
+        detail: string;
+      }[];
+    }>("/api/validation"),
   chart: (tf: string, limit = 500) =>
     request<{ primary: string; timeframe: string; candles: SnapshotData["chart"]["candles"] }>(
       `/api/chart/history?tf=${tf}&limit=${limit}`,

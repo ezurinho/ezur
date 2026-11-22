@@ -57,6 +57,24 @@ comisiones y se queda sin edge. El 73 % de la pérdida son costes. Además, el
 límite de tres operaciones diarias se alcanza todos los días, así que la muestra
 está truncada por el riesgo, no por la señal.
 
+## Veredicto automático
+
+`GET /api/validation` y el cierre de `server.simulation` evalúan las puertas
+medibles con los datos disponibles:
+
+| Puerta | Estado | Detalle |
+|---|---|---|
+| G4 muestra | Falla | 180 ops pero el mínimo por dirección y el corte diario la truncan |
+| G5 edge | Falla | PF 0,37 < 1,25; expectativa −0,56 R < +0,10 R |
+| G6 riesgo | Falla | DD 1.570,62 = 6,3 % > 2 % |
+| G9/G10 concentración | Falla | P&L sin las 5 mejores < 0 |
+| G11 significancia | Falla | IC80 inferior negativo |
+| G13 barras ambiguas | Pasa | 0 % |
+| G1/G3/G14, G8, G2, H1–H5 | No medible | Requieren datos reales, costes duplicados, golden test y holdout |
+
+**Veredicto: RECHAZADA.** El sistema rechaza su propia estrategia de ejemplo.
+Eso es el protocolo funcionando.
+
 ## Por qué este resultado es útil
 
 1. El motor ejecuta, dimensiona, llena, aplica brackets y persiste de verdad.

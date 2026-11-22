@@ -403,3 +403,21 @@ th {
   font-variant-numeric: tabular-nums;
   font-size: 12px;
 }
+
+.gate-list {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 12px;
+}
+
+.gate-pass {
+  color: var(--good);
+}
+
+.gate-fail {
+  color: var(--bad);
+}
+
+.gate-not_measured {
+  color: var(--muted);
+}
