@@ -80,3 +80,130 @@ def test_reconfigure_updates_risk_and_execution():
         assert engine.builder.settings.risk.max_trades_per_day == 9
     finally:
         store.close()
+
+
+def test_config_change_restarts_a_finished_replay(settings, store):
+    import asyncio
+
+    from server.engine import TradingEngine
+    from server.market.feed import MarketFeed
+    from server.models import Bar, Tick
+    from server.strategy.null_strategy import NullStrategy
+
+    class TwoTickFeed(MarketFeed):
+        name = "two"
+
+        def __init__(self):
+            self.starts = 0
+
+        def iter_ticks(self):
+            self.starts += 1
+            for minute in range(2):
+                stamp = settings.feed.start_date
+                yield Tick(
+                    ts=__import__("datetime").datetime(2026, 11, 20, 14, 30 + minute),
+                    bars={
+                        symbol: Bar(
+                            t=__import__("datetime").datetime(2026, 11, 20, 14, 30 + minute),
+                            o=100,
+                            h=101,
+                            l=99,
+                            c=100,
+                            v=1,
+                        )
+                        for symbol in settings.instruments.symbols
+                    },
+                )
+
+    feeds: list[TwoTickFeed] = []
+
+    def factory(_settings):
+        feed = TwoTickFeed()
+        feeds.append(feed)
+        return feed
+
+    settings.feed.replay_speed = 1000.0
+
+    async def scenario():
+        engine = TradingEngine(
+            settings,
+            store,
+            feed=factory(settings),
+            strategy=NullStrategy(),
+            feed_factory=factory,
+        )
+        engine.start()
+        engine.start_task()
+        await asyncio.sleep(0.05)
+        while engine._task is not None and not engine._task.done():
+            await asyncio.sleep(0.01)
+        assert engine.state.bars_available == 2
+
+        engine.update_settings(settings.model_copy(deep=True))
+        for _ in range(200):
+            if engine.state.bars_available == 2:
+                break
+            await asyncio.sleep(0.01)
+        return engine, feeds
+
+    engine, feeds = asyncio.run(scenario())
+    assert len(feeds) == 2  # the feed was rebuilt
+    assert engine.state.bars_available == 2  # and the replay restarted from scratch
+
+
+def _api_pair(tmp_path):
+    """A live app whose engine can be inspected between requests."""
+    from fastapi.testclient import TestClient
+
+    from server.main import create_app
+
+    settings = _settings()
+    config_path = tmp_path / "config.json"
+    config_path.write_text(settings.model_dump_json(), encoding="utf-8")
+    app = create_app(
+        config_path=config_path,
+        db_path=tmp_path / "runtime.db",
+        experiment_ledger=tmp_path / "ledger.jsonl",
+    )
+    client = TestClient(app)
+    client.__enter__()
+    return client, app.state.engine
+
+
+def test_switching_strategy_rebuilds_the_plugin(tmp_path):
+    client, engine = _api_pair(tmp_path)
+    try:
+        assert engine.strategy.id == "null"
+        response = client.put(
+            "/api/config",
+            json={"patch": {"strategy": {"id": "fade", "params": {"period": 10}}}},
+        )
+        assert response.status_code == 200
+        assert engine.strategy.id == "fade"
+        assert engine.strategy.params.period == 10
+    finally:
+        client.__exit__(None, None, None)
+
+
+def test_invalid_strategy_params_are_a_422_not_a_dead_loop(tmp_path):
+    client, engine = _api_pair(tmp_path)
+    try:
+        before = engine.strategy.id
+        response = client.put(
+            "/api/config",
+            json={"patch": {"strategy": {"id": "fade", "params": {"periodo": 10}}}},
+        )
+        assert response.status_code == 422
+        assert engine.strategy.id == before
+    finally:
+        client.__exit__(None, None, None)
+
+
+def test_unknown_strategy_id_is_rejected(tmp_path):
+    client, engine = _api_pair(tmp_path)
+    try:
+        response = client.put("/api/config", json={"patch": {"strategy": {"id": "nope"}}})
+        assert response.status_code == 422
+        assert engine.strategy.id == "null"
+    finally:
+        client.__exit__(None, None, None)

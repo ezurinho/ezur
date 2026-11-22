@@ -84,6 +84,7 @@ def create_app(
             feed=build_feed(settings),
             strategy=resolve_strategy(settings.strategy.id, settings.strategy.params),
             feed_factory=build_feed,
+            strategy_factory=lambda cfg: resolve_strategy(cfg.strategy.id, cfg.strategy.params),
         )
         engine.subscribe(hub.broadcast)
         app.state.settings = settings

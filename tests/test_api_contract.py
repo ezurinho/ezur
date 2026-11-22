@@ -138,3 +138,21 @@ def test_chart_history_accepts_the_documented_enums(client):
         response = client.get("/api/chart/history", params={"tf": timeframe})
         assert response.status_code == 200
         assert response.json()["timeframe"] == timeframe
+
+
+def test_strategy_schema_reports_the_live_strategy(client):
+    payload = client.get("/api/strategy/schema").json()
+    config = client.get("/api/config").json()
+    assert payload["active"] == config["strategy"]["id"]
+    assert payload["id"] == payload["active"]
+    assert set(payload["available"]) >= {"null", "reference", "donchian", "fade"}
+
+
+def test_strategy_schema_can_target_another_plugin(client):
+    payload = client.get("/api/strategy/schema", params={"strategy_id": "fade"}).json()
+    assert payload["id"] == "fade"
+    assert "sigma" in payload["params_schema"]["properties"]
+
+
+def test_strategy_schema_unknown_id_is_404(client):
+    assert client.get("/api/strategy/schema", params={"strategy_id": "nope"}).status_code == 404

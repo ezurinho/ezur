@@ -43,7 +43,9 @@ bloquea entradas, no salidas.
 | POST | `/config/reset` | vuelve a los defaults |
 | GET | `/strategy/schema` | lista de estrategias + esquema de parámetros del plugin |
 
-`PUT /config` acepta `{"patch": {"risk": {"max_trades_per_day": 4}}}`. Un cambio
+`PUT /config` acepta `{"patch": {"risk": {"max_trades_per_day": 4}}}`. Cambiar
+`strategy.id` reconstruye el plugin en caliente; unos parámetros inválidos para
+ese plugin devuelven `422` y el motor sigue con la estrategia anterior. Un cambio
 de instrumentos reconstruye el feed y reinicia el replay para que el símbolo
 nuevo tenga datos; el histórico de velas en memoria se descarta.
 

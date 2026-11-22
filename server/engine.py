@@ -8,6 +8,7 @@ instrument name or any strategy rule.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 from datetime import datetime, timezone
 from typing import Any, Awaitable, Callable
@@ -51,11 +52,14 @@ class TradingEngine:
         strategy: BaseStrategy | None = None,
         mode: str = "paper",
         feed_factory: Callable[[Settings], MarketFeed] | None = None,
+        strategy_factory: Callable[[Settings], Any] | None = None,
     ) -> None:
         self.settings = settings
         self.store = store
         self.feed = feed
         self.feed_factory = feed_factory
+        self.strategy_factory = strategy_factory
+        self._strategy_key = _strategy_key(settings)
         self.strategy = strategy or resolve_strategy(
             settings.strategy.id, settings.strategy.params
         )
@@ -69,6 +73,11 @@ class TradingEngine:
             mode=mode,
         )
         self.builder = SnapshotBuilder(settings, store)
+        self.builder.strategy_meta = {
+            "id": self.strategy.id,
+            "name": getattr(self.strategy, "name", self.strategy.id),
+            "version": self.strategy.version,
+        }
         self.state = EngineState(
             status="stopped",
             mode=mode,  # type: ignore[arg-type]
@@ -137,6 +146,17 @@ class TradingEngine:
             item.symbol: item for item in settings.instruments.items
         }
         self.builder.settings = settings
+        self._sync_strategy_meta()
+        if self.strategy_factory is not None and _strategy_key(settings) != self._strategy_key:
+            # Swapping the plugin or its parameters keeps the engine honest: the
+            # old instance would validate the new parameters against its own model.
+            self.strategy = self.strategy_factory(settings)
+            self._strategy_key = _strategy_key(settings)
+            self._sync_strategy_meta()
+            self._output = None
+            self._rejections.clear()
+            self.state.block_reason = None
+            self.state.block_count = 0
         for symbol in settings.instruments.symbols:
             self._bars.setdefault(symbol, [])
         if self.feed_factory is not None and self.feed is not None:
@@ -144,11 +164,24 @@ class TradingEngine:
             # rather than mixing two sessions of the same timestamps.
             self.feed = self.feed_factory(settings)
             self._bars = {symbol: [] for symbol in settings.instruments.symbols}
-            if self._task is not None and not self._task.done():
+            self._previous_tick_ts = None
+            self.state.bars_available = 0
+            self.state.last_bar_ts = None
+            if self.state.status == "running":
+                # Restart even when the previous replay had already finished:
+                # otherwise the operator changes instruments and watches an
+                # empty chart forever, with the engine still claiming "running".
                 try:
                     asyncio.get_running_loop().create_task(self.refresh_task())
                 except RuntimeError:
                     pass
+
+    def _sync_strategy_meta(self) -> None:
+        self.builder.strategy_meta = {
+            "id": self.strategy.id,
+            "name": getattr(self.strategy, "name", self.strategy.id),
+            "version": self.strategy.version,
+        }
 
     async def refresh_task(self) -> None:
         await self.stop_task()
@@ -158,10 +191,18 @@ class TradingEngine:
         if self.feed is None:
             raise RuntimeError("engine has no feed")
         delay = 1.0 / max(self.settings.feed.replay_speed, 0.01)
-        for tick in self.feed.iter_ticks():
-            self._process(tick)
-            await self._publish()
-            await asyncio.sleep(delay)
+        try:
+            for tick in self.feed.iter_ticks():
+                self._process(tick)
+                await self._publish()
+                await asyncio.sleep(delay)
+        except asyncio.CancelledError:
+            raise
+        except Exception as error:  # a dead replay loop must be visible, not silent
+            logger.exception("replay loop failed")
+            self.state.status = "error"
+            self._event("error", "engine", f"bucle detenido: {error}")
+            self._persist()
 
     def start_task(self) -> None:
         if self._task is None or self._task.done():
@@ -265,7 +306,7 @@ class TradingEngine:
             clock=tick.ts,
             primary=primary,
             bars=bars,
-            params=self.strategy.params_model.model_validate(self.settings.strategy.params),
+            params=self.strategy.params,
         )
         output = self.strategy.evaluate(md)
         self._output = output
@@ -518,6 +559,14 @@ class TradingEngine:
 
 
 TIMEFRAMES: tuple[str, ...] = ("1m", "5m", "15m", "30m")
+
+
+def _strategy_key(settings: Settings) -> tuple[str, str]:
+    """Identity of the configured plugin: id plus its parameters, order-insensitive."""
+    return (
+        settings.strategy.id,
+        json.dumps(settings.strategy.params, sort_keys=True, default=str),
+    )
 
 
 def _timeframe_minutes(timeframe: str) -> int:

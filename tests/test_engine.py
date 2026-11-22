@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from server.engine import TradingEngine
 from server.models import Bar, Position, Tick
 from server.strategy.base import MarketData, StrategyOutput, Warmup
-from server.strategy.null_strategy import NullStrategy
+from server.strategy.null_strategy import NullParams, NullStrategy
 
 DAY_ONE = datetime(2026, 1, 15, 15, 0, tzinfo=timezone.utc)
 DAY_TWO = DAY_ONE + timedelta(days=1)
@@ -52,6 +52,7 @@ class SpyStrategy(NullStrategy):
 
     def __init__(self) -> None:
         self.calls = 0
+        self.params = NullParams()
 
     def warmup_requirements(self) -> Warmup:
         return Warmup(bars={}, session_ready=False)
