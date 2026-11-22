@@ -22,6 +22,7 @@ EXPECTED_PATHS = [
     "/api/datasets",
     "/api/backtest/run",
     "/api/experiments",
+        "/api/funnel",
     "/api/stats/reset/preview",
     "/api/stats/reset",
     "/api/backtest/runs",

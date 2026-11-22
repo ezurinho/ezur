@@ -70,6 +70,7 @@ nuevo tenga datos; el histórico de velas en memoria se descarta.
 | POST | `/backtest/run` | ejecuta un backtest, guarda resultado y registra experimento |
 | GET | `/backtest/runs` | listado con cursor (`has_more`, `next_cursor`) |
 | GET | `/experiments` | ledger de experimentos + resumen por veredicto |
+| GET | `/funnel` | embudo de evaluación: etapas, tasa de supervivencia y desglose |
 
 `POST /backtest/run` devuelve `run_id`, `metrics`, `trades`, `dataset_id`,
 `verdict` y `experiment_id`.

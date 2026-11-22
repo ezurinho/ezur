@@ -94,7 +94,7 @@ server/
   diagnostics.py               diagnóstico de solo lectura de SQLite
   reset.py                     reinicio operativo con archivo de backups
   timeutil.py                  utilidades de zona horaria y sesión
-  funnel.py                    registro y resumen del embudo de evaluación
+  funnel.py                    embudo de evaluación: etapas y supervivencia
   gates.py                     puertas de validación como datos + veredicto
   simulation.py                simulación multi-sesión determinista
   strategy/                    ← ÚNICO punto donde vive la lógica de estrategia
