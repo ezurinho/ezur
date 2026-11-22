@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import time
 import logging
 from datetime import datetime, timezone
 from typing import Any, Awaitable, Callable
@@ -37,6 +38,10 @@ logger = logging.getLogger(__name__)
 
 # One event per rejection reason per window keeps the console readable.
 REJECTION_LOG_INTERVAL_S = 120
+
+# At 50x replay a snapshot per tick is ~3.4 MiB/s per client for no benefit:
+# the UI cannot render faster than this and the payload carries full candles.
+SNAPSHOT_MIN_INTERVAL_S = 0.1
 
 MAX_BARS = 500
 
@@ -92,6 +97,7 @@ class TradingEngine:
         self._task: asyncio.Task[None] | None = None
         self.last_exit_ts: datetime | None = None
         self._previous_tick_ts: datetime | None = None
+        self._last_publish_at = 0.0
         self._rejections: dict[str, dict[str, object]] = {}
         self._restore()
         if self.state.session is None:
@@ -102,6 +108,7 @@ class TradingEngine:
 
     # --- lifecycle --------------------------------------------------------
     def start(self) -> None:
+        self.invalidate_publish()
         if self.state.emergency:
             raise RuntimeError("emergency stop is active; disable it first")
         self.state.status = "running"
@@ -109,17 +116,20 @@ class TradingEngine:
         self._persist()
 
     def pause(self) -> None:
+        self.invalidate_publish()
         if self.state.status == "running":
             self.state.status = "paused"
             self._event("info", "engine", "motor en pausa")
             self._persist()
 
     def stop(self) -> None:
+        self.invalidate_publish()
         self.state.status = "stopped"
         self._event("info", "engine", "motor detenido")
         self._persist()
 
     def emergency_on(self) -> None:
+        self.invalidate_publish()
         self.state.emergency = True
         self.state.block_reason = "emergency_active"
         self.execution.cancel_all()
@@ -128,6 +138,7 @@ class TradingEngine:
         self._persist()
 
     def emergency_off(self) -> None:
+        self.invalidate_publish()
         self.state.emergency = False
         if self.state.block_reason == "emergency_active":
             self.state.block_reason = None
@@ -543,9 +554,17 @@ class TradingEngine:
             stats=stats,
         )
 
+    def invalidate_publish(self) -> None:
+        """Force the next tick to publish, e.g. after a control action."""
+        self._last_publish_at = 0.0
+
     async def _publish(self) -> None:
         if not self._subscribers:
             return
+        now = time.monotonic()
+        if now - self._last_publish_at < SNAPSHOT_MIN_INTERVAL_S:
+            return
+        self._last_publish_at = now
         snapshot = self.snapshot()
         for hook in list(self._subscribers):
             result = hook(snapshot)

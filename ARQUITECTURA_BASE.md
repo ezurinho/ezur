@@ -79,6 +79,7 @@ server/
   main.py                      FastAPI, lifespan, estáticos
   api.py                       endpoints REST y WebSocket
   engine.py                    TradingEngine: orquestación, estado, control
+                               (publica snapshots con tope de 10/s)
   snapshot.py                  SnapshotBuilder: contrato v1 agnóstico
   config.py                    Settings + validación Pydantic + persistencia atómica
   models.py                    Bar, Tick, Signal, Position, Order, TradeRecord
