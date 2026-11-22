@@ -12,6 +12,7 @@ data/
 backups/
 reports/backtest/*
 !reports/backtest/.gitkeep
+!reports/backtest/simulation-*.json
 profiles/*/
 !profiles/.gitkeep
 .superpowers/

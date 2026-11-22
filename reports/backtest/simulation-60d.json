@@ -1,0 +1,2668 @@
+{
+  "closed": {
+    "trades": 180,
+    "wins": 72,
+    "losses": 108,
+    "win_rate": 0.4,
+    "profit_factor": 0.3719294601503459,
+    "expectancy_r": -0.5576888988620701,
+    "pnl_net": -1526.4963799999996,
+    "fees": 1116.0,
+    "r_total": -100.38400179517262,
+    "max_drawdown": 1570.6221499999738,
+    "avg_win": 12.554963055555554,
+    "avg_loss": -22.504201111111108,
+    "best_trade": 44.42865000000002,
+    "worst_trade": -46.42218999999993,
+    "avg_duration_minutes": 10.227777777777778,
+    "max_loss_streak": 10,
+    "pnl_without_top5": -1695.3569499999996,
+    "top5_share": 0.18680148114069195,
+    "ambiguous_trades": 0,
+    "expectancy_ci80_low": -0.655251539918425,
+    "first_ts": "2026-08-31T14:10:00+00:00",
+    "last_ts": "2026-11-20T15:30:00+00:00"
+  },
+  "by_hour": {
+    "13:00": {
+      "trades": 39,
+      "wins": 12,
+      "losses": 27,
+      "win_rate": 0.3076923076923077,
+      "profit_factor": 0.3149873743498164,
+      "expectancy_r": -0.703452576285505,
+      "pnl_net": -442.87787000000014,
+      "fees": 241.8,
+      "r_total": -27.434650475134692,
+      "max_drawdown": 453.6277200000001,
+      "avg_win": 16.97060416666667,
+      "avg_loss": -23.945374814814823,
+      "best_trade": 34.08109999999998,
+      "worst_trade": -42.80041000000007,
+      "avg_duration_minutes": 6.461538461538462,
+      "max_loss_streak": 5,
+      "pnl_without_top5": -568.8893700000001,
+      "top5_share": 0.6187733936991536,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -0.9115073316322241,
+      "first_ts": "2026-09-01T13:38:00+00:00",
+      "last_ts": "2026-10-30T13:58:00+00:00"
+    },
+    "14:00": {
+      "trades": 88,
+      "wins": 38,
+      "losses": 50,
+      "win_rate": 0.4318181818181818,
+      "profit_factor": 0.41230339952144107,
+      "expectancy_r": -0.49698431213533234,
+      "pnl_net": -649.76412,
+      "fees": 545.6,
+      "r_total": -43.73461946790925,
+      "max_drawdown": 754.2821300000003,
+      "avg_win": 11.995983684210517,
+      "avg_loss": -22.112229999999997,
+      "best_trade": 28.683039999999995,
+      "worst_trade": -36.72421999999993,
+      "avg_duration_minutes": 10.738636363636363,
+      "max_loss_streak": 5,
+      "pnl_without_top5": -778.33255,
+      "top5_share": 0.28204270911900386,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -0.6380780128055558,
+      "first_ts": "2026-08-31T14:10:00+00:00",
+      "last_ts": "2026-11-19T14:59:00+00:00"
+    },
+    "15:00": {
+      "trades": 47,
+      "wins": 18,
+      "losses": 29,
+      "win_rate": 0.3829787234042553,
+      "profit_factor": 0.32299457932685255,
+      "expectancy_r": -0.6281019358182476,
+      "pnl_net": -413.95488999999935,
+      "fees": 291.40000000000003,
+      "r_total": -29.520790983457637,
+      "max_drawdown": 430.4430299999994,
+      "avg_win": 10.97194444444445,
+      "avg_loss": -21.08447896551722,
+      "best_trade": 44.42865000000002,
+      "worst_trade": -31.83400999999999,
+      "avg_duration_minutes": 9.425531914893616,
+      "max_loss_streak": 7,
+      "pnl_without_top5": -502.4488699999994,
+      "top5_share": 0.448082128661485,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -0.8151179484134525,
+      "first_ts": "2026-09-04T15:03:00+00:00",
+      "last_ts": "2026-11-20T15:30:00+00:00"
+    },
+    "16:00": {
+      "trades": 6,
+      "wins": 4,
+      "losses": 2,
+      "win_rate": 0.6666666666666666,
+      "profit_factor": 0.7024027172660567,
+      "expectancy_r": 0.051009855221492297,
+      "pnl_net": -19.899499999999943,
+      "fees": 37.2,
+      "r_total": 0.3060591313289538,
+      "max_drawdown": 56.24905999999996,
+      "avg_win": 11.741927500000006,
+      "avg_loss": -33.433604999999986,
+      "best_trade": 14.945300000000021,
+      "worst_trade": -46.42218999999993,
+      "avg_duration_minutes": 33.5,
+      "max_loss_streak": 1,
+      "pnl_without_top5": -46.42218999999993,
+      "top5_share": 0.5647005144598273,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -0.5383128506305731,
+      "first_ts": "2026-10-12T16:16:00+00:00",
+      "last_ts": "2026-11-11T16:14:00+00:00"
+    }
+  },
+  "by_weekday": {
+    "Fri": {
+      "trades": 36,
+      "wins": 8,
+      "losses": 28,
+      "win_rate": 0.2222222222222222,
+      "profit_factor": 0.15099767375477816,
+      "expectancy_r": -0.9422373567158561,
+      "pnl_net": -524.9354299999997,
+      "fees": 223.20000000000002,
+      "r_total": -33.92054484177082,
+      "max_drawdown": 552.1735599999996,
+      "avg_win": 11.6701725,
+      "avg_loss": -22.082028928571415,
+      "best_trade": 27.238129999999973,
+      "worst_trade": -32.30439000000014,
+      "avg_duration_minutes": 9.38888888888889,
+      "max_loss_streak": 9,
+      "pnl_without_top5": -596.0763199999997,
+      "top5_share": 0.761994841978557,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.1258223080108083,
+      "first_ts": "2026-09-04T14:09:00+00:00",
+      "last_ts": "2026-11-20T15:30:00+00:00"
+    },
+    "Mon": {
+      "trades": 36,
+      "wins": 19,
+      "losses": 17,
+      "win_rate": 0.5277777777777778,
+      "profit_factor": 0.7076910092126978,
+      "expectancy_r": -0.2734103157789081,
+      "pnl_net": -111.5538100000004,
+      "fees": 223.20000000000002,
+      "r_total": -9.842771368040692,
+      "max_drawdown": 111.55381000000047,
+      "avg_win": 14.21452368421051,
+      "avg_loss": -22.44880941176471,
+      "best_trade": 44.42865000000002,
+      "worst_trade": -34.06950000000005,
+      "avg_duration_minutes": 12.083333333333334,
+      "max_loss_streak": 3,
+      "pnl_without_top5": -249.7663700000004,
+      "top5_share": 0.5117544157486076,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -0.5046577037557458,
+      "first_ts": "2026-08-31T14:10:00+00:00",
+      "last_ts": "2026-11-16T15:47:00+00:00"
+    },
+    "Thu": {
+      "trades": 36,
+      "wins": 14,
+      "losses": 22,
+      "win_rate": 0.3888888888888889,
+      "profit_factor": 0.3703002762289008,
+      "expectancy_r": -0.5871234005874748,
+      "pnl_net": -301.5038800000001,
+      "fees": 223.20000000000002,
+      "r_total": -21.13644242114909,
+      "max_drawdown": 380.93957,
+      "avg_win": 12.664422857142844,
+      "avg_loss": -21.763899999999996,
+      "best_trade": 34.08109999999998,
+      "worst_trade": -36.72421999999993,
+      "avg_duration_minutes": 9.583333333333334,
+      "max_loss_streak": 5,
+      "pnl_without_top5": -396.43307000000004,
+      "top5_share": 0.5354098252291912,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -0.8166958351610122,
+      "first_ts": "2026-09-03T13:38:00+00:00",
+      "last_ts": "2026-11-19T15:26:00+00:00"
+    },
+    "Tue": {
+      "trades": 36,
+      "wins": 13,
+      "losses": 23,
+      "win_rate": 0.3611111111111111,
+      "profit_factor": 0.3130826036003122,
+      "expectancy_r": -0.6185166404348376,
+      "pnl_net": -380.19569999999953,
+      "fees": 223.20000000000002,
+      "r_total": -22.26659905565415,
+      "max_drawdown": 380.1956999999995,
+      "avg_win": 13.329635384615395,
+      "avg_loss": -24.064389565217375,
+      "best_trade": 31.468639999999983,
+      "worst_trade": -46.42218999999993,
+      "avg_duration_minutes": 10.527777777777779,
+      "max_loss_streak": 6,
+      "pnl_without_top5": -478.1996899999996,
+      "top5_share": 0.5655644917519239,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -0.8391586676872049,
+      "first_ts": "2026-09-01T13:38:00+00:00",
+      "last_ts": "2026-11-17T15:44:00+00:00"
+    },
+    "Wed": {
+      "trades": 36,
+      "wins": 18,
+      "losses": 18,
+      "win_rate": 0.5,
+      "profit_factor": 0.4769301024439037,
+      "expectancy_r": -0.3671567807932742,
+      "pnl_net": -208.30755999999985,
+      "fees": 223.20000000000002,
+      "r_total": -13.21764410855787,
+      "max_drawdown": 227.1786099999998,
+      "avg_win": 10.551823888888897,
+      "avg_loss": -22.12446611111111,
+      "best_trade": 21.504099999999983,
+      "worst_trade": -35.016029999999986,
+      "avg_duration_minutes": 9.555555555555555,
+      "max_loss_streak": 5,
+      "pnl_without_top5": -279.98774999999995,
+      "top5_share": 0.37739757787002925,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -0.5939923228479435,
+      "first_ts": "2026-09-02T13:50:00+00:00",
+      "last_ts": "2026-11-18T15:56:00+00:00"
+    }
+  },
+  "by_month": {
+    "2026-08": {
+      "trades": 3,
+      "wins": 1,
+      "losses": 2,
+      "win_rate": 0.3333333333333333,
+      "profit_factor": 0.2097338744003667,
+      "expectancy_r": -0.7253941830934986,
+      "pnl_net": -34.087749999999915,
+      "fees": 18.6,
+      "r_total": -2.1761825492804956,
+      "max_drawdown": 34.087749999999915,
+      "avg_win": 9.046770000000112,
+      "avg_loss": -21.567260000000015,
+      "best_trade": 9.046770000000112,
+      "worst_trade": -21.962789999999995,
+      "avg_duration_minutes": 4.666666666666667,
+      "max_loss_streak": 1,
+      "pnl_without_top5": 0.0,
+      "top5_share": -3.7679470131328077,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.407186327736656,
+      "first_ts": "2026-08-31T14:10:00+00:00",
+      "last_ts": "2026-08-31T14:37:00+00:00"
+    },
+    "2026-09": {
+      "trades": 66,
+      "wins": 31,
+      "losses": 35,
+      "win_rate": 0.4696969696969697,
+      "profit_factor": 0.5001953160772757,
+      "expectancy_r": -0.40336668492996836,
+      "pnl_net": -392.95284000000004,
+      "fees": 409.2,
+      "r_total": -26.622201205377912,
+      "max_drawdown": 480.8972799999999,
+      "avg_win": 12.68580516129032,
+      "avg_loss": -22.463222857142853,
+      "best_trade": 34.08109999999998,
+      "worst_trade": -42.80041000000007,
+      "avg_duration_minutes": 10.272727272727273,
+      "max_loss_streak": 6,
+      "pnl_without_top5": -522.4065999999999,
+      "top5_share": 0.32918113504359797,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -0.5708536673102668,
+      "first_ts": "2026-09-01T13:38:00+00:00",
+      "last_ts": "2026-09-30T15:25:00+00:00"
+    },
+    "2026-10": {
+      "trades": 66,
+      "wins": 24,
+      "losses": 42,
+      "win_rate": 0.36363636363636365,
+      "profit_factor": 0.3332191849913315,
+      "expectancy_r": -0.6274320201665826,
+      "pnl_net": -648.1176400000002,
+      "fees": 409.2,
+      "r_total": -41.410513330994455,
+      "max_drawdown": 648.1176400000002,
+      "avg_win": 13.495516249999987,
+      "avg_loss": -23.14309595238095,
+      "best_trade": 44.42865000000002,
+      "worst_trade": -46.42218999999993,
+      "avg_duration_minutes": 12.681818181818182,
+      "max_loss_streak": 6,
+      "pnl_without_top5": -794.7248100000002,
+      "top5_share": 0.45264160111943397,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -0.7912435434921521,
+      "first_ts": "2026-10-01T13:37:00+00:00",
+      "last_ts": "2026-10-30T15:01:00+00:00"
+    },
+    "2026-11": {
+      "trades": 45,
+      "wins": 16,
+      "losses": 29,
+      "win_rate": 0.35555555555555557,
+      "profit_factor": 0.2825611916978638,
+      "expectancy_r": -0.6705578824337725,
+      "pnl_net": -451.33814999999936,
+      "fees": 279.0,
+      "r_total": -30.17510470951976,
+      "max_drawdown": 462.2896999999994,
+      "avg_win": 11.109888750000005,
+      "avg_loss": -21.69297827586205,
+      "best_trade": 22.824830000000038,
+      "worst_trade": -34.06950000000005,
+      "avg_duration_minutes": 6.933333333333334,
+      "max_loss_streak": 10,
+      "pnl_without_top5": -532.9682899999993,
+      "top5_share": 0.4592200574465695,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -0.8636064077735394,
+      "first_ts": "2026-11-02T14:57:00+00:00",
+      "last_ts": "2026-11-20T15:30:00+00:00"
+    }
+  },
+  "by_side": {
+    "long": {
+      "trades": 101,
+      "wins": 39,
+      "losses": 62,
+      "win_rate": 0.38613861386138615,
+      "profit_factor": 0.3598551624612985,
+      "expectancy_r": -0.5734249407469246,
+      "pnl_net": -915.7621099999999,
+      "fees": 626.2,
+      "r_total": -57.91591901543939,
+      "max_drawdown": 915.76211,
+      "avg_win": 13.199806153846144,
+      "avg_loss": -23.07346048387096,
+      "best_trade": 34.08109999999998,
+      "worst_trade": -42.80041000000007,
+      "avg_duration_minutes": 8.732673267326733,
+      "max_loss_streak": 7,
+      "pnl_without_top5": -1064.45102,
+      "top5_share": 0.2888327381031472,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -0.7075197486054334,
+      "first_ts": "2026-08-31T14:10:00+00:00",
+      "last_ts": "2026-11-20T15:30:00+00:00"
+    },
+    "short": {
+      "trades": 79,
+      "wins": 33,
+      "losses": 46,
+      "win_rate": 0.4177215189873418,
+      "profit_factor": 0.38920414345378473,
+      "expectancy_r": -0.5375706680978891,
+      "pnl_net": -610.7342699999996,
+      "fees": 489.8,
+      "r_total": -42.46808277973324,
+      "max_drawdown": 688.6501499999995,
+      "avg_win": 11.792875757575764,
+      "avg_loss": -21.736938478260864,
+      "best_trade": 44.42865000000002,
+      "worst_trade": -46.42218999999993,
+      "avg_duration_minutes": 12.139240506329115,
+      "max_loss_streak": 5,
+      "pnl_without_top5": -737.9799099999996,
+      "top5_share": 0.3269710089476206,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -0.6886548899510683,
+      "first_ts": "2026-08-31T14:18:00+00:00",
+      "last_ts": "2026-11-20T15:23:00+00:00"
+    }
+  },
+  "by_day": {
+    "2026-08-31": {
+      "trades": 3,
+      "wins": 1,
+      "losses": 2,
+      "win_rate": 0.3333333333333333,
+      "profit_factor": 0.2097338744003667,
+      "expectancy_r": -0.7253941830934986,
+      "pnl_net": -34.087749999999915,
+      "fees": 18.6,
+      "r_total": -2.1761825492804956,
+      "max_drawdown": 34.087749999999915,
+      "avg_win": 9.046770000000112,
+      "avg_loss": -21.567260000000015,
+      "best_trade": 9.046770000000112,
+      "worst_trade": -21.962789999999995,
+      "avg_duration_minutes": 4.666666666666667,
+      "max_loss_streak": 1,
+      "pnl_without_top5": 0.0,
+      "top5_share": -3.7679470131328077,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.407186327736656,
+      "first_ts": "2026-08-31T14:10:00+00:00",
+      "last_ts": "2026-08-31T14:37:00+00:00"
+    },
+    "2026-09-01": {
+      "trades": 3,
+      "wins": 1,
+      "losses": 2,
+      "win_rate": 0.3333333333333333,
+      "profit_factor": 0.13541667306255195,
+      "expectancy_r": -0.6437726221088026,
+      "pnl_net": -56.32418000000016,
+      "fees": 18.6,
+      "r_total": -1.931317866326408,
+      "max_drawdown": 65.14604000000011,
+      "avg_win": 8.821859999999948,
+      "avg_loss": -32.57302000000006,
+      "best_trade": 8.821859999999948,
+      "worst_trade": -42.80041000000007,
+      "avg_duration_minutes": 11.0,
+      "max_loss_streak": 2,
+      "pnl_without_top5": 0.0,
+      "top5_share": -6.384615035831502,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.3124688938180051,
+      "first_ts": "2026-09-01T13:38:00+00:00",
+      "last_ts": "2026-09-01T14:19:00+00:00"
+    },
+    "2026-09-02": {
+      "trades": 3,
+      "wins": 2,
+      "losses": 1,
+      "win_rate": 0.6666666666666666,
+      "profit_factor": 0.9672734380008785,
+      "expectancy_r": 0.0030005155627652234,
+      "pnl_net": -0.7350699999997836,
+      "fees": 18.6,
+      "r_total": 0.00900154668829567,
+      "max_drawdown": 22.460959999999897,
+      "avg_win": 10.862945000000057,
+      "avg_loss": -22.460959999999897,
+      "best_trade": 12.464260000000042,
+      "worst_trade": -22.460959999999897,
+      "avg_duration_minutes": 11.666666666666666,
+      "max_loss_streak": 1,
+      "pnl_without_top5": 0.0,
+      "top5_share": -0.03383382683055929,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -0.7075661618305281,
+      "first_ts": "2026-09-02T13:50:00+00:00",
+      "last_ts": "2026-09-02T14:44:00+00:00"
+    },
+    "2026-09-03": {
+      "trades": 3,
+      "wins": 3,
+      "losses": 0,
+      "win_rate": 1.0,
+      "profit_factor": 1.0,
+      "expectancy_r": 0.8246427722329926,
+      "pnl_net": 55.17870000000001,
+      "fees": 18.6,
+      "r_total": 2.473928316698978,
+      "max_drawdown": 0.0,
+      "avg_win": 18.392900000000004,
+      "avg_loss": 0.0,
+      "best_trade": 34.08109999999998,
+      "worst_trade": 10.068500000000046,
+      "avg_duration_minutes": 9.333333333333334,
+      "max_loss_streak": 0,
+      "pnl_without_top5": 0.0,
+      "top5_share": 1.0,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": 0.6819843781908347,
+      "first_ts": "2026-09-03T13:38:00+00:00",
+      "last_ts": "2026-09-03T14:32:00+00:00"
+    },
+    "2026-09-04": {
+      "trades": 3,
+      "wins": 2,
+      "losses": 1,
+      "win_rate": 0.6666666666666666,
+      "profit_factor": 1.603891121740475,
+      "expectancy_r": 0.07824113191379578,
+      "pnl_net": 13.34105999999991,
+      "fees": 18.6,
+      "r_total": 0.23472339574138734,
+      "max_drawdown": 22.091830000000055,
+      "avg_win": 17.716444999999982,
+      "avg_loss": -22.091830000000055,
+      "best_trade": 27.238129999999973,
+      "worst_trade": -22.091830000000055,
+      "avg_duration_minutes": 21.666666666666668,
+      "max_loss_streak": 1,
+      "pnl_without_top5": 0.0,
+      "top5_share": 0.37651628190644126,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -0.7282886423889675,
+      "first_ts": "2026-09-04T14:09:00+00:00",
+      "last_ts": "2026-09-04T15:03:00+00:00"
+    },
+    "2026-09-07": {
+      "trades": 3,
+      "wins": 2,
+      "losses": 1,
+      "win_rate": 0.6666666666666666,
+      "profit_factor": 0.8556773851687598,
+      "expectancy_r": -0.0322435991961012,
+      "pnl_net": -3.189410000000098,
+      "fees": 18.6,
+      "r_total": -0.09673079758830361,
+      "max_drawdown": 22.099169999999997,
+      "avg_win": 9.45487999999995,
+      "avg_loss": -22.099169999999997,
+      "best_trade": 10.14334999999993,
+      "worst_trade": -22.099169999999997,
+      "avg_duration_minutes": 11.666666666666666,
+      "max_loss_streak": 1,
+      "pnl_without_top5": 0.0,
+      "top5_share": -0.16866475301643782,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -0.7200478974288197,
+      "first_ts": "2026-09-07T14:02:00+00:00",
+      "last_ts": "2026-09-07T14:54:00+00:00"
+    },
+    "2026-09-08": {
+      "trades": 3,
+      "wins": 3,
+      "losses": 0,
+      "win_rate": 1.0,
+      "profit_factor": 1.0,
+      "expectancy_r": 0.7986494899300552,
+      "pnl_net": 49.43379000000007,
+      "fees": 18.6,
+      "r_total": 2.3959484697901656,
+      "max_drawdown": 0.0,
+      "avg_win": 16.477930000000026,
+      "avg_loss": 0.0,
+      "best_trade": 28.683039999999995,
+      "worst_trade": 8.293379999999974,
+      "avg_duration_minutes": 18.333333333333332,
+      "max_loss_streak": 0,
+      "pnl_without_top5": 0.0,
+      "top5_share": 1.0,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": 0.6498954319542487,
+      "first_ts": "2026-09-08T14:17:00+00:00",
+      "last_ts": "2026-09-08T15:00:00+00:00"
+    },
+    "2026-09-09": {
+      "trades": 3,
+      "wins": 2,
+      "losses": 1,
+      "win_rate": 0.6666666666666666,
+      "profit_factor": 0.8395014575361922,
+      "expectancy_r": -0.01328296981195228,
+      "pnl_net": -3.748360000000165,
+      "fees": 18.6,
+      "r_total": -0.03984890943585684,
+      "max_drawdown": 23.35448000000009,
+      "avg_win": 9.803059999999963,
+      "avg_loss": -23.35448000000009,
+      "best_trade": 9.918349999999993,
+      "worst_trade": -23.35448000000009,
+      "avg_duration_minutes": 12.0,
+      "max_loss_streak": 1,
+      "pnl_without_top5": 0.0,
+      "top5_share": -0.1911831611762133,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -0.6888038487158319,
+      "first_ts": "2026-09-09T14:12:00+00:00",
+      "last_ts": "2026-09-09T15:05:00+00:00"
+    },
+    "2026-09-10": {
+      "trades": 3,
+      "wins": 1,
+      "losses": 2,
+      "win_rate": 0.3333333333333333,
+      "profit_factor": 0.5813708633302178,
+      "expectancy_r": -0.618698385479114,
+      "pnl_net": -17.466789999999865,
+      "fees": 18.6,
+      "r_total": -1.8560951564373422,
+      "max_drawdown": 41.723779999999856,
+      "avg_win": 24.25698999999999,
+      "avg_loss": -20.861889999999928,
+      "best_trade": 24.25698999999999,
+      "worst_trade": -21.502839999999946,
+      "avg_duration_minutes": 17.333333333333332,
+      "max_loss_streak": 2,
+      "pnl_without_top5": 0.0,
+      "top5_share": -0.7200724409747405,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.429848347309032,
+      "first_ts": "2026-09-10T14:20:00+00:00",
+      "last_ts": "2026-09-10T14:44:00+00:00"
+    },
+    "2026-09-11": {
+      "trades": 3,
+      "wins": 1,
+      "losses": 2,
+      "win_rate": 0.3333333333333333,
+      "profit_factor": 0.29189433347187205,
+      "expectancy_r": -0.7333171652844377,
+      "pnl_net": -27.873220000000035,
+      "fees": 18.6,
+      "r_total": -2.199951495853313,
+      "max_drawdown": 39.36308000000002,
+      "avg_win": 11.489859999999982,
+      "avg_loss": -19.68154000000001,
+      "best_trade": 11.489859999999982,
+      "worst_trade": -19.81113000000003,
+      "avg_duration_minutes": 6.0,
+      "max_loss_streak": 2,
+      "pnl_without_top5": 0.0,
+      "top5_share": -2.4258972694184333,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.4614042899886799,
+      "first_ts": "2026-09-11T13:57:00+00:00",
+      "last_ts": "2026-09-11T14:41:00+00:00"
+    },
+    "2026-09-14": {
+      "trades": 3,
+      "wins": 2,
+      "losses": 1,
+      "win_rate": 0.6666666666666666,
+      "profit_factor": 0.7823030004268088,
+      "expectancy_r": -0.06160325132752109,
+      "pnl_net": -4.8047599999999635,
+      "fees": 18.6,
+      "r_total": -0.18480975398256327,
+      "max_drawdown": 22.070859999999993,
+      "avg_win": 8.633050000000015,
+      "avg_loss": -22.070859999999993,
+      "best_trade": 11.000679999999978,
+      "worst_trade": -22.070859999999993,
+      "avg_duration_minutes": 3.0,
+      "max_loss_streak": 1,
+      "pnl_without_top5": 0.0,
+      "top5_share": -0.2782770863136409,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -0.7597105476340479,
+      "first_ts": "2026-09-14T13:38:00+00:00",
+      "last_ts": "2026-09-14T14:08:00+00:00"
+    },
+    "2026-09-15": {
+      "trades": 3,
+      "wins": 1,
+      "losses": 2,
+      "win_rate": 0.3333333333333333,
+      "profit_factor": 0.21635887138780793,
+      "expectancy_r": -0.7111206652852782,
+      "pnl_net": -34.52732999999995,
+      "fees": 18.6,
+      "r_total": -2.1333619958558345,
+      "max_drawdown": 44.060130000000065,
+      "avg_win": 9.532800000000112,
+      "avg_loss": -22.030065000000032,
+      "best_trade": 9.532800000000112,
+      "worst_trade": -22.43566999999994,
+      "avg_duration_minutes": 2.6666666666666665,
+      "max_loss_streak": 2,
+      "pnl_without_top5": 0.0,
+      "top5_share": -3.6219505287008587,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.3952643832250142,
+      "first_ts": "2026-09-15T13:54:00+00:00",
+      "last_ts": "2026-09-15T14:56:00+00:00"
+    },
+    "2026-09-16": {
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_r": -1.4013120780063797,
+      "pnl_net": -67.99216000000001,
+      "fees": 18.6,
+      "r_total": -4.203936234019139,
+      "max_drawdown": 67.99216000000001,
+      "avg_win": 0.0,
+      "avg_loss": -22.66405333333334,
+      "best_trade": -19.49392999999996,
+      "worst_trade": -28.974,
+      "avg_duration_minutes": 3.0,
+      "max_loss_streak": 3,
+      "pnl_without_top5": 0.0,
+      "top5_share": 0.0,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.466024741462748,
+      "first_ts": "2026-09-16T13:38:00+00:00",
+      "last_ts": "2026-09-16T14:43:00+00:00"
+    },
+    "2026-09-17": {
+      "trades": 3,
+      "wins": 1,
+      "losses": 2,
+      "win_rate": 0.3333333333333333,
+      "profit_factor": 0.18155977657120356,
+      "expectancy_r": -0.7378449611828802,
+      "pnl_net": -35.643350000000005,
+      "fees": 18.6,
+      "r_total": -2.2135348835486406,
+      "max_drawdown": 43.55033999999994,
+      "avg_win": 7.906989999999939,
+      "avg_loss": -21.77516999999997,
+      "best_trade": 7.906989999999939,
+      "worst_trade": -21.877230000000008,
+      "avg_duration_minutes": 10.333333333333334,
+      "max_loss_streak": 2,
+      "pnl_without_top5": 0.0,
+      "top5_share": -4.507827883935642,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.3989561035238662,
+      "first_ts": "2026-09-17T14:41:00+00:00",
+      "last_ts": "2026-09-17T15:57:00+00:00"
+    },
+    "2026-09-18": {
+      "trades": 3,
+      "wins": 1,
+      "losses": 2,
+      "win_rate": 0.3333333333333333,
+      "profit_factor": 0.32329152261198973,
+      "expectancy_r": -0.6345582391254876,
+      "pnl_net": -31.54033999999996,
+      "fees": 18.6,
+      "r_total": -1.9036747173764628,
+      "max_drawdown": 31.54033999999996,
+      "avg_win": 15.068120000000011,
+      "avg_loss": -23.304229999999986,
+      "best_trade": 15.068120000000011,
+      "worst_trade": -23.49264999999998,
+      "avg_duration_minutes": 10.333333333333334,
+      "max_loss_streak": 1,
+      "pnl_without_top5": 0.0,
+      "top5_share": -2.0931834893802237,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.3638586252007865,
+      "first_ts": "2026-09-18T13:40:00+00:00",
+      "last_ts": "2026-09-18T14:26:00+00:00"
+    },
+    "2026-09-21": {
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_r": -1.4346221174571738,
+      "pnl_net": -61.41579000000007,
+      "fees": 18.6,
+      "r_total": -4.3038663523715215,
+      "max_drawdown": 61.41579000000007,
+      "avg_win": 0.0,
+      "avg_loss": -20.471930000000025,
+      "best_trade": -20.15595,
+      "worst_trade": -20.89301999999999,
+      "avg_duration_minutes": 2.3333333333333335,
+      "max_loss_streak": 3,
+      "pnl_without_top5": 0.0,
+      "top5_share": 0.0,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.4420507468991637,
+      "first_ts": "2026-09-21T13:54:00+00:00",
+      "last_ts": "2026-09-21T14:00:00+00:00"
+    },
+    "2026-09-22": {
+      "trades": 3,
+      "wins": 1,
+      "losses": 2,
+      "win_rate": 0.3333333333333333,
+      "profit_factor": 0.2906429226074065,
+      "expectancy_r": -0.6943931201431001,
+      "pnl_net": -30.030489999999904,
+      "fees": 18.6,
+      "r_total": -2.0831793604293,
+      "max_drawdown": 42.33479999999991,
+      "avg_win": 12.304310000000005,
+      "avg_loss": -21.167399999999954,
+      "best_trade": 12.304310000000005,
+      "worst_trade": -21.455169999999935,
+      "avg_duration_minutes": 8.333333333333334,
+      "max_loss_streak": 2,
+      "pnl_without_top5": 0.0,
+      "top5_share": -2.440648033087584,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.4170425109894076,
+      "first_ts": "2026-09-22T13:54:00+00:00",
+      "last_ts": "2026-09-22T14:50:00+00:00"
+    },
+    "2026-09-23": {
+      "trades": 3,
+      "wins": 2,
+      "losses": 1,
+      "win_rate": 0.6666666666666666,
+      "profit_factor": 0.984195949339682,
+      "expectancy_r": -0.01884023663942243,
+      "pnl_net": -0.3329000000000839,
+      "fees": 18.6,
+      "r_total": -0.0565207099182673,
+      "max_drawdown": 21.064220000000045,
+      "avg_win": 10.36565999999998,
+      "avg_loss": -21.064220000000045,
+      "best_trade": 11.236280000000011,
+      "worst_trade": -21.064220000000045,
+      "avg_duration_minutes": 7.666666666666667,
+      "max_loss_streak": 1,
+      "pnl_without_top5": 0.0,
+      "top5_share": -0.016057829409805286,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -0.7284015378813568,
+      "first_ts": "2026-09-23T13:52:00+00:00",
+      "last_ts": "2026-09-23T14:46:00+00:00"
+    },
+    "2026-09-24": {
+      "trades": 3,
+      "wins": 2,
+      "losses": 1,
+      "win_rate": 0.6666666666666666,
+      "profit_factor": 1.0306356947271038,
+      "expectancy_r": -0.02653021657268047,
+      "pnl_net": 0.6222899999998752,
+      "fees": 18.6,
+      "r_total": -0.07959064971804142,
+      "max_drawdown": 20.312580000000036,
+      "avg_win": 10.467434999999956,
+      "avg_loss": -20.312580000000036,
+      "best_trade": 12.302969999999977,
+      "worst_trade": -20.312580000000036,
+      "avg_duration_minutes": 7.333333333333333,
+      "max_loss_streak": 1,
+      "pnl_without_top5": 0.0,
+      "top5_share": 0.02972504725369099,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -0.7548192727701476,
+      "first_ts": "2026-09-24T13:52:00+00:00",
+      "last_ts": "2026-09-24T14:43:00+00:00"
+    },
+    "2026-09-25": {
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_r": -1.4071312491887331,
+      "pnl_net": -65.44040999999993,
+      "fees": 18.6,
+      "r_total": -4.221393747566199,
+      "max_drawdown": 65.44040999999993,
+      "avg_win": 0.0,
+      "avg_loss": -21.813469999999977,
+      "best_trade": -19.202759999999966,
+      "worst_trade": -25.23609000000003,
+      "avg_duration_minutes": 7.666666666666667,
+      "max_loss_streak": 3,
+      "pnl_without_top5": 0.0,
+      "top5_share": 0.0,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.4575061517365822,
+      "first_ts": "2026-09-25T13:36:00+00:00",
+      "last_ts": "2026-09-25T14:08:00+00:00"
+    },
+    "2026-09-28": {
+      "trades": 3,
+      "wins": 2,
+      "losses": 1,
+      "win_rate": 0.6666666666666666,
+      "profit_factor": 1.2244236886829434,
+      "expectancy_r": 0.022366449844987146,
+      "pnl_net": 4.634999999999959,
+      "fees": 18.6,
+      "r_total": 0.06709934953496144,
+      "max_drawdown": 20.6529,
+      "avg_win": 12.643949999999979,
+      "avg_loss": -20.6529,
+      "best_trade": 15.194499999999966,
+      "worst_trade": -20.6529,
+      "avg_duration_minutes": 6.333333333333333,
+      "max_loss_streak": 1,
+      "pnl_without_top5": 0.0,
+      "top5_share": 0.18328924109949685,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -0.7287821702248993,
+      "first_ts": "2026-09-28T13:50:00+00:00",
+      "last_ts": "2026-09-28T14:19:00+00:00"
+    },
+    "2026-09-29": {
+      "trades": 3,
+      "wins": 1,
+      "losses": 2,
+      "win_rate": 0.3333333333333333,
+      "profit_factor": 0.2463481295646777,
+      "expectancy_r": -0.7663028208533094,
+      "pnl_net": -29.49396999999991,
+      "fees": 18.6,
+      "r_total": -2.298908462559928,
+      "max_drawdown": 39.134739999999844,
+      "avg_win": 9.640769999999936,
+      "avg_loss": -19.567369999999922,
+      "best_trade": 9.640769999999936,
+      "worst_trade": -21.770379999999914,
+      "avg_duration_minutes": 5.666666666666667,
+      "max_loss_streak": 2,
+      "pnl_without_top5": 0.0,
+      "top5_share": -3.0592960935693005,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.5029563807577133,
+      "first_ts": "2026-09-29T14:34:00+00:00",
+      "last_ts": "2026-09-29T15:21:00+00:00"
+    },
+    "2026-09-30": {
+      "trades": 3,
+      "wins": 1,
+      "losses": 2,
+      "win_rate": 0.3333333333333333,
+      "profit_factor": 0.175851302775931,
+      "expectancy_r": -0.6653937302815263,
+      "pnl_net": -45.60514999999996,
+      "fees": 18.6,
+      "r_total": -1.9961811908445788,
+      "max_drawdown": 55.33607000000009,
+      "avg_win": 9.730920000000129,
+      "avg_loss": -27.668035000000046,
+      "best_trade": 9.730920000000129,
+      "worst_trade": -35.016029999999986,
+      "avg_duration_minutes": 32.333333333333336,
+      "max_loss_streak": 2,
+      "pnl_without_top5": 0.0,
+      "top5_share": -4.686622642052278,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.3644475008281678,
+      "first_ts": "2026-09-30T14:48:00+00:00",
+      "last_ts": "2026-09-30T15:25:00+00:00"
+    },
+    "2026-10-01": {
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_r": -1.4099284392924238,
+      "pnl_net": -67.65238999999994,
+      "fees": 18.6,
+      "r_total": -4.229785317877272,
+      "max_drawdown": 67.65238999999994,
+      "avg_win": 0.0,
+      "avg_loss": -22.550796666666646,
+      "best_trade": -18.93426999999998,
+      "worst_trade": -29.522050000000018,
+      "avg_duration_minutes": 3.0,
+      "max_loss_streak": 3,
+      "pnl_without_top5": 0.0,
+      "top5_share": 0.0,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.4836058860951316,
+      "first_ts": "2026-10-01T13:37:00+00:00",
+      "last_ts": "2026-10-01T13:55:00+00:00"
+    },
+    "2026-10-02": {
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_r": -1.4434882104765636,
+      "pnl_net": -60.87674000000007,
+      "fees": 18.6,
+      "r_total": -4.330464631429691,
+      "max_drawdown": 60.87674000000007,
+      "avg_win": 0.0,
+      "avg_loss": -20.29224666666669,
+      "best_trade": -19.158969999999965,
+      "worst_trade": -22.10208000000004,
+      "avg_duration_minutes": 3.3333333333333335,
+      "max_loss_streak": 3,
+      "pnl_without_top5": 0.0,
+      "top5_share": 0.0,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.4730038712750522,
+      "first_ts": "2026-10-02T14:09:00+00:00",
+      "last_ts": "2026-10-02T14:44:00+00:00"
+    },
+    "2026-10-05": {
+      "trades": 3,
+      "wins": 2,
+      "losses": 1,
+      "win_rate": 0.6666666666666666,
+      "profit_factor": 1.5963054795657732,
+      "expectancy_r": 0.012461011404771663,
+      "pnl_net": 11.779489999999836,
+      "fees": 18.6,
+      "r_total": 0.03738303421431499,
+      "max_drawdown": 19.75412000000001,
+      "avg_win": 15.766804999999923,
+      "avg_loss": -19.75412000000001,
+      "best_trade": 25.565439999999928,
+      "worst_trade": -19.75412000000001,
+      "avg_duration_minutes": 22.333333333333332,
+      "max_loss_streak": 1,
+      "pnl_without_top5": 0.0,
+      "top5_share": 0.37355348784994463,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -0.8095991146394873,
+      "first_ts": "2026-10-05T14:20:00+00:00",
+      "last_ts": "2026-10-05T14:55:00+00:00"
+    },
+    "2026-10-06": {
+      "trades": 3,
+      "wins": 1,
+      "losses": 2,
+      "win_rate": 0.3333333333333333,
+      "profit_factor": 0.7294868451401937,
+      "expectancy_r": -0.5775244206507212,
+      "pnl_net": -11.669410000000088,
+      "fees": 18.6,
+      "r_total": -1.7325732619521634,
+      "max_drawdown": 43.13805000000007,
+      "avg_win": 31.468639999999983,
+      "avg_loss": -21.569025000000035,
+      "best_trade": 31.468639999999983,
+      "worst_trade": -21.96198000000005,
+      "avg_duration_minutes": 8.666666666666666,
+      "max_loss_streak": 2,
+      "pnl_without_top5": 0.0,
+      "top5_share": -0.3708266388379064,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.4071130598491486,
+      "first_ts": "2026-10-06T13:53:00+00:00",
+      "last_ts": "2026-10-06T14:13:00+00:00"
+    },
+    "2026-10-07": {
+      "trades": 3,
+      "wins": 1,
+      "losses": 2,
+      "win_rate": 0.3333333333333333,
+      "profit_factor": 0.30115794069231483,
+      "expectancy_r": -0.7064331171402087,
+      "pnl_net": -28.669080000000097,
+      "fees": 18.6,
+      "r_total": -2.119299351420626,
+      "max_drawdown": 41.02369000000001,
+      "avg_win": 12.354609999999912,
+      "avg_loss": -20.511845000000005,
+      "best_trade": 12.354609999999912,
+      "worst_trade": -20.52439000000002,
+      "avg_duration_minutes": 3.0,
+      "max_loss_streak": 2,
+      "pnl_without_top5": 0.0,
+      "top5_share": -2.320516794945393,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.4333345068256615,
+      "first_ts": "2026-10-07T13:52:00+00:00",
+      "last_ts": "2026-10-07T14:14:00+00:00"
+    },
+    "2026-10-08": {
+      "trades": 3,
+      "wins": 2,
+      "losses": 1,
+      "win_rate": 0.6666666666666666,
+      "profit_factor": 0.7801136790233923,
+      "expectancy_r": 0.012527318323754791,
+      "pnl_net": -5.740150000000032,
+      "fees": 18.6,
+      "r_total": 0.037581954971264375,
+      "max_drawdown": 26.105080000000054,
+      "avg_win": 10.182465000000011,
+      "avg_loss": -26.105080000000054,
+      "best_trade": 10.641849999999994,
+      "worst_trade": -26.105080000000054,
+      "avg_duration_minutes": 24.666666666666668,
+      "max_loss_streak": 1,
+      "pnl_without_top5": 0.0,
+      "top5_share": -0.28186446012827077,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -0.6550627142731742,
+      "first_ts": "2026-10-08T14:12:00+00:00",
+      "last_ts": "2026-10-08T15:01:00+00:00"
+    },
+    "2026-10-09": {
+      "trades": 3,
+      "wins": 1,
+      "losses": 2,
+      "win_rate": 0.3333333333333333,
+      "profit_factor": 0.12814129363526894,
+      "expectancy_r": -0.7534295687276727,
+      "pnl_net": -43.320680000000074,
+      "fees": 18.6,
+      "r_total": -2.2602887061830184,
+      "max_drawdown": 49.68773000000004,
+      "avg_win": 6.367049999999966,
+      "avg_loss": -24.84386500000002,
+      "best_trade": 6.367049999999966,
+      "worst_trade": -31.66334999999999,
+      "avg_duration_minutes": 6.333333333333333,
+      "max_loss_streak": 2,
+      "pnl_without_top5": 0.0,
+      "top5_share": -6.803885629922854,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.4307226615275717,
+      "first_ts": "2026-10-09T13:41:00+00:00",
+      "last_ts": "2026-10-09T14:02:00+00:00"
+    },
+    "2026-10-12": {
+      "trades": 3,
+      "wins": 2,
+      "losses": 1,
+      "win_rate": 0.6666666666666666,
+      "profit_factor": 2.428465845043347,
+      "expectancy_r": 0.21675239677663424,
+      "pnl_net": 34.92479000000002,
+      "fees": 18.6,
+      "r_total": 0.6502571903299027,
+      "max_drawdown": 24.449160000000017,
+      "avg_win": 29.686975000000018,
+      "avg_loss": -24.449160000000017,
+      "best_trade": 44.42865000000002,
+      "worst_trade": -24.449160000000017,
+      "avg_duration_minutes": 45.333333333333336,
+      "max_loss_streak": 1,
+      "pnl_without_top5": 0.0,
+      "top5_share": 0.5882173916338731,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -0.6203923572918405,
+      "first_ts": "2026-10-12T15:21:00+00:00",
+      "last_ts": "2026-10-12T16:16:00+00:00"
+    },
+    "2026-10-13": {
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_r": -1.348833724339188,
+      "pnl_net": -75.17087999999987,
+      "fees": 18.6,
+      "r_total": -4.046501173017564,
+      "max_drawdown": 75.17087999999988,
+      "avg_win": 0.0,
+      "avg_loss": -25.056959999999957,
+      "best_trade": -21.564799999999973,
+      "worst_trade": -32.01383000000003,
+      "avg_duration_minutes": 2.6666666666666665,
+      "max_loss_streak": 3,
+      "pnl_without_top5": 0.0,
+      "top5_share": 0.0,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.403279859092826,
+      "first_ts": "2026-10-13T13:37:00+00:00",
+      "last_ts": "2026-10-13T14:46:00+00:00"
+    },
+    "2026-10-14": {
+      "trades": 3,
+      "wins": 1,
+      "losses": 2,
+      "win_rate": 0.3333333333333333,
+      "profit_factor": 0.18076030173414218,
+      "expectancy_r": -0.6956970922886168,
+      "pnl_net": -40.20417999999992,
+      "fees": 18.6,
+      "r_total": -2.0870912768658503,
+      "max_drawdown": 49.07498999999992,
+      "avg_win": 8.870809999999995,
+      "avg_loss": -24.53749499999996,
+      "best_trade": 8.870809999999995,
+      "worst_trade": -28.605789999999967,
+      "avg_duration_minutes": 19.0,
+      "max_loss_streak": 2,
+      "pnl_without_top5": 0.0,
+      "top5_share": -4.532188154182081,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.3819062526304589,
+      "first_ts": "2026-10-14T14:13:00+00:00",
+      "last_ts": "2026-10-14T15:01:00+00:00"
+    },
+    "2026-10-15": {
+      "trades": 3,
+      "wins": 1,
+      "losses": 2,
+      "win_rate": 0.3333333333333333,
+      "profit_factor": 0.18449713117046945,
+      "expectancy_r": -0.7564448640551292,
+      "pnl_net": -34.10875000000005,
+      "fees": 18.6,
+      "r_total": -2.2693345921653876,
+      "max_drawdown": 41.82542000000002,
+      "avg_win": 7.716669999999982,
+      "avg_loss": -20.912710000000015,
+      "best_trade": 7.716669999999982,
+      "worst_trade": -21.270230000000037,
+      "avg_duration_minutes": 9.0,
+      "max_loss_streak": 2,
+      "pnl_without_top5": 0.0,
+      "top5_share": -4.42013847942184,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.4250687370262625,
+      "first_ts": "2026-10-15T14:11:00+00:00",
+      "last_ts": "2026-10-15T14:48:00+00:00"
+    },
+    "2026-10-16": {
+      "trades": 3,
+      "wins": 1,
+      "losses": 2,
+      "win_rate": 0.3333333333333333,
+      "profit_factor": 0.22707136403083425,
+      "expectancy_r": -0.7560977425916676,
+      "pnl_net": -31.145769999999974,
+      "fees": 18.6,
+      "r_total": -2.2682932277750028,
+      "max_drawdown": 31.145769999999974,
+      "avg_win": 9.150020000000058,
+      "avg_loss": -20.147895000000016,
+      "best_trade": 9.150020000000058,
+      "worst_trade": -21.926140000000014,
+      "avg_duration_minutes": 8.333333333333334,
+      "max_loss_streak": 1,
+      "pnl_without_top5": 0.0,
+      "top5_share": -3.40390184939484,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.4710587611865027,
+      "first_ts": "2026-10-16T14:03:00+00:00",
+      "last_ts": "2026-10-16T15:56:00+00:00"
+    },
+    "2026-10-19": {
+      "trades": 3,
+      "wins": 2,
+      "losses": 1,
+      "win_rate": 0.6666666666666666,
+      "profit_factor": 2.1666205906515366,
+      "expectancy_r": 0.04503143711117078,
+      "pnl_net": 20.80417000000011,
+      "fees": 18.6,
+      "r_total": 0.13509431133351235,
+      "max_drawdown": 17.832849999999876,
+      "avg_win": 19.318509999999993,
+      "avg_loss": -17.832849999999876,
+      "best_trade": 30.199140000000046,
+      "worst_trade": -17.832849999999876,
+      "avg_duration_minutes": 6.333333333333333,
+      "max_loss_streak": 1,
+      "pnl_without_top5": 0.0,
+      "top5_share": 0.5384517232436693,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -0.8200000675636746,
+      "first_ts": "2026-10-19T13:40:00+00:00",
+      "last_ts": "2026-10-19T15:14:00+00:00"
+    },
+    "2026-10-20": {
+      "trades": 3,
+      "wins": 1,
+      "losses": 2,
+      "win_rate": 0.3333333333333333,
+      "profit_factor": 0.1587945721079137,
+      "expectancy_r": -0.6329817007441578,
+      "pnl_net": -56.249059999999965,
+      "fees": 18.6,
+      "r_total": -1.8989451022324735,
+      "max_drawdown": 56.24905999999997,
+      "avg_win": 10.618150000000004,
+      "avg_loss": -33.433604999999986,
+      "best_trade": 10.618150000000004,
+      "worst_trade": -46.42218999999993,
+      "avg_duration_minutes": 51.666666666666664,
+      "max_loss_streak": 1,
+      "pnl_without_top5": 0.0,
+      "top5_share": -5.297444470081883,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.3415411394068,
+      "first_ts": "2026-10-20T16:02:00+00:00",
+      "last_ts": "2026-10-20T16:50:00+00:00"
+    },
+    "2026-10-21": {
+      "trades": 3,
+      "wins": 2,
+      "losses": 1,
+      "win_rate": 0.6666666666666666,
+      "profit_factor": 0.9955993995879605,
+      "expectancy_r": -0.045200194064213904,
+      "pnl_net": -0.08844999999980008,
+      "fees": 18.6,
+      "r_total": -0.1356005821926417,
+      "max_drawdown": 20.099529999999913,
+      "avg_win": 10.005540000000057,
+      "avg_loss": -20.099529999999913,
+      "best_trade": 12.806690000000078,
+      "worst_trade": -20.099529999999913,
+      "avg_duration_minutes": 7.666666666666667,
+      "max_loss_streak": 1,
+      "pnl_without_top5": 0.0,
+      "top5_share": -0.004420051291574446,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -0.7807575366533195,
+      "first_ts": "2026-10-21T13:42:00+00:00",
+      "last_ts": "2026-10-21T14:32:00+00:00"
+    },
+    "2026-10-22": {
+      "trades": 3,
+      "wins": 1,
+      "losses": 2,
+      "win_rate": 0.3333333333333333,
+      "profit_factor": 0.18500922246633444,
+      "expectancy_r": -0.6346044545247556,
+      "pnl_net": -47.67128,
+      "fees": 18.6,
+      "r_total": -1.9038133635742667,
+      "max_drawdown": 47.67128,
+      "avg_win": 10.82174999999997,
+      "avg_loss": -29.246514999999988,
+      "best_trade": 10.82174999999997,
+      "worst_trade": -36.72421999999993,
+      "avg_duration_minutes": 24.333333333333332,
+      "max_loss_streak": 1,
+      "pnl_without_top5": 0.0,
+      "top5_share": -4.4051359530575125,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.3331938686929397,
+      "first_ts": "2026-10-22T14:34:00+00:00",
+      "last_ts": "2026-10-22T15:34:00+00:00"
+    },
+    "2026-10-23": {
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_r": -1.3469366551011301,
+      "pnl_net": -75.58770999999993,
+      "fees": 18.6,
+      "r_total": -4.04080996530339,
+      "max_drawdown": 75.58770999999994,
+      "avg_win": 0.0,
+      "avg_loss": -25.19590333333331,
+      "best_trade": -21.35359999999987,
+      "worst_trade": -32.30439000000014,
+      "avg_duration_minutes": 7.666666666666667,
+      "max_loss_streak": 3,
+      "pnl_without_top5": 0.0,
+      "top5_share": 0.0,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.4041485743546367,
+      "first_ts": "2026-10-23T13:48:00+00:00",
+      "last_ts": "2026-10-23T14:23:00+00:00"
+    },
+    "2026-10-26": {
+      "trades": 3,
+      "wins": 2,
+      "losses": 1,
+      "win_rate": 0.6666666666666666,
+      "profit_factor": 0.6104166815565424,
+      "expectancy_r": 0.02809760784575836,
+      "pnl_net": -12.537060000000231,
+      "fees": 18.6,
+      "r_total": 0.08429282353727507,
+      "max_drawdown": 32.1806900000001,
+      "avg_win": 9.821814999999933,
+      "avg_loss": -32.1806900000001,
+      "best_trade": 9.973649999999925,
+      "worst_trade": -32.1806900000001,
+      "avg_duration_minutes": 10.666666666666666,
+      "max_loss_streak": 1,
+      "pnl_without_top5": 0.0,
+      "top5_share": -0.638225216011517,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -0.6071695788158783,
+      "first_ts": "2026-10-26T13:46:00+00:00",
+      "last_ts": "2026-10-26T14:21:00+00:00"
+    },
+    "2026-10-27": {
+      "trades": 3,
+      "wins": 1,
+      "losses": 2,
+      "win_rate": 0.3333333333333333,
+      "profit_factor": 0.23584695161050692,
+      "expectancy_r": -0.7168917272608185,
+      "pnl_net": -32.56899000000004,
+      "fees": 18.6,
+      "r_total": -2.1506751817824554,
+      "max_drawdown": 32.56899000000004,
+      "avg_win": 10.052039999999966,
+      "avg_loss": -21.310515000000006,
+      "best_trade": 10.052039999999966,
+      "worst_trade": -21.47980999999997,
+      "avg_duration_minutes": 4.333333333333333,
+      "max_loss_streak": 1,
+      "pnl_without_top5": 0.0,
+      "top5_share": -3.2400378430647065,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.4118943499232464,
+      "first_ts": "2026-10-27T14:52:00+00:00",
+      "last_ts": "2026-10-27T15:30:00+00:00"
+    },
+    "2026-10-28": {
+      "trades": 3,
+      "wins": 2,
+      "losses": 1,
+      "win_rate": 0.6666666666666666,
+      "profit_factor": 1.0258777246214155,
+      "expectancy_r": -0.07660150317994474,
+      "pnl_net": 0.48162999999987743,
+      "fees": 18.6,
+      "r_total": -0.22980450953983422,
+      "max_drawdown": 18.6117600000001,
+      "avg_win": 9.546694999999989,
+      "avg_loss": -18.6117600000001,
+      "best_trade": 12.550530000000084,
+      "worst_trade": -18.6117600000001,
+      "avg_duration_minutes": 4.333333333333333,
+      "max_loss_streak": 1,
+      "pnl_without_top5": 0.0,
+      "top5_share": 0.02522496005161357,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -0.8274420903003409,
+      "first_ts": "2026-10-28T13:59:00+00:00",
+      "last_ts": "2026-10-28T14:25:00+00:00"
+    },
+    "2026-10-29": {
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_r": -1.4606157460563012,
+      "pnl_net": -59.00368,
+      "fees": 18.6,
+      "r_total": -4.381847238168904,
+      "max_drawdown": 59.00368,
+      "avg_win": 0.0,
+      "avg_loss": -19.667893333333335,
+      "best_trade": -19.28570000000003,
+      "worst_trade": -20.071879999999947,
+      "avg_duration_minutes": 1.0,
+      "max_loss_streak": 3,
+      "pnl_without_top5": 0.0,
+      "top5_share": 0.0,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.4695665108175862,
+      "first_ts": "2026-10-29T13:47:00+00:00",
+      "last_ts": "2026-10-29T14:20:00+00:00"
+    },
+    "2026-10-30": {
+      "trades": 3,
+      "wins": 1,
+      "losses": 2,
+      "win_rate": 0.3333333333333333,
+      "profit_factor": 0.18759772915491515,
+      "expectancy_r": -0.7566650546333945,
+      "pnl_net": -33.84345999999994,
+      "fees": 18.6,
+      "r_total": -2.2699951639001834,
+      "max_drawdown": 41.65849999999996,
+      "avg_win": 7.815040000000027,
+      "avg_loss": -20.829249999999984,
+      "best_trade": 7.815040000000027,
+      "worst_trade": -21.290459999999978,
+      "avg_duration_minutes": 5.333333333333333,
+      "max_loss_streak": 2,
+      "pnl_without_top5": 0.0,
+      "top5_share": -4.330554929981142,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.4286882913303425,
+      "first_ts": "2026-10-30T13:58:00+00:00",
+      "last_ts": "2026-10-30T15:01:00+00:00"
+    },
+    "2026-11-02": {
+      "trades": 3,
+      "wins": 1,
+      "losses": 2,
+      "win_rate": 0.3333333333333333,
+      "profit_factor": 0.2598988460225903,
+      "expectancy_r": -0.7107017127631048,
+      "pnl_net": -31.1861900000001,
+      "fees": 18.6,
+      "r_total": -2.1321051382893144,
+      "max_drawdown": 42.13774000000006,
+      "avg_win": 10.951549999999958,
+      "avg_loss": -21.06887000000003,
+      "best_trade": 10.951549999999958,
+      "worst_trade": -21.26840000000011,
+      "avg_duration_minutes": 7.666666666666667,
+      "max_loss_streak": 2,
+      "pnl_without_top5": 0.0,
+      "top5_share": -2.847650789157719,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.4189191864133102,
+      "first_ts": "2026-11-02T14:57:00+00:00",
+      "last_ts": "2026-11-02T15:25:00+00:00"
+    },
+    "2026-11-03": {
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_r": -1.3560152308605629,
+      "pnl_net": -75.20107999999993,
+      "fees": 18.6,
+      "r_total": -4.068045692581689,
+      "max_drawdown": 75.20107999999995,
+      "avg_win": 0.0,
+      "avg_loss": -25.067026666666646,
+      "best_trade": -20.377399999999948,
+      "worst_trade": -33.149649999999966,
+      "avg_duration_minutes": 4.333333333333333,
+      "max_loss_streak": 3,
+      "pnl_without_top5": 0.0,
+      "top5_share": 0.0,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.4251009246761737,
+      "first_ts": "2026-11-03T14:39:00+00:00",
+      "last_ts": "2026-11-03T14:57:00+00:00"
+    },
+    "2026-11-04": {
+      "trades": 3,
+      "wins": 2,
+      "losses": 1,
+      "win_rate": 0.6666666666666666,
+      "profit_factor": 1.5034505793910002,
+      "expectancy_r": 0.06605558937000255,
+      "pnl_net": 10.550989999999981,
+      "fees": 18.6,
+      "r_total": 0.19816676811000766,
+      "max_drawdown": 20.95735,
+      "avg_win": 15.754169999999991,
+      "avg_loss": -20.95735,
+      "best_trade": 21.504099999999983,
+      "worst_trade": -20.95735,
+      "avg_duration_minutes": 5.333333333333333,
+      "max_loss_streak": 1,
+      "pnl_without_top5": 0.0,
+      "top5_share": 0.334863404419274,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -0.7239875471072456,
+      "first_ts": "2026-11-04T14:42:00+00:00",
+      "last_ts": "2026-11-04T15:38:00+00:00"
+    },
+    "2026-11-05": {
+      "trades": 3,
+      "wins": 2,
+      "losses": 1,
+      "win_rate": 0.6666666666666666,
+      "profit_factor": 0.895401228880768,
+      "expectancy_r": -0.09318419845850485,
+      "pnl_net": -1.9697800000000178,
+      "fees": 18.6,
+      "r_total": -0.2795525953755146,
+      "max_drawdown": 18.831769999999988,
+      "avg_win": 8.430994999999985,
+      "avg_loss": -18.831769999999988,
+      "best_trade": 8.520159999999965,
+      "worst_trade": -18.831769999999988,
+      "avg_duration_minutes": 3.6666666666666665,
+      "max_loss_streak": 1,
+      "pnl_without_top5": 0.0,
+      "top5_share": -0.11681776587461037,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -0.7932796617337847,
+      "first_ts": "2026-11-05T14:50:00+00:00",
+      "last_ts": "2026-11-05T15:33:00+00:00"
+    },
+    "2026-11-06": {
+      "trades": 3,
+      "wins": 1,
+      "losses": 2,
+      "win_rate": 0.3333333333333333,
+      "profit_factor": 0.19980050770366886,
+      "expectancy_r": -0.7679261432816876,
+      "pnl_net": -32.1937299999999,
+      "fees": 18.6,
+      "r_total": -2.303778429845063,
+      "max_drawdown": 40.23212999999989,
+      "avg_win": 8.038399999999985,
+      "avg_loss": -20.116064999999946,
+      "best_trade": 8.038399999999985,
+      "worst_trade": -20.635859999999962,
+      "avg_duration_minutes": 5.333333333333333,
+      "max_loss_streak": 2,
+      "pnl_without_top5": 0.0,
+      "top5_share": -4.004992287022288,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.4517056024438109,
+      "first_ts": "2026-11-06T14:56:00+00:00",
+      "last_ts": "2026-11-06T15:22:00+00:00"
+    },
+    "2026-11-09": {
+      "trades": 3,
+      "wins": 3,
+      "losses": 0,
+      "win_rate": 1.0,
+      "profit_factor": 1.0,
+      "expectancy_r": 0.7141380948899544,
+      "pnl_net": 39.425659999999986,
+      "fees": 18.6,
+      "r_total": 2.1424142846698633,
+      "max_drawdown": 0.0,
+      "avg_win": 13.141886666666663,
+      "avg_loss": 0.0,
+      "best_trade": 22.824830000000038,
+      "worst_trade": 5.722009999999972,
+      "avg_duration_minutes": 9.666666666666666,
+      "max_loss_streak": 0,
+      "pnl_without_top5": 0.0,
+      "top5_share": 1.0,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": 0.5480403506839283,
+      "first_ts": "2026-11-09T14:38:00+00:00",
+      "last_ts": "2026-11-09T16:09:00+00:00"
+    },
+    "2026-11-10": {
+      "trades": 3,
+      "wins": 1,
+      "losses": 2,
+      "win_rate": 0.3333333333333333,
+      "profit_factor": 0.323298952675411,
+      "expectancy_r": -0.7049322169234692,
+      "pnl_net": -27.400159999999975,
+      "fees": 18.6,
+      "r_total": -2.1147966507704075,
+      "max_drawdown": 40.49078999999997,
+      "avg_win": 13.090629999999994,
+      "avg_loss": -20.245394999999984,
+      "best_trade": 13.090629999999994,
+      "worst_trade": -20.65303999999993,
+      "avg_duration_minutes": 6.0,
+      "max_loss_streak": 2,
+      "pnl_without_top5": 0.0,
+      "top5_share": -2.0931124017713425,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.4460721298850345,
+      "first_ts": "2026-11-10T15:04:00+00:00",
+      "last_ts": "2026-11-10T15:36:00+00:00"
+    },
+    "2026-11-11": {
+      "trades": 3,
+      "wins": 3,
+      "losses": 0,
+      "win_rate": 1.0,
+      "profit_factor": 1.0,
+      "expectancy_r": 0.6168373542884443,
+      "pnl_net": 26.300350000000062,
+      "fees": 18.6,
+      "r_total": 1.850512062865333,
+      "max_drawdown": 0.0,
+      "avg_win": 8.766783333333354,
+      "avg_loss": 0.0,
+      "best_trade": 10.525440000000021,
+      "worst_trade": 7.705100000000061,
+      "avg_duration_minutes": 8.0,
+      "max_loss_streak": 0,
+      "pnl_without_top5": 0.0,
+      "top5_share": 1.0,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": 0.578915662926008,
+      "first_ts": "2026-11-11T15:25:00+00:00",
+      "last_ts": "2026-11-11T16:14:00+00:00"
+    },
+    "2026-11-12": {
+      "trades": 3,
+      "wins": 1,
+      "losses": 2,
+      "win_rate": 0.3333333333333333,
+      "profit_factor": 0.3348386179497243,
+      "expectancy_r": -0.7128425663453196,
+      "pnl_net": -26.339239999999936,
+      "fees": 18.6,
+      "r_total": -2.1385276990359587,
+      "max_drawdown": 39.59826999999995,
+      "avg_win": 13.259030000000013,
+      "avg_loss": -19.799134999999975,
+      "best_trade": 13.259030000000013,
+      "worst_trade": -20.036849999999998,
+      "avg_duration_minutes": 1.6666666666666667,
+      "max_loss_streak": 2,
+      "pnl_without_top5": 0.0,
+      "top5_share": -1.9865133422278938,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.458707978311102,
+      "first_ts": "2026-11-12T14:34:00+00:00",
+      "last_ts": "2026-11-12T15:14:00+00:00"
+    },
+    "2026-11-13": {
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_r": -1.3544224950343386,
+      "pnl_net": -74.43594999999988,
+      "fees": 18.6,
+      "r_total": -4.063267485103016,
+      "max_drawdown": 74.43594999999988,
+      "avg_win": 0.0,
+      "avg_loss": -24.81198333333329,
+      "best_trade": -21.03126999999996,
+      "worst_trade": -31.83400999999999,
+      "avg_duration_minutes": 25.0,
+      "max_loss_streak": 3,
+      "pnl_without_top5": 0.0,
+      "top5_share": 0.0,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.4131456618068778,
+      "first_ts": "2026-11-13T15:22:00+00:00",
+      "last_ts": "2026-11-13T15:51:00+00:00"
+    },
+    "2026-11-16": {
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_r": -1.3552059233827745,
+      "pnl_net": -75.90195999999992,
+      "fees": 18.6,
+      "r_total": -4.065617770148323,
+      "max_drawdown": 75.90195999999993,
+      "avg_win": 0.0,
+      "avg_loss": -25.300653333333305,
+      "best_trade": -20.5419999999999,
+      "worst_trade": -34.06950000000005,
+      "avg_duration_minutes": 15.0,
+      "max_loss_streak": 3,
+      "pnl_without_top5": 0.0,
+      "top5_share": 0.0,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.4251497005881066,
+      "first_ts": "2026-11-16T14:40:00+00:00",
+      "last_ts": "2026-11-16T15:47:00+00:00"
+    },
+    "2026-11-17": {
+      "trades": 3,
+      "wins": 2,
+      "losses": 1,
+      "win_rate": 0.6666666666666666,
+      "profit_factor": 0.9485437360641781,
+      "expectancy_r": -0.0680809259786979,
+      "pnl_net": -0.9939399999997569,
+      "fees": 18.6,
+      "r_total": -0.2042427779360937,
+      "max_drawdown": 19.31620999999988,
+      "avg_win": 9.161135000000062,
+      "avg_loss": -19.31620999999988,
+      "best_trade": 10.100910000000074,
+      "worst_trade": -19.31620999999988,
+      "avg_duration_minutes": 2.6666666666666665,
+      "max_loss_streak": 1,
+      "pnl_without_top5": 0.0,
+      "top5_share": -0.05424764507889853,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -0.7829357909024969,
+      "first_ts": "2026-11-17T15:01:00+00:00",
+      "last_ts": "2026-11-17T15:44:00+00:00"
+    },
+    "2026-11-18": {
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_r": -1.4690139073282371,
+      "pnl_net": -58.26517999999993,
+      "fees": 18.6,
+      "r_total": -4.407041721984712,
+      "max_drawdown": 58.26517999999993,
+      "avg_win": 0.0,
+      "avg_loss": -19.421726666666643,
+      "best_trade": -19.224779999999935,
+      "worst_trade": -19.66435999999997,
+      "avg_duration_minutes": 0.6666666666666666,
+      "max_loss_streak": 3,
+      "pnl_without_top5": 0.0,
+      "top5_share": 0.0,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.4741941755623162,
+      "first_ts": "2026-11-18T14:51:00+00:00",
+      "last_ts": "2026-11-18T15:56:00+00:00"
+    },
+    "2026-11-19": {
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_r": -1.4319570656393357,
+      "pnl_net": -61.70946000000015,
+      "fees": 18.6,
+      "r_total": -4.295871196918007,
+      "max_drawdown": 61.70946000000015,
+      "avg_win": 0.0,
+      "avg_loss": -20.56982000000005,
+      "best_trade": -19.987590000000022,
+      "worst_trade": -21.182220000000125,
+      "avg_duration_minutes": 3.3333333333333335,
+      "max_loss_streak": 3,
+      "pnl_without_top5": 0.0,
+      "top5_share": 0.0,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.443909030871832,
+      "first_ts": "2026-11-19T14:52:00+00:00",
+      "last_ts": "2026-11-19T15:26:00+00:00"
+    },
+    "2026-11-20": {
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_r": -1.4311168890589558,
+      "pnl_net": -62.01847999999984,
+      "fees": 18.6,
+      "r_total": -4.293350667176868,
+      "max_drawdown": 62.01847999999984,
+      "avg_win": 0.0,
+      "avg_loss": -20.672826666666612,
+      "best_trade": -19.119749999999936,
+      "worst_trade": -21.750209999999964,
+      "avg_duration_minutes": 5.666666666666667,
+      "max_loss_streak": 3,
+      "pnl_without_top5": 0.0,
+      "top5_share": 0.0,
+      "ambiguous_trades": 0,
+      "expectancy_ci80_low": -1.4581758906657087,
+      "first_ts": "2026-11-20T15:18:00+00:00",
+      "last_ts": "2026-11-20T15:30:00+00:00"
+    }
+  },
+  "equity": [
+    {
+      "ts": "2026-08-31T14:10:00+00:00",
+      "equity": 24978.83
+    },
+    {
+      "ts": "2026-08-31T14:18:00+00:00",
+      "equity": 24987.88
+    },
+    {
+      "ts": "2026-08-31T14:37:00+00:00",
+      "equity": 24965.91
+    },
+    {
+      "ts": "2026-09-01T13:38:00+00:00",
+      "equity": 24923.11
+    },
+    {
+      "ts": "2026-09-01T13:59:00+00:00",
+      "equity": 24900.77
+    },
+    {
+      "ts": "2026-09-01T14:19:00+00:00",
+      "equity": 24909.59
+    },
+    {
+      "ts": "2026-09-02T13:50:00+00:00",
+      "equity": 24887.13
+    },
+    {
+      "ts": "2026-09-02T14:17:00+00:00",
+      "equity": 24899.59
+    },
+    {
+      "ts": "2026-09-02T14:44:00+00:00",
+      "equity": 24908.85
+    },
+    {
+      "ts": "2026-09-03T13:38:00+00:00",
+      "equity": 24942.93
+    },
+    {
+      "ts": "2026-09-03T14:02:00+00:00",
+      "equity": 24953.96
+    },
+    {
+      "ts": "2026-09-03T14:32:00+00:00",
+      "equity": 24964.03
+    },
+    {
+      "ts": "2026-09-04T14:09:00+00:00",
+      "equity": 24991.27
+    },
+    {
+      "ts": "2026-09-04T14:36:00+00:00",
+      "equity": 24969.18
+    },
+    {
+      "ts": "2026-09-04T15:03:00+00:00",
+      "equity": 24977.37
+    },
+    {
+      "ts": "2026-09-07T14:02:00+00:00",
+      "equity": 24987.52
+    },
+    {
+      "ts": "2026-09-07T14:27:00+00:00",
+      "equity": 24965.42
+    },
+    {
+      "ts": "2026-09-07T14:54:00+00:00",
+      "equity": 24974.18
+    },
+    {
+      "ts": "2026-09-08T14:17:00+00:00",
+      "equity": 25002.87
+    },
+    {
+      "ts": "2026-09-08T14:39:00+00:00",
+      "equity": 25015.32
+    },
+    {
+      "ts": "2026-09-08T15:00:00+00:00",
+      "equity": 25023.62
+    },
+    {
+      "ts": "2026-09-09T14:12:00+00:00",
+      "equity": 25033.54
+    },
+    {
+      "ts": "2026-09-09T14:56:00+00:00",
+      "equity": 25043.22
+    },
+    {
+      "ts": "2026-09-09T15:05:00+00:00",
+      "equity": 25019.87
+    },
+    {
+      "ts": "2026-09-10T14:20:00+00:00",
+      "equity": 25044.13
+    },
+    {
+      "ts": "2026-09-10T14:40:00+00:00",
+      "equity": 25023.9
+    },
+    {
+      "ts": "2026-09-10T14:44:00+00:00",
+      "equity": 25002.4
+    },
+    {
+      "ts": "2026-09-11T13:57:00+00:00",
+      "equity": 25013.89
+    },
+    {
+      "ts": "2026-09-11T14:34:00+00:00",
+      "equity": 24994.34
+    },
+    {
+      "ts": "2026-09-11T14:41:00+00:00",
+      "equity": 24974.53
+    },
+    {
+      "ts": "2026-09-14T13:38:00+00:00",
+      "equity": 24952.46
+    },
+    {
+      "ts": "2026-09-14T13:50:00+00:00",
+      "equity": 24963.46
+    },
+    {
+      "ts": "2026-09-14T14:08:00+00:00",
+      "equity": 24969.72
+    },
+    {
+      "ts": "2026-09-15T13:54:00+00:00",
+      "equity": 24948.1
+    },
+    {
+      "ts": "2026-09-15T14:50:00+00:00",
+      "equity": 24925.66
+    },
+    {
+      "ts": "2026-09-15T14:56:00+00:00",
+      "equity": 24935.2
+    },
+    {
+      "ts": "2026-09-16T13:38:00+00:00",
+      "equity": 24906.22
+    },
+    {
+      "ts": "2026-09-16T13:47:00+00:00",
+      "equity": 24886.7
+    },
+    {
+      "ts": "2026-09-16T14:43:00+00:00",
+      "equity": 24867.2
+    },
+    {
+      "ts": "2026-09-17T14:41:00+00:00",
+      "equity": 24845.33
+    },
+    {
+      "ts": "2026-09-17T15:16:00+00:00",
+      "equity": 24823.65
+    },
+    {
+      "ts": "2026-09-17T15:57:00+00:00",
+      "equity": 24831.56
+    },
+    {
+      "ts": "2026-09-18T13:40:00+00:00",
+      "equity": 24808.45
+    },
+    {
+      "ts": "2026-09-18T13:59:00+00:00",
+      "equity": 24823.51
+    },
+    {
+      "ts": "2026-09-18T14:26:00+00:00",
+      "equity": 24800.02
+    },
+    {
+      "ts": "2026-09-21T13:54:00+00:00",
+      "equity": 24779.86
+    },
+    {
+      "ts": "2026-09-21T13:57:00+00:00",
+      "equity": 24758.97
+    },
+    {
+      "ts": "2026-09-21T14:00:00+00:00",
+      "equity": 24738.61
+    },
+    {
+      "ts": "2026-09-22T13:54:00+00:00",
+      "equity": 24717.15
+    },
+    {
+      "ts": "2026-09-22T14:00:00+00:00",
+      "equity": 24696.27
+    },
+    {
+      "ts": "2026-09-22T14:50:00+00:00",
+      "equity": 24708.57
+    },
+    {
+      "ts": "2026-09-23T13:52:00+00:00",
+      "equity": 24687.51
+    },
+    {
+      "ts": "2026-09-23T14:10:00+00:00",
+      "equity": 24698.75
+    },
+    {
+      "ts": "2026-09-23T14:46:00+00:00",
+      "equity": 24708.24
+    },
+    {
+      "ts": "2026-09-24T13:52:00+00:00",
+      "equity": 24720.54
+    },
+    {
+      "ts": "2026-09-24T14:21:00+00:00",
+      "equity": 24729.18
+    },
+    {
+      "ts": "2026-09-24T14:43:00+00:00",
+      "equity": 24708.86
+    },
+    {
+      "ts": "2026-09-25T13:36:00+00:00",
+      "equity": 24683.63
+    },
+    {
+      "ts": "2026-09-25T13:57:00+00:00",
+      "equity": 24664.43
+    },
+    {
+      "ts": "2026-09-25T14:08:00+00:00",
+      "equity": 24643.42
+    },
+    {
+      "ts": "2026-09-28T13:50:00+00:00",
+      "equity": 24658.62
+    },
+    {
+      "ts": "2026-09-28T14:09:00+00:00",
+      "equity": 24668.71
+    },
+    {
+      "ts": "2026-09-28T14:19:00+00:00",
+      "equity": 24648.06
+    },
+    {
+      "ts": "2026-09-29T14:34:00+00:00",
+      "equity": 24657.7
+    },
+    {
+      "ts": "2026-09-29T14:56:00+00:00",
+      "equity": 24640.33
+    },
+    {
+      "ts": "2026-09-29T15:21:00+00:00",
+      "equity": 24618.56
+    },
+    {
+      "ts": "2026-09-30T14:48:00+00:00",
+      "equity": 24583.55
+    },
+    {
+      "ts": "2026-09-30T15:04:00+00:00",
+      "equity": 24563.23
+    },
+    {
+      "ts": "2026-09-30T15:25:00+00:00",
+      "equity": 24572.96
+    },
+    {
+      "ts": "2026-10-01T13:37:00+00:00",
+      "equity": 24543.44
+    },
+    {
+      "ts": "2026-10-01T13:52:00+00:00",
+      "equity": 24524.24
+    },
+    {
+      "ts": "2026-10-01T13:55:00+00:00",
+      "equity": 24505.31
+    },
+    {
+      "ts": "2026-10-02T14:09:00+00:00",
+      "equity": 24486.15
+    },
+    {
+      "ts": "2026-10-02T14:30:00+00:00",
+      "equity": 24464.05
+    },
+    {
+      "ts": "2026-10-02T14:44:00+00:00",
+      "equity": 24444.43
+    },
+    {
+      "ts": "2026-10-05T14:20:00+00:00",
+      "equity": 24470.0
+    },
+    {
+      "ts": "2026-10-05T14:38:00+00:00",
+      "equity": 24450.24
+    },
+    {
+      "ts": "2026-10-05T14:55:00+00:00",
+      "equity": 24456.21
+    },
+    {
+      "ts": "2026-10-06T13:53:00+00:00",
+      "equity": 24487.68
+    },
+    {
+      "ts": "2026-10-06T14:10:00+00:00",
+      "equity": 24465.72
+    },
+    {
+      "ts": "2026-10-06T14:13:00+00:00",
+      "equity": 24444.54
+    },
+    {
+      "ts": "2026-10-07T13:52:00+00:00",
+      "equity": 24424.02
+    },
+    {
+      "ts": "2026-10-07T13:57:00+00:00",
+      "equity": 24403.52
+    },
+    {
+      "ts": "2026-10-07T14:14:00+00:00",
+      "equity": 24415.87
+    },
+    {
+      "ts": "2026-10-08T14:12:00+00:00",
+      "equity": 24389.77
+    },
+    {
+      "ts": "2026-10-08T14:36:00+00:00",
+      "equity": 24400.41
+    },
+    {
+      "ts": "2026-10-08T15:01:00+00:00",
+      "equity": 24410.13
+    },
+    {
+      "ts": "2026-10-09T13:41:00+00:00",
+      "equity": 24378.47
+    },
+    {
+      "ts": "2026-10-09T13:56:00+00:00",
+      "equity": 24360.44
+    },
+    {
+      "ts": "2026-10-09T14:02:00+00:00",
+      "equity": 24366.81
+    },
+    {
+      "ts": "2026-10-12T15:21:00+00:00",
+      "equity": 24411.24
+    },
+    {
+      "ts": "2026-10-12T15:43:00+00:00",
+      "equity": 24386.79
+    },
+    {
+      "ts": "2026-10-12T16:16:00+00:00",
+      "equity": 24401.74
+    },
+    {
+      "ts": "2026-10-13T13:37:00+00:00",
+      "equity": 24369.72
+    },
+    {
+      "ts": "2026-10-13T14:04:00+00:00",
+      "equity": 24348.16
+    },
+    {
+      "ts": "2026-10-13T14:46:00+00:00",
+      "equity": 24326.56
+    },
+    {
+      "ts": "2026-10-14T14:13:00+00:00",
+      "equity": 24297.96
+    },
+    {
+      "ts": "2026-10-14T14:54:00+00:00",
+      "equity": 24277.49
+    },
+    {
+      "ts": "2026-10-14T15:01:00+00:00",
+      "equity": 24286.36
+    },
+    {
+      "ts": "2026-10-15T14:11:00+00:00",
+      "equity": 24294.08
+    },
+    {
+      "ts": "2026-10-15T14:16:00+00:00",
+      "equity": 24273.52
+    },
+    {
+      "ts": "2026-10-15T14:48:00+00:00",
+      "equity": 24252.25
+    },
+    {
+      "ts": "2026-10-16T14:03:00+00:00",
+      "equity": 24230.33
+    },
+    {
+      "ts": "2026-10-16T14:21:00+00:00",
+      "equity": 24239.48
+    },
+    {
+      "ts": "2026-10-16T15:56:00+00:00",
+      "equity": 24221.11
+    },
+    {
+      "ts": "2026-10-19T13:40:00+00:00",
+      "equity": 24251.3
+    },
+    {
+      "ts": "2026-10-19T14:19:00+00:00",
+      "equity": 24259.74
+    },
+    {
+      "ts": "2026-10-19T15:14:00+00:00",
+      "equity": 24241.91
+    },
+    {
+      "ts": "2026-10-20T16:02:00+00:00",
+      "equity": 24195.49
+    },
+    {
+      "ts": "2026-10-20T16:31:00+00:00",
+      "equity": 24206.11
+    },
+    {
+      "ts": "2026-10-20T16:50:00+00:00",
+      "equity": 24185.66
+    },
+    {
+      "ts": "2026-10-21T13:42:00+00:00",
+      "equity": 24198.47
+    },
+    {
+      "ts": "2026-10-21T13:55:00+00:00",
+      "equity": 24178.37
+    },
+    {
+      "ts": "2026-10-21T14:32:00+00:00",
+      "equity": 24185.57
+    },
+    {
+      "ts": "2026-10-22T14:34:00+00:00",
+      "equity": 24148.85
+    },
+    {
+      "ts": "2026-10-22T15:10:00+00:00",
+      "equity": 24159.67
+    },
+    {
+      "ts": "2026-10-22T15:34:00+00:00",
+      "equity": 24137.9
+    },
+    {
+      "ts": "2026-10-23T13:48:00+00:00",
+      "equity": 24105.6
+    },
+    {
+      "ts": "2026-10-23T13:57:00+00:00",
+      "equity": 24084.24
+    },
+    {
+      "ts": "2026-10-23T14:23:00+00:00",
+      "equity": 24062.31
+    },
+    {
+      "ts": "2026-10-26T13:46:00+00:00",
+      "equity": 24030.13
+    },
+    {
+      "ts": "2026-10-26T13:58:00+00:00",
+      "equity": 24039.8
+    },
+    {
+      "ts": "2026-10-26T14:21:00+00:00",
+      "equity": 24049.78
+    },
+    {
+      "ts": "2026-10-27T14:52:00+00:00",
+      "equity": 24028.3
+    },
+    {
+      "ts": "2026-10-27T15:01:00+00:00",
+      "equity": 24038.35
+    },
+    {
+      "ts": "2026-10-27T15:30:00+00:00",
+      "equity": 24017.21
+    },
+    {
+      "ts": "2026-10-28T13:59:00+00:00",
+      "equity": 24029.76
+    },
+    {
+      "ts": "2026-10-28T14:03:00+00:00",
+      "equity": 24036.3
+    },
+    {
+      "ts": "2026-10-28T14:25:00+00:00",
+      "equity": 24017.69
+    },
+    {
+      "ts": "2026-10-29T13:47:00+00:00",
+      "equity": 23998.4
+    },
+    {
+      "ts": "2026-10-29T14:15:00+00:00",
+      "equity": 23978.33
+    },
+    {
+      "ts": "2026-10-29T14:20:00+00:00",
+      "equity": 23958.69
+    },
+    {
+      "ts": "2026-10-30T13:58:00+00:00",
+      "equity": 23966.5
+    },
+    {
+      "ts": "2026-10-30T14:35:00+00:00",
+      "equity": 23945.21
+    },
+    {
+      "ts": "2026-10-30T15:01:00+00:00",
+      "equity": 23924.84
+    },
+    {
+      "ts": "2026-11-02T14:57:00+00:00",
+      "equity": 23935.79
+    },
+    {
+      "ts": "2026-11-02T15:14:00+00:00",
+      "equity": 23914.92
+    },
+    {
+      "ts": "2026-11-02T15:25:00+00:00",
+      "equity": 23893.66
+    },
+    {
+      "ts": "2026-11-03T14:39:00+00:00",
+      "equity": 23860.51
+    },
+    {
+      "ts": "2026-11-03T14:52:00+00:00",
+      "equity": 23838.83
+    },
+    {
+      "ts": "2026-11-03T14:57:00+00:00",
+      "equity": 23818.45
+    },
+    {
+      "ts": "2026-11-04T14:42:00+00:00",
+      "equity": 23839.96
+    },
+    {
+      "ts": "2026-11-04T15:23:00+00:00",
+      "equity": 23849.96
+    },
+    {
+      "ts": "2026-11-04T15:38:00+00:00",
+      "equity": 23829.01
+    },
+    {
+      "ts": "2026-11-05T14:50:00+00:00",
+      "equity": 23810.17
+    },
+    {
+      "ts": "2026-11-05T14:57:00+00:00",
+      "equity": 23818.52
+    },
+    {
+      "ts": "2026-11-05T15:33:00+00:00",
+      "equity": 23827.04
+    },
+    {
+      "ts": "2026-11-06T14:56:00+00:00",
+      "equity": 23806.4
+    },
+    {
+      "ts": "2026-11-06T15:12:00+00:00",
+      "equity": 23786.8
+    },
+    {
+      "ts": "2026-11-06T15:22:00+00:00",
+      "equity": 23794.84
+    },
+    {
+      "ts": "2026-11-09T14:38:00+00:00",
+      "equity": 23817.67
+    },
+    {
+      "ts": "2026-11-09T15:19:00+00:00",
+      "equity": 23823.39
+    },
+    {
+      "ts": "2026-11-09T16:09:00+00:00",
+      "equity": 23834.27
+    },
+    {
+      "ts": "2026-11-10T15:04:00+00:00",
+      "equity": 23847.36
+    },
+    {
+      "ts": "2026-11-10T15:27:00+00:00",
+      "equity": 23827.52
+    },
+    {
+      "ts": "2026-11-10T15:36:00+00:00",
+      "equity": 23806.87
+    },
+    {
+      "ts": "2026-11-11T15:25:00+00:00",
+      "equity": 23814.94
+    },
+    {
+      "ts": "2026-11-11T15:41:00+00:00",
+      "equity": 23822.64
+    },
+    {
+      "ts": "2026-11-11T16:14:00+00:00",
+      "equity": 23833.17
+    },
+    {
+      "ts": "2026-11-12T14:34:00+00:00",
+      "equity": 23846.43
+    },
+    {
+      "ts": "2026-11-12T14:49:00+00:00",
+      "equity": 23826.87
+    },
+    {
+      "ts": "2026-11-12T15:14:00+00:00",
+      "equity": 23806.83
+    },
+    {
+      "ts": "2026-11-13T15:22:00+00:00",
+      "equity": 23774.99
+    },
+    {
+      "ts": "2026-11-13T15:42:00+00:00",
+      "equity": 23753.42
+    },
+    {
+      "ts": "2026-11-13T15:51:00+00:00",
+      "equity": 23732.39
+    },
+    {
+      "ts": "2026-11-16T14:40:00+00:00",
+      "equity": 23698.32
+    },
+    {
+      "ts": "2026-11-16T15:36:00+00:00",
+      "equity": 23677.78
+    },
+    {
+      "ts": "2026-11-16T15:47:00+00:00",
+      "equity": 23656.49
+    },
+    {
+      "ts": "2026-11-17T15:01:00+00:00",
+      "equity": 23666.59
+    },
+    {
+      "ts": "2026-11-17T15:18:00+00:00",
+      "equity": 23674.81
+    },
+    {
+      "ts": "2026-11-17T15:44:00+00:00",
+      "equity": 23655.5
+    },
+    {
+      "ts": "2026-11-18T14:51:00+00:00",
+      "equity": 23636.27
+    },
+    {
+      "ts": "2026-11-18T15:01:00+00:00",
+      "equity": 23616.9
+    },
+    {
+      "ts": "2026-11-18T15:56:00+00:00",
+      "equity": 23597.23
+    },
+    {
+      "ts": "2026-11-19T14:52:00+00:00",
+      "equity": 23577.24
+    },
+    {
+      "ts": "2026-11-19T14:59:00+00:00",
+      "equity": 23556.06
+    },
+    {
+      "ts": "2026-11-19T15:26:00+00:00",
+      "equity": 23535.52
+    },
+    {
+      "ts": "2026-11-20T15:18:00+00:00",
+      "equity": 23516.4
+    },
+    {
+      "ts": "2026-11-20T15:23:00+00:00",
+      "equity": 23495.25
+    },
+    {
+      "ts": "2026-11-20T15:30:00+00:00",
+      "equity": 23473.5
+    }
+  ],
+  "simulation": {
+    "strategy_id": "reference",
+    "strategy_version": "0.1.0",
+    "sessions": 60,
+    "bars_per_session": 390,
+    "ticks": 23400,
+    "first_session": "2026-08-31",
+    "last_session": "2026-11-20",
+    "data_source": "synthetic",
+    "note": "Resultados sobre datos sint\u00e9ticos: validan la infraestructura, no una ventaja."
+  },
+  "validation": {
+    "verdict": "RECHAZADA",
+    "thresholds_version": "1.0",
+    "outcomes": [
+      {
+        "id": "G4",
+        "description": "Muestra m\u00ednima y por direcci\u00f3n",
+        "status": "pass",
+        "measured": 180.0,
+        "threshold": ">= 80 ops, >= 20 por direcci\u00f3n",
+        "detail": "180 ops, m\u00ednimo por direcci\u00f3n 79"
+      },
+      {
+        "id": "G5",
+        "description": "Profit Factor y expectativa",
+        "status": "fail",
+        "measured": -0.5577,
+        "threshold": "PF >= 1.25 y expectativa >= 0.1 R",
+        "detail": "PF 0.372, expectativa -0.558 R"
+      },
+      {
+        "id": "G6",
+        "description": "Drawdown y peor racha",
+        "status": "fail",
+        "measured": 6.282,
+        "threshold": "DD <= 2.0% y racha <= 8",
+        "detail": "DD 6.28% (1570.62), racha 10"
+      },
+      {
+        "id": "G9/G10",
+        "description": "Concentraci\u00f3n del beneficio",
+        "status": "fail",
+        "measured": 0.1868,
+        "threshold": "P&L sin top-5 > 0 y top-5 <= 50%",
+        "detail": "sin top-5 -1695.36, top-5 18.7%"
+      },
+      {
+        "id": "G11",
+        "description": "Significancia (IC bootstrap 80 %)",
+        "status": "fail",
+        "measured": -0.6553,
+        "threshold": "l\u00edmite inferior > 0.0",
+        "detail": "IC80 inferior -0.6553 R"
+      },
+      {
+        "id": "G13",
+        "description": "Barras ambiguas",
+        "status": "pass",
+        "measured": 0.0,
+        "threshold": "<= 5.0%",
+        "detail": "0/180 operaciones (0.00%)"
+      },
+      {
+        "id": "G1/G3/G14",
+        "description": "Integridad del dataset y de los rolls",
+        "status": "not_measured",
+        "measured": null,
+        "threshold": "requiere datos reales",
+        "detail": "requiere dataset real validado y hash reproducible"
+      },
+      {
+        "id": "G8",
+        "description": "Costes duplicados",
+        "status": "not_measured",
+        "measured": null,
+        "threshold": "requiere datos reales",
+        "detail": "requiere re-ejecuci\u00f3n con el doble de comisi\u00f3n y slippage"
+      },
+      {
+        "id": "G2",
+        "description": "Determinismo",
+        "status": "not_measured",
+        "measured": null,
+        "threshold": "requiere datos reales",
+        "detail": "lo verifica el golden test del backtest, no las estad\u00edsticas"
+      },
+      {
+        "id": "H1-H5",
+        "description": "Holdout",
+        "status": "not_measured",
+        "measured": null,
+        "threshold": "requiere datos reales",
+        "detail": "sellado: solo se abre si todas las puertas de desarrollo pasan"
+      }
+    ],
+    "failed": [
+      "G5",
+      "G6",
+      "G9/G10",
+      "G11"
+    ],
+    "not_measured": [
+      "G1/G3/G14",
+      "G8",
+      "G2",
+      "H1-H5"
+    ]
+  },
+  "events": 1647
+}

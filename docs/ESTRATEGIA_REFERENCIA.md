@@ -35,25 +35,33 @@ debe promoverse a LIVE.
 
 ## Resultado medido
 
-Simulación de 60 sesiones sintéticas × 390 velas, una unidad por operación
-según el dimensionado de riesgo:
+Simulación de **180 sesiones** sintéticas × 390 velas (70.200 ticks), una unidad
+por operación según el dimensionado de riesgo:
 
 | Métrica | Valor |
 |---|---:|
-| Operaciones | 180 |
-| Ganadoras / perdedoras | 72 / 108 |
-| Win rate | 40,0 % |
-| Profit Factor | 0,37 |
-| Expectativa | −0,56 R |
-| P&L neto | −1.526,50 USD |
-| Comisiones | 1.116,00 USD |
-| Drawdown máximo | 1.570,62 USD |
-| Duración media | 10,2 min |
+| Operaciones | 540 |
+| Ganadoras / perdedoras | 212 / 328 |
+| Win rate | 39,3 % |
+| Profit Factor | 0,34 |
+| Expectativa | −0,58 R |
+| P&L neto | −4.868,11 USD |
+| Comisiones | 3.348,00 USD |
+| Drawdown máximo | 4.877,45 USD |
+| Peor racha perdedora | 18 |
+| IC bootstrap 80 % (inferior) | −0,635 R |
+| P&L sin las 5 mejores | −5.060,86 USD |
+| Duración media | 9,8 min |
 
-Origen: `reports/backtest/simulation-60d.json`.
+Origen: `reports/backtest/simulation-180d.json` (determinista: repetir el
+comando produce el mismo archivo).
+
+Desglose: largos 285 ops / −2.453,17 USD; cortos 255 ops / −2.414,95 USD. Los
+cinco días de la semana pierden, entre −716 y −1.349 USD. No hay un tramo que
+sostenga el resultado: no hay resultado que sostener.
 
 Lectura honesta: sobre un paseo aleatorio sintético, un cruce de medias paga
-comisiones y se queda sin edge. El 73 % de la pérdida son costes. Además, el
+comisiones y se queda sin edge. El 69 % de la pérdida son costes. Además, el
 límite de tres operaciones diarias se alcanza todos los días, así que la muestra
 está truncada por el riesgo, no por la señal.
 
@@ -64,11 +72,11 @@ medibles con los datos disponibles:
 
 | Puerta | Estado | Detalle |
 |---|---|---|
-| G4 muestra | Falla | 180 ops pero el mínimo por dirección y el corte diario la truncan |
-| G5 edge | Falla | PF 0,37 < 1,25; expectativa −0,56 R < +0,10 R |
-| G6 riesgo | Falla | DD 1.570,62 = 6,3 % > 2 % |
-| G9/G10 concentración | Falla | P&L sin las 5 mejores < 0 |
-| G11 significancia | Falla | IC80 inferior negativo |
+| G4 muestra | Pasa | 540 ops, 285 largos / 255 cortos |
+| G5 edge | Falla | PF 0,34 < 1,25; expectativa −0,58 R < +0,10 R |
+| G6 riesgo | Falla | DD 4.877,45 = 19,5 % > 2 %; racha 18 > 8 |
+| G9/G10 concentración | Falla | P&L sin las 5 mejores −5.060,86 < 0 |
+| G11 significancia | Falla | IC80 inferior −0,635 R |
 | G13 barras ambiguas | Pasa | 0 % |
 | G1/G3/G14, G8, G2, H1–H5 | No medible | Requieren datos reales, costes duplicados, golden test y holdout |
 
