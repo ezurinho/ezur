@@ -228,10 +228,14 @@ def get_validation(request: Request) -> dict[str, Any]:
 @router.get("/chart/history")
 def chart_history(request: Request, tf: str = "1m", limit: int = 500) -> dict[str, Any]:
     engine = _engine(request)
+    try:
+        candles = engine.history(tf, limit)
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
     return {
         "primary": engine.settings.instruments.primary,
         "timeframe": tf,
-        "candles": engine.history(tf, limit),
+        "candles": candles,
     }
 
 

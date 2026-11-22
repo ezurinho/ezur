@@ -517,8 +517,14 @@ class TradingEngine:
 
 
 
+TIMEFRAMES: tuple[str, ...] = ("1m", "5m", "15m", "30m")
+
+
 def _timeframe_minutes(timeframe: str) -> int:
-    try:
-        return max(1, int(timeframe.rstrip("m")))
-    except ValueError:
-        return 1
+    """Closed enum: an unknown timeframe is an error, not a silent downgrade.
+
+    Returning 1m candles labelled as "7m" would make the chart lie.
+    """
+    if timeframe not in TIMEFRAMES:
+        raise ValueError(f"timeframe inválido: {timeframe!r}; válidos {TIMEFRAMES}")
+    return int(timeframe.rstrip("m"))

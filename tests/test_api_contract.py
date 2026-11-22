@@ -126,3 +126,15 @@ def test_stats_reset_preview_and_apply(client):
     applied = client.post("/api/stats/reset", json={"include_backtests": False})
     assert applied.status_code == 200
     assert "deleted" in applied.json()
+
+
+def test_chart_history_rejects_unknown_timeframe(client):
+    response = client.get("/api/chart/history", params={"tf": "7m"})
+    assert response.status_code == 422
+
+
+def test_chart_history_accepts_the_documented_enums(client):
+    for timeframe in ("1m", "5m", "15m", "30m"):
+        response = client.get("/api/chart/history", params={"tf": timeframe})
+        assert response.status_code == 200
+        assert response.json()["timeframe"] == timeframe
