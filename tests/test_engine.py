@@ -352,3 +352,62 @@ def test_history_rejects_an_unknown_timeframe(engine):
 
     with pytest.raises(ValueError):
         engine.history("7m", 10)
+
+
+def test_snapshot_publishing_is_rate_limited(settings, store):
+    import asyncio
+
+    from server.engine import SNAPSHOT_MIN_INTERVAL_S
+    from server.market.feed import MarketFeed
+
+    class BurstFeed(MarketFeed):
+        name = "burst"
+
+        def iter_ticks(self):
+            for minute in range(60):
+                stamp = DAY_ONE + timedelta(minutes=minute)
+                yield _tick(stamp)
+
+    published: list[dict] = []
+
+    async def hook(snapshot):
+        published.append(snapshot)
+
+    async def scenario():
+        settings.feed.replay_speed = 1000.0
+        engine = TradingEngine(settings, store, feed=BurstFeed(), strategy=NullStrategy())
+        engine.subscribe(hook)
+        engine.start()
+        engine.start_task()
+        while engine._task is not None and not engine._task.done():
+            await asyncio.sleep(0.005)
+        return engine
+
+    engine = asyncio.run(scenario())
+    assert engine.state.bars_available == 60
+    # 60 ticks far faster than the interval: at most one publish per window.
+    window = 60 * (1.0 / 1000.0)
+    assert len(published) <= int(window / SNAPSHOT_MIN_INTERVAL_S) + 2
+    assert len(published) < 60
+
+
+def test_control_actions_force_a_publish(settings, store):
+    import asyncio
+
+    engine = TradingEngine(settings, store, feed=None, strategy=NullStrategy())
+
+    async def scenario():
+        published: list[dict] = []
+
+        async def hook(snapshot):
+            published.append(snapshot)
+
+        engine.subscribe(hook)
+        await engine._publish()
+        await engine._publish()  # throttled: same window
+        engine.pause()
+        await engine._publish()  # forced by the control action
+        return published
+
+    published = asyncio.run(scenario())
+    assert len(published) == 2
