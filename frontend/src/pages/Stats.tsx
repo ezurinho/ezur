@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { EquityChart } from "../components/EquityChart";
 import { KvPanel } from "../components/KvPanel";
 import { api } from "../api";
 import { formatValue } from "../utils";
@@ -192,17 +193,7 @@ export function StatsPage() {
             <h3>Curva de equidad</h3>
             <span className="muted small">{stats?.equity.length ?? 0} cierres</span>
           </header>
-          {stats && stats.equity.length > 0 ? (
-            <ol className="equity-list">
-              {stats.equity.slice(-25).map((point) => (
-                <li key={point.ts}>
-                  {point.ts.slice(0, 16).replace("T", " ")} · {point.equity.toFixed(2)}
-                </li>
-              ))}
-            </ol>
-          ) : (
-            <p className="empty">Sin puntos de equidad</p>
-          )}
+          <EquityChart points={stats?.equity ?? []} />
           <h3>Por día</h3>
           <BreakdownTable rows={stats?.by_day ?? {}} />
         </section>

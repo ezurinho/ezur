@@ -187,3 +187,66 @@ def test_position_is_flattened_at_session_close(settings, store):
     assert engine.execution.position is None
     assert engine.store.count_trades() == 1
     assert engine.store.list_trades()[0]["exit_reason"] == "session_close"
+
+
+def test_freshness_is_measured_between_ticks_not_against_wall_clock(engine):
+    engine._process(_tick(DAY_ONE))
+    assert engine.state.quality == "ok"
+    engine._process(_tick(DAY_ONE + timedelta(minutes=1)))
+    assert engine.state.quality == "ok"
+    assert engine.state.staleness_ms == 60_000
+    engine._process(_tick(DAY_ONE + timedelta(minutes=20)))
+    assert engine.state.quality == "stale"
+
+
+def test_emergency_allows_closing_the_open_position(settings, store):
+    from server.models import RiskDecision
+    from server.strategy.base import Signal
+
+    engine = TradingEngine(settings, store, feed=None, strategy=NullStrategy())
+    engine.start()
+    signal = Signal(key="k1", side="long", reason="t", ts=DAY_ONE, stop_price=90.0)
+    engine.execution.arm(
+        RiskDecision(approved=True, units=1, risk_per_unit=1.0),
+        signal,
+        "PRIMARY",
+        100.0,
+        DAY_ONE,
+    )
+    engine._process(_tick(DAY_ONE, price=100.0))
+    assert engine.execution.position is not None
+
+    engine.emergency_on()
+    assert engine.state.status == "paused"
+    trade = engine.execution.close("manual", price=101.0, when=DAY_ONE)
+    assert trade is not None
+    assert engine.execution.position is None
+
+
+def test_emergency_blocks_new_entries(settings, store):
+    from server.models import RiskDecision
+    from server.strategy.base import Signal
+
+    engine = TradingEngine(settings, store, feed=None, strategy=NullStrategy())
+    engine.emergency_on()
+    signal = Signal(key="k2", side="long", reason="t", ts=DAY_ONE, stop_price=90.0)
+    portfolio = engine_portfolio(engine)
+    decision = engine.risk.evaluate(
+        signal,
+        portfolio,
+        settings.instruments.by_symbol("PRIMARY"),
+        clock=DAY_ONE,
+        timezone_name="America/New_York",
+    )
+    assert decision.approved is False
+    assert decision.code == "emergency_active"
+
+
+def engine_portfolio(engine):
+    from server.models import PortfolioState
+
+    return PortfolioState(
+        equity=engine.state.equity,
+        emergency=engine.state.emergency,
+        last_price=100.0,
+    )

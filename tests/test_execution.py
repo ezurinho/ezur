@@ -77,3 +77,26 @@ def test_cancel_all_clears_pending(engine, decision, signal_long):
     engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, NOW)
     engine.execution.cancel_all()
     assert engine.execution.pending_orders() == []
+
+
+def test_slippage_is_capped_by_max_slippage_ticks(settings):
+    from server.execution import ExecutionEngine
+    from server.strategy.base import Signal
+
+    settings.execution.slippage_ticks = 10
+    settings.execution.max_slippage_ticks = 2
+    engine = ExecutionEngine(
+        settings.execution,
+        {item.symbol: item for item in settings.instruments.items},
+    )
+    signal = Signal(key="cap", side="long", reason="t", ts=NOW, stop_price=99.5)
+    engine.arm(
+        RiskDecision(approved=True, units=1, risk_per_unit=1.0),
+        signal,
+        "PRIMARY",
+        100.0,
+        NOW,
+    )
+    engine.on_bar({"PRIMARY": make_bar(o=100.0, h=101.0, l=99.8)})
+    # 2 ticks * 0.25 = 0.50, not 10 ticks
+    assert engine.position.entry_price == pytest.approx(100.5)
