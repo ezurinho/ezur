@@ -9,6 +9,8 @@ from .base import (
     Warmup,
     Zone,
 )
+from .donchian import DonchianParams, DonchianStrategy
+from .fade import FadeParams, FadeStrategy
 from .null_strategy import NullParams, NullStrategy
 from .reference import ReferenceParams, ReferenceStrategy
 from .registry import available, resolve_strategy, strategy_schema
@@ -18,6 +20,10 @@ __all__ = [
     "MarketData",
     "Marker",
     "Metric",
+    "DonchianParams",
+    "DonchianStrategy",
+    "FadeParams",
+    "FadeStrategy",
     "NullParams",
     "NullStrategy",
     "ReferenceParams",

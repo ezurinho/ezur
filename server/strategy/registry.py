@@ -9,12 +9,16 @@ from __future__ import annotations
 from typing import Any, Callable
 
 from .base import BaseStrategy
+from .donchian import DonchianStrategy
+from .fade import FadeStrategy
 from .null_strategy import NullStrategy
 from .reference import ReferenceStrategy
 
 _BUILDERS: dict[str, Callable[[dict[str, Any]], BaseStrategy]] = {
     "null": lambda params: NullStrategy(),
     "reference": lambda params: ReferenceStrategy(params),
+    "donchian": lambda params: DonchianStrategy(params),
+    "fade": lambda params: FadeStrategy(params),
 }
 
 

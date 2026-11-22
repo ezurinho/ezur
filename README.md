@@ -93,7 +93,7 @@ docs/              arquitectura, estrategia de referencia, decisiones
 | Hecho | Evidencia |
 |---|---|
 | Motor determinista | Mismo dataset ⇒ mismo hash de backtest |
-| Snapshot conforme al contrato | 209 tests de backend, 12 de frontend |
+| Snapshot conforme al contrato | 227 tests de backend, 12 de frontend |
 | Pipeline completo con trades reales | `reports/backtest/simulation-180d.json` |
 | Estrategia de referencia rentable | **No.** Veredicto automático: RECHAZADA |
 | Veredicto reproducible | `GET /api/validation` evalúa G4–G13 y nombra lo no medible |
@@ -107,3 +107,22 @@ ventaja, y `docs/DECISIONES.md` para lo que falta decidir antes de la Fase 4.
 2. Datos reales y reconciliación de costes (Fase 2).
 3. Escribir la estrategia candidata en `server/strategy/` y validarla con el
    protocolo de puertas antes de arriesgar capital.
+
+## Tres estrategias, un motor
+
+El repositorio trae tres plugins con lógicas incompatibles entre sí. Ninguno se
+tocó fuera de `server/strategy/`: el motor, el snapshot, la API y la interfaz no
+saben cuál está corriendo.
+
+| Estrategia | Ops | WR % | PF | Exp R | P&L neto | DD | Peor racha | Veredicto |
+|---|---:|---:|---:|---:|---:|---:|---:|---|
+| `reference` | 180 | 40.0 | 0.372 | -0.558 | -1526.5 | 1570.62 | 10 | RECHAZADA |
+| `donchian` | 180 | 27.8 | 0.271 | -0.776 | -1998.18 | 1998.18 | 12 | RECHAZADA |
+| `fade` | 180 | 19.4 | 0.122 | -0.9 | -1910.5 | 1919.65 | 19 | RECHAZADA |
+
+Simulación de 60 sesiones × 390 velas sintéticas, 1 unidad por operación.
+Repetible con `python -m server.simulation --days 60 --bars 390 --strategy <id>`.
+
+Las tres pierden. Sobre un paseo aleatorio sin estructura, cualquier regla paga
+comisiones y se queda sin ventaja: eso es exactamente lo que el arnés debe decir.
+Si alguna hubiera aprobado en datos sintéticos, el problema sería el arnés.

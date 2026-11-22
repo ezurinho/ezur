@@ -14,7 +14,6 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from ..models import Bar
 from .base import (
     BaseStrategy,
     MarketData,
@@ -26,6 +25,7 @@ from .base import (
     Warmup,
     Zone,
 )
+from .indicators import atr, sma  # re-exported for backwards compatibility
 
 
 class ReferenceParams(BaseModel):
@@ -42,27 +42,6 @@ class ReferenceParams(BaseModel):
         if self.slow <= self.fast:
             raise ValueError("slow must be greater than fast")
         return self
-
-
-def sma(values: list[float], period: int) -> float | None:
-    if len(values) < period:
-        return None
-    return sum(values[-period:]) / period
-
-
-def atr(bars: list[Bar], period: int) -> float | None:
-    if len(bars) < period + 1:
-        return None
-    ranges: list[float] = []
-    for previous, current in zip(bars[-period - 1 : -1], bars[-period:]):
-        ranges.append(
-            max(
-                current.h - current.l,
-                abs(current.h - previous.c),
-                abs(current.l - previous.c),
-            )
-        )
-    return sum(ranges) / len(ranges)
 
 
 class ReferenceStrategy(BaseStrategy):
