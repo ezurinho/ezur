@@ -136,3 +136,4 @@ class EngineState(_Model):
     open_risk: float = 0.0
     emergency: bool = False
     block_reason: str | None = None
+    block_count: int = 0

@@ -34,6 +34,9 @@ from .timeutil import now_utc, parse_hhmm, same_session, session_for, to_zone
 
 logger = logging.getLogger(__name__)
 
+# One event per rejection reason per window keeps the console readable.
+REJECTION_LOG_INTERVAL_S = 120
+
 MAX_BARS = 500
 
 SnapshotHook = Callable[[dict[str, Any]], Awaitable[None] | None]
@@ -80,6 +83,7 @@ class TradingEngine:
         self._task: asyncio.Task[None] | None = None
         self.last_exit_ts: datetime | None = None
         self._previous_tick_ts: datetime | None = None
+        self._rejections: dict[str, dict[str, object]] = {}
         self._restore()
         if self.state.session is None:
             primary = settings.instruments.primary
@@ -292,15 +296,11 @@ class TradingEngine:
         )
         if not decision.approved:
             self.state.block_reason = decision.code
-            self._event(
-                "warn",
-                "risk",
-                f"señal rechazada: {decision.message}",
-                {"code": decision.code},
-            )
+            self._note_rejection(decision.code, decision.message, tick.ts)
             return
 
         self.state.block_reason = None
+        self.state.block_count = 0
         order = self.execution.arm(
             decision, output.signal, primary, last_price or output.signal.stop_price, tick.ts
         )
@@ -312,6 +312,30 @@ class TradingEngine:
                 "orden armada",
                 {"symbol": primary, "units": decision.units, "side": output.signal.side},
             )
+
+    def _note_rejection(self, code: str, message: str, when: datetime) -> None:
+        """Count every rejection, log the first one and then at most one per window.
+
+        A strategy that fires on every bar would otherwise write thousands of
+        identical events and bury the console.
+        """
+        entry = self._rejections.setdefault(
+            code, {"count": 0, "last": None, "message": message}
+        )
+        entry["count"] = int(entry["count"]) + 1
+        entry["message"] = message
+        self.state.block_count = int(entry["count"])
+        last = entry["last"]
+        first = last is None
+        if not first and (when - last).total_seconds() < REJECTION_LOG_INTERVAL_S:
+            return
+        entry["last"] = when
+        self._event(
+            "warn" if first else "info",
+            "risk",
+            f"señal rechazada: {message}",
+            {"code": code, "count": entry["count"]},
+        )
 
     def _maybe_close_at_session_end(self, tick: Tick) -> None:
         template = self.settings.instruments.template_for(self.settings.instruments.primary)
@@ -326,6 +350,8 @@ class TradingEngine:
     def _on_new_session(self, session: SessionInfo) -> None:
         self.state.session = session
         self.state.day_stats = DayStats()
+        self._rejections.clear()
+        self.state.block_count = 0
         if session.is_open:
             self._event("info", "session", f"nueva sesión {session.id}", {"session": session.id})
             self.store.kv_set("session_id", session.id)

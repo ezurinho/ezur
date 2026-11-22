@@ -250,3 +250,69 @@ def engine_portfolio(engine):
         emergency=engine.state.emergency,
         last_price=100.0,
     )
+
+
+class _NoParams(__import__("pydantic").BaseModel):
+    pass
+
+
+class _AlwaysSignalStrategy:
+    """Fires on every bar so the rejection throttling can be observed."""
+
+    id = "always"
+    version = "0.0.0"
+    params = {}
+    params_model = _NoParams
+
+    def warmup_requirements(self):
+        from server.strategy.base import Warmup
+
+        return Warmup(bars={"*": 1})
+
+    def evaluate(self, md):
+        from server.strategy.base import Signal, StrategyOutput
+
+        return StrategyOutput(
+            state="active",
+            state_label="Activo",
+            signal=Signal(
+                key="always",
+                side="long",
+                reason="t",
+                ts=md.clock,
+                stop_price=md.bars[md.primary][-1].c - 5,
+            ),
+        )
+
+
+def _risk_events(store):
+    return [e for e in store.list_events(limit=500) if e["category"] == "risk"]
+
+
+def test_repeated_rejections_are_counted_but_logged_once(settings, store):
+    engine = TradingEngine(settings, store, feed=None, strategy=_AlwaysSignalStrategy())
+    engine.start()
+    settings.risk.max_trades_per_day = 0
+
+    for minute in range(30):
+        engine._process(_tick(DAY_ONE + timedelta(minutes=minute)))
+
+    from server.engine import REJECTION_LOG_INTERVAL_S
+
+    expected = 1 + (29 * 60) // REJECTION_LOG_INTERVAL_S
+    assert engine.state.block_count == 30
+    assert len(_risk_events(store)) == expected
+    assert expected < 30
+
+
+def test_rejection_is_logged_again_after_the_window(settings, store):
+    engine = TradingEngine(settings, store, feed=None, strategy=_AlwaysSignalStrategy())
+    engine.start()
+    settings.risk.max_trades_per_day = 0
+
+    engine._process(_tick(DAY_ONE))
+    engine._process(_tick(DAY_ONE + timedelta(minutes=1)))
+    engine._process(_tick(DAY_ONE + timedelta(minutes=5)))
+
+    assert len(_risk_events(store)) == 2
+    assert engine.state.block_count == 3

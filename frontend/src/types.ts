@@ -171,6 +171,7 @@ export interface Risk {
   daily_trades: number;
   blocked: boolean;
   block_reason: string | null;
+  block_count: number;
   limits: Record<string, number>;
 }
 
