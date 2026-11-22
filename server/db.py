@@ -208,6 +208,29 @@ class Store:
             "next_cursor": rows[-1]["run_id"] if has_more and rows else None,
         }
 
+    # --- maintenance ------------------------------------------------------
+    def stats_counts(self) -> dict[str, int]:
+        return {
+            "trades": int(self.conn.execute("SELECT COUNT(*) c FROM trades").fetchone()["c"]),
+            "equity": int(self.conn.execute("SELECT COUNT(*) c FROM equity").fetchone()["c"]),
+            "events": int(self.conn.execute("SELECT COUNT(*) c FROM events").fetchone()["c"]),
+            "backtests": int(self.conn.execute("SELECT COUNT(*) c FROM backtests").fetchone()["c"]),
+        }
+
+    def reset_stats(self, *, include_backtests: bool = False) -> dict[str, int]:
+        """Delete operational history. Backtests are preserved by default."""
+        before = self.stats_counts()
+        with self.conn:
+            self.conn.execute("DELETE FROM trades")
+            self.conn.execute("DELETE FROM equity")
+            self.conn.execute("DELETE FROM events")
+            if include_backtests:
+                self.conn.execute("DELETE FROM backtest_results")
+                self.conn.execute("DELETE FROM backtest_runs")
+                self.conn.execute("DELETE FROM backtests")
+        after = self.stats_counts()
+        return {key: before[key] - after[key] for key in before}
+
     def executemany(self, sql: str, rows: Iterable[tuple[Any, ...]]) -> None:
         with self.conn:
             self.conn.executemany(sql, rows)

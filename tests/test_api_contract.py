@@ -21,6 +21,9 @@ EXPECTED_PATHS = [
     "/api/data/validate",
     "/api/datasets",
     "/api/backtest/run",
+    "/api/experiments",
+    "/api/stats/reset/preview",
+    "/api/stats/reset",
     "/api/backtest/runs",
 ]
 
@@ -112,3 +115,13 @@ def test_empty_stats_and_events(client):
     assert client.get("/api/stats").json()["closed"]["trades"] == 0
     assert client.get("/api/events").json() == []
     assert client.get("/api/trades").json() == []
+
+
+def test_stats_reset_preview_and_apply(client):
+    preview = client.get("/api/stats/reset/preview")
+    assert preview.status_code == 200
+    assert "would_delete" in preview.json()
+
+    applied = client.post("/api/stats/reset", json={"include_backtests": False})
+    assert applied.status_code == 200
+    assert "deleted" in applied.json()
