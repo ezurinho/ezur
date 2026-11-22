@@ -261,6 +261,14 @@ def list_experiments(request: Request, limit: int = 50) -> dict[str, Any]:
     return {"summary": summary(path), "entries": list(reversed(entries))[:limit]}
 
 
+@router.get("/funnel")
+def get_funnel(request: Request) -> dict[str, Any]:
+    from .experiments import load
+    from .funnel import build_funnel
+
+    return build_funnel(load(request.app.state.experiment_ledger))
+
+
 @router.post("/backtest/run")
 def post_backtest(request: Request, body: BacktestRequest) -> dict[str, Any]:
     from .backtest import run_backtest
