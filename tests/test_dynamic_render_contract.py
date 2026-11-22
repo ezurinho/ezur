@@ -56,3 +56,14 @@ def test_phase_timeline_contract_survives_any_length(settings, count):
     )
     snapshot = SnapshotBuilder(settings).build(_state(), output)
     assert len(snapshot["data"]["strategy"]["phases"]) == count
+
+
+def test_snapshot_reports_the_resolved_plugin_not_the_config(settings, store):
+    from server.engine import TradingEngine
+    from server.strategy.reference import ReferenceStrategy
+
+    engine = TradingEngine(settings, store, feed=None, strategy=ReferenceStrategy({}))
+    strategy = engine.snapshot()["data"]["strategy"]
+    assert strategy["id"] == "reference"
+    assert strategy["version"] == "0.1.0"
+    assert strategy["name"] == "Referencia (sin validar)"

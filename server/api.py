@@ -20,7 +20,7 @@ from .market.csv_data import validate_dataset
 from .models import TradeRecord
 from .gates import evaluate_gates
 from .stats import aggregate
-from .strategy.registry import available, strategy_schema
+from .strategy.registry import available, resolve_strategy, strategy_schema
 
 router = APIRouter(prefix="/api")
 
@@ -94,7 +94,10 @@ async def put_config(request: Request, body: ConfigPatch) -> dict[str, Any]:
     engine = _engine(request)
     try:
         updated = apply_settings(engine.settings, body.patch)
-    except ValueError as error:
+        # Validate the plugin parameters before they reach the running engine:
+        # a bad payload must be a 422, not a dead replay loop.
+        resolve_strategy(updated.strategy.id, updated.strategy.params)
+    except (ValueError, KeyError) as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
     engine.update_settings(updated)
     save_settings(updated, request.app.state.config_path)
@@ -111,12 +114,18 @@ async def reset_config(request: Request) -> dict[str, Any]:
 
 
 @router.get("/strategy/schema")
-def get_strategy_schema(strategy_id: str | None = None) -> dict[str, Any]:
-    engine_id = strategy_id or "null"
+def get_strategy_schema(request: Request, strategy_id: str | None = None) -> dict[str, Any]:
+    engine = _engine(request)
+    active = engine.settings.strategy.id
+    engine_id = strategy_id or active
+    try:
+        schema = strategy_schema(engine_id)
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
     return {
         "available": available(),
-        "active": engine_id,
-        **strategy_schema(engine_id),
+        "active": active,
+        **schema,
     }
 
 

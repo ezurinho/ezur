@@ -22,6 +22,9 @@ class NullStrategy(BaseStrategy):
     version = "0.0.0"
     params_model = NullParams
 
+    def __init__(self, params: dict | None = None) -> None:
+        self.params = NullParams.model_validate(params or {})
+
     def warmup_requirements(self) -> Warmup:
         return Warmup(bars={}, session_ready=False)
 

@@ -50,6 +50,9 @@ def _now() -> datetime:
 class SnapshotBuilder:
     def __init__(self, settings: Settings, store: Store | None = None) -> None:
         self.settings = settings
+        # Filled by the engine with the resolved plugin, so the UI shows the
+        # strategy that is actually running, not just what the config claims.
+        self.strategy_meta: dict[str, str] | None = None
         self.store = store
 
     # --- pieces -----------------------------------------------------------
@@ -163,11 +166,15 @@ class SnapshotBuilder:
 
     def _strategy(self, output: StrategyOutput | None) -> StrategyBlock:
         cfg = self.settings.strategy
+        meta = self.strategy_meta or {}
+        strategy_id = meta.get("id", cfg.id)
+        strategy_name = meta.get("name", cfg.id)
+        strategy_version = meta.get("version", cfg.version)
         if output is None:
             return StrategyBlock(
-                id=cfg.id,
-                name=cfg.id,
-                version=cfg.version,
+                id=strategy_id,
+                name=strategy_name,
+                version=strategy_version,
                 state="disabled",
                 state_label="Sin estrategia",
             )
@@ -184,9 +191,9 @@ class SnapshotBuilder:
                 target_price=output.signal.target_price,
             )
         return StrategyBlock(
-            id=cfg.id,
-            name=cfg.id,
-            version=cfg.version,
+            id=strategy_id,
+            name=strategy_name,
+            version=strategy_version,
             state=output.state,
             state_label=output.state_label,
             phases=self._phases(output),
