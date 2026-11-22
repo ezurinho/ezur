@@ -1,0 +1,485 @@
+"""Trading engine.
+
+Owns the cycle: session detection, execution, strategy evaluation, risk
+authorisation, persistence and snapshot emission. It knows nothing about any
+instrument name or any strategy rule.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import logging
+from datetime import datetime, timezone
+from typing import Any, Awaitable, Callable
+
+from .config import Settings
+from .db import Store
+from .execution import ExecutionEngine
+from .market.feed import MarketFeed
+from .models import (
+    Bar,
+    DayStats,
+    EngineState,
+    PortfolioState,
+    Position,
+    SessionInfo,
+    Tick,
+    TradeRecord,
+)
+from .risk import RiskManager
+from .snapshot import SnapshotBuilder
+from .strategy.base import BaseStrategy, MarketData, Phase, StrategyOutput
+from .strategy.registry import resolve_strategy
+from .timeutil import now_utc, parse_hhmm, same_session, session_for, to_zone
+
+logger = logging.getLogger(__name__)
+
+MAX_BARS = 500
+
+SnapshotHook = Callable[[dict[str, Any]], Awaitable[None] | None]
+
+
+class TradingEngine:
+    def __init__(
+        self,
+        settings: Settings,
+        store: Store,
+        feed: MarketFeed | None = None,
+        strategy: BaseStrategy | None = None,
+        mode: str = "paper",
+        feed_factory: Callable[[Settings], MarketFeed] | None = None,
+    ) -> None:
+        self.settings = settings
+        self.store = store
+        self.feed = feed
+        self.feed_factory = feed_factory
+        self.strategy = strategy or resolve_strategy(
+            settings.strategy.id, settings.strategy.params
+        )
+        if mode == "live" and not settings.live.can_start():
+            raise RuntimeError("LIVE requires an implemented adapter, live_enabled and confirmation")
+        self.mode = mode
+        self.risk = RiskManager(settings.risk)
+        self.execution = ExecutionEngine(
+            settings.execution,
+            {item.symbol: item for item in settings.instruments.items},
+            mode=mode,
+        )
+        self.builder = SnapshotBuilder(settings, store)
+        self.state = EngineState(
+            status="stopped",
+            mode=mode,  # type: ignore[arg-type]
+            provider=settings.feed.provider,
+            equity=settings.risk.initial_capital,
+        )
+        self._bars: dict[str, list[Bar]] = {
+            symbol: [] for symbol in settings.instruments.symbols
+        }
+        self._output: StrategyOutput | None = None
+        self._subscribers: list[SnapshotHook] = []
+        self._task: asyncio.Task[None] | None = None
+        self.last_exit_ts: datetime | None = None
+        self._restore()
+        if self.state.session is None:
+            primary = settings.instruments.primary
+            self.state.session = session_for(
+                now_utc(), settings.instruments.template_for(primary)
+            )
+
+    # --- lifecycle --------------------------------------------------------
+    def start(self) -> None:
+        if self.state.emergency:
+            raise RuntimeError("emergency stop is active; disable it first")
+        self.state.status = "running"
+        self._event("info", "engine", "motor iniciado", {"mode": self.mode})
+        self._persist()
+
+    def pause(self) -> None:
+        if self.state.status == "running":
+            self.state.status = "paused"
+            self._event("info", "engine", "motor en pausa")
+            self._persist()
+
+    def stop(self) -> None:
+        self.state.status = "stopped"
+        self._event("info", "engine", "motor detenido")
+        self._persist()
+
+    def emergency_on(self) -> None:
+        self.state.emergency = True
+        self.state.block_reason = "emergency_active"
+        self.execution.cancel_all()
+        self.state.status = "paused"
+        self._event("warn", "risk", "parada de emergencia activada")
+        self._persist()
+
+    def emergency_off(self) -> None:
+        self.state.emergency = False
+        if self.state.block_reason == "emergency_active":
+            self.state.block_reason = None
+        self._event("info", "risk", "parada de emergencia desactivada")
+        self._persist()
+
+    def subscribe(self, hook: SnapshotHook) -> None:
+        self._subscribers.append(hook)
+
+    def update_settings(self, settings: Settings) -> None:
+        """Apply validated settings at runtime without restarting the process."""
+        self.settings = settings
+        self.risk = RiskManager(settings.risk)
+        self.execution.config = settings.execution
+        self.execution.instruments = {
+            item.symbol: item for item in settings.instruments.items
+        }
+        self.builder.settings = settings
+        for symbol in settings.instruments.symbols:
+            self._bars.setdefault(symbol, [])
+        if self.feed_factory is not None and self.feed is not None:
+            # A new instrument needs data: rebuild the feed and drop stale bars
+            # rather than mixing two sessions of the same timestamps.
+            self.feed = self.feed_factory(settings)
+            self._bars = {symbol: [] for symbol in settings.instruments.symbols}
+            if self._task is not None and not self._task.done():
+                try:
+                    asyncio.get_running_loop().create_task(self.refresh_task())
+                except RuntimeError:
+                    pass
+
+    async def refresh_task(self) -> None:
+        await self.stop_task()
+        self.start_task()
+
+    async def run(self) -> None:
+        if self.feed is None:
+            raise RuntimeError("engine has no feed")
+        delay = 1.0 / max(self.settings.feed.replay_speed, 0.01)
+        for tick in self.feed.iter_ticks():
+            self._process(tick)
+            await self._publish()
+            await asyncio.sleep(delay)
+
+    def start_task(self) -> None:
+        if self._task is None or self._task.done():
+            self._task = asyncio.create_task(self.run())
+
+    async def stop_task(self) -> None:
+        if self._task is not None and not self._task.done():
+            self._task.cancel()
+            try:
+                await self._task
+            except asyncio.CancelledError:
+                pass
+        self._task = None
+
+    # --- cycle ------------------------------------------------------------
+    def _process(self, tick: Tick) -> None:
+        primary = self.settings.instruments.primary
+        template = self.settings.instruments.template_for(primary)
+        session = session_for(tick.ts, template)
+
+        if not same_session(self.state.session, session):
+            self._on_new_session(session)
+
+        for symbol, bar in tick.bars.items():
+            if symbol not in self._bars:
+                continue
+            self._bars[symbol].append(bar)
+            del self._bars[symbol][:-MAX_BARS]
+
+        self.state.session = session
+        self.state.last_bar_ts = tick.ts
+        self.state.bars_available = len(self._bars.get(primary, []))
+        stale = (now_utc() - tick.ts).total_seconds() * 1000
+        self.state.staleness_ms = max(0, int(stale))
+        self.state.quality = "ok" if stale < 120_000 else "stale"
+
+        for event in self.execution.on_bar(tick.bars):
+            if event.type == "exit" and event.trade is not None:
+                self._on_trade_closed(event.trade)
+            elif event.type == "fill":
+                self._event(
+                    "info",
+                    "execution",
+                    "orden ejecutada",
+                    {"symbol": event.symbol, "price": event.price, "units": event.units},
+                )
+
+        if self.execution.position is not None and self.settings.risk.close_at_session_end:
+            self._maybe_close_at_session_end(tick)
+        self.state.position = self.execution.position
+        self.state.orders = list(self.execution.orders)
+
+        if self.state.status == "running":
+            self._evaluate(tick, session)
+
+        self._persist()
+        self._update_open_risk()
+
+    def _warmup_progress(self) -> tuple[bool, str]:
+        requirement = self.strategy.warmup_requirements()
+        if not requirement.bars:
+            return True, ""
+        for symbol, needed in requirement.bars.items():
+            targets = (
+                self._bars.values()
+                if symbol == "*"
+                else [self._bars.get(symbol, [])]
+            )
+            have = min((len(values) for values in targets), default=0)
+            if have < needed:
+                return False, f"{have}/{needed} velas"
+        return True, ""
+
+    def _evaluate(self, tick: Tick, session: SessionInfo) -> None:
+        primary = self.settings.instruments.primary
+        bars = {symbol: list(values) for symbol, values in self._bars.items()}
+        if not bars.get(primary):
+            return
+        ready, detail = self._warmup_progress()
+        if not ready:
+            self._output = StrategyOutput(
+                state="warmup",
+                state_label="Calentando",
+                phases=[Phase(key="warmup", label="Calentamiento", status="active", detail=detail)],
+            )
+            return
+        md = MarketData(
+            session=session,
+            clock=tick.ts,
+            primary=primary,
+            bars=bars,
+            params=self.strategy.params_model.model_validate(self.settings.strategy.params),
+        )
+        output = self.strategy.evaluate(md)
+        self._output = output
+        if output.signal is None:
+            return
+
+        spec = self.settings.instruments.by_symbol(primary)
+        template = self.settings.instruments.template_for(primary)
+        last_price = tick.bars[primary].c if primary in tick.bars else None
+        portfolio = PortfolioState(
+            equity=self.state.equity,
+            open_risk=self.state.open_risk,
+            daily_pnl=self.state.day_stats.pnl,
+            daily_trades=self.state.day_stats.trades,
+            consecutive_losses=self.state.day_stats.consecutive_losses,
+            last_exit_ts=self.last_exit_ts,
+            emergency=self.state.emergency,
+            has_open_position=self.execution.position is not None,
+            has_pending_order=self.execution.has_pending(),
+            last_price=last_price,
+        )
+        decision = self.risk.evaluate(
+            output.signal,
+            portfolio,
+            spec,
+            clock=tick.ts,
+            timezone_name=template.timezone,
+        )
+        if not decision.approved:
+            self.state.block_reason = decision.code
+            self._event(
+                "warn",
+                "risk",
+                f"señal rechazada: {decision.message}",
+                {"code": decision.code},
+            )
+            return
+
+        self.state.block_reason = None
+        order = self.execution.arm(
+            decision, output.signal, primary, last_price or output.signal.stop_price, tick.ts
+        )
+        if order is not None:
+            self.state.orders = list(self.execution.orders)
+            self._event(
+                "info",
+                "execution",
+                "orden armada",
+                {"symbol": primary, "units": decision.units, "side": output.signal.side},
+            )
+
+    def _maybe_close_at_session_end(self, tick: Tick) -> None:
+        template = self.settings.instruments.template_for(self.settings.instruments.primary)
+        local = to_zone(tick.ts, template.timezone)
+        close_h, close_m = parse_hhmm(self.settings.risk.session_close_time)
+        if (local.hour, local.minute) < (close_h, close_m):
+            return
+        trade = self.execution.close("session_close", when=tick.ts)
+        if trade is not None:
+            self._on_trade_closed(trade)
+
+    def _on_new_session(self, session: SessionInfo) -> None:
+        self.state.session = session
+        self.state.day_stats = DayStats()
+        if session.is_open:
+            self._event("info", "session", f"nueva sesión {session.id}", {"session": session.id})
+            self.store.kv_set("session_id", session.id)
+
+    def _on_trade_closed(self, trade: TradeRecord) -> None:
+        self.store.insert_trade(trade)
+        self.state.equity += trade.pnl_net
+        self.state.day_stats.trades += 1
+        self.state.day_stats.pnl += trade.pnl_net
+        if trade.pnl_net > 0:
+            self.state.day_stats.wins += 1
+            self.state.day_stats.consecutive_losses = 0
+        elif trade.pnl_net < 0:
+            self.state.day_stats.losses += 1
+            self.state.day_stats.consecutive_losses += 1
+        self.last_exit_ts = trade.closed_ts
+        self.store.append_equity(self.state.equity, trade.closed_ts)
+        self.state.position = None
+        self._event(
+            "info",
+            "execution",
+            f"operación cerrada ({trade.exit_reason})",
+            {"pnl_net": trade.pnl_net, "r": trade.r_multiple},
+        )
+
+    # --- persistence ------------------------------------------------------
+    def _restore(self) -> None:
+        position_raw = self.store.kv_get("position")
+        if position_raw:
+            try:
+                self.execution.restore(Position.model_validate(position_raw))
+                self.state.position = self.execution.position
+            except ValueError:
+                logger.warning("discarded unreadable position state")
+        self.state.emergency = bool(self.store.kv_get("emergency") or False)
+        if self.state.emergency:
+            self.state.block_reason = "emergency_active"
+        day_raw = self.store.kv_get("day_stats")
+        if day_raw:
+            try:
+                self.state.day_stats = DayStats.model_validate(day_raw)
+            except ValueError:
+                logger.warning("discarded unreadable day stats")
+        equity = self.store.kv_get("equity")
+        if equity is not None:
+            self.state.equity = float(equity)
+
+    def _persist(self) -> None:
+        self.store.kv_set("emergency", self.state.emergency)
+        self.store.kv_set("equity", self.state.equity)
+        self.store.kv_set("day_stats", self.state.day_stats.model_dump(mode="json"))
+        if self.execution.position is not None:
+            self.store.kv_set(
+                "position", self.execution.position.model_dump(mode="json")
+            )
+        else:
+            self.store.kv_delete("position")
+
+    def _update_open_risk(self) -> None:
+        position = self.execution.position
+        if position is None:
+            self.state.open_risk = 0.0
+            return
+        spec = self.settings.instruments.by_symbol(position.symbol)
+        ticks = abs(position.entry_price - position.stop_price) / spec.tick_size
+        self.state.open_risk = ticks * spec.tick_value * position.units
+
+    # --- output -----------------------------------------------------------
+    def quotes(self) -> dict[str, dict[str, Any]]:
+        payload: dict[str, dict[str, Any]] = {}
+        for symbol, bars in self._bars.items():
+            if not bars:
+                continue
+            last = bars[-1]
+            first = bars[0]
+            change = last.c - first.o
+            payload[symbol] = {
+                "last": last.c,
+                "bid": last.c,
+                "ask": last.c,
+                "change": change,
+                "change_pct": (change / first.o * 100) if first.o else 0.0,
+                "ts": last.t,
+            }
+        return payload
+
+    def series(self) -> list[dict[str, Any]]:
+        primary = self.settings.instruments.primary
+        base = self._bars.get(primary) or []
+        if not base:
+            return []
+        base_close = base[0].o or 1.0
+        result: list[dict[str, Any]] = []
+        for symbol, bars in self._bars.items():
+            if symbol == primary or not bars:
+                continue
+            result.append(
+                {
+                    "symbol": symbol,
+                    "label": symbol,
+                    "mode": "normalized",
+                    "axis": "overlay",
+                    "visible": True,
+                    "values": [
+                        {"t": bar.t, "v": (bar.c / (bars[0].o or 1.0)) - 1.0}
+                        for bar in bars
+                    ],
+                }
+            )
+        _ = base_close
+        return result
+
+    def history(self, timeframe: str = "1m", limit: int = 500) -> list[dict[str, Any]]:
+        """Resample the primary series into the requested timeframe."""
+        primary = self.settings.instruments.primary
+        minutes = _timeframe_minutes(timeframe)
+        bars = self._bars.get(primary, [])
+        if minutes <= 1:
+            return [bar.model_dump(mode="json") for bar in bars][-limit:]
+        buckets: dict[int, dict[str, Any]] = {}
+        for bar in bars:
+            bucket = int(bar.t.timestamp()) // (minutes * 60)
+            current = buckets.get(bucket)
+            if current is None:
+                buckets[bucket] = {
+                    "t": bar.t,
+                    "o": bar.o,
+                    "h": bar.h,
+                    "l": bar.l,
+                    "c": bar.c,
+                    "v": bar.v,
+                }
+            else:
+                current["h"] = max(current["h"], bar.h)
+                current["l"] = min(current["l"], bar.l)
+                current["c"] = bar.c
+                current["v"] += bar.v
+        return list(buckets.values())[-limit:]
+
+    def snapshot(self, stats: dict[str, Any] | None = None) -> dict[str, Any]:
+        primary = self.settings.instruments.primary
+        return self.builder.build(
+            self.state,
+            self._output,
+            quotes=self.quotes(),
+            candles=self._bars.get(primary, []),
+            series=self.series(),
+            stats=stats,
+        )
+
+    async def _publish(self) -> None:
+        if not self._subscribers:
+            return
+        snapshot = self.snapshot()
+        for hook in list(self._subscribers):
+            result = hook(snapshot)
+            if asyncio.iscoroutine(result):
+                await result
+
+    # --- events -----------------------------------------------------------
+    def _event(self, level: str, category: str, message: str, meta: dict[str, Any] | None = None) -> None:
+        self.store.insert_event(level, category, message, meta)
+
+
+
+def _timeframe_minutes(timeframe: str) -> int:
+    try:
+        return max(1, int(timeframe.rstrip("m")))
+    except ValueError:
+        return 1
