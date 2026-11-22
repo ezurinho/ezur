@@ -69,3 +69,66 @@ def test_session_boundaries_reset_daily_counters():
     by_day = result["by_day"]
     assert len(by_day) <= 3
     assert sum(day["trades"] for day in by_day.values()) == result["closed"]["trades"]
+
+
+def test_dataset_id_is_deterministic_and_strategy_specific():
+    from server.simulation import _dataset_id
+
+    assert _dataset_id("reference", 60, 390) == _dataset_id("reference", 60, 390)
+    assert _dataset_id("reference", 60, 390) != _dataset_id("fade", 60, 390)
+    assert len(_dataset_id("reference", 60, 390)) == 64
+
+
+def test_simulation_cli_records_an_experiment(tmp_path, monkeypatch, capsys):
+    from server.experiments import load
+    from server.simulation import main
+
+    ledger = tmp_path / "ledger.jsonl"
+    out = tmp_path / "report.json"
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "simulation",
+            "--days",
+            "2",
+            "--bars",
+            "60",
+            "--out",
+            str(out),
+            "--ledger",
+            str(ledger),
+        ],
+    )
+    main()
+    capsys.readouterr()
+
+    entries = load(ledger)
+    assert len(entries) == 1
+    assert entries[0]["kind"] == "simulation"
+    assert entries[0]["strategy"]["id"] == "reference"
+    assert entries[0]["verdict"] == "RECHAZADA"
+    assert out.exists()
+
+
+def test_simulation_cli_can_skip_the_ledger(tmp_path, monkeypatch, capsys):
+    from server.simulation import main
+
+    ledger = tmp_path / "ledger.jsonl"
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "simulation",
+            "--days",
+            "1",
+            "--bars",
+            "30",
+            "--out",
+            str(tmp_path / "r.json"),
+            "--ledger",
+            str(ledger),
+            "--no-ledger",
+        ],
+    )
+    main()
+    capsys.readouterr()
+    assert not ledger.exists()

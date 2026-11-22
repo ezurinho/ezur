@@ -8,7 +8,9 @@ runs end to end. Synthetic data validates plumbing, never profitability.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import os
 from datetime import date, datetime, timedelta, timezone
 from itertools import islice
 from pathlib import Path
@@ -114,6 +116,12 @@ def run_simulation(
         store.close()
 
 
+def _dataset_id(strategy_id: str, days: int, bars: int) -> str:
+    """Deterministic identity for a synthetic run: same inputs, same dataset id."""
+    payload = f"synthetic|{strategy_id}|{days}|{bars}".encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Simulación multi-sesión determinista")
     parser.add_argument("--days", type=int, default=20)
@@ -122,6 +130,14 @@ def main() -> None:
     parser.add_argument("--db", default=":memory:")
     parser.add_argument("--out", default="reports/backtest/simulation.json")
     parser.add_argument("--max-ticks", type=int, default=None)
+    parser.add_argument(
+        "--ledger",
+        default=os.getenv("TERMINAL_EXPERIMENT_LEDGER", "reports/experiments.jsonl"),
+        help="Ledger JSONL donde registrar el experimento",
+    )
+    parser.add_argument(
+        "--no-ledger", action="store_true", help="No registrar el experimento"
+    )
     args = parser.parse_args()
 
     settings = Settings()
@@ -139,6 +155,22 @@ def main() -> None:
     target = Path(args.out)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(result, indent=2, default=str), encoding="utf-8")
+
+    experiment_id = None
+    if not args.no_ledger:
+        from .experiments import record
+
+        experiment_id = record(
+            args.ledger,
+            kind="simulation",
+            strategy_id=settings.strategy.id,
+            strategy_version=result["simulation"]["strategy_version"],
+            dataset_id=_dataset_id(args.strategy, args.days, args.bars),
+            config=settings.model_dump(mode="json"),
+            metrics={k: v for k, v in result.items() if k != "trades"},
+            verdict=result["validation"]["verdict"],
+            notes=f"sintético {args.days}d x {args.bars} velas",
+        )["experiment_id"]
 
     closed = result["closed"]
     print(
