@@ -197,6 +197,7 @@ class RiskModel(_Model):
     daily_trades: int = 0
     blocked: bool = False
     block_reason: str | None = None
+    block_count: int = 0
     limits: dict[str, float] = Field(default_factory=dict)
 
 

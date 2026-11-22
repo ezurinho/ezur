@@ -87,7 +87,9 @@ export function DashboardPage() {
             <h3>Riesgo</h3>
           </header>
           <p className={risk.blocked ? "tone-bad" : "tone-good"}>
-            {risk.blocked ? `Bloqueado: ${risk.block_reason}` : "Operativa habilitada"}
+            {risk.blocked
+              ? `Bloqueado: ${risk.block_reason}${risk.block_count > 1 ? ` (${risk.block_count} señales)` : ""}`
+              : "Operativa habilitada"}
           </p>
           <dl className="kv-panel">
             {Object.entries(risk.limits).map(([key, value]) => (

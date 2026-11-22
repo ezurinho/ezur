@@ -232,6 +232,7 @@ class SnapshotBuilder:
             daily_trades=state.day_stats.trades,
             blocked=bool(state.emergency or state.block_reason),
             block_reason=state.block_reason,
+            block_count=state.block_count,
             limits={
                 "risk_per_trade_pct": cfg.risk_per_trade_pct,
                 "max_daily_loss_pct": cfg.max_daily_loss_pct,
