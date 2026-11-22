@@ -1,0 +1,108 @@
+from __future__ import annotations
+
+import csv
+from datetime import date, timedelta
+from pathlib import Path
+
+import pytest
+from fastapi.testclient import TestClient
+
+from server.config import Settings
+from server.main import create_app
+from server.market import synthetic
+from server.simulation import session_start_utc
+
+
+def _dataset(path: Path, settings: Settings, symbols: list[str], bars: int = 120) -> Path:
+    day = date(2026, 11, 20)
+    start = session_start_utc(settings, day)
+    series = {
+        symbol: synthetic.generate_session(day.isoformat(), symbol, start=start, bars=bars)
+        for symbol in symbols
+    }
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(["ts", "symbol", "o", "h", "l", "c", "v"])
+        for index in range(bars):
+            for symbol in symbols:
+                bar = series[symbol][index]
+                writer.writerow([bar.t.isoformat(), symbol, bar.o, bar.h, bar.l, bar.c, bar.v])
+    return path
+
+
+@pytest.fixture
+def app_client(tmp_path):
+    settings = Settings()
+    settings.strategy.id = "reference"
+    settings.instruments.items = [
+        type(settings.instruments.items[0])(symbol="PRIMARY", role="primary"),
+        type(settings.instruments.items[0])(symbol="CTX_A", role="context"),
+    ]
+    config_path = tmp_path / "config.json"
+    config_path.write_text(settings.model_dump_json(), encoding="utf-8")
+    app = create_app(
+        config_path=config_path,
+        db_path=tmp_path / "api.db",
+        experiment_ledger=tmp_path / "experiments.jsonl",
+    )
+    with TestClient(app) as client:
+        yield client, tmp_path, settings
+
+
+def test_validate_reports_misalignment(app_client):
+    client, tmp_path, settings = app_client
+    path = tmp_path / "half.csv"
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(["ts", "symbol", "o", "h", "l", "c", "v"])
+        stamp = session_start_utc(settings, date(2026, 11, 20)).isoformat()
+        writer.writerow([stamp, "PRIMARY", 100, 101, 99, 100.5, 10])
+
+    report = client.post("/api/data/validate", json={"path": str(path)}).json()
+    assert report["ok"] is False
+    assert any(issue["code"] == "empty_symbol" for issue in report["errors"])
+
+
+def test_backtest_run_records_an_experiment(app_client):
+    client, tmp_path, settings = app_client
+    path = _dataset(tmp_path / "bars.csv", settings, ["PRIMARY", "CTX_A"])
+
+    response = client.post("/api/backtest/run", json={"dataset_path": str(path)})
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["trades"] > 0
+    assert payload["verdict"] == "RECHAZADA"
+    assert len(payload["dataset_id"]) == 64
+
+    ledger = client.get("/api/experiments").json()
+    assert ledger["summary"]["experiments"] == 1
+    assert ledger["entries"][0]["experiment_id"] == payload["experiment_id"]
+    assert ledger["entries"][0]["strategy"]["id"] == "reference"
+
+
+def test_backtest_rejects_invalid_dataset(app_client):
+    client, tmp_path, _ = app_client
+    broken = tmp_path / "broken.csv"
+    broken.write_text("ts,symbol\n", encoding="utf-8")
+    response = client.post("/api/backtest/run", json={"dataset_path": str(broken)})
+    assert response.status_code == 422
+    assert "invalid dataset" in response.json()["detail"]
+
+
+def test_backtest_runs_endpoint_lists_saved_runs(app_client):
+    client, tmp_path, settings = app_client
+    path = _dataset(tmp_path / "bars.csv", settings, ["PRIMARY", "CTX_A"], bars=60)
+    client.post("/api/backtest/run", json={"dataset_path": str(path), "save": True})
+
+    listing = client.get("/api/backtest/runs").json()
+    assert len(listing["runs"]) == 1
+    assert listing["has_more"] is False
+
+
+def test_dataset_validation_accepts_aligned_multi_symbol_file(app_client):
+    client, tmp_path, settings = app_client
+    path = _dataset(tmp_path / "bars.csv", settings, ["PRIMARY", "CTX_A"], bars=30)
+    report = client.post("/api/data/validate", json={"path": str(path)}).json()
+    assert report["ok"] is True
+    assert report["symbols"] == ["PRIMARY", "CTX_A"]
+    assert report["sessions"] == 1

@@ -61,10 +61,17 @@ def build_feed(settings) -> MarketFeed:
     return SimulatedFeed(seed, symbols, start=start)
 
 
-def create_app(config_path: Path | str | None = None, db_path: Path | str | None = None) -> FastAPI:
+def create_app(
+    config_path: Path | str | None = None,
+    db_path: Path | str | None = None,
+    experiment_ledger: Path | str | None = None,
+) -> FastAPI:
     default_config, default_db = resolve_paths()
     config_path = Path(config_path) if config_path else default_config
     db_path = Path(db_path) if db_path else default_db
+    ledger_path = Path(
+        experiment_ledger or os.getenv("TERMINAL_EXPERIMENT_LEDGER", "reports/experiments.jsonl")
+    )
     hub = EventHub()
 
     @asynccontextmanager
@@ -84,9 +91,7 @@ def create_app(config_path: Path | str | None = None, db_path: Path | str | None
         app.state.engine = engine
         app.state.hub = hub
         app.state.config_path = config_path
-        app.state.experiment_ledger = Path(
-            os.getenv("TERMINAL_EXPERIMENT_LEDGER", "reports/experiments.jsonl")
-        )
+        app.state.experiment_ledger = ledger_path
         try:
             yield
         finally:

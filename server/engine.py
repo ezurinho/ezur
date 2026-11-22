@@ -79,6 +79,7 @@ class TradingEngine:
         self._subscribers: list[SnapshotHook] = []
         self._task: asyncio.Task[None] | None = None
         self.last_exit_ts: datetime | None = None
+        self._previous_tick_ts: datetime | None = None
         self._restore()
         if self.state.session is None:
             primary = settings.instruments.primary
@@ -189,9 +190,21 @@ class TradingEngine:
         self.state.session = session
         self.state.last_bar_ts = tick.ts
         self.state.bars_available = len(self._bars.get(primary, []))
-        stale = (now_utc() - tick.ts).total_seconds() * 1000
-        self.state.staleness_ms = max(0, int(stale))
-        self.state.quality = "ok" if stale < 120_000 else "stale"
+        # Freshness is measured against the previous tick, not the wall clock:
+        # a replay of an old session is not stale, a stalled feed is.
+        gap_ms = 0.0
+        if self._previous_tick_ts is not None:
+            gap_ms = (tick.ts - self._previous_tick_ts).total_seconds() * 1000
+        self.state.staleness_ms = max(0, int(gap_ms))
+        if self._previous_tick_ts is None:
+            self.state.quality = "ok"
+        elif gap_ms <= 180_000:
+            self.state.quality = "ok"
+        elif gap_ms <= 900_000:
+            self.state.quality = "degraded"
+        else:
+            self.state.quality = "stale"
+        self._previous_tick_ts = tick.ts
 
         for event in self.execution.on_bar(tick.bars):
             if event.type == "exit" and event.trade is not None:
