@@ -63,6 +63,10 @@ class ValidateRequest(BaseModel):
     path: str
 
 
+class ResetStatsRequest(BaseModel):
+    include_backtests: bool = False
+
+
 class BacktestRequest(BaseModel):
     dataset_path: str
     save: bool = True
@@ -201,6 +205,17 @@ def get_stats(request: Request) -> dict[str, Any]:
     return aggregate(store.all_trades(), engine.settings.risk.initial_capital)
 
 
+@router.get("/stats/reset/preview")
+def preview_stats_reset(request: Request) -> dict[str, Any]:
+    return {"would_delete": _store(request).stats_counts()}
+
+
+@router.post("/stats/reset")
+def reset_stats(request: Request, body: ResetStatsRequest | None = None) -> dict[str, Any]:
+    payload = body or ResetStatsRequest()
+    return {"deleted": _store(request).reset_stats(include_backtests=payload.include_backtests)}
+
+
 @router.get("/validation")
 def get_validation(request: Request) -> dict[str, Any]:
     store = _store(request)
@@ -237,6 +252,15 @@ def post_validate(request: Request, body: ValidateRequest) -> dict[str, Any]:
     return report.as_dict()
 
 
+@router.get("/experiments")
+def list_experiments(request: Request, limit: int = 50) -> dict[str, Any]:
+    from .experiments import load, summary
+
+    path = request.app.state.experiment_ledger
+    entries = load(path)
+    return {"summary": summary(path), "entries": list(reversed(entries))[:limit]}
+
+
 @router.post("/backtest/run")
 def post_backtest(request: Request, body: BacktestRequest) -> dict[str, Any]:
     from .backtest import run_backtest
@@ -248,11 +272,32 @@ def post_backtest(request: Request, body: BacktestRequest) -> dict[str, Any]:
         raise HTTPException(status_code=422, detail=str(error)) from error
     if body.save:
         _store(request).save_backtest(result.run_id, result.model_dump(mode="json"))
+
+    from .experiments import record
+    from .gates import evaluate_gates
+    from .stats import aggregate
+
+    stats = aggregate(result.trades, engine.settings.risk.initial_capital)
+    verdict = evaluate_gates(
+        stats, initial_capital=engine.settings.risk.initial_capital
+    ).verdict
+    entry = record(
+        request.app.state.experiment_ledger,
+        kind="backtest",
+        strategy_id=result.strategy_id,
+        strategy_version=result.strategy_version,
+        dataset_id=result.dataset_id,
+        config=engine.settings.model_dump(mode="json"),
+        metrics=result.metrics,
+        verdict=verdict,
+    )
     return {
         "run_id": result.run_id,
         "metrics": result.metrics,
         "trades": len(result.trades),
         "dataset_id": result.dataset_id,
+        "verdict": verdict,
+        "experiment_id": entry["experiment_id"],
     }
 
 

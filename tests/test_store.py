@@ -100,3 +100,24 @@ def test_backtest_pagination(store):
     assert page["has_more"] is True
     assert len(page["runs"]) == 2
     assert page["next_cursor"] == page["runs"][-1]["run_id"]
+
+
+def test_reset_stats_preserves_backtests(store):
+    store.insert_trade(_trade())
+    store.append_equity(25000.0)
+    store.insert_event("info", "test", "hola")
+    store.save_backtest("run-1", {"run_id": "run-1"})
+
+    deleted = store.reset_stats()
+    assert deleted["trades"] == 1
+    assert deleted["events"] == 1
+    assert deleted["equity"] == 1
+    assert deleted["backtests"] == 0
+    assert store.stats_counts()["backtests"] == 1
+
+
+def test_reset_stats_can_clear_backtests(store):
+    store.save_backtest("run-1", {"run_id": "run-1"})
+    deleted = store.reset_stats(include_backtests=True)
+    assert deleted["backtests"] == 1
+    assert store.stats_counts()["backtests"] == 0

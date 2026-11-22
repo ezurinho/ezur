@@ -84,6 +84,9 @@ def create_app(config_path: Path | str | None = None, db_path: Path | str | None
         app.state.engine = engine
         app.state.hub = hub
         app.state.config_path = config_path
+        app.state.experiment_ledger = Path(
+            os.getenv("TERMINAL_EXPERIMENT_LEDGER", "reports/experiments.jsonl")
+        )
         try:
             yield
         finally:
