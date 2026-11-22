@@ -6,6 +6,7 @@ positive number is not evidence of an edge.
 
 from __future__ import annotations
 
+import random
 from datetime import datetime
 from typing import Any, Iterable, Literal
 
@@ -29,7 +30,38 @@ EMPTY_STATS: dict[str, Any] = {
     "best_trade": 0.0,
     "worst_trade": 0.0,
     "avg_duration_minutes": 0.0,
+    "max_loss_streak": 0,
+    "pnl_without_top5": 0.0,
+    "top5_share": 0.0,
+    "ambiguous_trades": 0,
+    "expectancy_ci80_low": 0.0,
 }
+
+
+def _max_loss_streak(records: list[TradeRecord]) -> int:
+    streak = 0
+    worst = 0
+    for trade in sorted(records, key=lambda item: item.closed_ts):
+        if trade.pnl_net < 0:
+            streak += 1
+            worst = max(worst, streak)
+        elif trade.pnl_net > 0:
+            streak = 0
+    return worst
+
+
+def _bootstrap_low(
+    values: list[float], *, resamples: int = 10_000, seed: int = 20250102
+) -> float:
+    """Lower bound of the 80 % bootstrap interval of the mean."""
+    if not values:
+        return 0.0
+    rng = random.Random(seed)
+    size = len(values)
+    means = sorted(
+        sum(rng.choices(values, k=size)) / size for _ in range(resamples)
+    )
+    return means[int(0.10 * resamples)]
 
 
 def compute_stats(
@@ -56,6 +88,12 @@ def compute_stats(
         peak = max(peak, equity)
         max_drawdown = max(max_drawdown, peak - equity)
 
+    pnls = sorted((trade.pnl_net for trade in records), reverse=True)
+    gross_positive = sum(value for value in pnls if value > 0)
+    # Only winning trades count towards concentration: a single outlier winner
+    # must fail the gate, not pass it because losing trades filled the top five.
+    top5 = sum(value for value in pnls[:5] if value > 0)
+
     return {
         "trades": len(records),
         "wins": len(wins),
@@ -74,6 +112,15 @@ def compute_stats(
         "best_trade": max(trade.pnl_net for trade in records),
         "worst_trade": min(trade.pnl_net for trade in records),
         "avg_duration_minutes": sum(durations) / len(durations),
+        "max_loss_streak": _max_loss_streak(records),
+        "pnl_without_top5": pnl_net - top5,
+        "top5_share": (top5 / gross_positive) if gross_positive else 0.0,
+        "ambiguous_trades": sum(
+            1 for trade in records if trade.diagnostics.get("ambiguous_bar")
+        ),
+        "expectancy_ci80_low": _bootstrap_low(
+            [trade.r_multiple for trade in records]
+        ),
         "first_ts": min(trade.closed_ts for trade in records).isoformat(),
         "last_ts": max(trade.closed_ts for trade in records).isoformat(),
     }

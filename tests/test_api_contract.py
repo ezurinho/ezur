@@ -15,6 +15,7 @@ EXPECTED_PATHS = [
     "/api/trades/export.csv",
     "/api/events",
     "/api/stats",
+    "/api/validation",
     "/api/chart/history",
     "/api/strategy/schema",
     "/api/data/validate",
@@ -98,6 +99,13 @@ def test_ws_snapshot_has_no_strategy_specific_keys(client):
     }
     assert data["strategy"]["phases"] == []
     assert data["strategy"]["metrics"] == {}
+
+
+def test_validation_reports_inconclusive_without_trades(client):
+    payload = client.get("/api/validation").json()
+    assert payload["verdict"] == "RECHAZADA"
+    assert "G4" in payload["failed"]
+    assert "H1-H5" in payload["not_measured"]
 
 
 def test_empty_stats_and_events(client):

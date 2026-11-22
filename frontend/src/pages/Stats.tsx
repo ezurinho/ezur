@@ -88,9 +88,17 @@ function BreakdownTable({ rows }: { rows: Record<string, BucketStats> }) {
   );
 }
 
+interface ValidationPayload {
+  verdict: string;
+  failed: string[];
+  not_measured: string[];
+  outcomes: { id: string; description: string; status: string; detail: string }[];
+}
+
 export function StatsPage() {
   const [tab, setTab] = useState<Tab>("resumen");
   const [stats, setStats] = useState<StatsPayload | null>(null);
+  const [validation, setValidation] = useState<ValidationPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -98,11 +106,17 @@ export function StatsPage() {
     api
       .stats()
       .then((payload) => {
-        if (!cancelled) setStats(payload as StatsPayload);
+        if (!cancelled) setStats(payload as unknown as StatsPayload);
       })
       .catch((cause: Error) => {
         if (!cancelled) setError(cause.message);
       });
+    api
+      .validation()
+      .then((payload) => {
+        if (!cancelled) setValidation(payload);
+      })
+      .catch(() => undefined);
     return () => {
       cancelled = true;
     };
@@ -124,6 +138,40 @@ export function StatsPage() {
         ))}
       </div>
       {error ? <p className="tone-bad">{error}</p> : null}
+
+      {validation ? (
+        <section className="card" data-validation>
+          <header className="card-header">
+            <h3>Veredicto de validación</h3>
+            <span
+              className={
+                validation.verdict === "APROBADA"
+                  ? "badge tone-good"
+                  : validation.verdict === "RECHAZADA"
+                    ? "badge tone-bad"
+                    : "badge tone-warn"
+              }
+            >
+              {validation.verdict}
+            </span>
+          </header>
+          {validation.failed.length > 0 ? (
+            <p className="tone-bad small">Fallan: {validation.failed.join(", ")}</p>
+          ) : null}
+          {validation.not_measured.length > 0 ? (
+            <p className="muted small">
+              No medibles en esta ejecución: {validation.not_measured.join(", ")}
+            </p>
+          ) : null}
+          <ul className="gate-list">
+            {validation.outcomes.map((gate) => (
+              <li key={gate.id} className={`gate gate-${gate.status}`}>
+                <strong>{gate.id}</strong> {gate.description} · {gate.detail}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {tab === "resumen" ? (
         <section className="card">

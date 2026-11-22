@@ -18,6 +18,7 @@ from pydantic import BaseModel, Field
 from .config import Settings, apply_settings, save_settings
 from .market.csv_data import validate_dataset
 from .models import TradeRecord
+from .gates import evaluate_gates
 from .stats import aggregate
 from .strategy.registry import available, strategy_schema
 
@@ -198,6 +199,15 @@ def get_stats(request: Request) -> dict[str, Any]:
     store = _store(request)
     engine = _engine(request)
     return aggregate(store.all_trades(), engine.settings.risk.initial_capital)
+
+
+@router.get("/validation")
+def get_validation(request: Request) -> dict[str, Any]:
+    store = _store(request)
+    engine = _engine(request)
+    payload = aggregate(store.all_trades(), engine.settings.risk.initial_capital)
+    report = evaluate_gates(payload, initial_capital=engine.settings.risk.initial_capital)
+    return report.model_dump(mode="json")
 
 
 @router.get("/chart/history")

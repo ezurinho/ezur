@@ -18,6 +18,7 @@ from .db import Store
 from .engine import TradingEngine
 from .market import synthetic
 from .models import Tick
+from .gates import evaluate_gates
 from .stats import aggregate
 from .strategy.registry import resolve_strategy
 from .timeutil import session_open_utc
@@ -102,6 +103,11 @@ def run_simulation(
             "data_source": "synthetic",
             "note": "Resultados sobre datos sintéticos: validan la infraestructura, no una ventaja.",
         }
+        report = evaluate_gates(
+            stats,
+            initial_capital=settings.risk.initial_capital,
+        )
+        stats["validation"] = report.model_dump(mode="json")
         stats["events"] = len(store.list_events(limit=100_000))
         return stats
     finally:
@@ -150,6 +156,9 @@ def main() -> None:
                 "fees": round(closed["fees"], 2),
                 "max_drawdown": round(closed["max_drawdown"], 2),
                 "avg_duration_minutes": round(closed["avg_duration_minutes"], 1),
+                "verdict": result["validation"]["verdict"],
+                "failed_gates": result["validation"]["failed"],
+                "not_measured": result["validation"]["not_measured"],
             },
             indent=2,
         )
