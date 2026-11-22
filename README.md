@@ -72,9 +72,12 @@ server/
     registry.py    resolución por id
     null_strategy.py
     reference.py   referencia sin validar
+    donchian.py    ruptura de canal (sin validar)
+    fade.py        reversión a la media (sin validar)
+    indicators.py  sma, stdev, atr, highest, lowest
   market/          feeds, CSV, sesiones, instrumentos, sintético
 frontend/src/      React 18 + TypeScript + Lightweight Charts
-docs/              arquitectura, estrategia de referencia, decisiones
+docs/              arquitectura, contrato de plugins, decisiones, protocolo
 ```
 
 ## Reglas que el código hace cumplir
@@ -99,11 +102,14 @@ docs/              arquitectura, estrategia de referencia, decisiones
 | Veredicto reproducible | `GET /api/validation` evalúa G4–G13 y nombra lo no medible |
 
 Ver `docs/ESTRATEGIA_REFERENCIA.md` para los números y por qué no cuenta como
-ventaja, y `docs/DECISIONES.md` para lo que falta decidir antes de la Fase 4.
+ventaja, `docs/COMO_ESCRIBIR_UNA_ESTRATEGIA.md` para el contrato de plugin,
+`docs/PROTOCOLO_BACKTEST.md` para las puertas y `docs/DECISIONES.md` para lo que
+falta decidir antes de la Fase 4.
 
 ## Siguiente
 
-1. Cerrar los 7 ADR de `docs/DECISIONES.md`.
+1. Cerrar los 7 ADR de `docs/DECISIONES.md` (los valores por defecto del código
+   ya están documentados allí para que cerrar cada ADR sea confirmarlos).
 2. Datos reales y reconciliación de costes (Fase 2).
 3. Escribir la estrategia candidata en `server/strategy/` y validarla con el
    protocolo de puertas antes de arriesgar capital.
