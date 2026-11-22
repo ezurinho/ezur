@@ -93,7 +93,7 @@ docs/              arquitectura, estrategia de referencia, decisiones
 | Hecho | Evidencia |
 |---|---|
 | Motor determinista | Mismo dataset ⇒ mismo hash de backtest |
-| Snapshot conforme al contrato | 204 tests de backend, 12 de frontend |
+| Snapshot conforme al contrato | 209 tests de backend, 12 de frontend |
 | Pipeline completo con trades reales | `reports/backtest/simulation-180d.json` |
 | Estrategia de referencia rentable | **No.** Veredicto automático: RECHAZADA |
 | Veredicto reproducible | `GET /api/validation` evalúa G4–G13 y nombra lo no medible |

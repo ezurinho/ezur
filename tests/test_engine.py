@@ -316,3 +316,38 @@ def test_rejection_is_logged_again_after_the_window(settings, store):
 
     assert len(_risk_events(store)) == 2
     assert engine.state.block_count == 3
+
+
+def _feed_bars(engine, start: datetime, count: int):
+    for index in range(count):
+        stamp = start + timedelta(minutes=index)
+        bar = Bar(t=stamp, o=100 + index, h=101 + index, l=99 + index, c=100.5 + index, v=10)
+        engine._bars.setdefault("PRIMARY", []).append(bar)
+
+
+def test_history_passthrough_on_one_minute(engine):
+    _feed_bars(engine, DAY_ONE, 10)
+    assert len(engine.history("1m", 100)) == 10
+    assert len(engine.history("1m", 4)) == 4
+
+
+def test_history_resamples_open_high_low_close_volume(engine):
+    _feed_bars(engine, DAY_ONE, 10)
+    candles = engine.history("5m", 100)
+    assert len(candles) == 2
+    first = candles[0]
+    assert first["o"] == 100  # first open of the bucket
+    assert first["c"] == 104.5  # last close of the bucket
+    assert first["h"] == 105  # max high
+    assert first["l"] == 99  # min low
+    assert first["v"] == 50  # summed volume
+    second = candles[1]
+    assert second["o"] == 105
+    assert second["c"] == 109.5
+
+
+def test_history_rejects_an_unknown_timeframe(engine):
+    import pytest
+
+    with pytest.raises(ValueError):
+        engine.history("7m", 10)

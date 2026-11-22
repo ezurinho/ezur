@@ -85,3 +85,33 @@ Los valores deben venir del broker, no de una estimación propia.
 | Fecha | ADR | Decisión | Autor |
 |---|---|---|---|
 | — | — | — | — |
+
+## Valores por defecto del código
+
+Mientras un ADR siga `PENDIENTE`, el sistema usa estos valores. Cerrar un ADR es
+confirmarlos o sustituirlos: cada fila indica la clave exacta de configuración.
+Ninguno de estos valores es una decisión de producto, son supuestos heredados.
+
+| ADR | Campo | Valor actual | Clave |
+|---|---|---|---|
+| 0.1 | Instrumento primario | `PRIMARY` (perfil demo) | `instruments.items[].symbol` |
+| 0.1 | Instrumentos de contexto | `CTX_A` (perfil demo) | `instruments.items[].role` |
+| 0.2 | Proveedor | `simulated`; `csv` y `live` sin adaptador | `data.provider` |
+| 0.2 | Granularidad | velas de 1 minuto | `data.timeframe` |
+| 0.3 | Ejecución | simulada, sin adaptador de broker | `execution.model` |
+| 0.4 | Capital de referencia | 25.000 USD | `risk.initial_capital` |
+| 0.4 | Drawdown máximo aceptado | 3 % diario (puerta G6 pide ≤ 2 % en backtest) | `risk.max_daily_loss_pct` |
+| 0.4 | Pérdida diaria máxima | 3 % | `risk.max_daily_loss_pct` |
+| 0.5 | Temporalidad de decisión | 1 m | `data.timeframe` |
+| 0.5 | Temporalidad de contexto | 1 m (misma serie) | — |
+| 0.5 | Velas de calentamiento | las que declare el plugin (`Warmup`) | `server/strategy/base.py` |
+| 0.6 | Comisión por unidad y lado | 0,62 USD | `execution.commission_per_unit_side` |
+| 0.6 | Slippage esperado | 1 tick, tope de 3 ticks | `execution.slippage_ticks`, `max_slippage_ticks` |
+| 0.6 | Funding | no aplica al instrumento demo | — |
+| 0.7 | Zona horaria de sesión | `America/New_York` | `instruments.session.timezone` |
+| 0.7 | Horario operativo | 09:30–16:00, cierre de posiciones 15:55 | `session.open/close`, `risk.session_close_time` |
+| 0.7 | Feriados y cierres anticipados | vacíos en el código; se inyectan como datos | `Calendar(holidays=..., early_closes=...)` |
+
+Los valores de coste del ADR 0.6 son un supuesto de trabajo, no un dato del
+broker: el propio ADR exige que vengan del broker. Hasta entonces cuentan como
+`not_measured` en la puerta G8.
