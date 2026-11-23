@@ -94,6 +94,24 @@ La frase de concentración cambia con los datos: con menos de 10 operaciones dic
 que es ruido; si todo el beneficio sale de una sola, lo dice así. Un panel que
 felicita siempre es decoración.
 
+## Paleta de comandos
+
+`Ctrl/Cmd+K`. Contiene las vistas del modo activo, el control del motor, los cinco
+temas, el cambio de modo, **enviar alerta de prueba** (con el motivo si falla) y
+**reiniciar estadísticas** tras una confirmación que dice cuántas operaciones se
+borran. Los atajos `1..n` cambian de vista y `?` abre el mapa de teclas.
+
+## Frescura de los datos
+
+El chip del gráfico no dice «en vivo» por defecto: mide la edad de la última vela.
+
+| Edad | Chip |
+|---|---|
+| ≤ 150 s | `en vivo` (verde) |
+| ≤ 15 min | `retrasado N min` (ámbar) |
+| más | `parado hace N min/h` (rojo) |
+| sin vela | `sin datos` |
+
 ## Tokens
 
 | Token | Valor | Uso |

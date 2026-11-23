@@ -311,7 +311,13 @@ export function LabPage() {
                   return (
                     <tr
                       key={row.run_id}
-                      className={index === 0 && row.trades > 0 ? "best" : undefined}
+                      className={
+                        // «Mejor» solo si gana algo: resaltar la primera de
+                        // cuatro perdedoras es decorar el desastre.
+                        index === 0 && row.trades > 0 && (row.metrics.expectancy_r ?? 0) > 0
+                          ? "best"
+                          : undefined
+                      }
                     >
                       <td>
                         <b>{row.strategy_id}</b>
