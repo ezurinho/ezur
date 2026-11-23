@@ -149,10 +149,27 @@ def test_fade_requires_the_close_to_come_back_inside_when_configured():
     assert strict.evaluate(_market(closed_outside)).signal is None
     assert loose.evaluate(_market(closed_outside)).signal is not None
 
-    # Wick below and close back inside: both fire.
-    closed_inside = base + _bars([(100.0, 100.4, 93.0, 100.0)])
+    # Wick below and close back inside, still under the mean: both fire.
+    closed_inside = base + _bars([(100.0, 100.4, 93.0, 99.8)])
     assert strict.evaluate(_market(closed_inside)).signal is not None
     assert strict.evaluate(_market(closed_inside)).signal.side == "long"
+
+
+def test_fade_does_not_emit_a_target_behind_the_entry():
+    """La media es el objetivo: si el cierre ya la cruzó, no hay recorrido."""
+    strategy = FadeStrategy({"period": 10, "sigma": 1.5, "atr_period": 5})
+
+    # Pincha la banda inferior y vuelve a cerrar dentro, pero por encima de la media.
+    below_the_mean = _flat_bars(20) + _bars([(100.0, 100.6, 96.0, 100.5)])
+    long_side = strategy.evaluate(_market(below_the_mean))
+    assert long_side.signal is None
+    assert long_side.state == "scanning"
+
+    # Espejo: pincha la banda superior y cierra por debajo de la media.
+    above_the_mean = _flat_bars(20) + _bars([(100.0, 104.0, 99.4, 99.5)])
+    short_side = strategy.evaluate(_market(above_the_mean))
+    assert short_side.signal is None
+    assert short_side.state == "scanning"
 
 
 def test_fade_stays_flat_inside_the_bands():

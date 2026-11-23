@@ -44,7 +44,7 @@ class FadeParams(BaseModel):
 class FadeStrategy(BaseStrategy):
     id = "fade"
     name = "Reversión a la media con bandas (sin validar)"
-    version = "0.1.0"
+    version = "0.2.0"
     params_model = FadeParams
 
     def __init__(self, params: dict | None = None) -> None:
@@ -104,6 +104,14 @@ class FadeStrategy(BaseStrategy):
             above = above and inside_above
 
         side = "long" if below else "short" if above else None
+        # El objetivo es la media. Si el cierre ya la cruzó, el objetivo quedaría
+        # detrás de la entrada y la operación se cerraría sola en la primera vela:
+        # el motor la rechaza (invalid_target_side) y aquí se descarta antes.
+        extreme = side
+        if side == "long" and last.c >= middle:
+            side = None
+        elif side == "short" and last.c <= middle:
+            side = None
 
         phases.append(
             Phase(
@@ -120,7 +128,11 @@ class FadeStrategy(BaseStrategy):
                 label="Reversión",
                 status="active" if side else "pending",
                 ts=last.t,
-                detail=side or "sin extremo",
+                detail=(
+                    "extremo sin recorrido hasta la media"
+                    if extreme and side is None
+                    else side or "sin extremo"
+                ),
             )
         )
 
