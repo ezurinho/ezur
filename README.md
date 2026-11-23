@@ -180,7 +180,9 @@ Dos densidades sobre el mismo snapshot: **Básico** (cuatro vistas, frases en ve
 de códigos, dinero en vez de R) y **Avanzado** (las siete vistas, fases,
 métricas, puertas y consola). El interruptor está en el HUD y se recuerda.
 
-![Inicio](docs/img/dashboard.png)
+| Básico | Gráfico con capas | Laboratorio |
+|---|---|---|
+| ![Inicio básico](docs/img/basic-home.png) | ![Gráfico](docs/img/chart-layers.png) | ![Laboratorio](docs/img/lab.png) |
 
 ## Tres estrategias, un motor
 
