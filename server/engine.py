@@ -475,7 +475,14 @@ class TradingEngine:
             self.store.kv_set("session_id", session.id)
 
     def _on_trade_closed(self, trade: TradeRecord) -> None:
-        self.store.insert_trade(trade)
+        trade_id, is_new = self.store.insert_trade_once(trade)
+        if not is_new:
+            # La fila ya estaba en el libro: sumarla otra vez contaría dos veces el
+            # mismo P&L en la equity, el día y la curva (reinicio con backfill,
+            # reintento, replay). El registro es el mismo, así que la cuenta también.
+            logger.warning("operación %s ya registrada; no se contabiliza otra vez", trade_id)
+            self.state.position = None
+            return
         self.invalidate_stats()
         self.state.equity += trade.pnl_net
         self.peak_equity = max(self.peak_equity, self.state.equity)
