@@ -6,7 +6,8 @@ Sistema visual de la terminal. Una sola fuente de verdad: `frontend/src/styles.c
 
 ## Principios
 
-1. **Un acento.** Cian `#37e0d0` para lo activo, ámbar `#ffb547` para aviso, rojo
+1. **Un acento.** El del tema (cian `#37e0d0` por defecto, cambiable por el
+   operador) para lo activo, ámbar `#ffb547` para aviso, rojo
    `#ff5c6c` para pérdida o fallo, verde `#3ddc84` para ganancia. Nada más brilla.
 2. **Cifras tabulares.** Todo número usa `font-variant-numeric: tabular-nums` y
    monoespaciado: las columnas se comparan de un vistazo.
@@ -20,6 +21,24 @@ Sistema visual de la terminal. Una sola fuente de verdad: `frontend/src/styles.c
    tipografía y geometría; solo cambia cuánto se muestra.
 7. **El color nunca es la única señal.** Cada estado lleva texto además de color
    (`running`, `bloqueado`, `ok`), para daltonismo y para capturas en gris.
+
+## Temas y acento
+
+Cinco temas son conjuntos de tokens, no hojas de estilo distintas: los mismos
+componentes, cinco ánimos. `hud` (cian), `aurora` (violeta), `ember` (ámbar),
+`matrix` (lima) y `daylight` (claro). La elección vive en `localStorage`
+(`ezur.theme`) y **Automático** la resuelve contra `prefers-color-scheme` en
+vivo: si el sistema cambia con la terminal abierta, el tema cambia con él.
+
+El acento es del operador, no del tema. Ocho presets (`ACCENT_PRESETS`) y un
+selector libre escriben `--accent` y `--glow-accent` como variables en línea del
+`documentElement`, que ganan sobre cualquier bloque de tema; «restablecer» borra
+la variable en vez de adivinar el color del tema. Solo se acepta `#rrggbb` y el
+valor guardado se revalida al leerlo (`ezur.accent`).
+
+El gráfico de velas elige tipo de serie —velas, línea o área—, rejilla y leyenda
+de O/H/L/C bajo el cursor; las tres preferencias se guardan en `ezur.chart.prefs`
+junto al marco temporal.
 
 ## Dos modos, un motor
 
