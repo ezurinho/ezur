@@ -59,7 +59,7 @@ def test_events_capped_at_5000(store):
 def test_migrations_are_idempotent(store):
     apply_migrations(store.conn)
     apply_migrations(store.conn)
-    assert store.schema_version() == 1
+    assert store.schema_version() == 2
 
 
 def test_kv_roundtrip(store):

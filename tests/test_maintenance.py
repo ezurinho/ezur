@@ -23,7 +23,7 @@ def test_diagnose_reports_schema_and_counts(tmp_path):
 
     report = diagnose(path)
     assert report["exists"] is True
-    assert report["schema_version"] == 1
+    assert report["schema_version"] == 2
     assert report["journal_mode"] == "wal"
     assert report["integrity"] == "ok"
     assert report["tables"]["events"] == 1

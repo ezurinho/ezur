@@ -8,8 +8,9 @@ never editing an already-applied entry.
 from __future__ import annotations
 
 import sqlite3
+from datetime import datetime, timezone
 
-CURRENT_VERSION = 1
+CURRENT_VERSION = 2
 
 MIGRATIONS: dict[int, list[str]] = {
     1: [
@@ -96,6 +97,35 @@ MIGRATIONS: dict[int, list[str]] = {
 }
 
 
+# v2: la misma operación cerrada no puede entrar dos veces. Un reinicio con
+# backfill insertó una fila idéntica y el P&L del día se contó dos veces; el
+# índice único es lo que garantiza el «una vez». La deduplicación va antes: el
+# índice no se puede crear sobre una tabla con repetidos, y borrar sin dejar
+# rastro de cuántas filas se tocaron sería otra forma de mentir.
+MIGRATIONS[2] = [
+    """
+    DELETE FROM trades
+     WHERE id NOT IN (
+        SELECT MIN(id) FROM trades
+         GROUP BY mode, symbol, side, opened_ts, closed_ts,
+                  entry_price, exit_price, units
+     )
+    """,
+    """CREATE UNIQUE INDEX IF NOT EXISTS idx_trades_unique
+         ON trades(mode, symbol, side, opened_ts, closed_ts,
+                   entry_price, exit_price, units)""",
+]
+
+DUPLICATE_QUERY = """
+    SELECT COUNT(*) FROM trades
+     WHERE id NOT IN (
+        SELECT MIN(id) FROM trades
+         GROUP BY mode, symbol, side, opened_ts, closed_ts,
+                  entry_price, exit_price, units
+     )
+"""
+
+
 def _ensure_version_table(conn: sqlite3.Connection) -> None:
     conn.execute(
         """
@@ -120,8 +150,22 @@ def apply_migrations(conn: sqlite3.Connection) -> int:
     for version in sorted(MIGRATIONS):
         if version in done:
             continue
+        removed = 0
+        if version == 2:
+            removed = int(conn.execute(DUPLICATE_QUERY).fetchone()[0] or 0)
         for statement in MIGRATIONS[version]:
             conn.execute(statement)
+        if removed:
+            conn.execute(
+                "INSERT INTO events (ts, level, category, message, meta) VALUES (?,?,?,?,?)",
+                (
+                    datetime.now(timezone.utc).isoformat(),
+                    "warn",
+                    "maintenance",
+                    f"{removed} operación(es) duplicada(s) eliminadas al crear el índice único",
+                    "{}",
+                ),
+            )
         conn.execute(
             "INSERT INTO schema_migrations (version) VALUES (?)", (version,)
         )
