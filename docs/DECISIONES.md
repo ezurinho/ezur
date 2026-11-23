@@ -271,3 +271,32 @@ filas, con precios idénticos son una.
 transacción explícita: si `CREATE UNIQUE INDEX` fallara, el `DELETE` de
 deduplicación quedaría en la transacción implícita de la conexión y un `commit`
 posterior lo consolidaría sin índice.
+
+## ADR 0.14 · El stop y el objetivo tienen que estar del lado correcto
+
+**Contexto.** `RiskManager` comprobaba que el stop existiera y que no estuviera en
+el precio de entrada, pero no de qué lado caía. Un plugin con el signo cambiado
+—o un payload construido a mano— abría una operación cuyo «stop» quedaba por
+encima de la entrada (long) o cuyo «objetivo» quedaba por debajo: la primera vela
+tocaba el nivel y el cierre se apuntaba como pérdida o ganancia de mercado que
+nunca existió. Se vio al medir: al rechazar esas señales, `fade` pasa de 34 a 35
+ganancias, porque una de ellas era un objetivo detrás de la entrada.
+
+**Decisión.** Antes de dimensionar, `RiskManager.evaluate` rechaza con código
+propio:
+- `invalid_stop_side`: long con stop ≥ entrada, short con stop ≤ entrada.
+- `invalid_target_side`: long con objetivo ≤ entrada, short con objetivo ≥
+  entrada. Un objetivo nulo sigue permitido.
+
+Los dos códigos están en `frontend/src/reasons.ts`, para que la pantalla diga «es
+un fallo de la estrategia» y no enseñe un código crudo.
+
+**Consecuencia.** Un plugin roto deja de producir operaciones fantasma: la señal
+se rechaza y el motivo queda en el snapshot. `reference` y `donchian` no cambian
+ni una cifra (60 d × 390 velas, mismo `pnl_net`); `fade` sí cambia (34 → 35
+ganancias, −1.931,70 → −1.914,91 USD netos) y sigue RECHAZADA: la corrección
+quita una ganancia que no existía, no crea edge.
+
+**Pendiente.** La causa está en `fade`, que puede emitir un objetivo detrás de la
+entrada cuando la vela cierra por encima de la media. Arreglarlo es cambiar
+lógica de estrategia y se decide aparte.
