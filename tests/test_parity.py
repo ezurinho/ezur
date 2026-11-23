@@ -155,3 +155,33 @@ def test_parity_holds_with_the_intrabar_fill_model(tmp_path: Path):
 
     assert len(backtest_rows) == len(live_rows) > 0
     assert _fingerprint(backtest_rows) == _fingerprint(live_rows)
+
+
+def test_the_fill_model_actually_reaches_the_backtest():
+    """Un ajuste que no cambia nada es un ajuste que miente."""
+    from server.config import Settings
+
+    def btc_settings(fill: str) -> Settings:
+        raw = Settings().model_dump(mode="python")
+        raw["instruments"]["items"][0]["symbol"] = "BTC"
+        raw["instruments"]["primary"] = "BTC"
+        raw["execution"]["fill_model"] = fill
+        return Settings.model_validate(raw)
+
+    dataset = Path("data/BTC_1m.csv")
+    if not dataset.exists():
+        import pytest
+
+        pytest.skip("dataset real no disponible")
+
+    next_open = run_backtest(
+        btc_settings("next_open"), dataset, resolve_strategy("reference", None)
+    )
+    signal_price = run_backtest(
+        btc_settings("signal_price"), dataset, resolve_strategy("reference", None)
+    )
+
+    assert next_open.trades and signal_price.trades
+    entries_open = [trade.entry_price for trade in next_open.trades]
+    entries_signal = [trade.entry_price for trade in signal_price.trades]
+    assert entries_open != entries_signal

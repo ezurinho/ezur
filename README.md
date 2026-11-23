@@ -124,6 +124,8 @@ Nautilus, LEAN y compañía, `docs/UI.md` para el sistema visual,
 ventaja, `docs/COMO_ESCRIBIR_UNA_ESTRATEGIA.md` para el contrato de plugin,
 `docs/PROTOCOLO_BACKTEST.md` para las puertas, `docs/OPERACION.md` para el día a
 día y `docs/DECISIONES.md` para lo que falta decidir antes de la Fase 4.
+`docs/INFORME_NOCHE_2026-11-23.md` recoge la sesión real del 22–23 de noviembre:
+números medidos, comparación de estrategias y por qué ninguna se aprueba.
 
 ## Siguiente
 
