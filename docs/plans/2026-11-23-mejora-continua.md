@@ -93,9 +93,9 @@ Frontend (vista nueva «Laboratorio», solo modo avanzado):
 | 0 · Investigación | hecho | `docs/INVESTIGACION_UI_2026-11-23.md`, 15 repos con ★ y último push |
 | 1 · Trazabilidad | hecho | `run_id` único, `config_hash`, `run_group`; `tests/test_traceability.py` (8) |
 | 2 · Laboratorio | hecho | `GET /api/backtest/strategies`, `POST /api/backtest/compare`, vista `Lab`, `server/datasets.py` |
-| 3 · Lectura de resultados | parcial | histograma de R ya existía; equidad con línea de inicio y tema |
-| 4 · Interacción | hecho | atajos con `?`, paleta con acciones, alerta de prueba en Configuración |
-| 5 · Cierre | hecho | 364 backend / 43 frontend, build 371 kB, ledger verificado |
+| 3 · Lectura de resultados | hecho | histograma de R, bajo el agua, concentración top-5 con frase variable, chip de frescura |
+| 4 · Interacción | hecho | atajos con `?`, paleta con alerta de prueba y reinicio de estadísticas, banner «por qué no opera» |
+| 5 · Cierre | hecho | 370 backend / 55 frontend, build 1,1 s, ledger verificado |
 
 ### Lo que se encontró al ejecutar (no estaba en el plan)
 
@@ -107,6 +107,21 @@ Frontend (vista nueva «Laboratorio», solo modo avanzado):
 | `run_id` repetido entre estrategias | informe ambiguo | uuid por ejecución |
 | `null` encabezaba el ranking con 0.00 R | lectura engañosa | las estrategias sin operaciones van al final |
 | `"es-ES"` en el gráfico | el guardián agnóstico lo leía como el símbolo ES | locale del navegador |
+| Activar alertas en Configuración no activaba nada | el botón de prueba decía «desactivadas» aunque la config dijera `enabled: true` | el notifier se reconstruye al guardar, con test |
+| El gráfico decía «en vivo» con datos de hace media hora | revisión del chip con la última vela | chip con edad real (en vivo / retrasado / parado / sin datos) |
+| «Falló varias veces, espera un poco» | nunca se desbloquea esperando: dura hasta la próxima sesión | frase corregida con el mecanismo real |
+| La tabla del laboratorio resaltaba a la «mejor» perdedora | comparación de 4 estrategias, todas en rojo | el resaltado exige esperanza > 0 |
+| `/api/health` respondía `ok` con el feed muerto | no se distinguía proceso vivo de motor vivo | `engine.status`, `feed` y `last_bar_age_s` |
+
+### Añadido después del plan
+
+| Pieza | Por qué |
+|---|---|
+| `tests/test_parity.py` | el mismo CSV por `run_backtest` y por el motor en paper: mismas operaciones, P&L al centavo, tres modelos de fill |
+| `BlockedBanner` | un código de bloqueo sin fecha ni salida parece un fallo transitorio |
+| Concentración top-5 | el resultado de esta estrategia viene de una sola operación; el panel lo dice con esos números |
+| `reasons.ts` | un solo mapa de códigos para los dos modos |
+| Memoria del gráfico | temporalidad y capas en `localStorage`: es preferencia de lectura, no estado del servidor |
 
 ## Fuera de alcance (declarado)
 
