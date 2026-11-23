@@ -97,11 +97,14 @@ def measure_gates(
     *,
     multiplier: float = 2.0,
 ) -> dict[str, GateOutcome]:
-    """G8 and G2 as real outcomes, ready to override the placeholders."""
+    """G8, G2 and G1/G3/G14 as real outcomes, ready to override the placeholders."""
+    from .integrity import measure_integrity
+
     report = run_stress(settings, dataset_path, strategy, multiplier=multiplier)
     return {
         "G8": cost_outcome(report.base, report.stressed, multiplier),
         "G2": determinism_outcome(report.deterministic),
+        "G1/G3/G14": measure_integrity(dataset_path, settings.instruments.symbols),
     }
 
 
