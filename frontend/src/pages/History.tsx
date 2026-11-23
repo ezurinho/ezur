@@ -1,14 +1,27 @@
 import { useEffect, useState } from "react";
 import { DynamicTable, type Column } from "../components/DynamicTable";
 import { api } from "../api";
-import { formatDate, formatValue } from "../utils";
+import { formatDateTime, formatValue } from "../utils";
 
 type Row = Record<string, unknown>;
 
 const PERIODS = ["today", "week", "month", "30d", "all"] as const;
+type Period = (typeof PERIODS)[number];
+
+/** Server-side range: a browser-side filter over 200 rows is a lie by omission. */
+function periodStart(period: Period): string | undefined {
+  if (period === "all") return undefined;
+  const now = new Date();
+  if (period === "today") {
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return start.toISOString();
+  }
+  const days = period === "week" ? 7 : 30;
+  return new Date(now.getTime() - days * 86_400_000).toISOString();
+}
 
 const COLUMNS: Column<Row>[] = [
-  { key: "closed_ts", header: "Cierre", render: (row) => formatDate(String(row.closed_ts)) },
+  { key: "closed_ts", header: "Cierre", render: (row) => formatDateTime(String(row.closed_ts)) },
   { key: "symbol", header: "Instrumento" },
   { key: "side", header: "Dirección" },
   { key: "units", header: "Unidades" },
@@ -25,10 +38,13 @@ export function HistoryPage() {
   const [period, setPeriod] = useState<(typeof PERIODS)[number]>("all");
   const [error, setError] = useState<string | null>(null);
 
+  const start = periodStart(period);
+
   useEffect(() => {
     let cancelled = false;
+    setError(null);
     api
-      .trades(200)
+      .trades({ limit: 200, start })
       .then((data) => {
         if (!cancelled) setRows(data as unknown as Row[]);
       })
@@ -38,15 +54,7 @@ export function HistoryPage() {
     return () => {
       cancelled = true;
     };
-  }, [period]);
-
-  const filtered = rows.filter((row) => {
-    if (period === "all") return true;
-    const stamp = Date.parse(String(row.closed_ts));
-    if (Number.isNaN(stamp)) return false;
-    const days = { today: 1, week: 7, month: 30, "30d": 30 }[period] ?? 99999;
-    return Date.now() - stamp <= days * 86_400_000;
-  });
+  }, [start]);
 
   return (
     <div className="page">
@@ -62,14 +70,14 @@ export function HistoryPage() {
             {value}
           </button>
         ))}
-        <a className="btn" href="/api/trades/export.csv" download>
+        <a className="btn" href={api.tradesCsvUrl({ start })} download>
           Exportar CSV
         </a>
       </div>
       {error ? <p className="tone-bad">{error}</p> : null}
       <section className="card">
         <DynamicTable
-          rows={filtered}
+          rows={rows}
           columns={COLUMNS}
           emptyLabel="Sin operaciones registradas"
           rowKey={(row) => String(row.id ?? Math.random())}

@@ -49,6 +49,20 @@ export function formatDate(iso: string | null): string {
   return date.toLocaleDateString();
 }
 
+/** Trades need the clock: two stops on different bars look identical by date. */
+export function formatDateTime(iso: string | null): string {
+  if (!iso) return DASH;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return DASH;
+  return date.toLocaleString(undefined, {
+    year: "2-digit",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export function groupEntries(
   entries: Record<string, KvEntry>,
 ): Array<[string, KvEntry[]]> {
