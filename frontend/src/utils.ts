@@ -2,6 +2,23 @@ import type { KvEntry, MetricFormat } from "./types";
 
 const DASH = "—";
 
+const GROUPS = (() => {
+  try {
+    return new Intl.NumberFormat(navigator.language || "en", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  } catch {
+    return null;
+  }
+})();
+
+/** 24426.72 → 24.426,72 en español, 24,426.72 en inglés: lo decide el navegador. */
+function grouped(value: number, decimals: number): string {
+  if (decimals !== 2 || !GROUPS) return value.toFixed(decimals);
+  return GROUPS.format(value);
+}
+
 export function formatValue(
   value: number | string | boolean | null,
   format: MetricFormat,
@@ -12,7 +29,7 @@ export function formatValue(
   if (typeof value === "string") return value;
   switch (format) {
     case "price":
-      return value.toFixed(decimals);
+      return grouped(value, decimals);
     case "pct":
       return `${value.toFixed(Math.min(decimals, 2))}%`;
     case "ratio":

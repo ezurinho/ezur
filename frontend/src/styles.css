@@ -3416,3 +3416,39 @@ label {
   background: var(--bad);
   box-shadow: none;
 }
+
+/* ---- por qué no opera ---------------------------------------------------- */
+
+.why-strip {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  margin-bottom: 16px;
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.why-strip .led {
+  margin-top: 5px;
+  flex: 0 0 auto;
+}
+
+.why-blocked {
+  border-color: color-mix(in srgb, var(--bad) 45%, transparent);
+  background: color-mix(in srgb, var(--bad) 8%, var(--surface-2));
+}
+
+.why-ok {
+  border-color: color-mix(in srgb, var(--good) 35%, transparent);
+}
+
+.why-meta {
+  display: block;
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  margin-top: 2px;
+}

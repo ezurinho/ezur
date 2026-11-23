@@ -1,0 +1,85 @@
+import { useEffect, useState } from "react";
+import { api } from "../api";
+import { plainReason, unblockHint } from "../reasons";
+import type { SnapshotData } from "../types";
+
+interface EngineEvent {
+  ts?: string;
+  level?: string;
+  category?: string;
+  message?: string;
+}
+
+function ago(iso: string | undefined, now: number): string | null {
+  if (!iso) return null;
+  const ts = Date.parse(iso);
+  if (Number.isNaN(ts)) return null;
+  const seconds = Math.max(0, Math.round((now - ts) / 1000));
+  if (seconds < 90) return `hace ${seconds} s`;
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 90) return `hace ${minutes} min`;
+  return `hace ${Math.round(minutes / 60)} h`;
+}
+
+/**
+ * El bloqueo del motor, traducido y fechado.
+ *
+ * `block_reason` es un código; el operador necesita tres cosas más: qué
+ * significa, desde cuándo y qué lo desbloquea. Sin la fecha, «racha de
+ * pérdidas» parece un fallo de hace un segundo que va a pasar solo.
+ */
+export function BlockedBanner({ snapshot }: { snapshot: SnapshotData }) {
+  const risk = snapshot.risk;
+  const [lastReject, setLastReject] = useState<EngineEvent | null>(null);
+
+  useEffect(() => {
+    if (!risk.blocked) {
+      setLastReject(null);
+      return;
+    }
+    let cancelled = false;
+    api
+      .events({ limit: 40, level: "warn" })
+      .then((rows) => {
+        if (cancelled) return;
+        const found = (rows as EngineEvent[]).find(
+          (row) => row.category === "risk" && (row.message ?? "").includes("rechazada"),
+        );
+        setLastReject(found ?? null);
+      })
+      .catch(() => {
+        /* sin historial el panel sigue diciendo lo importante: el motivo */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [risk.blocked, risk.block_reason]);
+
+  if (!risk.blocked) {
+    return (
+      <div className="why-strip why-ok" data-why="open">
+        <span className="led led-live" aria-hidden="true" />
+        <div>
+          <b>Puede operar.</b> No hay bloqueo activo: la próxima señal que cumpla las
+          reglas se ejecuta.
+        </div>
+      </div>
+    );
+  }
+
+  const when = ago(lastReject?.ts, Date.now());
+  const hint = unblockHint(risk.block_reason);
+  return (
+    <div className="why-strip why-blocked" data-why="blocked" data-block-reason={risk.block_reason}>
+      <span className="led led-stale" aria-hidden="true" />
+      <div>
+        <b>{plainReason(risk.block_reason)}</b>
+        <span className="why-meta">
+          {risk.block_count > 0 ? `${risk.block_count} señales rechazadas` : "sin señales rechazadas"}
+          {when ? ` · la última ${when}` : ""}
+          {hint ? ` · ${hint}` : ""}
+        </span>
+      </div>
+    </div>
+  );
+}

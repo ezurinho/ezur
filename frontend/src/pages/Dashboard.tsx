@@ -2,6 +2,7 @@ import { SymbolsTable } from "../components/SymbolsTable";
 import { StrategyPanel } from "../components/StrategyPanel";
 import { DispatchButton } from "../components/Controls";
 import { Gauge } from "../components/Gauge";
+import { BlockedBanner } from "../components/BlockedBanner";
 import { Sparkline } from "../components/Sparkline";
 import { useStore } from "../store";
 import { AnimatedNumber } from "../components/AnimatedNumber";
@@ -81,6 +82,8 @@ export function DashboardPage() {
         Inicio
         <span className="muted small mono page-sub">{session.id}</span>
       </h2>
+
+      <BlockedBanner snapshot={snapshot} />
 
       <div className="kpi-grid">
         {kpis.map((kpi) => (
@@ -229,6 +232,7 @@ function DashboardSkeleton() {
   return (
     <div className="page" aria-busy="true" aria-label="Cargando estado del motor">
       <div className="skeleton skeleton-title" />
+
       <div className="kpi-grid">
         {[0, 1, 2, 3].map((index) => (
           <div key={index} className="kpi skeleton-card">
