@@ -499,10 +499,29 @@ class TradingEngine:
         equity = self.store.kv_get("equity")
         if equity is not None:
             self.state.equity = float(equity)
+        # La pausa tras una racha se cuenta desde la última salida: sin esto, un
+        # reinicio del proceso dejaría el bloqueo sin fecha y sin final.
+        last_exit = self.store.kv_get("last_exit_ts")
+        if last_exit:
+            try:
+                self.last_exit_ts = datetime.fromisoformat(str(last_exit))
+            except ValueError:
+                logger.warning("discarded unreadable last_exit_ts")
+        if self.last_exit_ts is None:
+            recent = self.store.list_trades(limit=1)
+            if recent:
+                closed = recent[0].get("closed_ts")
+                if closed:
+                    try:
+                        self.last_exit_ts = datetime.fromisoformat(str(closed))
+                    except ValueError:
+                        pass
 
     def _persist(self) -> None:
         self.store.kv_set("emergency", self.state.emergency)
         self.store.kv_set("equity", self.state.equity)
+        if self.last_exit_ts is not None:
+            self.store.kv_set("last_exit_ts", self.last_exit_ts.isoformat())
         self.store.kv_set("day_stats", self.state.day_stats.model_dump(mode="json"))
         if self.execution.position is not None:
             self.store.kv_set(
