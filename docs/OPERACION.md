@@ -96,6 +96,38 @@ sigue con la estrategia anterior: nunca se queda a medias.
 El ledger es append-only: es la única prueba de qué se probó y con qué veredicto.
 Perderlo convierte el historial de investigación en opiniones.
 
+## Mercado real (OKX, solo datos)
+
+Perfil `profiles/okx`: velas de 1 minuto de BTC-USDT desde la API pública de OKX.
+No hay claves, no hay broker: es **paper** con precios reales.
+
+```pwsh
+$env:EZUR_PROFILE_DIR = "profiles/okx"
+python run.py
+```
+
+Qué hace el feed:
+
+| Paso | Comportamiento |
+|---|---|
+| Backfill | Pide 240 velas de 1m (4 h) para que la estrategia tenga warmup real |
+| Poll | Cada `feed.poll_interval_s` (5 s) pide las últimas velas y solo emite las nuevas |
+| Alineado | Solo emite un tick cuando **todos** los instrumentos tienen esa vela |
+| Fallo | Cuenta `failures`, guarda `last_error` y reintenta con espera creciente; la calidad pasa a `stale` |
+| Bloqueo | Ninguno: el `GET` corre en un hilo (`asyncio.to_thread`), el websocket sigue publicando |
+
+Por qué OKX y no Binance: Binance devuelve **451** y Bybit **403** por región
+desde esta máquina; OKX responde sin clave. El adaptador es genérico: cualquier
+venue con velas REST entra por `server/market/` sin tocar el motor.
+
+Límites reales a tener en cuenta: OKX permite 20 peticiones/2 s por IP para
+endpoints públicos; con 2 instrumentos cada 5 s se usa el 4 %. No subir
+`poll_interval_s` por debajo de 2 s sin mirar la cuota.
+
+**Lo que este perfil no demuestra:** que la estrategia gane. La referencia es un
+cruce de medias sin validar y en 1m los costes se comen el movimiento. Es un
+banco de pruebas con precios de verdad, no una recomendación.
+
 ## Alertas fuera de banda
 
 Si el bot corre en otra máquina o de noche, la pantalla no avisa. Un webhook

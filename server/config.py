@@ -52,6 +52,8 @@ class SessionTemplate(_Model):
 class InstrumentConfig(_Model):
     symbol: str
     role: Literal["primary", "context"] = "context"
+    # Exchange-side identifier; defaults to ``symbol`` when the venue is internal.
+    venue_symbol: str | None = None
     enabled: bool = True
     tick_size: float = 0.25
     tick_value: float = 0.5
@@ -158,12 +160,14 @@ class ExecutionConfig(_Model):
 
 
 class FeedConfig(_Model):
-    provider: Literal["simulated", "csv", "live"] = "simulated"
+    provider: Literal["simulated", "csv", "live", "okx"] = "simulated"
     csv_path: str = "data/bars.csv"
     replay_speed: float = 2.5
     loop_sessions: bool = False
     start_date: str | None = None
     latency_ms: int = 0
+    poll_interval_s: float = 5.0
+    backfill_bars: int = 240
 
 
 class LiveConfig(_Model):

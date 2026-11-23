@@ -212,7 +212,13 @@ class TradingEngine:
         if self.feed is None:
             raise RuntimeError("engine has no feed")
         delay = 1.0 / max(self.settings.feed.replay_speed, 0.01)
+        stream = getattr(self.feed, "iter_ticks_async", None)
         try:
+            if stream is not None:
+                # Live venues pace themselves; the engine must not sleep between
+                # ticks or it would fall behind the market.
+                await self._run_live(stream)
+                return
             while True:
                 for tick in self.feed.iter_ticks():
                     self._process(tick)
@@ -243,6 +249,17 @@ class TradingEngine:
             self.state.status = "error"
             self._event("error", "engine", f"bucle detenido: {error}")
             self._persist()
+
+    async def _run_live(self, stream: Any) -> None:
+        async for tick in stream():
+            self._process(tick)
+            await self._publish()
+        # A live stream that ends is a stop, not a pause.
+        if self.state.status == "running":
+            self.state.status = "stopped"
+            self._event("info", "engine", "feed en vivo terminado")
+            self._persist()
+            await self._publish()
 
     def start_task(self) -> None:
         if self._task is None or self._task.done():

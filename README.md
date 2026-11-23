@@ -140,6 +140,16 @@ el código: el guardián de drawdown sobre el pico de capital (lección de
 Freqtrade) y la cadena de hashes del ledger de experimentos (lección de
 ai-hedge-fund).
 
+## Datos reales
+
+```bash
+EZUR_PROFILE_DIR=profiles/okx python run.py    # Windows: $env:EZUR_PROFILE_DIR="profiles/okx"
+```
+
+Velas de 1 minuto de BTC-USDT desde la API pública de OKX, sin claves y sin
+broker: paper trading con precios reales, backfill de 4 horas y sondeo cada 5 s.
+El gráfico se redibuja cuando llega una vela nueva. Ver `docs/OPERACION.md`.
+
 ## Alertas
 
 Un webhook opcional envía los eventos `warn`/`error` (parada de emergencia,

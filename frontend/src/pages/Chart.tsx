@@ -19,6 +19,8 @@ export function ChartPage() {
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const [timeframe, setTimeframe] = useState("1m");
+  // Last candle timestamp we already drew: the trigger for a refresh.
+  const lastBarRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -60,8 +62,14 @@ export function ChartPage() {
     };
   }, []);
 
+  // Redraw when the timeframe changes or when the engine reports a new bar.
+  // Keeping the visible range means a live update does not yank the chart out
+  // from under the user's cursor while they are reading it.
+  const liveBar = snapshot?.data.last_bar_ts ?? null;
+
   useEffect(() => {
     let cancelled = false;
+    const keepRange = chartRef.current?.timeScale().getVisibleLogicalRange() ?? null;
     api
       .chart(timeframe)
       .then((payload) => {
@@ -76,13 +84,19 @@ export function ChartPage() {
             close: candle.c,
           })),
         );
-        chartRef.current?.timeScale().fitContent();
+        const scale = chartRef.current?.timeScale();
+        if (lastBarRef.current !== null && keepRange) {
+          scale?.setVisibleLogicalRange(keepRange);
+        } else {
+          scale?.fitContent();
+        }
+        lastBarRef.current = liveBar;
       })
       .catch(() => undefined);
     return () => {
       cancelled = true;
     };
-  }, [timeframe]);
+  }, [timeframe, liveBar]);
 
   const chart = snapshot?.chart;
 
