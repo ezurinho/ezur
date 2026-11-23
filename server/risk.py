@@ -73,6 +73,29 @@ class RiskManager:
         if stop_distance <= 0:
             return reject("invalid_stop", "el stop no puede estar en el precio de entrada")
 
+        # El stop tiene que estar del lado que pierde y el objetivo del lado que
+        # gana. Un plugin con el signo cambiado abre una operación que «salta el
+        # stop» en la primera vela y se apunta como si fuera una pérdida de
+        # mercado: el ledger miente sin que nada falle.
+        is_long = signal.side == "long"
+        if (is_long and signal.stop_price > entry) or (
+            not is_long and signal.stop_price < entry
+        ):
+            return reject(
+                "invalid_stop_side",
+                "el stop de un %s debe quedar %s de la entrada"
+                % (signal.side, "por debajo" if is_long else "por encima"),
+            )
+        if signal.target_price is not None and (
+            (is_long and signal.target_price <= entry)
+            or (not is_long and signal.target_price >= entry)
+        ):
+            return reject(
+                "invalid_target_side",
+                "el objetivo de un %s debe quedar %s de la entrada"
+                % (signal.side, "por encima" if is_long else "por debajo"),
+            )
+
         stop_ticks = stop_distance / instrument.tick_size
         if stop_ticks > cfg.max_stop_ticks:
             return reject("stop_too_wide", f"stop de {stop_ticks:.0f} ticks supera el máximo")
