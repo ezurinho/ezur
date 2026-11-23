@@ -329,13 +329,10 @@ def chart_history(request: Request, tf: str = "1m", limit: int = 500) -> dict[st
 
 
 @router.get("/datasets")
-def list_datasets(request: Request) -> list[str]:
-    from pathlib import Path
+def list_datasets_endpoint(request: Request) -> list[str]:
+    from .datasets import list_datasets
 
-    data_dir = Path(request.app.state.config_path).parent
-    if not data_dir.exists():
-        return []
-    return sorted(str(path) for path in data_dir.glob("*.csv"))
+    return list_datasets()
 
 
 @router.post("/data/validate")
@@ -528,7 +525,12 @@ def post_backtest_compare(request: Request, body: CompareRequest) -> dict[str, A
             }
         )
 
-    rows.sort(key=lambda row: (row["metrics"].get("expectancy_r") or 0), reverse=True)
+    # Una estrategia que no operó no puede encabezar un ranking por esperanza:
+    # 0.00 R con 0 operaciones es ausencia de datos, no el mejor resultado.
+    rows.sort(
+        key=lambda row: (row["trades"] > 0, row["metrics"].get("expectancy_r") or 0),
+        reverse=True,
+    )
     return {"dataset_id": rows[0]["dataset_id"] if rows else "", "run_group": group, "rows": rows}
 
 

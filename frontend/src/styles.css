@@ -2444,6 +2444,72 @@ label {
   margin-left: auto;
 }
 
+/* ---- atajos -------------------------------------------------------------- */
+
+.shortcuts {
+  height: fit-content;
+  max-height: min(70vh, 560px);
+  overflow: auto;
+}
+
+.shortcuts-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.shortcuts-head h3 {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.shortcuts-body {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+  padding: 16px;
+}
+
+.shortcuts-group {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.shortcuts-title {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.shortcut-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.shortcut-keys {
+  display: inline-flex;
+  gap: 4px;
+  min-width: 78px;
+}
+
+.shortcut-keys kbd {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  padding: 1px 5px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface-1);
+  color: var(--text);
+}
+
 /* ---- explicaciones al pasar el ratón ------------------------------------- */
 
 /* Texto para lectores de pantalla: invisible, pero no display:none. */

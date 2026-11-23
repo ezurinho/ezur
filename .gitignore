@@ -8,7 +8,9 @@ venv/
 frontend/node_modules/
 frontend/dist/
 frontend/coverage/
-data/
+data/*
+# El laboratorio necesita al menos un dataset para no abrir vacío.
+!data/BTC_1m.csv
 backups/
 reports/backtest/*
 !reports/backtest/.gitkeep

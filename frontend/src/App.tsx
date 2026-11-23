@@ -16,6 +16,7 @@ import { UiModeProvider, useUiMode } from "./mode";
 import { ThemeProvider, THEMES, useTheme } from "./theme";
 import { ToastProvider, useToast } from "./toast";
 import { CommandPalette, type PaletteItem } from "./components/CommandPalette";
+import { Shortcuts } from "./components/Shortcuts";
 import { api } from "./api";
 
 const PAGES: Record<string, () => JSX.Element> = {
@@ -38,6 +39,7 @@ function Shell() {
   const { push } = useToast();
   const [view, setView] = useState("home");
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
 
   // A view that only exists in one mode must not survive a mode change.
   const available = isSimple ? SIMPLE_VIEWS : VIEWS;
@@ -103,9 +105,15 @@ function Shell() {
       }
       if (event.key === "Escape") {
         setPaletteOpen(false);
+        setShortcutsOpen(false);
         return;
       }
-      if (typing || paletteOpen || event.metaKey || event.ctrlKey || event.altKey) return;
+      if (event.key === "?" && !typing && !paletteOpen) {
+        event.preventDefault();
+        setShortcutsOpen((open) => !open);
+        return;
+      }
+      if (typing || paletteOpen || shortcutsOpen || event.metaKey || event.ctrlKey || event.altKey) return;
       // 1..7 jump between the views the current mode shows.
       const index = Number(event.key) - 1;
       if (Number.isInteger(index) && index >= 0 && index < available.length) {
@@ -114,7 +122,7 @@ function Shell() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [available, paletteOpen]);
+  }, [available, paletteOpen, shortcutsOpen]);
 
   return (
     <div className={`app-shell ${isSimple ? "mode-simple" : "mode-advanced"}`}>
@@ -128,6 +136,7 @@ function Shell() {
         </main>
       </div>
       <CommandPalette open={paletteOpen} items={paletteItems} onClose={() => setPaletteOpen(false)} />
+      <Shortcuts open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} views={available} />
     </div>
   );
 }

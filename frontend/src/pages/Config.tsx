@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
+import { useToast } from "../toast";
 import { KvPanel } from "../components/KvPanel";
 import { useStore } from "../store";
 
@@ -47,6 +48,8 @@ const SCHEDULE_LABELS: Record<keyof ScheduleFields, string> = {
 
 export function ConfigPage() {
   const { snapshot } = useStore();
+  const { push } = useToast();
+  const [testing, setTesting] = useState(false);
   const [tab, setTab] = useState<Tab>("instrumentos");
   const [config, setConfig] = useState<Record<string, unknown> | null>(null);
   const [schema, setSchema] = useState<Schema | null>(null);
@@ -57,6 +60,24 @@ export function ConfigPage() {
   const [alerts, setAlerts] = useState<Awaited<ReturnType<typeof api.alerts>> | null>(
     null,
   );
+
+  const sendTestAlert = async () => {
+    setTesting(true);
+    try {
+      const result = await api.alertsTest();
+      push({
+        title: result.sent ? "Alerta de prueba entregada" : "La alerta no llegó",
+        detail: result.sent ? "El webhook respondió correctamente." : result.reason ?? "sin motivo",
+        tone: result.sent ? "good" : "bad",
+      });
+      const refreshed = await api.alerts();
+      setAlerts(refreshed);
+    } catch (cause) {
+      push({ title: "No se pudo probar la alerta", detail: (cause as Error).message, tone: "bad" });
+    } finally {
+      setTesting(false);
+    }
+  };
 
   useEffect(() => {
     let alive = true;
@@ -293,6 +314,20 @@ export function ConfigPage() {
           ) : (
             <p className="muted small">Consultando estado de alertas…</p>
           )}
+          <div className="button-row">
+            <button
+              type="button"
+              className="btn"
+              onClick={sendTestAlert}
+              disabled={!alerts?.enabled || testing}
+              data-alert-test
+            >
+              {testing ? "Enviando…" : "Enviar alerta de prueba"}
+            </button>
+            <span className="muted small">
+              Entrega una alerta real y responde si llegó. Un «encolada» no es una prueba.
+            </span>
+          </div>
           <p className="muted small">
             Un webhook caído o una cola llena se cuentan aquí y dejan un evento en la
             consola: nunca detienen el motor.

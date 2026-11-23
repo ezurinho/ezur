@@ -86,6 +86,28 @@ Frontend (vista nueva «Laboratorio», solo modo avanzado):
   `README.md` y este plan con lo hecho y lo que quedó fuera.
 - Capturas nuevas en `docs/img/`.
 
+## Estado de ejecución
+
+| Fase | Estado | Evidencia |
+|---|---|---|
+| 0 · Investigación | hecho | `docs/INVESTIGACION_UI_2026-11-23.md`, 15 repos con ★ y último push |
+| 1 · Trazabilidad | hecho | `run_id` único, `config_hash`, `run_group`; `tests/test_traceability.py` (8) |
+| 2 · Laboratorio | hecho | `GET /api/backtest/strategies`, `POST /api/backtest/compare`, vista `Lab`, `server/datasets.py` |
+| 3 · Lectura de resultados | parcial | histograma de R ya existía; equidad con línea de inicio y tema |
+| 4 · Interacción | hecho | atajos con `?`, paleta con acciones, alerta de prueba en Configuración |
+| 5 · Cierre | hecho | 364 backend / 43 frontend, build 371 kB, ledger verificado |
+
+### Lo que se encontró al ejecutar (no estaba en el plan)
+
+| Fallo | Cómo se vio | Arreglo |
+|---|---|---|
+| Dos hilos escribían en la misma conexión SQLite | «cannot commit - no transaction is active» en `/api/bot/start` durante un replay | `_LockedConnection` con `RLock` + test de 4 hilos |
+| El estado tras un control podía quedar viejo en pantalla | botón decía «running», la UI seguía en «stopped» | `publish_now()` tras cada acción y estado capturado antes de ceder |
+| `/api/datasets` listaba junto al perfil | Laboratorio vacío con perfil `okx` | directorio `data/` + `EZUR_DATA_DIR` |
+| `run_id` repetido entre estrategias | informe ambiguo | uuid por ejecución |
+| `null` encabezaba el ranking con 0.00 R | lectura engañosa | las estrategias sin operaciones van al final |
+| `"es-ES"` en el gráfico | el guardián agnóstico lo leía como el símbolo ES | locale del navegador |
+
 ## Fuera de alcance (declarado)
 
 - Ejecución real contra broker (ADR 0.3 sigue abierto).

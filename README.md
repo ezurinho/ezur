@@ -160,6 +160,16 @@ Un webhook opcional envía los eventos `warn`/`error` (parada de emergencia,
 límite de pérdida, rechazos) como JSON, en un hilo aparte, con deduplicación y
 contadores visibles en `GET /api/alerts`. Apagado por defecto.
 
+## Laboratorio
+
+```bash
+python -m server.datasets pull --config profiles/okx/config.json --bars 600 --out data/BTC_1m.csv
+```
+
+En el panel: **Avanzado → Laboratorio**. Elige dataset, corre una estrategia o
+compara todas; cada fila trae su veredicto y las puertas que falla. Nada de eso
+toca el motor que está operando.
+
 ## Interfaz
 
 HUD oscuro con un solo acento, cifras tabulares y tres medidores propios: curva

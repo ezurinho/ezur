@@ -51,6 +51,27 @@ Reglas que sostienen el modo básico:
 5. **Los tres ajustes básicos guardan por el mismo endpoint validado.** El
    formulario no relaja ninguna comprobación del servidor.
 
+## Gráficos
+
+| Gráfico | Qué responde | Dónde |
+|---|---|---|
+| Velas + medias + volumen | estructura y ritmo del mercado | Gráfico (capas conmutables) |
+| Curva de equidad con línea de inicio | ¿estoy por encima de donde empecé? | Estadísticas |
+| `MarketPulse` | ¿va subiendo o bajando ahora? | Inicio (básico) |
+| Histograma de R | ¿el resultado es homogéneo o depende de dos trades? | Estadísticas |
+
+Los dos canvas de `lightweight-charts` se recrean al cambiar de tema porque no
+heredan variables CSS; los SVG (`Sparkline`, `Gauge`, `MarketPulse`) se
+recolorean solos. Todo respeta `prefers-reduced-motion`: sin animación, pero con
+el trazo completo.
+
+## Laboratorio
+
+Vista de modo avanzado. Corre backtests contra CSV guardados —nunca contra la
+sesión viva—, enseña puertas con ✓/✗ y motivo, y compara varias estrategias
+sobre las mismas velas. El ranking ordena por esperanza en R y manda al final a
+quien no operó.
+
 ## Tokens
 
 | Token | Valor | Uso |
