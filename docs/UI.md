@@ -80,6 +80,20 @@ quien no operó.
 | Gráfico con medias y volumen | `docs/img/chart-layers.png` |
 | Laboratorio | `docs/img/lab.png` |
 
+## Estadísticas: ¿de dónde sale el resultado?
+
+Tres piezas que responden a la misma pregunta desde ángulos distintos:
+
+| Pieza | Qué enseña |
+|---|---|
+| Distribución de R | los buckets reales de `stats.r_distribution`; la forma de la ventaja |
+| Bajo el agua | cuánto se separó la cuenta de su máximo, y cuándo |
+| Concentración | qué parte del beneficio bruto aportan las 5 mejores, y el P&L sin ellas |
+
+La frase de concentración cambia con los datos: con menos de 10 operaciones dice
+que es ruido; si todo el beneficio sale de una sola, lo dice así. Un panel que
+felicita siempre es decoración.
+
 ## Tokens
 
 | Token | Valor | Uso |

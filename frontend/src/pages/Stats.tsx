@@ -23,6 +23,8 @@ interface StatsPayload {
     r_median?: number;
     r_distribution?: Record<string, number>;
   };
+  // el servidor manda estas claves dentro de `closed`; el Record<string, number>
+  // de arriba ya las admite, aquí solo se nombran para leerlas sin casts
   by_hour: Record<string, BucketStats>;
   by_weekday: Record<string, BucketStats>;
   by_month: Record<string, BucketStats>;
@@ -155,6 +157,86 @@ function FunnelPanel({ funnel }: { funnel: FunnelPayload }) {
       )}
     </section>
   );
+}
+
+/**
+ * ¿El resultado depende de cinco operaciones?
+ *
+ * `top5_share` es la parte del beneficio bruto que aportan las cinco mejores.
+ * Un número alto con pocas operaciones no es una estrategia: es suerte con
+ * fecha. Se enseña junto al P&L sin esas cinco para que la resta sea visible.
+ */
+type ConcentrationInput = {
+  trades?: number;
+  wins?: number;
+  top5_share?: number;
+  pnl_without_top5?: number;
+};
+
+/** La frase tiene que decir lo que pasa con *estos* números, no con un ideal. */
+export function concentrationNote(closed: ConcentrationInput): string {
+  const trades = closed.trades ?? 0;
+  const wins = closed.wins ?? 0;
+  const share = closed.top5_share ?? 0;
+  const fragile = share > 0.5;
+  const sample =
+    trades < 10
+      ? `Con ${trades} operación${trades === 1 ? "" : "es"} esto todavía es ruido: sirve para ver el mecanismo, no para concluir. `
+      : "";
+  if (!fragile) {
+    return `${sample}El resultado no depende de unas pocas operaciones: quitar las cinco mejores no lo cambia de signo.`;
+  }
+  if (wins <= 1) {
+    return `${sample}Todo el beneficio bruto sale de ${wins === 0 ? "ninguna operación" : "una sola operación"}: no es una estrategia, es un acierto. Quítalo y la cuenta queda en pérdidas.`;
+  }
+  return `${sample}Más de la mitad de lo ganado viene de cinco operaciones: sin ellas, el sistema no se sostiene. Es la puerta G9/G10 y suele ser la que separa una estrategia de una racha.`;
+}
+
+function Concentration({ closed }: { closed: StatsPayload["closed"] }) {
+  const trades = closed.trades ?? 0;
+  if (trades < 5) {
+    return null;
+  }
+  const share = Math.max(0, Math.min(1, closed.top5_share ?? 0));
+  const without = closed.pnl_without_top5 ?? 0;
+  const fragile = share > 0.5;
+  return (
+    <section className="card" data-concentration>
+      <header className="card-header">
+        <h3>Concentración del resultado</h3>
+        <span className={`badge ${fragile ? "tone-bad" : "tone-good"}`}>
+          {(share * 100).toFixed(0)} % en las 5 mejores
+        </span>
+      </header>
+      <div className="concentration-track" aria-hidden="true">
+        <span style={{ width: `${share * 100}%` }} />
+      </div>
+      <dl className="kv">
+        <div className="kv-row">
+          <dt>P&L total</dt>
+          <dd className="mono">{formatSigned(closed.pnl_net ?? 0)}</dd>
+        </div>
+        <div className="kv-row">
+          <dt>P&L sin las 5 mejores</dt>
+          <dd className={`mono ${without >= 0 ? "tone-good" : "tone-bad"}`}>
+            {formatSigned(without)}
+          </dd>
+        </div>
+      </dl>
+      <p className={fragile ? "tone-warn small" : "muted small"}>
+        {concentrationNote({
+          trades: closed.trades,
+          wins: closed.wins,
+          top5_share: closed.top5_share,
+          pnl_without_top5: closed.pnl_without_top5,
+        })}
+      </p>
+    </section>
+  );
+}
+
+function formatSigned(value: number): string {
+  return `${value > 0 ? "+" : ""}${value.toFixed(2)}`;
 }
 
 function RDistribution({ closed }: { closed: StatsPayload["closed"] }) {
@@ -293,6 +375,7 @@ export function StatsPage() {
       ) : null}
 
       {tab === "rendimiento" && stats ? <RDistribution closed={stats.closed} /> : null}
+      {tab === "rendimiento" && stats ? <Concentration closed={stats.closed} /> : null}
 
       {tab === "rendimiento" ? (
         <section className="card">

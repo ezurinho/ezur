@@ -131,3 +131,13 @@ Cada ejecución escribe una línea en `reports/experiments.jsonl`:
 ```
 
 Sin esa línea, el resultado es una descripción, no una validación.
+
+## Paridad backtest ↔ motor
+
+`tests/test_parity.py` ejecuta el mismo CSV por los dos caminos: `run_backtest`
+y el motor en modo `paper` consumiendo `CSVFeed`. Compara símbolo, lado, entrada,
+salida, unidades, motivo y P&L neto de cada operación, y que el total cuadre al
+centavo. Con dos estrategias distintas (referencia y donchian).
+
+Si algún día la investigación y la operación divergen, este test es el que lo
+dice. No mide rentabilidad: mide que lo medido sea lo mismo.
