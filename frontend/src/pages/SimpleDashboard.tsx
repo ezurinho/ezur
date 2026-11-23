@@ -6,6 +6,7 @@ import { AnimatedNumber } from "../components/AnimatedNumber";
 import { MarketPulse } from "../components/MarketPulse";
 import { TradeRange } from "../components/TradeRange";
 import { Onboarding } from "../components/Onboarding";
+import { plainReason } from "../reasons";
 import type { Candle } from "../types";
 import { useUiMode } from "../mode";
 import { useStore } from "../store";
@@ -296,21 +297,4 @@ function RecapLine({ recap }: { recap: Recap }) {
       {reason ? <> Lo más habitual: {reason}.</> : null}
     </p>
   );
-}
-
-function plainReason(code: string): string {
-  const table: Record<string, string> = {
-    position_open: "Ya tiene una operación abierta. Primero tiene que cerrarse.",
-    max_trades_reached: "Ya hizo las operaciones máximas de hoy. Mañana vuelve a empezar.",
-    daily_loss_limit: "Hoy ya perdió el máximo permitido. El bot se protege y para.",
-    max_drawdown_reached: "La cuenta cayó demasiado desde su punto más alto. Se protege.",
-    consecutive_losses:
-      "Falló varias veces seguidas y hoy ya no abre más. La racha se reinicia al empezar la próxima sesión (00:00 UTC), no esperando un rato.",
-    cooldown_active: "Acaba de cerrar una operación; espera un momento antes de abrir otra.",
-    emergency_active: "La parada de emergencia está activada. Desactívala para seguir.",
-    order_pending: "Hay una orden en camino; espera a que se ejecute.",
-    outside_window: "Está fuera del horario en el que se permite operar.",
-    no_price: "Todavía no tiene precio de referencia del mercado.",
-  };
-  return table[code] ?? `Motivo técnico: ${code}`;
 }

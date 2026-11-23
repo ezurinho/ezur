@@ -96,8 +96,12 @@ export const api = {
     const query = tradeQuery(params);
     return `/api/trades/export.csv${query ? `?${query}` : ""}`;
   },
-  events: (limit = 200) =>
-    request<Record<string, unknown>[]>(`/api/events?limit=${limit}`),
+  events: (options: number | { limit?: number; level?: string } = 200) => {
+    const { limit, level } = typeof options === "number" ? { limit: options, level: undefined } : options;
+    const params = new URLSearchParams({ limit: String(limit ?? 200) });
+    if (level) params.set("level", level);
+    return request<Record<string, unknown>[]>(`/api/events?${params.toString()}`);
+  },
   stats: () => request<Record<string, unknown>>("/api/stats"),
   validation: () =>
     request<{
