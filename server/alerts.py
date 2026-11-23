@@ -130,6 +130,29 @@ class WebhookNotifier:
         self.stats["queued"] += 1
         return True
 
+    def send_now(
+        self,
+        level: str,
+        category: str,
+        message: str,
+        meta: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Deliver one alert on the calling thread and say whether it arrived.
+
+        `enqueue` is right for the engine (never block a tick). A test button is
+        the opposite case: the operator is waiting for an answer, so the answer
+        must be «entregada» or the reason it was not. `min_level` does not filter
+        an explicit test.
+        """
+        if not self.enabled:
+            return {"sent": False, "reason": "alertas desactivadas", "stats": self.snapshot()}
+        delivered = self._deliver(Alert(level, category, message, dict(meta or {})))
+        return {
+            "sent": delivered,
+            "reason": None if delivered else "el webhook no respondió correctamente",
+            "stats": self.snapshot(),
+        }
+
     def close(self, timeout_s: float = 2.0) -> None:
         """Stop the worker. Pending alerts are dropped, and the count says so."""
         self._stop.set()
@@ -184,7 +207,7 @@ class WebhookNotifier:
                 continue
             self._deliver(alert)
 
-    def _deliver(self, alert: Alert) -> None:
+    def _deliver(self, alert: Alert) -> bool:
         for attempt in range(1, self.max_retries + 1):
             try:
                 self._transport(alert.payload())
@@ -194,9 +217,10 @@ class WebhookNotifier:
                     continue
                 self.stats["failed"] += 1
                 self._fail(f"alerta no entregada tras {attempt} intentos")
-                return
+                return False
             self.stats["sent"] += 1
-            return
+            return True
+        return False
 
     def _post(self, payload: dict[str, Any]) -> None:
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")

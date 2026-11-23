@@ -36,8 +36,10 @@ def build_record(
     metrics: dict[str, Any],
     verdict: str,
     notes: str = "",
+    run_id: str = "",
+    run_group: str = "",
 ) -> dict[str, Any]:
-    payload = {
+    payload: dict[str, Any] = {
         "kind": kind,
         "strategy": {"id": strategy_id, "version": strategy_version},
         "dataset_id": dataset_id,
@@ -46,6 +48,12 @@ def build_record(
         "verdict": verdict,
         "notes": notes,
     }
+    # Un identificador de corrida es lo que permite citar «la ejecución X» sin
+    # ambigüedad; `run_group` agrupa comparaciones sobre el mismo dataset.
+    if run_id:
+        payload["run_id"] = run_id
+    if run_group:
+        payload["run_group"] = run_group
     payload["experiment_id"] = canonical_hash(payload)[:16]
     payload["ts"] = datetime.now(timezone.utc).isoformat()
     return payload

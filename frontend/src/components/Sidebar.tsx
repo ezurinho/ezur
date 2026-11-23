@@ -86,18 +86,25 @@ export function Sidebar({ active, onSelect, simple = false }: Props) {
   return (
     <nav className="sidebar" aria-label="Vistas" data-mode={simple ? "simple" : "advanced"}>
       <span className="sidebar-title">{simple ? "básico" : "consola"}</span>
-      {views.map((view) => (
+      <span
+        className="nav-rail"
+        aria-hidden="true"
+        style={{ transform: `translateY(${views.findIndex((item) => item.id === active) * 39}px)` }}
+      />
+      {views.map((view, index) => (
         <button
           key={view.id}
           type="button"
           className={active === view.id ? "nav-item active" : "nav-item"}
           onClick={() => onSelect(view.id)}
           aria-current={active === view.id ? "page" : undefined}
+          data-shortcut={index + 1}
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             {ICONS[view.id] ?? SIMPLE_ICONS[view.id]}
           </svg>
-          {view.label}
+          <span className="nav-label">{view.label}</span>
+          <kbd className="nav-key">{index + 1}</kbd>
         </button>
       ))}
       <div className="sidebar-foot">

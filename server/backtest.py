@@ -8,6 +8,7 @@ paper mode by construction.
 from __future__ import annotations
 
 import hashlib
+import uuid
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -31,6 +32,8 @@ class BacktestResult(BaseModel):
 
     run_id: str
     dataset_id: str
+    config_hash: str = ""
+    run_group: str | None = None
     strategy_id: str
     strategy_version: str
     trades: list[TradeRecord] = Field(default_factory=list)
@@ -52,10 +55,19 @@ class Dataset:
         return cls(path=target, dataset_id=digest, symbols=list(symbols))
 
 
+def config_fingerprint(settings: Settings) -> str:
+    """Hash of the effective settings: two runs with the same hash are comparable."""
+    from .confirmatory import canonical_hash
+
+    return canonical_hash(settings.model_dump(mode="json"))[:16]
+
+
 def run_backtest(
     settings: Settings,
     dataset_path: str | Path,
     strategy: BaseStrategy | None = None,
+    *,
+    run_group: str | None = None,
 ) -> BacktestResult:
     symbols = settings.instruments.symbols
     dataset = Dataset.load(dataset_path, symbols)
@@ -86,8 +98,13 @@ def run_backtest(
     trades = [TradeRecord.model_validate(_trade_row(row)) for row in rows]
     metrics = compute_stats(trades, initial_equity=settings.risk.initial_capital)
     return BacktestResult(
-        run_id=dataset.dataset_id[:12],
+        # El hash del dataset identifica los datos; el run_id, esta ejecución.
+        # Antes eran lo mismo y dos estrategias sobre el mismo CSV no se podían
+        # distinguir en un informe.
+        run_id=uuid.uuid4().hex[:12],
         dataset_id=dataset.dataset_id,
+        config_hash=config_fingerprint(settings),
+        run_group=run_group,
         strategy_id=engine_strategy.id,
         strategy_version=engine_strategy.version,
         trades=trades,

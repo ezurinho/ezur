@@ -43,8 +43,7 @@ export function Gauge({
     return `M${a.x.toFixed(2)},${a.y.toFixed(2)} A${radius},${radius} 0 ${large} 1 ${b.x.toFixed(2)},${b.y.toFixed(2)}`;
   };
 
-  const color =
-    ratio >= 1 ? "#ff5c6c" : ratio >= warnAt ? "#ffb547" : "#37e0d0";
+  const tone = ratio >= 1 ? "bad" : ratio >= warnAt ? "warn" : "accent";
   const endAngle = startAngle + sweep * clamped;
   const tickAngle = startAngle + sweep * warnAt;
   const tickOuter = polar(tickAngle);
@@ -59,18 +58,21 @@ export function Gauge({
         <path
           d={arcPath(startAngle, startAngle + sweep)}
           fill="none"
-          stroke="#1b2533"
+          stroke="var(--line)"
           strokeWidth="7"
           strokeLinecap="round"
         />
         {clamped > 0.01 ? (
           <path
+            className={`gauge-arc tone-${tone}`}
+            key={`${label}-${Math.round(clamped * 100)}`}
             d={arcPath(startAngle, endAngle)}
             fill="none"
-            stroke={color}
             strokeWidth="7"
             strokeLinecap="round"
-            style={{ filter: `drop-shadow(0 0 6px ${color}66)` }}
+            pathLength={100}
+            strokeDasharray={100}
+            strokeDashoffset={0}
           />
         ) : null}
         <line
@@ -78,14 +80,14 @@ export function Gauge({
           y1={tickInner.y}
           x2={tickOuter.x}
           y2={tickOuter.y}
-          stroke="#6f8096"
+          stroke="var(--muted)"
           strokeWidth="1.5"
         />
         <text
           x={center}
           y={center + 6}
           textAnchor="middle"
-          fill="#e6edf3"
+          fill="var(--text)"
           fontFamily="var(--font-mono)"
           fontSize="13"
           fontWeight="600"

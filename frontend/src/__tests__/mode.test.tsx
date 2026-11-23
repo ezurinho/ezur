@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { Sidebar, SIMPLE_VIEWS, VIEWS } from "../components/Sidebar";
 import { UiModeProvider, useUiMode } from "../mode";
+import { ToastProvider } from "../toast";
 import { SimpleDashboard } from "../pages/SimpleDashboard";
 import { SimpleSettings } from "../pages/SimpleSettings";
 
@@ -76,8 +77,8 @@ describe("modo de interfaz", () => {
 
 describe("Sidebar por modo", () => {
   it("fácil enseña cuatro vistas y ninguna de experto", () => {
-    render(<Sidebar active="home" onSelect={() => undefined} simple />);
-    const labels = screen.getAllByRole("button").map((node) => node.textContent);
+    const { container } = render(<Sidebar active="home" onSelect={() => undefined} simple />);
+    const labels = [...container.querySelectorAll(".nav-label")].map((node) => node.textContent);
     expect(labels).toEqual(["Inicio", "Gráfico", "Historial", "Ajustes"]);
     expect(labels).not.toContain("Consola");
     expect(SIMPLE_VIEWS.length).toBe(4);
@@ -96,19 +97,24 @@ describe("Sidebar por modo", () => {
 });
 
 describe("vistas de principiante", () => {
-  it("el inicio fácil dice que está conectando en vez de inventar cifras", () => {
-    render(
+  it("el inicio fácil enseña un esqueleto en vez de inventar cifras", () => {
+    const { container } = render(
       <UiModeProvider>
-        <SimpleDashboard />
+        <ToastProvider>
+          <SimpleDashboard />
+        </ToastProvider>
       </UiModeProvider>,
     );
-    expect(screen.getByText("Conectando con el motor…")).toBeInTheDocument();
+    expect(container.querySelector("[aria-busy='true']")).not.toBeNull();
+    expect(container.querySelectorAll(".skeleton").length).toBeGreaterThan(2);
   });
 
   it("los ajustes simples piden solo tres números", () => {
     const { container } = render(
       <UiModeProvider>
-        <SimpleSettings />
+        <ToastProvider>
+          <SimpleSettings />
+        </ToastProvider>
       </UiModeProvider>,
     );
     expect(container.querySelectorAll("input[type='range']").length).toBe(3);

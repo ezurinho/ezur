@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
 import { useUiMode } from "../mode";
+import { useToast } from "../toast";
 
 interface Fields {
   risk_per_trade_pct: string;
@@ -24,6 +25,7 @@ const DEFAULTS: Fields = {
  */
 export function SimpleSettings() {
   const { setMode } = useUiMode();
+  const { push } = useToast();
   const [fields, setFields] = useState<Fields>(DEFAULTS);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -61,8 +63,11 @@ export function SimpleSettings() {
         },
       });
       setMessage("Guardado. Se aplica en la siguiente operación.");
+      push({ title: "Ajustes guardados", detail: "Se aplican en la siguiente operación.", tone: "good" });
     } catch (cause) {
-      setError((cause as Error).message);
+      const detail = (cause as Error).message;
+      setError(detail);
+      push({ title: "No se pudo guardar", detail, tone: "bad" });
     } finally {
       setBusy(false);
     }
