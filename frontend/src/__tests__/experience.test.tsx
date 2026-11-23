@@ -322,3 +322,18 @@ describe("frescura del gráfico", () => {
     expect(fresh.label).toContain("2 h");
   });
 });
+
+describe("la frase de la racha depende de la pausa configurada", () => {
+  it("sin pausa dice que dura hasta la próxima sesión", async () => {
+    const { plainReason, unblockHint } = await import("../reasons");
+    expect(plainReason("consecutive_losses", { lossStreakCooldownMin: 0 })).toContain("00:00 UTC");
+    expect(unblockHint("consecutive_losses", { lossStreakCooldownMin: 0 })).toContain("próxima sesión");
+  });
+
+  it("con pausa dice cuántos minutos", async () => {
+    const { plainReason, unblockHint } = await import("../reasons");
+    const context = { lossStreakCooldownMin: 45 };
+    expect(plainReason("consecutive_losses", context)).toContain("45 minutos");
+    expect(unblockHint("consecutive_losses", context)).toContain("45 min");
+  });
+});

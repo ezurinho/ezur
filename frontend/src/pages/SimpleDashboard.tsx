@@ -148,7 +148,11 @@ export function SimpleDashboard() {
           ? "Está en pausa: no mira el mercado. Pulsa Reanudar y sigue sola."
           : "Está detenida. Pulsa Reanudar para que vuelva a operar sola.";
 
-  const reason = risk.block_reason ? plainReason(risk.block_reason) : null;
+  const reason = risk.block_reason
+    ? plainReason(risk.block_reason, {
+        lossStreakCooldownMin: risk.limits.loss_streak_cooldown_min ?? 0,
+      })
+    : null;
   const losingPct = Math.min(
     100,
     Math.max(0, (-risk.daily_pnl / Math.max(1, (capital * (risk.limits.max_daily_loss_pct ?? 3)) / 100)) * 100),
