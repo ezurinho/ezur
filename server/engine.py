@@ -44,6 +44,9 @@ REJECTION_LOG_INTERVAL_S = 120
 # the UI cannot render faster than this and the payload carries full candles.
 SNAPSHOT_MIN_INTERVAL_S = 0.1
 
+# Pause between looped replays so the restart is visible in the console.
+RESTART_PAUSE_S = 0.5
+
 MAX_BARS = 500
 
 SnapshotHook = Callable[[dict[str, Any]], Awaitable[None] | None]
@@ -206,10 +209,29 @@ class TradingEngine:
             raise RuntimeError("engine has no feed")
         delay = 1.0 / max(self.settings.feed.replay_speed, 0.01)
         try:
-            for tick in self.feed.iter_ticks():
-                self._process(tick)
+            while True:
+                for tick in self.feed.iter_ticks():
+                    self._process(tick)
+                    await self._publish()
+                    await asyncio.sleep(delay)
+                if not self.settings.feed.loop_sessions or self.state.status != "running":
+                    break
+                # A looped demo replay starts the session again from scratch: the
+                # bars are rebuilt, the trades and the equity keep accumulating.
+                self._bars = {symbol: [] for symbol in self.settings.instruments.symbols}
+                self._previous_tick_ts = None
+                self.state.bars_available = 0
+                self.state.last_bar_ts = None
+                if self.feed_factory is not None:
+                    self.feed = self.feed_factory(self.settings)
+                self._event("info", "engine", "replay reiniciado", {"mode": "loop"})
+                await asyncio.sleep(RESTART_PAUSE_S)
+            if self.state.status == "running":
+                # The feed ended and looping is off: claiming "running" would be a lie.
+                self.state.status = "stopped"
+                self._event("info", "engine", "replay finalizado")
+                self._persist()
                 await self._publish()
-                await asyncio.sleep(delay)
         except asyncio.CancelledError:
             raise
         except Exception as error:  # a dead replay loop must be visible, not silent
@@ -555,7 +577,11 @@ class TradingEngine:
         """
         if self._stats_cache is None:
             self._stats_cache = aggregate(
-                self.store.all_trades(), self.settings.risk.initial_capital
+                self.store.all_trades(),
+                self.settings.risk.initial_capital,
+                timezone_name=self.settings.instruments.template_for(
+                    self.settings.instruments.primary
+                ).timezone,
             )
         return self._stats_cache
 

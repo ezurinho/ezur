@@ -94,13 +94,15 @@ docs/              arquitectura, contrato de plugins, decisiones, protocolo
 - Ante una vela que toca stop y objetivo, gana el stop, con diagnóstico auditable.
 - LIVE exige adaptador implementado + `live_enabled` + confirmación explícita.
 - Un `kind` de zona o marcador desconocido se descarta y se registra.
+- Los desgloses por hora y por día usan la zona horaria de la sesión, no UTC.
+- Un replay terminado deja el motor en `stopped`; no finge seguir corriendo.
 
 ## Qué está medido y qué no
 
 | Hecho | Evidencia |
 |---|---|
 | Motor determinista | Mismo dataset ⇒ mismo hash de backtest |
-| Snapshot conforme al contrato | 283 tests de backend, 12 de frontend, 96 % de cobertura |
+| Snapshot conforme al contrato | 289 tests de backend, 12 de frontend, 96 % de cobertura |
 | Pipeline completo con trades reales | `reports/backtest/simulation-180d.json` |
 | Ninguna rejilla de parámetros se salva | `reports/backtest/walkforward-reference.json` (6 combinaciones × 3 ventanas, todas negativas) |
 | Estrategia de referencia rentable | **No.** Veredicto automático: RECHAZADA |

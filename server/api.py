@@ -187,13 +187,32 @@ def emergency_off(request: Request) -> dict[str, Any]:
 
 
 @router.get("/trades")
-def list_trades(request: Request, limit: int = 100, offset: int = 0, mode: str | None = None):
-    return _store(request).list_trades(limit=limit, offset=offset, mode=mode)
+def list_trades(
+    request: Request,
+    limit: int = 100,
+    offset: int = 0,
+    mode: str | None = None,
+    side: str | None = None,
+    start: str | None = None,
+    end: str | None = None,
+):
+    return _store(request).list_trades(
+        limit=limit, offset=offset, mode=mode, side=side, start=start, end=end
+    )
 
 
 @router.get("/trades/export.csv", response_class=PlainTextResponse)
-def export_trades(request: Request, limit: int = 5000) -> str:
-    rows = _store(request).list_trades(limit=limit)
+def export_trades(
+    request: Request,
+    limit: int = 5000,
+    mode: str | None = None,
+    side: str | None = None,
+    start: str | None = None,
+    end: str | None = None,
+) -> str:
+    rows = _store(request).list_trades(
+        limit=limit, mode=mode, side=side, start=start, end=end
+    )
     buffer = io.StringIO()
     if not rows:
         return ""
@@ -212,7 +231,13 @@ def list_events(request: Request, limit: int = 200, level: str | None = None):
 def get_stats(request: Request) -> dict[str, Any]:
     store = _store(request)
     engine = _engine(request)
-    return aggregate(store.all_trades(), engine.settings.risk.initial_capital)
+    return aggregate(
+        store.all_trades(),
+        engine.settings.risk.initial_capital,
+        timezone_name=engine.settings.instruments.template_for(
+            engine.settings.instruments.primary
+        ).timezone,
+    )
 
 
 @router.get("/stats/reset/preview")
@@ -230,7 +255,13 @@ def reset_stats(request: Request, body: ResetStatsRequest | None = None) -> dict
 def get_validation(request: Request) -> dict[str, Any]:
     store = _store(request)
     engine = _engine(request)
-    payload = aggregate(store.all_trades(), engine.settings.risk.initial_capital)
+    payload = aggregate(
+        store.all_trades(),
+        engine.settings.risk.initial_capital,
+        timezone_name=engine.settings.instruments.template_for(
+            engine.settings.instruments.primary
+        ).timezone,
+    )
     report = evaluate_gates(payload, initial_capital=engine.settings.risk.initial_capital)
     return report.model_dump(mode="json")
 
@@ -301,7 +332,13 @@ def post_backtest(request: Request, body: BacktestRequest) -> dict[str, Any]:
     if body.save:
         _store(request).save_backtest(result.run_id, result.model_dump(mode="json"))
 
-    stats = aggregate(result.trades, initial)
+    stats = aggregate(
+        result.trades,
+        initial,
+        timezone_name=settings.instruments.template_for(
+            settings.instruments.primary
+        ).timezone,
+    )
     measured = {}
     if body.stress:
         # G8 and G2 need a second and third run: do them, do not estimate them.

@@ -87,13 +87,32 @@ class Store:
         return int(cur.lastrowid or 0)
 
     def list_trades(
-        self, limit: int = 100, offset: int = 0, mode: str | None = None
+        self,
+        limit: int = 100,
+        offset: int = 0,
+        mode: str | None = None,
+        side: str | None = None,
+        start: str | datetime | None = None,
+        end: str | datetime | None = None,
     ) -> list[dict[str, Any]]:
-        query = "SELECT * FROM trades"
+        """Most recent first, with optional filters on mode, side and date range."""
+        clauses: list[str] = []
         params: list[Any] = []
         if mode:
-            query += " WHERE mode = ?"
+            clauses.append("mode = ?")
             params.append(mode)
+        if side:
+            clauses.append("side = ?")
+            params.append(side)
+        if start is not None:
+            clauses.append("closed_ts >= ?")
+            params.append(_iso(start) if isinstance(start, datetime) else start)
+        if end is not None:
+            clauses.append("closed_ts <= ?")
+            params.append(_iso(end) if isinstance(end, datetime) else end)
+        query = "SELECT * FROM trades"
+        if clauses:
+            query += " WHERE " + " AND ".join(clauses)
         query += " ORDER BY closed_ts DESC, id DESC LIMIT ? OFFSET ?"
         params.extend([limit, offset])
         return [dict(row) for row in self.conn.execute(query, params)]

@@ -11,6 +11,7 @@ from datetime import datetime
 from typing import Any, Iterable, Literal
 
 from .models import TradeRecord
+from .timeutil import to_zone
 
 Dimension = Literal["hour", "weekday", "month", "side", "day"]
 
@@ -126,8 +127,10 @@ def compute_stats(
     }
 
 
-def _bucket(trade: TradeRecord, dimension: Dimension) -> str:
-    stamp = trade.closed_ts
+def _bucket(trade: TradeRecord, dimension: Dimension, timezone_name: str = "UTC") -> str:
+    # Operators think in session time, not UTC: a 14:30 UTC close is 09:30 in
+    # New York and must land in the 09:00 bucket of the hour breakdown.
+    stamp = to_zone(trade.closed_ts, timezone_name)
     if dimension == "hour":
         return f"{stamp.hour:02d}:00"
     if dimension == "weekday":
@@ -140,11 +143,13 @@ def _bucket(trade: TradeRecord, dimension: Dimension) -> str:
 
 
 def by_dimension(
-    trades: Iterable[TradeRecord], dimension: Dimension
+    trades: Iterable[TradeRecord],
+    dimension: Dimension,
+    timezone_name: str = "UTC",
 ) -> dict[str, dict[str, Any]]:
     groups: dict[str, list[TradeRecord]] = {}
     for trade in trades:
-        groups.setdefault(_bucket(trade, dimension), []).append(trade)
+        groups.setdefault(_bucket(trade, dimension, timezone_name), []).append(trade)
     return {name: compute_stats(group) for name, group in sorted(groups.items())}
 
 
@@ -165,6 +170,7 @@ def aggregate(
     *,
     start: datetime | None = None,
     end: datetime | None = None,
+    timezone_name: str = "UTC",
 ) -> dict[str, Any]:
     records = [
         trade
@@ -174,10 +180,10 @@ def aggregate(
     ]
     return {
         "closed": compute_stats(records, initial_equity),
-        "by_hour": by_dimension(records, "hour"),
-        "by_weekday": by_dimension(records, "weekday"),
-        "by_month": by_dimension(records, "month"),
-        "by_side": by_dimension(records, "side"),
-        "by_day": by_dimension(records, "day"),
+        "by_hour": by_dimension(records, "hour", timezone_name),
+        "by_weekday": by_dimension(records, "weekday", timezone_name),
+        "by_month": by_dimension(records, "month", timezone_name),
+        "by_side": by_dimension(records, "side", timezone_name),
+        "by_day": by_dimension(records, "day", timezone_name),
         "equity": equity_curve(records, initial_equity),
     }
