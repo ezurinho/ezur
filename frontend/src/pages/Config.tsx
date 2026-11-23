@@ -24,6 +24,8 @@ interface RiskFields {
   max_trades_per_day: string;
   max_units_per_trade: string;
   cooldown_minutes: string;
+  no_trade_after_consecutive_losses: string;
+  loss_streak_cooldown_min: string;
 }
 
 interface ScheduleFields {
@@ -38,6 +40,8 @@ const RISK_LABELS: Record<keyof RiskFields, string> = {
   max_trades_per_day: "Operaciones máximas por día",
   max_units_per_trade: "Unidades máximas por operación",
   cooldown_minutes: "Cooldown tras salida (min)",
+  no_trade_after_consecutive_losses: "Parar tras N pérdidas seguidas (0 = no parar)",
+  loss_streak_cooldown_min: "Minutos de pausa tras la racha (0 = hasta la próxima sesión)",
 };
 
 const SCHEDULE_LABELS: Record<keyof ScheduleFields, string> = {
@@ -109,6 +113,10 @@ export function ConfigPage() {
             max_trades_per_day: String(riskGroup.max_trades_per_day ?? ""),
             max_units_per_trade: String(riskGroup.max_units_per_trade ?? ""),
             cooldown_minutes: String(riskGroup.cooldown_minutes ?? ""),
+            no_trade_after_consecutive_losses: String(
+              riskGroup.no_trade_after_consecutive_losses ?? "",
+            ),
+            loss_streak_cooldown_min: String(riskGroup.loss_streak_cooldown_min ?? ""),
           });
           setSchedule({
             trade_window_start: String(riskGroup.trade_window_start ?? ""),
@@ -277,6 +285,10 @@ export function ConfigPage() {
                       max_trades_per_day: Number(risk.max_trades_per_day),
                       max_units_per_trade: Number(risk.max_units_per_trade),
                       cooldown_minutes: Number(risk.cooldown_minutes),
+                      no_trade_after_consecutive_losses: Number(
+                        risk.no_trade_after_consecutive_losses,
+                      ),
+                      loss_streak_cooldown_min: Number(risk.loss_streak_cooldown_min),
                     },
                   },
                   "Riesgo",
@@ -286,6 +298,11 @@ export function ConfigPage() {
               Guardar riesgo
             </button>
           </div>
+          <p className="muted small">
+            Con «pausa tras la racha» en 0, una racha de pérdidas bloquea hasta la
+            próxima sesión. Con minutos, el bot vuelve a mirar el mercado pasado ese
+            tiempo: la pausa protege igual, pero no lo deja ciego medio día.
+          </p>
         </section>
       ) : null}
 

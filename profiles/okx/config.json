@@ -75,6 +75,7 @@
     "entry_exclusion_end": null,
     "entry_exclusion_start": null,
     "initial_capital": 25000.0,
+    "loss_streak_cooldown_min": 45,
     "max_concurrent_positions": 1,
     "max_daily_loss_pct": 3.0,
     "max_daily_profit_pct": 0.0,

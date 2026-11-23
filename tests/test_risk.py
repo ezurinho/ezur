@@ -4,7 +4,11 @@ from datetime import timedelta
 
 import pytest
 
+from datetime import datetime, timezone
+
+from server.config import RiskConfig
 from server.models import PortfolioState
+from server.strategy.base import Signal
 from server.risk import RiskManager
 from tests.conftest import NOW
 
@@ -120,8 +124,6 @@ def test_daily_profit_limit_when_configured(settings, signal_long):
 
 # --- trailing drawdown guard (lección de Freqtrade) ------------------------
 def _drawdown_state(**kwargs):
-    from server.models import PortfolioState
-
     base = dict(equity=25000.0, peak_equity=25000.0, last_price=100.0)
     base.update(kwargs)
     return PortfolioState(**base)
@@ -169,3 +171,65 @@ def test_drawdown_measures_realised_equity_not_ratios(engine, signal_long):
     spec = engine.settings.instruments.by_symbol("PRIMARY")
     decision = engine.risk.evaluate(signal_long, _drawdown_state(equity=24500.0), spec)
     assert decision.code != "max_drawdown_reached"
+
+
+def _streak_portfolio(last_exit: datetime) -> PortfolioState:
+    return PortfolioState(
+        equity=10_000,
+        peak_equity=10_000,
+        consecutive_losses=5,
+        last_exit_ts=last_exit,
+        last_price=100.0,
+    )
+
+
+def _signal() -> Signal:
+    return Signal(side="long", stop_price=99.0, target_price=103.0, reason="test")
+
+
+def test_streak_block_lasts_until_session_end_by_default(settings, signal_long):
+    settings.risk.no_trade_after_consecutive_losses = 3
+    clock = NOW
+    portfolio = _portfolio(
+        settings,
+        consecutive_losses=5,
+        last_exit_ts=clock - timedelta(hours=3),
+    )
+    decision = _evaluate(settings, signal_long, portfolio, clock=clock)
+    assert decision.code == "consecutive_losses"
+    assert "min" not in decision.message
+
+
+def test_streak_block_lifts_after_the_configured_cooldown(settings, signal_long):
+    settings.risk.no_trade_after_consecutive_losses = 3
+    settings.risk.loss_streak_cooldown_min = 30
+    portfolio = _portfolio(
+        settings,
+        consecutive_losses=5,
+        last_exit_ts=NOW - timedelta(minutes=10),
+    )
+
+    early = _evaluate(settings, signal_long, portfolio, clock=NOW)
+    assert early.code == "consecutive_losses"
+    assert "30 min" in early.message
+
+    later = _evaluate(
+        settings, signal_long, portfolio, clock=NOW + timedelta(minutes=21)
+    )
+    assert later.approved is True
+
+
+def test_cooldown_without_a_previous_exit_still_blocks(settings, signal_long):
+    settings.risk.no_trade_after_consecutive_losses = 3
+    settings.risk.loss_streak_cooldown_min = 15
+    portfolio = _portfolio(settings, consecutive_losses=4)
+    portfolio.last_exit_ts = None
+    decision = _evaluate(settings, signal_long, portfolio, clock=NOW)
+    assert decision.code == "consecutive_losses"
+
+
+def test_cooldown_out_of_range_is_rejected():
+    with pytest.raises(ValueError):
+        RiskConfig(loss_streak_cooldown_min=-1)
+    with pytest.raises(ValueError):
+        RiskConfig(loss_streak_cooldown_min=2000)

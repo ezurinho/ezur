@@ -134,6 +134,17 @@ class RiskConfig(_Model):
     session_close_time: str = "15:55"
     cooldown_minutes: int = 0
     no_trade_after_consecutive_losses: int = 0
+    # 0 = la racha bloquea hasta la próxima sesión. Con minutos, el bloqueo se
+    # levanta solo tras ese tiempo desde la última salida: una parada de un día
+    # entero no protege más, solo deja de mirar el mercado.
+    loss_streak_cooldown_min: int = 0
+
+    @field_validator("loss_streak_cooldown_min")
+    @classmethod
+    def _cooldown_range(cls, value: int) -> int:
+        if value < 0 or value > 1440:
+            raise ValueError("loss_streak_cooldown_min debe estar entre 0 y 1440")
+        return value
 
     @field_validator("max_drawdown_pct")
     @classmethod
