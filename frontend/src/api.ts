@@ -12,6 +12,27 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
+export interface TradeQuery {
+  limit?: number;
+  offset?: number;
+  mode?: string;
+  side?: string;
+  start?: string;
+  end?: string;
+}
+
+function tradeQuery(params: TradeQuery, withLimit = false): string {
+  const query = new URLSearchParams();
+  if (params.limit !== undefined) query.set("limit", String(params.limit));
+  else if (withLimit) query.set("limit", "200");
+  if (params.offset !== undefined) query.set("offset", String(params.offset));
+  if (params.mode) query.set("mode", params.mode);
+  if (params.side) query.set("side", params.side);
+  if (params.start) query.set("start", params.start);
+  if (params.end) query.set("end", params.end);
+  return query.toString();
+}
+
 export const api = {
   status: () => request<SnapshotMessage>("/api/status"),
   funnel: () =>
@@ -47,7 +68,12 @@ export const api = {
     request<{ emergency: boolean }>("/api/emergency", {
       method: on ? "POST" : "DELETE",
     }),
-  trades: (limit = 100) => request<Record<string, unknown>[]>(`/api/trades?limit=${limit}`),
+  trades: (params: TradeQuery = {}) =>
+    request<Record<string, unknown>[]>(`/api/trades?${tradeQuery(params, true)}`),
+  tradesCsvUrl: (params: TradeQuery = {}) => {
+    const query = tradeQuery(params);
+    return `/api/trades/export.csv${query ? `?${query}` : ""}`;
+  },
   events: (limit = 200) =>
     request<Record<string, unknown>[]>(`/api/events?limit=${limit}`),
   stats: () => request<Record<string, unknown>>("/api/stats"),

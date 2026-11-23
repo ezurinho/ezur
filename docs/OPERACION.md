@@ -36,6 +36,15 @@ dinero por no poder salir.
 4. Al cerrar: Detener. Las posiciones abiertas se cierran solas a la hora
    configurada si `close_at_session_end` está activo.
 
+## Replay en bucle
+
+Con `feed.loop_sessions: true` (el perfil demo lo trae activo) el replay vuelve a
+empezar la sesión al terminarla: se reconstruyen las velas y el historial sigue
+acumulando. Por eso el demo muestra operaciones repetidas con la misma hora —
+son pasadas distintas de la misma sesión sintética, no duplicados. Con
+`loop_sessions: false` el motor termina en `stopped` y el operador decide cuándo
+volver a empezar.
+
 ## Diagnóstico
 
 ```powershell
