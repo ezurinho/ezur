@@ -70,6 +70,7 @@ class ResetStatsRequest(BaseModel):
 class BacktestRequest(BaseModel):
     dataset_path: str
     save: bool = True
+    stress: bool = True
 
 
 @router.get("/health")
@@ -285,39 +286,49 @@ def get_funnel(request: Request) -> dict[str, Any]:
 @router.post("/backtest/run")
 def post_backtest(request: Request, body: BacktestRequest) -> dict[str, Any]:
     from .backtest import run_backtest
+    from .experiments import record
+    from .gates import evaluate_gates
+    from .stats import aggregate
+    from .stress import measure_gates
 
     engine = _engine(request)
+    settings = engine.settings
+    initial = settings.risk.initial_capital
     try:
-        result = run_backtest(engine.settings, body.dataset_path)
+        result = run_backtest(settings, body.dataset_path)
     except (ValueError, FileNotFoundError) as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
     if body.save:
         _store(request).save_backtest(result.run_id, result.model_dump(mode="json"))
 
-    from .experiments import record
-    from .gates import evaluate_gates
-    from .stats import aggregate
-
-    stats = aggregate(result.trades, engine.settings.risk.initial_capital)
-    verdict = evaluate_gates(
-        stats, initial_capital=engine.settings.risk.initial_capital
-    ).verdict
+    stats = aggregate(result.trades, initial)
+    measured = {}
+    if body.stress:
+        # G8 and G2 need a second and third run: do them, do not estimate them.
+        measured = measure_gates(settings, body.dataset_path)
+    report = evaluate_gates(
+        stats,
+        initial_capital=initial,
+        measured=measured,
+    )
     entry = record(
         request.app.state.experiment_ledger,
         kind="backtest",
         strategy_id=result.strategy_id,
         strategy_version=result.strategy_version,
         dataset_id=result.dataset_id,
-        config=engine.settings.model_dump(mode="json"),
-        metrics=result.metrics,
-        verdict=verdict,
+        config=settings.model_dump(mode="json"),
+        metrics={**result.metrics, "validation": report.model_dump(mode="json")},
+        verdict=report.verdict,
+        notes="" if body.stress else "costes y determinismo no medidos",
     )
     return {
         "run_id": result.run_id,
         "metrics": result.metrics,
         "trades": len(result.trades),
         "dataset_id": result.dataset_id,
-        "verdict": verdict,
+        "verdict": report.verdict,
+        "validation": report.model_dump(mode="json"),
         "experiment_id": entry["experiment_id"],
     }
 

@@ -174,45 +174,62 @@ GATE_BUILDERS = (
 )
 
 
+OPTIONAL_GATES: tuple[tuple[str, str, str], ...] = (
+    (
+        "G1/G3/G14",
+        "Integridad del dataset y de los rolls",
+        "requiere dataset real validado y hash reproducible",
+    ),
+    (
+        "G8",
+        "Costes duplicados",
+        "requiere re-ejecución con el doble de comisión y slippage",
+    ),
+    (
+        "G2",
+        "Determinismo",
+        "lo verifica el golden test del backtest, no las estadísticas",
+    ),
+    (
+        "H1-H5",
+        "Holdout",
+        "sellado: solo se abre si todas las puertas de desarrollo pasan",
+    ),
+)
+
+
+def _default_optional_gates() -> list[GateOutcome]:
+    return [_gate_not_measured(gate_id, description, why) for gate_id, description, why in OPTIONAL_GATES]
+
+
 def evaluate_gates(
     aggregate_payload: dict[str, Any],
     *,
     initial_capital: float = 25_000.0,
     thresholds: GateThresholds | None = None,
+    measured: dict[str, GateOutcome] | None = None,
 ) -> GateReport:
-    """Evaluate the measurable gates and name the ones this run cannot answer."""
+    """Evaluate the measurable gates and name the ones this run cannot answer.
+
+    ``measured`` supplies outcomes for gates that need a second execution
+    (G8 doubled costs, G2 determinism, G1/G3/G14 dataset integrity, H1-H5
+    holdout). Anything not supplied stays ``not_measured``: the report never
+    invents a number to look complete.
+    """
     limits = thresholds or GateThresholds()
+    provided = dict(measured or {})
     context = _Context(
         closed=aggregate_payload.get("closed", {}),
         by_side=aggregate_payload.get("by_side", {}),
         thresholds=limits,
         initial_capital=initial_capital,
     )
+
     outcomes = [builder(context) for builder in GATE_BUILDERS]
-    outcomes.extend(
-        [
-            _gate_not_measured(
-                "G1/G3/G14",
-                "Integridad del dataset y de los rolls",
-                "requiere dataset real validado y hash reproducible",
-            ),
-            _gate_not_measured(
-                "G8",
-                "Costes duplicados",
-                "requiere re-ejecución con el doble de comisión y slippage",
-            ),
-            _gate_not_measured(
-                "G2",
-                "Determinismo",
-                "lo verifica el golden test del backtest, no las estadísticas",
-            ),
-            _gate_not_measured(
-                "H1-H5",
-                "Holdout",
-                "sellado: solo se abre si todas las puertas de desarrollo pasan",
-            ),
-        ]
-    )
+    for gate_id, description, why in OPTIONAL_GATES:
+        outcomes.append(
+            provided.get(gate_id) or _gate_not_measured(gate_id, description, why)
+        )
 
     failed = [outcome.id for outcome in outcomes if outcome.status == "fail"]
     not_measured = [outcome.id for outcome in outcomes if outcome.status == "not_measured"]

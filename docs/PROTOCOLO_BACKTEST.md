@@ -37,14 +37,20 @@ Implementadas y medibles con `server/gates.py`:
 | G9/G10 | Concentración | P&L sin las 5 mejores > 0 y top-5 ≤ 50 % del bruto |
 | G11 | Significancia | IC bootstrap 80 % inferior > 0 |
 | G13 | Barras ambiguas | ≤ 5 % |
+| G8 | Costes duplicados | Re-ejecución con comisión y slippage ×2: PF ≥ 1,0 y expectativa > 0 |
+| G2 | Determinismo | Dos ejecuciones con el mismo fingerprint |
+
+G8 y G2 se **miden**, no se estiman: `server/stress.py` re-ejecuta el backtest con
+el doble de costes y dos veces con los mismos parámetros. En `POST /api/backtest/run`
+vienen activadas por defecto (`stress: true`) y en la simulación se controlan con
+`--no-stress`.
 
 Declaradas como **no medibles** en una ejecución concreta:
 
 | ID | Por qué | Cómo se mide |
 |---|---|---|
 | G1/G3/G14 | Integridad de dataset, rolls y duplicados | Validador de CSV + hash del dataset |
-| G8 | Costes duplicados | Re-ejecución con comisión y slippage ×2 |
-| G2 | Determinismo | Golden test del backtest |
+| H1-H5 | Holdout | Sellado con `confirmatory.seal_holdout` |
 
 ## 4. Holdout
 

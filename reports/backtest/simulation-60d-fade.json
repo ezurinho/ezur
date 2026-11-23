@@ -2629,18 +2629,18 @@
       {
         "id": "G8",
         "description": "Costes duplicados",
-        "status": "not_measured",
-        "measured": null,
-        "threshold": "requiere datos reales",
-        "detail": "requiere re-ejecuci\u00f3n con el doble de comisi\u00f3n y slippage"
+        "status": "fail",
+        "measured": -1.3726,
+        "threshold": "PF >= 1.0 y expectativa > 0 con costes x2",
+        "detail": "expectativa -0.900 R -> -1.373 R (PF 0.021, costes x2)"
       },
       {
         "id": "G2",
         "description": "Determinismo",
-        "status": "not_measured",
+        "status": "pass",
         "measured": null,
-        "threshold": "requiere datos reales",
-        "detail": "lo verifica el golden test del backtest, no las estad\u00edsticas"
+        "threshold": "dos ejecuciones, mismo fingerprint",
+        "detail": "fingerprints id\u00e9nticos"
       },
       {
         "id": "H1-H5",
@@ -2655,12 +2655,11 @@
       "G5",
       "G6",
       "G9/G10",
-      "G11"
+      "G11",
+      "G8"
     ],
     "not_measured": [
       "G1/G3/G14",
-      "G8",
-      "G2",
       "H1-H5"
     ]
   },

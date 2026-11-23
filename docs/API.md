@@ -75,7 +75,10 @@ nuevo tenga datos; el histórico de velas en memoria se descarta.
 | GET | `/funnel` | embudo de evaluación: etapas, tasa de supervivencia y desglose |
 
 `POST /backtest/run` devuelve `run_id`, `metrics`, `trades`, `dataset_id`,
-`verdict` y `experiment_id`.
+`verdict`, `validation` (informe completo de puertas) y `experiment_id`.
+
+Por defecto (`"stress": true`) re-ejecuta el backtest dos veces más para medir
+G8 (costes ×2) y G2 (determinismo). Con `"save": true` guarda el resultado.
 
 ## Gráfico
 
