@@ -3,6 +3,9 @@ import { api } from "../api";
 import { DispatchButton } from "../components/Controls";
 import { Sparkline } from "../components/Sparkline";
 import { AnimatedNumber } from "../components/AnimatedNumber";
+import { MarketPulse } from "../components/MarketPulse";
+import { Onboarding } from "../components/Onboarding";
+import type { Candle } from "../types";
 import { useUiMode } from "../mode";
 import { useStore } from "../store";
 import { formatDateTime, formatValue } from "../utils";
@@ -34,6 +37,8 @@ export function SimpleDashboard() {
   const { snapshot } = useStore();
   const { setMode } = useUiMode();
   const [trades, setTrades] = useState<Trade[]>([]);
+  const [pulse, setPulse] = useState<Candle[]>([]);
+  const liveBar = snapshot?.data.last_bar_ts ?? null;
 
   useEffect(() => {
     let alive = true;
@@ -47,6 +52,20 @@ export function SimpleDashboard() {
       alive = false;
     };
   }, [snapshot?.risk.daily_trades]);
+
+  useEffect(() => {
+    if (!snapshot) return;
+    let alive = true;
+    api
+      .chart("5m", 120)
+      .then((payload) => {
+        if (alive) setPulse(payload.candles as Candle[]);
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [liveBar, snapshot]);
 
   if (!snapshot) {
     return (
@@ -105,6 +124,7 @@ export function SimpleDashboard() {
 
   return (
     <div className="page simple">
+      <Onboarding />
       <section className={`simple-hero state-${state}`} data-simple-hero>
         <span className="simple-led" aria-hidden="true" />
         <div>
@@ -175,6 +195,14 @@ export function SimpleDashboard() {
           )}
         </article>
       </div>
+
+      <section className="card simple-pulse">
+        <header className="card-header">
+          <h3>El precio, en corto</h3>
+          <span className="muted small">puntos de 5 min · toca la línea</span>
+        </header>
+        <MarketPulse candles={pulse} height={110} />
+      </section>
 
       <section className="card simple-history">
         <header className="card-header">

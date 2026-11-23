@@ -33,6 +33,12 @@ const ICONS: Record<string, JSX.Element> = {
       <path d="M4 20V9M10 20V4M16 20v-7M22 20H2" />
     </>
   ),
+  lab: (
+    <>
+      <path d="M9 3h6M10 3v5.5L5.5 17a3 3 0 0 0 2.7 4h7.6a3 3 0 0 0 2.7-4L14 8.5V3" />
+      <path d="M7.5 14h9" />
+    </>
+  ),
   config: (
     <>
       <circle cx="12" cy="12" r="3" />
@@ -53,6 +59,7 @@ export const VIEWS: ViewDefinition[] = [
   { id: "operations", label: "Operaciones", hint: "órdenes" },
   { id: "history", label: "Historial", hint: "trades" },
   { id: "stats", label: "Estadísticas", hint: "métricas" },
+  { id: "lab", label: "Laboratorio", hint: "backtest" },
   { id: "config", label: "Configuración", hint: "ajustes" },
   { id: "console", label: "Consola", hint: "eventos" },
 ];

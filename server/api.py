@@ -189,7 +189,11 @@ async def bot_action(request: Request, action: str) -> dict[str, Any]:
         engine.stop()
     else:
         raise HTTPException(status_code=404, detail=f"unknown action {action}")
-    return {"status": engine.state.status}
+    # Captura el estado antes de publicar: `publish_now` cede el turno y un
+    # replay que termina en el acto cambiaría la respuesta bajo nuestros pies.
+    status = engine.state.status
+    await engine.publish_now()
+    return {"status": status}
 
 
 @router.post("/position/close")

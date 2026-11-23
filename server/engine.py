@@ -622,6 +622,17 @@ class TradingEngine:
             stats=stats if stats is not None else self.stats(),
         )
 
+    async def publish_now(self) -> None:
+        """Push a snapshot after a control action.
+
+        The publish loop is throttled, so a button could change the state and the
+        UI would keep showing the old one until the next tick. A control that
+        answers «running» while the screen says «stopped» is a bug the operator
+        reads as a broken terminal.
+        """
+        self.invalidate_publish()
+        await self._publish()
+
     def invalidate_publish(self) -> None:
         """Force the next tick to publish, e.g. after a control action."""
         self._last_publish_at = 0.0

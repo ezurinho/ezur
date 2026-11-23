@@ -11,6 +11,7 @@ import { ConfigPage } from "./pages/Config";
 import { ConsolePage } from "./pages/Console";
 import { SimpleDashboard } from "./pages/SimpleDashboard";
 import { SimpleSettings } from "./pages/SimpleSettings";
+import { LabPage } from "./pages/Lab";
 import { UiModeProvider, useUiMode } from "./mode";
 import { ThemeProvider, THEMES, useTheme } from "./theme";
 import { ToastProvider, useToast } from "./toast";
@@ -23,6 +24,7 @@ const PAGES: Record<string, () => JSX.Element> = {
   operations: OperationsPage,
   history: HistoryPage,
   stats: StatsPage,
+  lab: LabPage,
   config: ConfigPage,
   console: ConsolePage,
   settings: SimpleSettings,

@@ -116,13 +116,76 @@ export const api = {
       body: JSON.stringify({ path }),
     }),
   datasets: () => request<string[]>("/api/datasets"),
-  runBacktest: (datasetPath: string) =>
-    request<Record<string, unknown>>("/api/backtest/run", {
+  runBacktest: (datasetPath: string, options: { stress?: boolean; save?: boolean } = {}) =>
+    request<BacktestRunResponse>("/api/backtest/run", {
       method: "POST",
-      body: JSON.stringify({ dataset_path: datasetPath }),
+      body: JSON.stringify({
+        dataset_path: datasetPath,
+        stress: options.stress ?? true,
+        save: options.save ?? true,
+      }),
+    }),
+  backtestStrategies: () =>
+    request<{ active: string; items: { id: string; version: string; params: Record<string, unknown> }[] }>(
+      "/api/backtest/strategies",
+    ),
+  compareBacktests: (datasetPath: string, strategies: string[]) =>
+    request<CompareResponse>("/api/backtest/compare", {
+      method: "POST",
+      body: JSON.stringify({ dataset_path: datasetPath, strategies }),
     }),
   backtestRuns: () => request<Record<string, unknown>>("/api/backtest/runs"),
+  alertsTest: () =>
+    request<{ sent: boolean; reason: string | null; config_enabled?: boolean }>("/api/alerts/test", {
+      method: "POST",
+    }),
 };
+
+export interface GateOutcome {
+  id: string;
+  description: string;
+  status: string;
+  measured: number | null;
+  threshold: string;
+  detail: string;
+}
+
+export interface ValidationReport {
+  verdict: string;
+  failed: string[];
+  not_measured: string[];
+  outcomes: GateOutcome[];
+}
+
+export interface CompareRow {
+  run_id: string;
+  strategy_id: string;
+  strategy_version: string;
+  dataset_id: string;
+  run_group: string;
+  verdict: string;
+  trades: number;
+  gates: ValidationReport;
+  metrics: Record<string, number | null>;
+}
+
+export interface CompareResponse {
+  dataset_id: string;
+  run_group: string;
+  rows: CompareRow[];
+}
+
+export interface BacktestRunResponse {
+  run_id: string;
+  dataset_id: string;
+  config_hash: string;
+  run_group: string | null;
+  trades: number;
+  metrics: Record<string, number>;
+  verdict: string;
+  validation: ValidationReport;
+  experiment_id: string;
+}
 
 export type ConnectionState = "connecting" | "open" | "closed";
 
