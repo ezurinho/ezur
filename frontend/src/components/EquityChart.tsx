@@ -1,42 +1,60 @@
 import { useEffect, useRef } from "react";
 import { createChart, type IChartApi, type UTCTimestamp } from "lightweight-charts";
+import { useTheme } from "../theme";
 
 interface Point {
   ts: string;
   equity: number;
 }
 
+/**
+ * Equity curve with the theme's accent and a baseline at the starting capital.
+ *
+ * The baseline is the honest reference: without it a rising line says nothing
+ * about whether the account is above or below where it started. `fitContent`
+ * runs only on the first paint so a live update does not move the view.
+ */
 export function EquityChart({ points, height = 220 }: { points: Point[]; height?: number }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
+  const { theme } = useTheme();
 
   useEffect(() => {
     if (!containerRef.current) return;
+    const styles = getComputedStyle(document.documentElement);
+    const accent = styles.getPropertyValue("--accent").trim() || "#37e0d0";
+    const line = styles.getPropertyValue("--line").trim() || "#1b2533";
+    const muted = styles.getPropertyValue("--muted").trim() || "#6f8096";
+    const text = styles.getPropertyValue("--text-dim").trim() || "#a9b6c6";
+    const good = styles.getPropertyValue("--good").trim() || "#3ddc84";
+
     const chart = createChart(containerRef.current, {
       height,
       layout: {
         background: { color: "transparent" },
-        textColor: "#a9b6c6",
+        textColor: text,
         fontFamily: "JetBrains Mono, Cascadia Mono, ui-monospace, monospace",
         fontSize: 11,
       },
       grid: {
-        vertLines: { color: "#ffffff08" },
-        horzLines: { color: "#ffffff08" },
+        vertLines: { color: `${muted}14` },
+        horzLines: { color: `${muted}14` },
       },
-      timeScale: { timeVisible: true, borderColor: "#1b2533" },
-      rightPriceScale: { borderColor: "#1b2533" },
+      timeScale: { timeVisible: true, borderColor: line },
+      rightPriceScale: { borderColor: line },
       crosshair: {
-        vertLine: { color: "#37e0d066", style: 3, labelBackgroundColor: "#12303a" },
-        horzLine: { color: "#37e0d066", style: 3, labelBackgroundColor: "#12303a" },
+        vertLine: { color: `${accent}66`, style: 3, labelBackgroundColor: accent },
+        horzLine: { color: `${accent}66`, style: 3, labelBackgroundColor: accent },
       },
     });
+
     const series = chart.addAreaSeries({
-      lineColor: "#37e0d0",
-      topColor: "#37e0d055",
-      bottomColor: "#37e0d000",
+      lineColor: accent,
+      topColor: `${accent}55`,
+      bottomColor: `${accent}00`,
       lineWidth: 2,
       priceLineVisible: false,
+      lastValueVisible: true,
     });
     series.setData(
       points.map((point) => ({
@@ -44,13 +62,26 @@ export function EquityChart({ points, height = 220 }: { points: Point[]; height?
         value: point.equity,
       })),
     );
+
+    const start = points[0]?.equity;
+    if (start !== undefined) {
+      series.createPriceLine({
+        price: start,
+        color: `${good}88`,
+        lineWidth: 1,
+        lineStyle: 2,
+        axisLabelVisible: true,
+        title: "inicio",
+      });
+    }
+
     chart.timeScale().fitContent();
     chartRef.current = chart;
     return () => {
       chart.remove();
       chartRef.current = null;
     };
-  }, [points, height]);
+  }, [points, height, theme]);
 
   if (points.length === 0) {
     return <p className="empty">Sin puntos de equidad</p>;

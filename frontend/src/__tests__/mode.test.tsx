@@ -84,10 +84,10 @@ describe("Sidebar por modo", () => {
     expect(SIMPLE_VIEWS.length).toBe(4);
   });
 
-  it("pro sigue enseñando las siete", () => {
+  it("avanzado sigue enseñando todas, laboratorio incluido", () => {
     render(<Sidebar active="home" onSelect={() => undefined} />);
     expect(screen.getAllByRole("button").length).toBe(VIEWS.length);
-    expect(VIEWS.length).toBe(7);
+    expect(VIEWS.map((view) => view.id)).toContain("lab");
   });
 
   it("el modo se anuncia en el DOM, no solo con color", () => {

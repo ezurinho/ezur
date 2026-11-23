@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
@@ -23,13 +24,68 @@ def _iso(value: datetime | None) -> str | None:
     return value.isoformat() if value is not None else None
 
 
+class _LockedConnection:
+    """One SQLite connection, serialised across threads.
+
+    `sqlite3` with `check_same_thread=False` lets any thread call `commit`, and
+    the engine (event loop) and a request handler can both be inside
+    `with self.conn:` at the same time — which surfaces as
+    «cannot commit - no transaction is active». A re-entrant lock is the least
+    invasive truthful fix: writes are serialised, reads stay untouched.
+    """
+
+    def __init__(self, conn: sqlite3.Connection) -> None:
+        self._conn = conn
+        self._lock = threading.RLock()
+
+    def execute(self, *args: Any, **kwargs: Any):
+        with self._lock:
+            return self._conn.execute(*args, **kwargs)
+
+    def executemany(self, *args: Any, **kwargs: Any):
+        with self._lock:
+            return self._conn.executemany(*args, **kwargs)
+
+    def commit(self) -> None:
+        with self._lock:
+            self._conn.commit()
+
+    def rollback(self) -> None:
+        with self._lock:
+            self._conn.rollback()
+
+    def __enter__(self):
+        self._lock.acquire()
+        self._conn.__enter__()
+        return self._conn
+
+    def __exit__(self, *exc: Any):
+        try:
+            return self._conn.__exit__(*exc)
+        finally:
+            self._lock.release()
+
+    def __getattr__(self, item: str) -> Any:
+        return getattr(self._conn, item)
+
+    def __setattr__(self, item: str, value: Any) -> None:
+        # `row_factory` and `text_factory` are attributes of the real connection;
+        # setting them on the proxy would silently keep returning tuples.
+        if item in {"_conn", "_lock"}:
+            object.__setattr__(self, item, value)
+        else:
+            setattr(self._conn, item, value)
+
+
 class Store:
     def __init__(self, db_path: str | Path = "data/terminal.db") -> None:
         path = Path(db_path)
         if path.parent and str(path.parent) not in ("", "."):
             path.parent.mkdir(parents=True, exist_ok=True)
         self.path = path
-        self.conn = sqlite3.connect(str(path), check_same_thread=False)
+        self.conn = _LockedConnection(
+            sqlite3.connect(str(path), check_same_thread=False, timeout=10.0)
+        )
         self.conn.row_factory = sqlite3.Row
         self.conn.execute("PRAGMA journal_mode=WAL")
         self.conn.execute("PRAGMA synchronous=NORMAL")
