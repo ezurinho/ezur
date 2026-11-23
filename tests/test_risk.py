@@ -233,3 +233,23 @@ def test_cooldown_out_of_range_is_rejected():
         RiskConfig(loss_streak_cooldown_min=-1)
     with pytest.raises(ValueError):
         RiskConfig(loss_streak_cooldown_min=2000)
+
+
+def test_last_exit_survives_a_restart(tmp_path, settings, signal_long):
+    """El reinicio no puede dejar la pausa de racha sin fecha."""
+    from datetime import datetime, timezone
+
+    from server.db import Store
+    from server.engine import TradingEngine
+
+    store = Store(tmp_path / "restart.db")
+    try:
+        engine = TradingEngine(settings, store, strategy=None, mode="paper")
+        stamp = datetime(2026, 11, 23, 10, 30, tzinfo=timezone.utc)
+        engine.last_exit_ts = stamp
+        engine._persist()
+
+        reborn = TradingEngine(settings, store, strategy=None, mode="paper")
+        assert reborn.last_exit_ts == stamp
+    finally:
+        store.close()
