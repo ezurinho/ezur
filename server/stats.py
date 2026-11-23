@@ -36,7 +36,33 @@ EMPTY_STATS: dict[str, Any] = {
     "top5_share": 0.0,
     "ambiguous_trades": 0,
     "expectancy_ci80_low": 0.0,
+    "r_median": 0.0,
+    "r_distribution": {},
 }
+
+# Fixed buckets so two runs are comparable and a histogram cannot flatter a tail.
+R_BUCKETS: tuple[tuple[str, float, float], ...] = (
+    ("<= -2R", float("-inf"), -2.0),
+    ("-2R a -1R", -2.0, -1.0),
+    ("-1R a -0.5R", -1.0, -0.5),
+    ("-0.5R a 0", -0.5, 0.0),
+    ("0 a 0.5R", 0.0, 0.5),
+    ("0.5R a 1R", 0.5, 1.0),
+    ("1R a 2R", 1.0, 2.0),
+    ("> 2R", 2.0, float("inf")),
+)
+
+
+def r_distribution(values: list[float]) -> dict[str, int]:
+    """Count trades per R bucket. Buckets are (low, high]: the boundary belongs
+    to the bucket that ends on it, so a flat -2R trade is not counted twice."""
+    counts = {label: 0 for label, _, _ in R_BUCKETS}
+    for value in values:
+        for label, low, high in R_BUCKETS:
+            if low < value <= high:
+                counts[label] += 1
+                break
+    return counts
 
 
 def _max_loss_streak(records: list[TradeRecord]) -> int:
@@ -49,6 +75,16 @@ def _max_loss_streak(records: list[TradeRecord]) -> int:
         elif trade.pnl_net > 0:
             streak = 0
     return worst
+
+
+def _median(values: list[float]) -> float:
+    if not values:
+        return 0.0
+    ordered = sorted(values)
+    middle = len(ordered) // 2
+    if len(ordered) % 2:
+        return ordered[middle]
+    return (ordered[middle - 1] + ordered[middle]) / 2
 
 
 def _bootstrap_low(
@@ -122,6 +158,8 @@ def compute_stats(
         "expectancy_ci80_low": _bootstrap_low(
             [trade.r_multiple for trade in records]
         ),
+        "r_median": _median([trade.r_multiple for trade in records]),
+        "r_distribution": r_distribution([trade.r_multiple for trade in records]),
         "first_ts": min(trade.closed_ts for trade in records).isoformat(),
         "last_ts": max(trade.closed_ts for trade in records).isoformat(),
     }
