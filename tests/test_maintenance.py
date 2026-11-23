@@ -83,3 +83,62 @@ def test_reset_on_empty_state_is_a_noop(tmp_path):
     result = run_reset(tmp_path / "a.db", tmp_path / "b.json", tmp_path / "backups", confirm=True)
     assert result["empty"] is True
     assert result["executed"] is False
+
+
+def test_reset_cli_dry_run_changes_nothing(tmp_path, monkeypatch, capsys):
+    from server.db import Store
+    from server import reset
+
+    db = tmp_path / "terminal.db"
+    store = Store(db)
+    store.insert_event("info", "engine", "hola")
+    store.close()
+
+    monkeypatch.setattr(
+        "sys.argv",
+        ["reset", "--db", str(db), "--config", str(tmp_path / "config.json"),
+         "--backups", str(tmp_path / "backups"), "--dry-run"],
+    )
+    reset.main()
+    out = capsys.readouterr().out
+    assert "Plan (nada modificado)" in out
+    assert db.exists()
+
+
+def test_reset_cli_archives_when_confirmed(tmp_path, monkeypatch, capsys):
+    from server.db import Store
+    from server import reset
+
+    db = tmp_path / "terminal.db"
+    store = Store(db)
+    store.insert_event("info", "engine", "hola")
+    store.close()
+
+    monkeypatch.setattr(
+        "sys.argv",
+        ["reset", "--db", str(db), "--config", str(tmp_path / "config.json"),
+         "--backups", str(tmp_path / "backups"), "--yes"],
+    )
+    reset.main()
+    assert "Archivado en" in capsys.readouterr().out
+    archived = list((tmp_path / "backups").rglob("terminal.db*"))
+    assert archived
+
+
+def test_diagnostics_cli_prints_json(tmp_path, monkeypatch, capsys):
+    from server.db import Store
+    from server import diagnostics
+
+    db = tmp_path / "terminal.db"
+    store = Store(db)
+    store.insert_event("info", "engine", "hola")
+    store.close()
+
+    monkeypatch.setattr("sys.argv", ["diagnostics", "--db", str(db)])
+    diagnostics.main()
+    import json
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["exists"] is True
+    assert payload["integrity"] == "ok"
+    assert payload["missing_tables"] == []
