@@ -253,3 +253,48 @@ def test_last_exit_survives_a_restart(tmp_path, settings, signal_long):
         assert reborn.last_exit_ts == stamp
     finally:
         store.close()
+
+
+# --- geometría de la señal: un plugin con el signo cambiado ----------------
+def _sided(side: str, stop: float, target: float | None) -> Signal:
+    return Signal(
+        key=f"geometry:{side}",
+        side=side,  # type: ignore[arg-type]
+        reason="test",
+        ts=NOW,
+        stop_price=stop,
+        target_price=target,
+    )
+
+
+def test_a_long_stop_above_the_entry_is_rejected(settings):
+    decision = _evaluate(settings, _sided("long", 101.0, 103.0), _portfolio(settings))
+    assert decision.approved is False
+    assert decision.code == "invalid_stop_side"
+
+
+def test_a_short_stop_below_the_entry_is_rejected(settings):
+    decision = _evaluate(settings, _sided("short", 99.0, 97.0), _portfolio(settings))
+    assert decision.approved is False
+    assert decision.code == "invalid_stop_side"
+
+
+def test_a_target_behind_the_entry_is_rejected(settings):
+    long_side = _evaluate(settings, _sided("long", 99.5, 99.0), _portfolio(settings))
+    assert long_side.approved is False
+    assert long_side.code == "invalid_target_side"
+
+    short_side = _evaluate(settings, _sided("short", 100.5, 101.0), _portfolio(settings))
+    assert short_side.approved is False
+    assert short_side.code == "invalid_target_side"
+
+
+def test_a_correct_short_is_approved(settings):
+    decision = _evaluate(settings, _sided("short", 100.5, 99.0), _portfolio(settings))
+    assert decision.approved is True
+    assert decision.units >= 1
+
+
+def test_a_signal_without_target_is_still_approved(settings):
+    decision = _evaluate(settings, _sided("long", 99.5, None), _portfolio(settings))
+    assert decision.approved is True

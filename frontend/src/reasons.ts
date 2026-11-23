@@ -21,6 +21,10 @@ const WORDS: Record<string, string> = {
   no_signal: "El precio no cumple su regla de entrada ahora mismo.",
   risk_per_trade: "La operación saldría demasiado grande para el riesgo permitido.",
   stop_too_wide: "El stop necesario es más ancho del máximo permitido.",
+  invalid_stop_side:
+    "La señal pide el stop del lado equivocado: no protegería nada. Es un fallo de la estrategia, no del mercado.",
+  invalid_target_side:
+    "La señal pide el objetivo detrás de la entrada: se cerraría sola en la primera vela. Es un fallo de la estrategia.",
 };
 
 /** Qué haría falta para desbloquearlo. Vacío = se desbloquea solo. */
