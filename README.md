@@ -150,6 +150,9 @@ Velas de 1 minuto de BTC-USDT desde la API pública de OKX, sin claves y sin
 broker: paper trading con precios reales, backfill de 4 horas y sondeo cada 5 s.
 El gráfico se redibuja cuando llega una vela nueva. Ver `docs/OPERACION.md`.
 
+![Inicio con datos reales](docs/img/live-dashboard.png)
+![Gráfico con velas de OKX](docs/img/live-chart.png)
+
 ## Alertas
 
 Un webhook opcional envía los eventos `warn`/`error` (parada de emergencia,
