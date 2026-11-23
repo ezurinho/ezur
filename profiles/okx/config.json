@@ -5,8 +5,9 @@
     "max_retries": 3,
     "min_level": "warn",
     "timeout_s": 5.0,
-    "webhook_url": null
+    "webhook_url": ""
   },
+  "auto_start": true,
   "execution": {
     "commission_per_unit_side": 0.049,
     "fill_model": "intrabar",

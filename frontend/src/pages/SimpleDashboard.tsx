@@ -4,6 +4,7 @@ import { DispatchButton } from "../components/Controls";
 import { Sparkline } from "../components/Sparkline";
 import { AnimatedNumber } from "../components/AnimatedNumber";
 import { MarketPulse } from "../components/MarketPulse";
+import { TradeRange } from "../components/TradeRange";
 import { Onboarding } from "../components/Onboarding";
 import type { Candle } from "../types";
 import { useUiMode } from "../mode";
@@ -89,7 +90,8 @@ export function SimpleDashboard() {
   const equitySeries = (stats.equity ?? []).map((point) => point.equity);
   const capital = risk.equity - risk.daily_pnl || risk.equity;
   const dailyPct = capital ? (risk.daily_pnl / capital) * 100 : 0;
-  const price = quotes[Object.keys(quotes)[0] ?? ""]?.last ?? null;
+  const primarySymbol = snapshot.instruments.find((item) => item.role === "primary")?.symbol;
+  const price = primarySymbol ? (quotes[primarySymbol]?.last ?? null) : null;
 
   const blocked = Boolean(risk.blocked || risk.block_reason);
   const state = status === "running" ? (blocked ? "waiting" : "working") : status;
@@ -179,9 +181,18 @@ export function SimpleDashboard() {
               <strong className="simple-big">
                 {SIDE_WORD[position.side] ?? position.side} {position.units} u
               </strong>
-              <span className="simple-foot">
-                Entró a {formatValue(position.entry_price, "price")} en {position.symbol}
+              <span className={`simple-foot ${position.unrealized && position.unrealized > 0 ? "tone-good" : position.unrealized && position.unrealized < 0 ? "tone-bad" : ""}`}>
+                {position.unrealized === null
+                  ? `Entró a ${formatValue(position.entry_price, "price")}`
+                  : `${position.unrealized >= 0 ? "ganando" : "perdiendo"} ${money(Math.abs(position.unrealized))} ahora mismo`}
               </span>
+              <TradeRange
+                side={position.side}
+                entry={position.entry_price}
+                stop={position.stop_price}
+                target={position.target_price}
+                price={price}
+              />
               <span className="simple-hint">
                 Si toca el stop pierde {money(risk.open_risk)}. Si toca el objetivo, gana más o menos lo mismo.
               </span>

@@ -214,3 +214,43 @@ describe("paleta de comandos", () => {
     expect(container).toBeEmptyDOMElement();
   });
 });
+
+describe("gráficos que explican", () => {
+  it("la curva bajo el agua mide contra el pico, no contra el inicio", async () => {
+    const { drawdownCurve } = await import("../components/Underwater");
+    const series = drawdownCurve([
+      { equity: 100 },
+      { equity: 120 },
+      { equity: 90 },
+      { equity: 130 },
+    ]);
+    expect(series[0]).toBe(0);
+    expect(series[1]).toBe(0);
+    expect(series[2]).toBeCloseTo(-25, 5);
+    expect(series[3]).toBe(0);
+  });
+
+  it("sin puntos no inventa una curva", async () => {
+    const { drawdownCurve } = await import("../components/Underwater");
+    expect(drawdownCurve([])).toEqual([]);
+  });
+
+  it("la barra de la operación marca stop, entrada y objetivo", async () => {
+    const { TradeRange } = await import("../components/TradeRange");
+    const { container } = render(
+      <TradeRange side="short" entry={100} stop={104} target={92} price={96} />,
+    );
+    const bar = container.querySelector("[data-trade-range]");
+    expect(bar).not.toBeNull();
+    expect(bar?.textContent).toContain("stop");
+    expect(bar?.textContent).toContain("objetivo");
+    const dot = container.querySelector(".trade-range-price");
+    expect(dot?.className).toContain("up");
+  });
+
+  it("sin objetivo lo dice en vez de dibujar una barra falsa", async () => {
+    const { TradeRange } = await import("../components/TradeRange");
+    render(<TradeRange side="long" entry={100} stop={95} target={null} price={101} />);
+    expect(screen.getByText(/Sin objetivo definido/)).toBeInTheDocument();
+  });
+});

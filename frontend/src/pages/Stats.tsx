@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { EquityChart } from "../components/EquityChart";
+import { Underwater } from "../components/Underwater";
 import { KvPanel } from "../components/KvPanel";
 import { api } from "../api";
 import { formatValue } from "../utils";
@@ -300,6 +301,13 @@ export function StatsPage() {
             <span className="muted small">{stats?.equity.length ?? 0} cierres</span>
           </header>
           <EquityChart points={stats?.equity ?? []} />
+          <header className="card-header underwater-head">
+            <h3>Bajo el agua</h3>
+            <span className="muted small">
+              distancia al máximo de la cuenta · el pico siempre es 0 %
+            </span>
+          </header>
+          <Underwater points={stats?.equity ?? []} />
           <h3>Por día</h3>
           <BreakdownTable rows={stats?.by_day ?? {}} />
         </section>

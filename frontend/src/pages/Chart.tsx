@@ -14,6 +14,32 @@ import { useStore } from "../store";
 import type { Candle } from "../types";
 
 const TIMEFRAMES = ["1m", "5m", "15m", "30m"] as const;
+const PREF_KEY = "ezur.chart.prefs";
+
+interface Prefs {
+  timeframe: (typeof TIMEFRAMES)[number];
+  overlays: Overlays;
+}
+
+function readPrefs(): Prefs | null {
+  try {
+    const raw = window.localStorage.getItem(PREF_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<Prefs>;
+    if (!parsed.timeframe || !TIMEFRAMES.includes(parsed.timeframe)) return null;
+    return {
+      timeframe: parsed.timeframe,
+      overlays: {
+        sma: parsed.overlays?.sma ?? true,
+        volume: parsed.overlays?.volume ?? true,
+        zones: parsed.overlays?.zones ?? true,
+        markers: parsed.overlays?.markers ?? true,
+      },
+    };
+  } catch {
+    return null;
+  }
+}
 
 interface Overlays {
   sma: boolean;
@@ -51,13 +77,22 @@ export function ChartPage() {
   const candleRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const volumeRef = useRef<ISeriesApi<"Histogram"> | null>(null);
   const smaRefs = useRef<(ISeriesApi<"Line"> | null)[]>([]);
-  const [timeframe, setTimeframe] = useState<(typeof TIMEFRAMES)[number]>("1m");
-  const [overlays, setOverlays] = useState<Overlays>({
-    sma: true,
-    volume: true,
-    zones: true,
-    markers: true,
-  });
+  const initial = useRef(readPrefs());
+  const [timeframe, setTimeframe] = useState<(typeof TIMEFRAMES)[number]>(
+    initial.current?.timeframe ?? "1m",
+  );
+  const [overlays, setOverlays] = useState<Overlays>(
+    initial.current?.overlays ?? { sma: true, volume: true, zones: true, markers: true },
+  );
+
+  // La configuración del gráfico es del operador, no de la sesión: se recuerda.
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(PREF_KEY, JSON.stringify({ timeframe, overlays }));
+    } catch {
+      /* sin almacenamiento, el gráfico simplemente vuelve a los valores por defecto */
+    }
+  }, [timeframe, overlays]);
   const [candles, setCandles] = useState<Candle[]>([]);
   const lastBarRef = useRef<string | null>(null);
 

@@ -50,6 +50,8 @@ export function ConfigPage() {
   const { snapshot } = useStore();
   const { push } = useToast();
   const [testing, setTesting] = useState(false);
+  const [alertForm, setAlertForm] = useState({ enabled: false, url: "", min_level: "warn" });
+  const [alertDirty, setAlertDirty] = useState(false);
   const [tab, setTab] = useState<Tab>("instrumentos");
   const [config, setConfig] = useState<Record<string, unknown> | null>(null);
   const [schema, setSchema] = useState<Schema | null>(null);
@@ -131,6 +133,35 @@ export function ConfigPage() {
       setMessage(`${label} guardado y aplicado`);
     } catch (cause) {
       setError((cause as Error).message);
+    }
+  };
+
+  useEffect(() => {
+    if (!config || alertDirty) return;
+    const alerts = (config.alerts ?? {}) as Record<string, unknown>;
+    setAlertForm({
+      enabled: Boolean(alerts.enabled),
+      url: String(alerts.webhook_url ?? ""),
+      min_level: String(alerts.min_level ?? "warn"),
+    });
+  }, [config, alertDirty]);
+
+  const saveAlerts = async () => {
+    await save(
+      {
+        alerts: {
+          enabled: alertForm.enabled,
+          webhook_url: alertForm.url.trim(),
+          min_level: alertForm.min_level,
+        },
+      },
+      "Alertas",
+    );
+    setAlertDirty(false);
+    try {
+      setAlerts(await api.alerts());
+    } catch {
+      /* el panel se refrescará en la próxima visita */
     }
   };
 
@@ -314,6 +345,52 @@ export function ConfigPage() {
           ) : (
             <p className="muted small">Consultando estado de alertas…</p>
           )}
+          <div className="alert-form">
+            <label className="lab-check">
+              <input
+                type="checkbox"
+                checked={alertForm.enabled}
+                onChange={(event) => {
+                  setAlertDirty(true);
+                  setAlertForm({ ...alertForm, enabled: event.target.checked });
+                }}
+              />
+              <span>
+                Activar alertas
+                <small>se envían a un webhook propio; si está caído, no detiene el motor</small>
+              </span>
+            </label>
+            <label className="lab-field">
+              <span>URL del webhook</span>
+              <input
+                type="url"
+                placeholder="https://hooks.tuservicio.com/…"
+                value={alertForm.url}
+                onChange={(event) => {
+                  setAlertDirty(true);
+                  setAlertForm({ ...alertForm, url: event.target.value });
+                }}
+              />
+            </label>
+            <label className="lab-field">
+              <span>Nivel mínimo</span>
+              <select
+                value={alertForm.min_level}
+                onChange={(event) => {
+                  setAlertDirty(true);
+                  setAlertForm({ ...alertForm, min_level: event.target.value });
+                }}
+              >
+                <option value="info">info · todo</option>
+                <option value="warn">warn · avisos y errores</option>
+                <option value="error">error · solo fallos</option>
+              </select>
+            </label>
+            <button type="button" className="btn" onClick={saveAlerts} disabled={!alertDirty}>
+              Guardar alertas
+            </button>
+          </div>
+
           <div className="button-row">
             <button
               type="button"
