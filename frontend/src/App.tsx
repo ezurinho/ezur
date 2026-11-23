@@ -77,6 +77,58 @@ function Shell() {
         group: "Interfaz",
         run: () => setMode(isSimple ? "advanced" : "simple"),
       },
+      {
+        id: "act-alert-test",
+        label: "Enviar alerta de prueba",
+        hint: "webhook",
+        group: "Alerta",
+        keywords: "test webhook notificacion",
+        run: () => {
+          void api
+            .alertsTest()
+            .then((result) =>
+              push(
+                result.sent
+                  ? { title: "Alerta de prueba entregada", tone: "good" }
+                  : {
+                      title: "La alerta no salió",
+                      detail: result.reason ?? "sin motivo informado",
+                      tone: "warn",
+                    },
+              ),
+            )
+            .catch((cause: Error) =>
+              push({ title: "La alerta no salió", detail: cause.message, tone: "bad" }),
+            );
+        },
+      },
+      {
+        id: "act-reset-stats",
+        label: "Reiniciar estadísticas…",
+        hint: "borra operaciones",
+        group: "Datos",
+        keywords: "borrar limpiar reset",
+        run: () => {
+          void api
+            .statsResetPreview()
+            .then((preview) => {
+              const ok = window.confirm(
+                `¿Borrar ${preview.trades} operación(es) y el historial de pruebas?
+` +
+                  "Esto no se puede deshacer. El motor sigue corriendo.",
+              );
+              if (!ok) return;
+              return api
+                .resetStats(false)
+                .then(() =>
+                  push({ title: "Estadísticas reiniciadas", detail: "El motor no se ha tocado.", tone: "good" }),
+                );
+            })
+            .catch((cause: Error) =>
+              push({ title: "No se pudo reiniciar", detail: cause.message, tone: "bad" }),
+            );
+        },
+      },
       ...THEMES.map((theme) => ({
         id: `theme-${theme.id}`,
         label: `Tema ${theme.label}`,

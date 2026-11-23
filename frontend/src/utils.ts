@@ -75,3 +75,29 @@ export function groupEntries(
   }
   return Array.from(groups.entries());
 }
+
+/**
+ * ¿La última vela es de ahora o de hace media hora?
+ *
+ * Un gráfico que dice «en vivo» con datos de hace 20 minutos es peor que uno
+ * que dice «parado». El umbral es 150 s porque la vela de 1m siempre llega algo
+ * tarde.
+ */
+export type Freshness = { tone: "live" | "lag" | "stale" | "none"; label: string };
+
+export function marketFreshness(
+  lastBarTs: string | null | undefined,
+  nowMs: number = Date.now(),
+): Freshness {
+  if (!lastBarTs) return { tone: "none", label: "sin datos" };
+  const ts = Date.parse(lastBarTs);
+  if (Number.isNaN(ts)) return { tone: "none", label: "sin datos" };
+  const ageSeconds = Math.max(0, (nowMs - ts) / 1000);
+  if (ageSeconds <= 150) return { tone: "live", label: "en vivo" };
+  const minutes = Math.round(ageSeconds / 60);
+  if (ageSeconds <= 900) return { tone: "lag", label: `retrasado ${minutes} min` };
+  return {
+    tone: "stale",
+    label: minutes >= 60 ? `parado hace ${Math.round(minutes / 60)} h` : `parado hace ${minutes} min`,
+  };
+}

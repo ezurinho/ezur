@@ -11,6 +11,7 @@ import { useUiMode } from "../mode";
 import { useTheme } from "../theme";
 import { api } from "../api";
 import { useStore } from "../store";
+import { marketFreshness } from "../utils";
 import type { Candle } from "../types";
 
 const TIMEFRAMES = ["1m", "5m", "15m", "30m"] as const;
@@ -175,6 +176,8 @@ export function ChartPage() {
   }, [theme, periods]);
 
   const liveBar = snapshot?.data.last_bar_ts ?? null;
+  // La frescura se recalcula con cada snapshot; no hace falta un reloj propio.
+  const fresh = marketFreshness(liveBar, Date.now());
 
   useEffect(() => {
     let cancelled = false;
@@ -252,8 +255,8 @@ export function ChartPage() {
     <div className="page">
       <h2 className="page-title">
         Gráfico
-        <span className="live-chip">
-          <span className="led led-running" aria-hidden="true" /> en vivo
+        <span className={`live-chip live-${fresh.tone}`} data-freshness={fresh.tone}>
+          <span className={`led led-${fresh.tone}`} aria-hidden="true" /> {fresh.label}
         </span>
       </h2>
 

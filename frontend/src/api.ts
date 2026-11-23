@@ -64,6 +64,13 @@ export const api = {
       method: "PUT",
       body: JSON.stringify({ patch }),
     }),
+  statsResetPreview: () =>
+    request<{ trades: number; backtests: number; events: number }>("/api/stats/reset/preview"),
+  resetStats: (includeBacktests = false) =>
+    request<{ deleted: Record<string, number> }>("/api/stats/reset", {
+      method: "POST",
+      body: JSON.stringify({ include_backtests: includeBacktests }),
+    }),
   resetConfig: () =>
     request<Record<string, unknown>>("/api/config/reset", { method: "POST" }),
   strategySchema: (id?: string) =>
