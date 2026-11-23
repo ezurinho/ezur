@@ -15,11 +15,28 @@ import { marketFreshness } from "../utils";
 import type { Candle } from "../types";
 
 const TIMEFRAMES = ["1m", "5m", "15m", "30m"] as const;
+const CHART_TYPES = ["candles", "line", "area"] as const;
+type ChartType = (typeof CHART_TYPES)[number];
+const TYPE_LABELS: Record<ChartType, string> = {
+  candles: "velas",
+  line: "línea",
+  area: "área",
+};
 const PREF_KEY = "ezur.chart.prefs";
 
 interface Prefs {
   timeframe: (typeof TIMEFRAMES)[number];
+  type: ChartType;
+  grid: boolean;
   overlays: Overlays;
+}
+
+/** Bar under the crosshair, or the close when the series has no OHLC. */
+interface HoverBar {
+  o?: number;
+  h?: number;
+  l?: number;
+  c: number;
 }
 
 function readPrefs(): Prefs | null {
@@ -30,6 +47,8 @@ function readPrefs(): Prefs | null {
     if (!parsed.timeframe || !TIMEFRAMES.includes(parsed.timeframe)) return null;
     return {
       timeframe: parsed.timeframe,
+      type: parsed.type && CHART_TYPES.includes(parsed.type) ? parsed.type : "candles",
+      grid: parsed.grid ?? true,
       overlays: {
         sma: parsed.overlays?.sma ?? true,
         volume: parsed.overlays?.volume ?? true,
@@ -72,10 +91,12 @@ function periodsFromMetrics(metrics: Record<string, { label: string }>): number[
 export function ChartPage() {
   const { snapshot } = useStore();
   const { isSimple } = useUiMode();
-  const { theme } = useTheme();
+  const { theme, accent: accentOverride } = useTheme();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
-  const candleRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+  const priceRef = useRef<
+    ISeriesApi<"Candlestick"> | ISeriesApi<"Line"> | ISeriesApi<"Area"> | null
+  >(null);
   const volumeRef = useRef<ISeriesApi<"Histogram"> | null>(null);
   const smaRefs = useRef<(ISeriesApi<"Line"> | null)[]>([]);
   const initial = useRef(readPrefs());
@@ -85,15 +106,21 @@ export function ChartPage() {
   const [overlays, setOverlays] = useState<Overlays>(
     initial.current?.overlays ?? { sma: true, volume: true, zones: true, markers: true },
   );
+  const [chartType, setChartType] = useState<ChartType>(initial.current?.type ?? "candles");
+  const [grid, setGrid] = useState<boolean>(initial.current?.grid ?? true);
+  const [hover, setHover] = useState<HoverBar | null>(null);
 
   // La configuración del gráfico es del operador, no de la sesión: se recuerda.
   useEffect(() => {
     try {
-      window.localStorage.setItem(PREF_KEY, JSON.stringify({ timeframe, overlays }));
+      window.localStorage.setItem(
+        PREF_KEY,
+        JSON.stringify({ timeframe, type: chartType, grid, overlays }),
+      );
     } catch {
       /* sin almacenamiento, el gráfico simplemente vuelve a los valores por defecto */
     }
-  }, [timeframe, overlays]);
+  }, [timeframe, chartType, grid, overlays]);
   const [candles, setCandles] = useState<Candle[]>([]);
   const lastBarRef = useRef<string | null>(null);
 
@@ -123,7 +150,10 @@ export function ChartPage() {
         fontFamily: "JetBrains Mono, Cascadia Mono, ui-monospace, monospace",
         fontSize: 11,
       },
-      grid: { vertLines: { color: `${muted}14` }, horzLines: { color: `${muted}14` } },
+      grid: {
+        vertLines: { color: grid ? `${muted}14` : "transparent" },
+        horzLines: { color: grid ? `${muted}14` : "transparent" },
+      },
       rightPriceScale: { borderColor: line, scaleMargins: { top: 0.08, bottom: 0.26 } },
       timeScale: { timeVisible: true, borderColor: line, rightOffset: 4 },
       crosshair: {
@@ -133,15 +163,32 @@ export function ChartPage() {
       },
     });
 
-    const series = chart.addCandlestickSeries({
-      upColor: good,
-      downColor: bad,
-      borderVisible: false,
-      wickUpColor: `${good}aa`,
-      wickDownColor: `${bad}aa`,
-      priceLineColor: accent,
-      priceLineStyle: 2,
-    });
+    const series =
+      chartType === "candles"
+        ? chart.addCandlestickSeries({
+            upColor: good,
+            downColor: bad,
+            borderVisible: false,
+            wickUpColor: `${good}aa`,
+            wickDownColor: `${bad}aa`,
+            priceLineColor: accent,
+            priceLineStyle: 2,
+          })
+        : chartType === "line"
+          ? chart.addLineSeries({
+              color: accent,
+              lineWidth: 2,
+              priceLineColor: accent,
+              priceLineStyle: 2,
+            })
+          : chart.addAreaSeries({
+              lineColor: accent,
+              topColor: `${accent}44`,
+              bottomColor: `${accent}00`,
+              lineWidth: 2,
+              priceLineColor: accent,
+              priceLineStyle: 2,
+            });
     series.priceScale().applyOptions({ scaleMargins: { top: 0.08, bottom: 0.26 } });
 
     const volume = chart.addHistogramSeries({
@@ -163,17 +210,43 @@ export function ChartPage() {
       }),
     );
 
+    // Lectura bajo el cursor: el dato que el operador está mirando, no el último.
+    chart.subscribeCrosshairMove((param) => {
+      const active = priceRef.current;
+      if (!active || !param.time) {
+        setHover(null);
+        return;
+      }
+      const data = param.seriesData.get(active as ISeriesApi<"Candlestick">) as
+        | { open?: number; high?: number; low?: number; close?: number }
+        | { value?: number }
+        | undefined;
+      if (!data) {
+        setHover(null);
+        return;
+      }
+      if (typeof (data as { close?: number }).close === "number") {
+        const bar = data as { open?: number; high?: number; low?: number; close: number };
+        setHover({ o: bar.open, h: bar.high, l: bar.low, c: bar.close });
+      } else if (typeof (data as { value?: number }).value === "number") {
+        setHover({ c: (data as { value: number }).value });
+      } else {
+        setHover(null);
+      }
+    });
+
     chartRef.current = chart;
-    candleRef.current = series;
+    priceRef.current = series;
     volumeRef.current = volume;
     return () => {
       chart.remove();
       chartRef.current = null;
-      candleRef.current = null;
+      priceRef.current = null;
       volumeRef.current = null;
       smaRefs.current = [];
+      setHover(null);
     };
-  }, [theme, periods]);
+  }, [theme, periods, chartType, grid, accentOverride]);
 
   const liveBar = snapshot?.data.last_bar_ts ?? null;
   // La frescura se recalcula con cada snapshot; no hace falta un reloj propio.
@@ -185,18 +258,27 @@ export function ChartPage() {
     api
       .chart(timeframe)
       .then((payload) => {
-        if (cancelled || !candleRef.current) return;
+        if (cancelled || !priceRef.current) return;
         const rows = payload.candles as Candle[];
         setCandles(rows);
-        candleRef.current.setData(
-          rows.map((candle) => ({
-            time: (Date.parse(candle.t) / 1000) as UTCTimestamp,
-            open: candle.o,
-            high: candle.h,
-            low: candle.l,
-            close: candle.c,
-          })),
-        );
+        if (chartType === "candles") {
+          (priceRef.current as ISeriesApi<"Candlestick">).setData(
+            rows.map((candle) => ({
+              time: (Date.parse(candle.t) / 1000) as UTCTimestamp,
+              open: candle.o,
+              high: candle.h,
+              low: candle.l,
+              close: candle.c,
+            })),
+          );
+        } else {
+          (priceRef.current as ISeriesApi<"Line">).setData(
+            rows.map((candle) => ({
+              time: (Date.parse(candle.t) / 1000) as UTCTimestamp,
+              value: candle.c,
+            })),
+          );
+        }
         volumeRef.current?.setData(
           rows.map((candle) => ({
             time: (Date.parse(candle.t) / 1000) as UTCTimestamp,
@@ -230,10 +312,9 @@ export function ChartPage() {
     return () => {
       cancelled = true;
     };
-  }, [timeframe, liveBar, periods]);
+  }, [timeframe, liveBar, periods, chartType]);
 
   useEffect(() => {
-    candleRef.current?.applyOptions({ visible: true });
     volumeRef.current?.applyOptions({ visible: overlays.volume });
     smaRefs.current.forEach((series) => series?.applyOptions({ visible: overlays.sma }));
   }, [overlays]);
@@ -281,7 +362,31 @@ export function ChartPage() {
           ))}
         </div>
 
+        <div className="segmented" role="group" aria-label="Tipo de gráfico">
+          {CHART_TYPES.map((value) => (
+            <button
+              key={value}
+              type="button"
+              className={value === chartType ? "seg active" : "seg"}
+              onClick={() => setChartType(value)}
+              aria-pressed={value === chartType}
+              data-chart-type={value}
+            >
+              {TYPE_LABELS[value]}
+            </button>
+          ))}
+        </div>
+
         <div className="chart-toggles" role="group" aria-label="Capas del gráfico">
+          <button
+            type="button"
+            className={grid ? "chip active" : "chip"}
+            onClick={() => setGrid((value) => !value)}
+            aria-pressed={grid}
+            data-chart-toggle="grid"
+          >
+            rejilla
+          </button>
           {toggles.map((item) => (
             <button
               key={item.key}
@@ -297,6 +402,13 @@ export function ChartPage() {
         </div>
 
         <div className="chart-readout">
+          {hover ? (
+            <span className="chart-hover mono small" data-chart-hover>
+              {hover.h !== undefined && hover.l !== undefined && hover.o !== undefined
+                ? `A ${hover.o.toFixed(2)} · M ${hover.h.toFixed(2)} · m ${hover.l.toFixed(2)} · C ${hover.c.toFixed(2)}`
+                : `C ${hover.c.toFixed(2)}`}
+            </span>
+          ) : null}
           {lastClose !== null ? (
             <>
               <b className="mono">{lastClose.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b>
