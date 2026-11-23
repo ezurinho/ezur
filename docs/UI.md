@@ -16,8 +16,40 @@ Sistema visual de la terminal. Una sola fuente de verdad: `frontend/src/styles.c
    glow es el de estado vivo y el de las agujas de los medidores.
 5. **Movimiento con sentido.** Animación de entrada de página, pulso del LED de
    estado y nada más. `prefers-reduced-motion` lo apaga todo.
-6. **El color nunca es la única señal.** Cada estado lleva texto además de color
+6. **Dos densidades, un diseño.** Modo básico y avanzado comparten tokens,
+   tipografía y geometría; solo cambia cuánto se muestra.
+7. **El color nunca es la única señal.** Cada estado lleva texto además de color
    (`running`, `bloqueado`, `ok`), para daltonismo y para capturas en gris.
+
+## Dos modos, un motor
+
+El mismo snapshot se puede leer a dos densidades. El interruptor está en el HUD
+y la elección vive en `localStorage` (`ezur.ui.mode`): es preferencia de UI, no
+estado del motor, así que no viaja al servidor.
+
+| | **Básico** (por defecto la primera vez) | **Avanzado** |
+|---|---|---|
+| Vistas | Inicio, Gráfico, Historial, Ajustes | las siete |
+| Inicio | una frase de estado, dinero de hoy, cuenta, posición abierta, últimas 3 operaciones | KPIs, fases, métricas, sesión, riesgo, posiciones, símbolos |
+| Gráfico | velas y precio; sin zonas ni marcadores | velas, zonas, marcadores, series |
+| Historial | cuándo, qué hizo, resultado, por qué cerró | precios, unidades, R, motivo, modo, CSV |
+| Ajustes | tres cifras: riesgo por operación, pérdida diaria, operaciones al día | todo el árbol de configuración |
+| Controles | solo **Detener** (emergencia) y **Reanudar** si está parado | los cuatro |
+
+Reglas que sostienen el modo básico:
+
+1. **Arranca solo.** `auto_start` (por defecto `true`) hace que el motor esté
+   `running` al abrir la terminal. En básico no hay botón «Empezar» porque no
+   hay nada que empezar; el botón que sí queda es el que para.
+2. **Frases, no códigos.** `position_open` se muestra como «Ya tiene una
+   operación abierta. Primero tiene que cerrarse». El código crudo sigue
+   disponible en Configuración y en la Consola.
+3. **Dinero, no ratios.** En básico un resultado es `-121.31`, nunca `-1.0 R`.
+   El R es una herramienta de evaluación de estrategia, no de operación.
+4. **Nada se esconde sin estar en otro sitio.** Cada vista básica enlaza a
+   «modo avanzado»; el modo no es una jaula, es una lente.
+5. **Los tres ajustes básicos guardan por el mismo endpoint validado.** El
+   formulario no relaja ninguna comprobación del servidor.
 
 ## Tokens
 

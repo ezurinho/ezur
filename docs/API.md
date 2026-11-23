@@ -1,5 +1,8 @@
 # API
 
+> El motor arranca solo cuando `config.auto_start` es `true` (por defecto). Con
+> `false`, `POST /api/bot/start` es el único camino a `running`.
+
 Base: `http://127.0.0.1:8765/api`. Sin autenticación: la terminal es local y de
 un solo operador. Todos los cuerpos son JSON.
 

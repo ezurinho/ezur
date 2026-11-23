@@ -202,6 +202,19 @@ a {
   align-items: center;
   gap: 10px;
   min-width: 0;
+  white-space: nowrap;
+}
+
+/* Un HUD que parte «p&l día» en dos líneas deja de ser un HUD. */
+.hud-label,
+.hud-value,
+.hud-clock,
+.badge {
+  white-space: nowrap;
+}
+
+.hud-group {
+  flex-wrap: nowrap;
 }
 
 .brand {
@@ -1278,6 +1291,17 @@ label {
 
 /* ------------------------------------------------------------- responsive --- */
 
+@media (max-width: 1240px) {
+  /* Ancho justo: fuera la etiqueta «sesión», se queda el valor. */
+  .top-bar-right .hud-group .hud-label {
+    display: none;
+  }
+
+  .brand-sub {
+    display: none;
+  }
+}
+
 @media (max-width: 1100px) {
   .top-bar {
     flex-wrap: wrap;
@@ -1324,6 +1348,388 @@ label {
 
   .brand-name {
     font-size: 0.78rem;
+  }
+}
+
+
+/* ==========================================================================
+   Modo fácil / Pro
+   --------------------------------------------------------------------------
+   Un mismo motor, dos densidades. «Fácil» responde tres preguntas — qué hace,
+   cuánto dinero hay, qué pasó — y esconde el resto. «Pro» es la terminal
+   completa. El interruptor vive en el HUD y se recuerda en localStorage.
+   ========================================================================== */
+
+.mode-switch {
+  display: inline-flex;
+  padding: 2px;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #0a1219;
+}
+
+.mode-option {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  white-space: nowrap;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: color 120ms ease, background 120ms ease;
+}
+
+.mode-option:hover {
+  color: var(--text-dim);
+}
+
+.mode-option.active {
+  background: #123a3d;
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px #37e0d044;
+}
+
+.mode-option:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* --- Fácil: aire, jerarquía y frases completas --------------------------- */
+
+.page.simple {
+  max-width: 980px;
+}
+
+.simple-lead {
+  margin: -4px 0 16px;
+  color: var(--text-dim);
+  font-size: 0.84rem;
+  max-width: 62ch;
+}
+
+.simple-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  flex-wrap: wrap;
+  padding: 22px 24px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background:
+    radial-gradient(120% 160% at 0% 0%, #37e0d014, transparent 60%),
+    linear-gradient(180deg, #0d1620, #0a1018);
+  overflow: hidden;
+}
+
+.simple-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(60% 100% at 92% 20%, #3ddc8414, transparent 70%);
+}
+
+.simple-hero.state-waiting::after {
+  background: radial-gradient(60% 100% at 92% 20%, #ffb5471a, transparent 70%);
+}
+
+.simple-hero.state-paused::after,
+.simple-hero.state-stopped::after,
+.simple-hero.state-error::after {
+  background: radial-gradient(60% 100% at 92% 20%, #ff5c6c14, transparent 70%);
+}
+
+.simple-hero h2 {
+  margin: 0 0 6px;
+  font-size: 1.55rem;
+  letter-spacing: -0.01em;
+}
+
+.simple-hero p {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  max-width: 52ch;
+}
+
+.simple-reason {
+  margin-top: 8px !important;
+  color: var(--warn) !important;
+  font-size: 0.82rem !important;
+}
+
+.simple-led {
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--good);
+  box-shadow: 0 0 0 4px #3ddc8418, 0 0 14px var(--good);
+  animation: led-pulse 2.4s ease-in-out infinite;
+}
+
+.simple-hero.state-waiting .simple-led,
+.simple-hero.state-paused .simple-led {
+  background: var(--warn);
+  box-shadow: 0 0 0 4px #ffb54718, 0 0 12px var(--warn);
+}
+
+.simple-hero.state-stopped .simple-led,
+.simple-hero.state-error .simple-led {
+  background: #4a586b;
+  box-shadow: none;
+  animation: none;
+}
+
+.simple-hero-actions {
+  display: flex;
+  gap: 8px;
+  z-index: 1;
+}
+
+.simple-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+  margin: 16px 0;
+}
+
+.simple-card {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 18px 20px 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #0d141d, #0a0f16);
+}
+
+.simple-label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.simple-big {
+  font-family: var(--font-mono);
+  font-size: 1.9rem;
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.muted-big {
+  color: var(--muted);
+  font-size: 1.35rem;
+}
+
+.simple-foot {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}
+
+.simple-hint {
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.simple-bar {
+  height: 3px;
+  border-radius: 999px;
+  background: #ff5c6c1f;
+  overflow: hidden;
+  margin: 2px 0 2px;
+}
+
+.simple-bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #ffb547, #ff5c6c);
+  transition: width 400ms ease;
+}
+
+.simple-history .simple-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.simple-list li {
+  display: grid;
+  grid-template-columns: 74px 1fr auto auto;
+  gap: 12px;
+  align-items: baseline;
+  padding: 11px 2px;
+  border-top: 1px solid #ffffff0a;
+  font-size: 0.84rem;
+}
+
+.simple-list li:first-child {
+  border-top: 0;
+}
+
+.simple-list-side {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.simple-list-when {
+  color: var(--text-dim);
+}
+
+.simple-list-why {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.simple-list li strong {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+}
+
+.simple-footer {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  border-top: 1px solid #ffffff0a;
+  padding-top: 14px;
+}
+
+.simple-settings {
+  display: grid;
+  gap: 22px;
+}
+
+/* El `label` global es mono en mayúsculas: correcto para un formulario técnico,
+   ilegible para alguien que está aprendiendo. Aquí se deshace. */
+.simple-field {
+  display: grid;
+  gap: 8px;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--text);
+}
+
+.simple-field .simple-field-head b {
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.simple-field .simple-hint {
+  font-family: var(--font-ui);
+  font-size: 0.79rem;
+  letter-spacing: normal;
+  text-transform: none;
+  line-height: 1.55;
+}
+
+.simple-field-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.simple-field-head b {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.simple-unit {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--accent);
+}
+
+.simple-field input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #37e0d044, #37e0d014);
+  outline: none;
+}
+
+.simple-field input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px #37e0d022, 0 0 12px #37e0d066;
+  cursor: pointer;
+}
+
+.simple-field input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px #37e0d022;
+  cursor: pointer;
+}
+
+.simple-facts {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text-dim);
+  font-size: 0.84rem;
+  line-height: 1.8;
+}
+
+/* En fácil, la barra lateral respira y el título cambia de tono. */
+.mode-simple .sidebar-title {
+  color: #3ddc84aa;
+}
+
+.mode-simple .nav-item svg {
+  opacity: 0.85;
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--text-dim);
+}
+
+.btn-ghost:hover {
+  border-color: #37e0d055;
+  color: var(--text);
+}
+
+@media (max-width: 700px) {
+  .simple-list li {
+    grid-template-columns: 60px 1fr auto;
+  }
+
+  .simple-list-why {
+    display: none;
+  }
+
+  .simple-big {
+    font-size: 1.6rem;
   }
 }
 

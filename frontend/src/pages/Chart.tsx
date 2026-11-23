@@ -6,6 +6,7 @@ import {
   type UTCTimestamp,
 } from "lightweight-charts";
 import { MarkerLayer } from "../components/MarkerLayer";
+import { useUiMode } from "../mode";
 import { ZoneLayer } from "../components/ZoneLayer";
 import { api } from "../api";
 import { useStore } from "../store";
@@ -15,6 +16,7 @@ const TIMEFRAMES = ["1m", "5m", "15m", "30m"];
 
 export function ChartPage() {
   const { snapshot } = useStore();
+  const { isSimple } = useUiMode();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
@@ -103,6 +105,11 @@ export function ChartPage() {
   return (
     <div className="page">
       <h2>Gráfico</h2>
+      {isSimple ? (
+        <p className="simple-lead">
+          Cada vela es un minuto: verde sube, roja baja. La línea de puntos es el precio de ahora.
+        </p>
+      ) : null}
       <div className="button-row">
         {TIMEFRAMES.map((value) => (
           <button
@@ -117,7 +124,7 @@ export function ChartPage() {
       </div>
       <div className="card chart-card">
         <div ref={containerRef} className="chart-canvas" data-chart />
-        {chart ? (
+        {chart && !isSimple ? (
           <>
             <ZoneLayer zones={chart.zones} />
             <MarkerLayer markers={chart.markers} />
