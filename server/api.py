@@ -144,8 +144,27 @@ async def put_config(request: Request, body: ConfigPatch) -> dict[str, Any]:
         resolve_strategy(updated.strategy.id, updated.strategy.params)
     except (ValueError, KeyError) as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
+    previous_alerts = engine.settings.alerts
     engine.update_settings(updated)
     save_settings(updated, request.app.state.config_path)
+
+    # Activar alertas desde la interfaz tiene que activarlas de verdad: el
+    # notifier se construye al arrancar, así que un cambio en `alerts` se
+    # reconstruye aquí. Si no, la UI diría «guardado» y no llegaría nada.
+    if updated.alerts != previous_alerts:
+        from .alerts import build_notifier
+        from .env import env
+
+        previous = getattr(request.app.state, "notifier", None)
+        if previous is not None:
+            previous.close()
+        notifier = build_notifier(
+            updated.alerts,
+            url_override=env("ALERT_WEBHOOK_URL"),
+            on_failure=lambda reason: _store(request).insert_event("warn", "alerts", reason),
+        )
+        request.app.state.notifier = notifier
+        engine.notifier = notifier
     return updated.model_dump(mode="json")
 
 

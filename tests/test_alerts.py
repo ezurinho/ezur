@@ -326,3 +326,43 @@ def test_alerts_test_endpoint_delivers_when_configured(tmp_path: Path, monkeypat
 
     assert body["sent"] is True
     assert capture.sent[0]["source"] == "ezur"
+
+
+def test_enabling_alerts_via_config_rebuilds_the_notifier(tmp_path: Path, monkeypatch):
+    capture = Capture()
+    fake = _notifier(capture)
+    calls: list[object] = []
+
+    def builder(config, **kwargs):
+        calls.append(config)
+        return fake
+
+    monkeypatch.setattr("server.alerts.build_notifier", builder)
+    app = create_app(
+        config_path=tmp_path / "config.json",
+        db_path=tmp_path / "config-alerts.db",
+    )
+    with TestClient(app) as client:
+        before = client.get("/api/alerts").json()
+        assert before["enabled"] is False
+
+        client.put(
+            "/api/config",
+            json={
+                "patch": {
+                    "alerts": {
+                        "enabled": True,
+                        "webhook_url": "http://example.test/hook",
+                        "min_level": "warn",
+                    }
+                }
+            },
+        )
+        after = client.get("/api/alerts").json()
+        assert after["enabled"] is True
+
+        sent = client.post("/api/alerts/test").json()
+        assert sent["sent"] is True
+
+    assert calls  # el cambio reconstruyó el notifier
+    assert capture.sent[0]["category"] == "test"

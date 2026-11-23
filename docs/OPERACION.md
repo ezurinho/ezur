@@ -164,6 +164,16 @@ curl -s -X POST http://127.0.0.1:8765/api/emergency
 curl -s http://127.0.0.1:8765/api/alerts   # sent debe haber subido a 1
 ```
 
+## Configurar alertas desde la interfaz
+
+Configuración → avanzado → **Alertas externas**: activar, URL del webhook y
+nivel mínimo. Al guardar, el servidor reconstruye el notifier en caliente: no
+hace falta reiniciar. El botón **Enviar alerta de prueba** entrega una alerta de
+verdad y dice si llegó; un «encolada» no es una prueba.
+
+La URL también se puede fijar con `EZUR_ALERT_WEBHOOK_URL`, que tiene prioridad
+sobre el archivo.
+
 ## Variables de entorno
 
 El prefijo es `EZUR_`. Los nombres antiguos `TERMINAL_*` siguen funcionando para
