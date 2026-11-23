@@ -100,3 +100,75 @@ def test_slippage_is_capped_by_max_slippage_ticks(settings):
     engine.on_bar({"PRIMARY": make_bar(o=100.0, h=101.0, l=99.8)})
     # 2 ticks * 0.25 = 0.50, not 10 ticks
     assert engine.position.entry_price == pytest.approx(100.5)
+
+
+# --- fill models ----------------------------------------------------------
+def _with_model(engine, model: str) -> None:
+    from server.config import ExecutionConfig
+
+    engine.execution.config = ExecutionConfig.model_validate(
+        {**engine.execution.config.model_dump(), "fill_model": model}
+    )
+
+
+def test_intrabar_rejects_a_gap_through_the_stop(engine, decision, signal_long):
+    _with_model(engine, "intrabar")
+    engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, NOW)
+    # Opens below the stop: entering here would be born stopped out.
+    events = engine.execution.on_bar({"PRIMARY": make_bar(o=99.0, h=99.4, l=98.6)})
+    assert engine.execution.position is None
+    assert [event.type for event in events] == ["cancel"]
+    assert events[0].reason == "gap_through_stop"
+    assert engine.execution.orders[-1].status == "rejected"
+
+
+def test_entry_bar_can_kill_the_trade_and_says_so(engine, decision, signal_long):
+    _with_model(engine, "intrabar")
+    engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, NOW)
+    events = engine.execution.on_bar({"PRIMARY": make_bar(o=100.0, h=100.4, l=99.2)})
+    assert [event.type for event in events] == ["fill", "exit"]
+    assert events[1].reason == "stop"
+    assert events[1].diagnostics["same_bar_exit"] is True
+    assert events[1].trade is not None
+    assert engine.execution.position is None
+
+
+def test_next_open_fills_through_a_gap_that_intrabar_would_refuse(
+    engine, decision, signal_long
+):
+    engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, NOW)
+    events = engine.execution.on_bar({"PRIMARY": make_bar(o=99.0, h=99.4, l=98.6)})
+    # next_open takes the bad fill and books the loss; intrabar refuses it.
+    assert [event.type for event in events] == ["fill", "exit"]
+    assert events[1].diagnostics["same_bar_exit"] is True
+    assert events[0].price == pytest.approx(99.25)
+
+
+def test_signal_price_fills_at_the_signal_when_the_bar_trades_through_it(
+    engine, decision, signal_long
+):
+    _with_model(engine, "signal_price")
+    engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, NOW)
+    events = engine.execution.on_bar({"PRIMARY": make_bar(o=100.6, h=101.0, l=99.9)})
+    assert events[0].type == "fill"
+    assert events[0].reason == "signal_price"
+    assert engine.execution.position.entry_price == pytest.approx(100.25)
+
+
+def test_signal_price_falls_back_and_says_so(engine, decision, signal_long):
+    _with_model(engine, "signal_price")
+    engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, NOW)
+    events = engine.execution.on_bar({"PRIMARY": make_bar(o=101.0, h=101.6, l=100.9)})
+    assert events[0].reason == "next_open"
+    assert events[0].diagnostics["fill_fallback"] == "outside_range"
+    assert engine.execution.position.entry_price == pytest.approx(101.25)
+
+
+def test_signal_price_gap_beyond_slippage_degrades_instead_of_lying(
+    engine, decision, signal_long
+):
+    _with_model(engine, "signal_price")
+    engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, NOW)
+    events = engine.execution.on_bar({"PRIMARY": make_bar(o=100.2, h=101.0, l=100.1)})
+    # 100.25 (signal + slippage) is inside the bar, so the good fill survives.
+    assert events[0].reason == "signal_price"

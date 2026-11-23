@@ -116,3 +116,56 @@ def test_daily_profit_limit_when_configured(settings, signal_long):
     decision = _evaluate(settings, signal_long, _portfolio(settings, daily_pnl=300.0))
     assert decision.approved is False
     assert decision.code == "daily_profit_limit"
+
+
+# --- trailing drawdown guard (lección de Freqtrade) ------------------------
+def _drawdown_state(**kwargs):
+    from server.models import PortfolioState
+
+    base = dict(equity=25000.0, peak_equity=25000.0, last_price=100.0)
+    base.update(kwargs)
+    return PortfolioState(**base)
+
+
+def test_drawdown_guard_blocks_entries_below_the_peak(engine, signal_long):
+    from server.config import RiskConfig
+
+    engine.risk = engine.risk.__class__(
+        RiskConfig.model_validate({**engine.risk.config.model_dump(), "max_drawdown_pct": 5.0})
+    )
+    spec = engine.settings.instruments.by_symbol("PRIMARY")
+    decision = engine.risk.evaluate(
+        signal_long, _drawdown_state(equity=23600.0), spec
+    )
+    assert decision.approved is False
+    assert decision.code == "max_drawdown_reached"
+    assert "drawdown" in decision.message
+
+
+def test_drawdown_guard_allows_entries_inside_the_limit(engine, signal_long):
+    from server.config import RiskConfig
+
+    engine.risk = engine.risk.__class__(
+        RiskConfig.model_validate({**engine.risk.config.model_dump(), "max_drawdown_pct": 5.0})
+    )
+    spec = engine.settings.instruments.by_symbol("PRIMARY")
+    decision = engine.risk.evaluate(signal_long, _drawdown_state(equity=24000.0), spec)
+    assert decision.code != "max_drawdown_reached"
+
+
+def test_drawdown_guard_is_off_by_default(engine, signal_long):
+    spec = engine.settings.instruments.by_symbol("PRIMARY")
+    decision = engine.risk.evaluate(signal_long, _drawdown_state(equity=1000.0), spec)
+    assert decision.code != "max_drawdown_reached"
+
+
+def test_drawdown_measures_realised_equity_not_ratios(engine, signal_long):
+    """Un pico alto con pérdidas pequeñas en R no debe bloquear igual que una caída real."""
+    from server.config import RiskConfig
+
+    engine.risk = engine.risk.__class__(
+        RiskConfig.model_validate({**engine.risk.config.model_dump(), "max_drawdown_pct": 10.0})
+    )
+    spec = engine.settings.instruments.by_symbol("PRIMARY")
+    decision = engine.risk.evaluate(signal_long, _drawdown_state(equity=24500.0), spec)
+    assert decision.code != "max_drawdown_reached"

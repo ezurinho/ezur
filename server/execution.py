@@ -2,6 +2,21 @@
 
 Fill, bracket and close. The rule that matters: when a bar touches both the
 stop and the target, the stop wins and the trade says so in its diagnostics.
+
+Three fill models, all of them declared instead of assumed:
+
+* ``next_open`` (default) market order at the next bar's open, slippage bounded
+  by ``max_slippage_ticks``. The entry bar counts: if it reaches the stop, the
+  trade dies on the bar it was born on and says ``same_bar_exit``.
+* ``signal_price`` uses the price the signal was generated at, but only when the
+  next bar actually traded through it. If the bar opened past it, the fill
+  degrades to ``next_open`` and says ``fill_fallback`` in the diagnostics.
+* ``intrabar`` refuses an entry whose open is already through the stop: filling
+  it would book a position that is born dead. It is the model that admits gaps
+  exist.
+
+A model that does not change behaviour is a config option that lies, which is
+worse than not offering it.
 """
 
 from __future__ import annotations
@@ -100,10 +115,22 @@ class ExecutionEngine:
             bar = bars.get(order.symbol)
             if bar is None:
                 continue
-            fill = self._fill_price(order.side, bar, order.symbol)
+            plan = self._fill_plan(order, bar)
+            if plan is None:
+                order.status = "rejected"
+                events.append(
+                    ExecutionEvent(
+                        type="cancel",
+                        symbol=order.symbol,
+                        units=order.units,
+                        reason="gap_through_stop",
+                        diagnostics={"signal_price": order.price, "bar_open": bar.o},
+                    )
+                )
+                continue
+            fill, reason, fill_diagnostics = plan
             order.status = "filled"
             order.price = fill
-            spec = self._instrument(order.symbol)
             self.position = Position(
                 symbol=order.symbol,
                 side=order.side,
@@ -122,16 +149,21 @@ class ExecutionEngine:
                     symbol=order.symbol,
                     price=fill,
                     units=order.units,
-                    reason="next_open",
+                    reason=reason,
+                    diagnostics=fill_diagnostics,
                 )
             )
-
         if self.position is not None:
             bar = bars.get(self.position.symbol)
             if bar is not None:
                 self.last_price = bar.c
                 hit = self._bracket_hit(self.position, bar)
                 if hit is not None:
+                    # A trade that dies on the bar it was born on is worth
+                    # flagging: it means the bracket was too tight for the open.
+                    diagnostics = dict(hit.diagnostics)
+                    if bar.t == self.position.opened_ts:
+                        diagnostics["same_bar_exit"] = True
                     events.append(
                         ExecutionEvent(
                             type="exit",
@@ -139,19 +171,39 @@ class ExecutionEngine:
                             price=hit.price,
                             units=self.position.units,
                             reason=hit.reason,
-                            trade=self.close(hit.reason, hit.price, bar.t, hit.diagnostics),
-                            diagnostics=hit.diagnostics,
+                            trade=self.close(hit.reason, hit.price, bar.t, diagnostics),
+                            diagnostics=diagnostics,
                         )
                     )
         return events
 
-    def _fill_price(self, side: str, bar: Bar, symbol: str) -> float:
-        spec = self._instrument(symbol)
+    def _fill_plan(
+        self, order: Order, bar: Bar
+    ) -> tuple[float, str, dict[str, Any]] | None:
+        """Price, reason and diagnostics for one pending order, or None to reject."""
+        spec = self._instrument(order.symbol)
         ticks = min(self.config.slippage_ticks, self.config.max_slippage_ticks)
         slip = ticks * spec.tick_size
-        if self.config.fill_model == "signal_price":
-            return bar.o
-        return bar.o + slip if side == "long" else bar.o - slip
+        slipped = bar.o + slip if order.side == "long" else bar.o - slip
+        model = self.config.fill_model
+
+        if model == "intrabar" and order.stop_price is not None:
+            gapped = (
+                bar.o <= order.stop_price
+                if order.side == "long"
+                else bar.o >= order.stop_price
+            )
+            if gapped:
+                return None
+
+        if model == "signal_price":
+            reference = order.price + slip if order.side == "long" else order.price - slip
+            inside = bar.l <= reference <= bar.h
+            if inside:
+                return reference, "signal_price", {}
+            return slipped, "next_open", {"fill_fallback": "outside_range"}
+
+        return slipped, "next_open", {}
 
     def _bracket_hit(self, position: Position, bar: Bar) -> "_Hit | None":
         spec = self._instrument(position.symbol)

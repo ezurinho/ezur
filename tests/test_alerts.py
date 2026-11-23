@@ -76,7 +76,7 @@ def test_payload_has_a_stable_shape():
     alert = Alert("warn", "risk", "límite alcanzado", {"daily_trades": 3})
     payload = alert.payload()
     assert set(payload) == {"source", "level", "category", "message", "meta", "ts"}
-    assert payload["source"] == "trading-terminal"
+    assert payload["source"] == "ezur"
     assert payload["meta"]["daily_trades"] == 3
 
 

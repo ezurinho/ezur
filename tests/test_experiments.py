@@ -112,3 +112,93 @@ def test_cli_json_summary(tmp_path, capsys):
     _record(tmp_path)
     assert main(["--ledger", str(path), "--json"]) == 0
     assert '"experiments": 1' in capsys.readouterr().out
+
+
+# --- hash chain (lección de ai-hedge-fund) --------------------------------
+def _fill(path, n=3):
+    from server import experiments
+
+    for i in range(n):
+        experiments.record(
+            path,
+            kind="backtest",
+            strategy_id="reference",
+            strategy_version="0.1.0",
+            dataset_id=f"synthetic-{i}",
+            config={"days": 20, "i": i},
+            metrics={"profit_factor": 0.9 + i / 100},
+            verdict="RECHAZADA",
+        )
+
+
+def test_chain_links_every_entry(tmp_path):
+    from server import experiments
+
+    path = tmp_path / "ledger.jsonl"
+    _fill(path)
+    entries = experiments.load(path)
+    assert entries[0]["prev_hash"] == ""
+    for previous, current in zip(entries, entries[1:]):
+        assert current["prev_hash"] == previous["chain_hash"]
+    assert experiments.verify_chain(path)["ok"] is True
+
+
+def test_editing_the_middle_breaks_the_chain(tmp_path):
+    from server import experiments
+
+    path = tmp_path / "ledger.jsonl"
+    _fill(path)
+    lines = path.read_text(encoding="utf-8").splitlines()
+    # The attack that matters: turn a rejection into an approval.
+    lines[1] = lines[1].replace('"verdict": "RECHAZADA"', '"verdict": "APROBADA"')
+    assert "APROBADA" in lines[1]
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    result = experiments.verify_chain(path)
+    assert result["ok"] is False
+    assert result["broken_at"] == 1
+    assert "chain_hash" in result["reason"]
+
+
+def test_deleting_a_line_breaks_the_chain(tmp_path):
+    from server import experiments
+
+    path = tmp_path / "ledger.jsonl"
+    _fill(path)
+    lines = path.read_text(encoding="utf-8").splitlines()
+    del lines[1]
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    result = experiments.verify_chain(path)
+    assert result["ok"] is False
+    assert result["broken_at"] == 1
+    assert "prev_hash" in result["reason"]
+
+
+def test_appending_keeps_the_chain_valid(tmp_path):
+    from server import experiments
+
+    path = tmp_path / "ledger.jsonl"
+    _fill(path, 2)
+    _fill(path, 1)
+    assert experiments.verify_chain(path)["ok"] is True
+
+
+def test_legacy_ledger_without_chain_still_loads(tmp_path):
+    import json
+
+    from server import experiments
+
+    path = tmp_path / "legacy.jsonl"
+    legacy = {
+        "kind": "backtest",
+        "strategy": {"id": "reference", "version": "0.1.0"},
+        "dataset_id": "synthetic",
+        "config_sha256": "x",
+        "metrics_sha256": "y",
+        "verdict": "RECHAZADA",
+        "notes": "",
+        "experiment_id": "abc123",
+        "ts": "2026-01-01T00:00:00+00:00",
+    }
+    path.write_text(json.dumps(legacy) + "\n", encoding="utf-8")
+    assert experiments.verify_chain(path)["ok"] is True
+    assert experiments.summary(path)["experiments"] == 1

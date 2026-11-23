@@ -1,5 +1,6 @@
 import type { ConnectionState } from "../api";
 import type { SnapshotData } from "../types";
+import { Logo } from "./Logo";
 import { useClock } from "./Sparkline";
 
 interface Props {
@@ -28,20 +29,12 @@ export function TopBar({ snapshot, connection }: Props) {
     <header className="top-bar">
       <div className="top-bar-left">
         <div className="brand">
-          <span className="brand-mark" aria-hidden="true">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M4 17.5 9 9l4.2 5.2L16 8.5l4 9"
-                stroke="#37e0d0"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+          <span className="brand-mark">
+            <Logo size={26} />
           </span>
-          <span>
-            <span className="brand-name">Trading Terminal</span>
-            <span className="brand-sub">mission control</span>
+          <span className="brand-text">
+            <span className="brand-name">ezur</span>
+            <span className="brand-sub">trading terminal</span>
           </span>
         </div>
 

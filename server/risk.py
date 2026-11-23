@@ -50,6 +50,15 @@ class RiskManager:
             portfolio.consecutive_losses >= cfg.no_trade_after_consecutive_losses
         ):
             return reject("consecutive_losses", "racha de pérdidas alcanzada")
+        if cfg.max_drawdown_pct and portfolio.peak_equity > 0:
+            # Peak-to-trough on realised equity, not on the sum of trade ratios:
+            # a ratios-based guard is not a drawdown guard (freqtrade learned it).
+            drawdown = (portfolio.peak_equity - portfolio.equity) / portfolio.peak_equity
+            if drawdown * 100 >= cfg.max_drawdown_pct:
+                return reject(
+                    "max_drawdown_reached",
+                    f"drawdown {drawdown * 100:.2f}% desde el pico",
+                )
 
         entry = portfolio.last_price if portfolio.last_price is not None else None
         if entry is None:
