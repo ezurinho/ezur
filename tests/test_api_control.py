@@ -105,13 +105,14 @@ def test_trades_can_be_filtered_by_mode(pair):
     assert client.get("/api/trades", params={"mode": "paper"}).json() == []
 
 
-def test_datasets_endpoint_lists_csv_files(pair, tmp_path):
+def test_datasets_endpoint_lists_csv_files(pair, tmp_path, monkeypatch):
     client, _ = pair
     data = tmp_path / "data"
     data.mkdir()
     (data / "bars.csv").write_text("ts,symbol\n", encoding="utf-8")
-    client.app.state.config_path = data / "config.json"
-    assert client.get("/api/datasets").json() == [str(data / "bars.csv")]
+    # Los datasets viven en `data/` o donde diga EZUR_DATA_DIR, no junto al perfil.
+    monkeypatch.setenv("EZUR_DATA_DIR", str(data))
+    assert client.get("/api/datasets").json() == [(data / "bars.csv").as_posix()]
 
 
 def test_websocket_sends_an_initial_snapshot(pair):

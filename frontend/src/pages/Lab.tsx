@@ -309,7 +309,10 @@ export function LabPage() {
                   const rowCounts = gateCounts(row.gates.outcomes);
                   const failed = failedGates(row.gates.outcomes).map((gate) => gate.id);
                   return (
-                    <tr key={row.run_id} className={index === 0 ? "best" : undefined}>
+                    <tr
+                      key={row.run_id}
+                      className={index === 0 && row.trades > 0 ? "best" : undefined}
+                    >
                       <td>
                         <b>{row.strategy_id}</b>
                         <span className="muted small"> · v{row.strategy_version}</span>
@@ -318,9 +321,13 @@ export function LabPage() {
                       <td className="mono">{((row.metrics.win_rate ?? 0) * 100).toFixed(0)} %</td>
                       <td className="mono">{(row.metrics.profit_factor ?? 0).toFixed(2)}</td>
                       <td
-                        className={`mono ${(row.metrics.expectancy_r ?? 0) > 0 ? "tone-good" : "tone-bad"}`}
+                        className={
+                          row.trades === 0
+                            ? "mono muted"
+                            : `mono ${(row.metrics.expectancy_r ?? 0) > 0 ? "tone-good" : "tone-bad"}`
+                        }
                       >
-                        {(row.metrics.expectancy_r ?? 0).toFixed(2)} R
+                        {row.trades === 0 ? "sin operaciones" : `${(row.metrics.expectancy_r ?? 0).toFixed(2)} R`}
                       </td>
                       <td className="mono">{formatValue(row.metrics.max_drawdown ?? 0, "price")}</td>
                       <td>
@@ -353,17 +360,17 @@ export function LabPage() {
           <p className="empty">Todavía no hay backtests guardados.</p>
         ) : (
           <ul className="lab-history">
-            {history.slice(0, 8).map((run) => {
-              const payload = (run.payload ?? {}) as Record<string, unknown>;
-              return (
-                <li key={String(run.run_id)}>
-                  <span className="mono small">{shortId(String(run.run_id))}</span>
-                  <span>{formatDateTime(String(run.ts))}</span>
-                  <span>{String(payload.strategy_id ?? "—")}</span>
-                  <span className="muted small">{String(payload.run_group ?? "")}</span>
-                </li>
-              );
-            })}
+            {history.slice(0, 8).map((run) => (
+              <li key={String(run.run_id)}>
+                <span className="mono small">{shortId(String(run.run_id))}</span>
+                <span>{formatDateTime(String(run.ts))}</span>
+                <span>
+                  {String(run.strategy_id ?? "—")}
+                  <span className="muted small"> · {String(run.trades ?? 0)} ops</span>
+                </span>
+                <span className="muted small">{String(run.run_group ?? "")}</span>
+              </li>
+            ))}
           </ul>
         )}
       </section>

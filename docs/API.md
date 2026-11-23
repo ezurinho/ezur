@@ -119,3 +119,17 @@ Los contadores existen para que un webhook roto se vea en vez de suponerse.
 | `404` | acción de motor o estrategia inexistente |
 | `409` | arranque rechazado (emergencia activa, LIVE sin adaptador) |
 | `422` | payload o configuración inválida |
+
+## Laboratorio
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| GET | `/api/datasets` | CSV disponibles (`data/` o `EZUR_DATA_DIR`) |
+| GET | `/api/backtest/strategies` | plugins con versión y parámetros por defecto |
+| POST | `/api/backtest/run` | una corrida; `stress` mide G8 y G2 con dos corridas extra |
+| POST | `/api/backtest/compare` | mismo dataset, N estrategias, un veredicto por fila |
+| GET | `/api/backtest/runs` | últimas corridas guardadas (resumen, no el payload entero) |
+| POST | `/api/alerts/test` | entrega una alerta y responde `sent` o el motivo |
+
+`run_id` identifica **la ejecución** (uuid), `dataset_id` es el hash del CSV y
+`config_hash` el de los settings efectivos. `run_group` agrupa comparaciones.

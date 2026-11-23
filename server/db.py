@@ -267,20 +267,40 @@ class Store:
         return json.loads(row["payload"]) if row else None
 
     def list_backtest_runs(self, cursor: str | None = None, limit: int = 25) -> dict[str, Any]:
-        query = "SELECT run_id, ts FROM backtests"
+        # `run_id` es aleatorio desde que identifica la ejecución, así que el
+        # orden cronológico va por `ts`. El payload se resume aquí: la lista no
+        # necesita el resultado entero, solo lo que se enseña.
+        query = "SELECT run_id, ts, payload FROM backtests"
         params: list[Any] = []
         if cursor:
             query += " WHERE run_id < ?"
             params.append(cursor)
-        query += " ORDER BY run_id DESC LIMIT ?"
+        query += " ORDER BY ts DESC, rowid DESC LIMIT ?"
         params.append(limit + 1)
-        rows = [dict(row) for row in self.conn.execute(query, params)]
-        has_more = len(rows) > limit
-        rows = rows[:limit]
+        raw = [dict(row) for row in self.conn.execute(query, params)]
+        has_more = len(raw) > limit
+        raw = raw[:limit]
+        runs: list[dict[str, Any]] = []
+        for row in raw:
+            try:
+                payload = json.loads(row["payload"])
+            except (TypeError, ValueError):
+                payload = {}
+            runs.append(
+                {
+                    "run_id": row["run_id"],
+                    "ts": row["ts"],
+                    "strategy_id": payload.get("strategy_id"),
+                    "strategy_version": payload.get("strategy_version"),
+                    "dataset_id": payload.get("dataset_id"),
+                    "run_group": payload.get("run_group"),
+                    "trades": len(payload.get("trades", [])),
+                }
+            )
         return {
-            "runs": rows,
+            "runs": runs,
             "has_more": has_more,
-            "next_cursor": rows[-1]["run_id"] if has_more and rows else None,
+            "next_cursor": runs[-1]["run_id"] if has_more and runs else None,
         }
 
     # --- maintenance ------------------------------------------------------

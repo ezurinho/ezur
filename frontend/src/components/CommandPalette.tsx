@@ -133,7 +133,7 @@ export function CommandPalette({ open, items, onClose }: Props) {
           <span>
             <kbd>Esc</kbd> cerrar
           </span>
-          <span className="muted">⌘K / Ctrl+K</span>
+          <span className="muted">? atajos · ⌘K / Ctrl+K</span>
         </footer>
       </div>
     </div>

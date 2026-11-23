@@ -78,8 +78,13 @@ def test_compare_sorts_by_expectancy(app_client):
         "/api/backtest/compare", json={"dataset_path": str(path)}
     ).json()
 
-    expectancies = [row["metrics"]["expectancy_r"] for row in payload["rows"]]
+    # Primero las que operaron; dentro de esas, por esperanza. Una estrategia
+    # sin operaciones no encabeza un ranking: 0.00 R no es mérito.
+    trading = [row for row in payload["rows"] if row["trades"] > 0]
+    assert trading  # el dataset de prueba sí produce operaciones
+    expectancies = [row["metrics"]["expectancy_r"] for row in trading]
     assert expectancies == sorted(expectancies, reverse=True)
+    assert all(row["trades"] == 0 for row in payload["rows"][len(trading) :])
 
 
 def test_compare_rejects_unknown_strategy(app_client):

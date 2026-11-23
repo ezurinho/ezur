@@ -147,6 +147,40 @@ auditoría (R, drawdown, puertas). Por eso cada vista básica enlaza al avanzado
 la configuración completa sigue a un clic; esconder sin salida habría sido otra
 decisión, peor.
 
+## ADR 0.11 — Laboratorio, trazabilidad y escrituras serializadas
+
+**Decisión.** El backtest deja de ser solo CLI: hay una vista **Laboratorio**
+(avanzado) que corre una estrategia o compara varias sobre el mismo dataset, y
+cada ejecución obtiene identidad propia (`run_id`), hash de configuración y,
+cuando compara, `run_group`.
+
+**Por qué.** Jesse documenta *Benchmark* como «run batch backtests, compare
+across timeframes, symbols, and strategies»; vectorbt existe entero para eso.
+ezur tenía el motor y las puertas, pero comparar tres estrategias obligaba a
+abrir una terminal y recordar rutas. La función que estas herramientas
+consideran central no debería ser un script.
+
+**Por qué `run_id` único.** Antes era el prefijo del hash del dataset: dos
+estrategias sobre el mismo CSV compartían identificador y «la corrida X» no
+significaba nada. `dataset_id` sigue siendo el contenido; `run_id` es el acto.
+
+**Orden del ranking.** Las estrategias sin operaciones van al final. `0.00 R`
+con cero trades es ausencia de datos, no el mejor resultado; encabezar la tabla
+con eso sería un error de lectura garantizado.
+
+**Escrituras serializadas.** El motor escribe desde el bucle de eventos y la API
+desde el hilo de la petición. Sin bloqueo, dos `with conn:` solapados lanzan
+«cannot commit - no transaction is active». Se añadió un `RLock` re-entrante
+alrededor de la conexión (`_LockedConnection`), con test de 4 hilos × 25
+escrituras. Las lecturas no se bloquean.
+
+**Publicación inmediata.** `POST /api/bot/{action}` publica el snapshot antes de
+responder (y captura el estado antes de ceder el turno): un botón que contesta
+«running» mientras la pantalla dice «stopped» se lee como terminal roto.
+
+**Coste.** Una vista nueva, dos endpoints y un lock por escritura. Ninguna
+puerta cambió de criterio.
+
 ## Registro
 
 | Fecha | ADR | Decisión | Autor |
