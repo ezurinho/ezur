@@ -1,0 +1,420 @@
+{
+  "strategy": "fade",
+  "windows": [
+    {
+      "window": 1,
+      "days": 6,
+      "first_day": "2026-10-29",
+      "last_day": "2026-11-05"
+    },
+    {
+      "window": 2,
+      "days": 6,
+      "first_day": "2026-11-06",
+      "last_day": "2026-11-13"
+    },
+    {
+      "window": 3,
+      "days": 6,
+      "first_day": "2026-11-16",
+      "last_day": "2026-11-23"
+    }
+  ],
+  "combinations": [
+    {
+      "params": {
+        "period": 10,
+        "sigma": 1.5
+      },
+      "windows": 3,
+      "trades": 54,
+      "mean_expectancy_r": -0.801,
+      "worst_window_pnl": -216.05,
+      "consistency": 0.0,
+      "runs": [
+        {
+          "window": 1,
+          "params": {
+            "period": 10,
+            "sigma": 1.5
+          },
+          "trades": 18,
+          "expectancy_r": -0.9862,
+          "profit_factor": 0.0206,
+          "pnl_net": -216.05,
+          "max_drawdown": 220.59,
+          "verdict": "RECHAZADA",
+          "first_day": "2026-10-29",
+          "last_day": "2026-11-05"
+        },
+        {
+          "window": 2,
+          "params": {
+            "period": 10,
+            "sigma": 1.5
+          },
+          "trades": 18,
+          "expectancy_r": -0.7962,
+          "profit_factor": 0.0562,
+          "pnl_net": -157.93,
+          "max_drawdown": 157.93,
+          "verdict": "RECHAZADA",
+          "first_day": "2026-11-06",
+          "last_day": "2026-11-13"
+        },
+        {
+          "window": 3,
+          "params": {
+            "period": 10,
+            "sigma": 1.5
+          },
+          "trades": 18,
+          "expectancy_r": -0.6206,
+          "profit_factor": 0.0379,
+          "pnl_net": -141.4,
+          "max_drawdown": 141.4,
+          "verdict": "RECHAZADA",
+          "first_day": "2026-11-16",
+          "last_day": "2026-11-23"
+        }
+      ]
+    },
+    {
+      "params": {
+        "period": 10,
+        "sigma": 2.5
+      },
+      "windows": 3,
+      "trades": 54,
+      "mean_expectancy_r": -0.8841,
+      "worst_window_pnl": -172.83,
+      "consistency": 0.0,
+      "runs": [
+        {
+          "window": 1,
+          "params": {
+            "period": 10,
+            "sigma": 2.5
+          },
+          "trades": 18,
+          "expectancy_r": -0.9116,
+          "profit_factor": 0.0689,
+          "pnl_net": -164.19,
+          "max_drawdown": 164.19,
+          "verdict": "RECHAZADA",
+          "first_day": "2026-10-29",
+          "last_day": "2026-11-05"
+        },
+        {
+          "window": 2,
+          "params": {
+            "period": 10,
+            "sigma": 2.5
+          },
+          "trades": 18,
+          "expectancy_r": -0.8226,
+          "profit_factor": 0.0718,
+          "pnl_net": -141.42,
+          "max_drawdown": 141.42,
+          "verdict": "RECHAZADA",
+          "first_day": "2026-11-06",
+          "last_day": "2026-11-13"
+        },
+        {
+          "window": 3,
+          "params": {
+            "period": 10,
+            "sigma": 2.5
+          },
+          "trades": 18,
+          "expectancy_r": -0.9182,
+          "profit_factor": 0.0427,
+          "pnl_net": -172.83,
+          "max_drawdown": 178.42,
+          "verdict": "RECHAZADA",
+          "first_day": "2026-11-16",
+          "last_day": "2026-11-23"
+        }
+      ]
+    },
+    {
+      "params": {
+        "period": 20,
+        "sigma": 1.5
+      },
+      "windows": 3,
+      "trades": 54,
+      "mean_expectancy_r": -0.8872,
+      "worst_window_pnl": -223.66,
+      "consistency": 0.0,
+      "runs": [
+        {
+          "window": 1,
+          "params": {
+            "period": 20,
+            "sigma": 1.5
+          },
+          "trades": 18,
+          "expectancy_r": -1.1222,
+          "profit_factor": 0.0396,
+          "pnl_net": -223.66,
+          "max_drawdown": 223.66,
+          "verdict": "RECHAZADA",
+          "first_day": "2026-10-29",
+          "last_day": "2026-11-05"
+        },
+        {
+          "window": 2,
+          "params": {
+            "period": 20,
+            "sigma": 1.5
+          },
+          "trades": 18,
+          "expectancy_r": -0.835,
+          "profit_factor": 0.2264,
+          "pnl_net": -156.99,
+          "max_drawdown": 159.03,
+          "verdict": "RECHAZADA",
+          "first_day": "2026-11-06",
+          "last_day": "2026-11-13"
+        },
+        {
+          "window": 3,
+          "params": {
+            "period": 20,
+            "sigma": 1.5
+          },
+          "trades": 18,
+          "expectancy_r": -0.7044,
+          "profit_factor": 0.1977,
+          "pnl_net": -140.92,
+          "max_drawdown": 144.88,
+          "verdict": "RECHAZADA",
+          "first_day": "2026-11-16",
+          "last_day": "2026-11-23"
+        }
+      ]
+    },
+    {
+      "params": {
+        "period": 20,
+        "sigma": 2.5
+      },
+      "windows": 3,
+      "trades": 54,
+      "mean_expectancy_r": -0.827,
+      "worst_window_pnl": -218.2,
+      "consistency": 0.0,
+      "runs": [
+        {
+          "window": 1,
+          "params": {
+            "period": 20,
+            "sigma": 2.5
+          },
+          "trades": 18,
+          "expectancy_r": -1.1395,
+          "profit_factor": 0.0529,
+          "pnl_net": -218.2,
+          "max_drawdown": 218.2,
+          "verdict": "RECHAZADA",
+          "first_day": "2026-10-29",
+          "last_day": "2026-11-05"
+        },
+        {
+          "window": 2,
+          "params": {
+            "period": 20,
+            "sigma": 2.5
+          },
+          "trades": 18,
+          "expectancy_r": -0.7052,
+          "profit_factor": 0.3158,
+          "pnl_net": -130.48,
+          "max_drawdown": 130.48,
+          "verdict": "RECHAZADA",
+          "first_day": "2026-11-06",
+          "last_day": "2026-11-13"
+        },
+        {
+          "window": 3,
+          "params": {
+            "period": 20,
+            "sigma": 2.5
+          },
+          "trades": 18,
+          "expectancy_r": -0.6363,
+          "profit_factor": 0.236,
+          "pnl_net": -120.84,
+          "max_drawdown": 120.84,
+          "verdict": "RECHAZADA",
+          "first_day": "2026-11-16",
+          "last_day": "2026-11-23"
+        }
+      ]
+    },
+    {
+      "params": {
+        "period": 30,
+        "sigma": 1.5
+      },
+      "windows": 3,
+      "trades": 54,
+      "mean_expectancy_r": -0.8758,
+      "worst_window_pnl": -185.0,
+      "consistency": 0.0,
+      "runs": [
+        {
+          "window": 1,
+          "params": {
+            "period": 30,
+            "sigma": 1.5
+          },
+          "trades": 18,
+          "expectancy_r": -0.8314,
+          "profit_factor": 0.2101,
+          "pnl_net": -169.89,
+          "max_drawdown": 180.38,
+          "verdict": "RECHAZADA",
+          "first_day": "2026-10-29",
+          "last_day": "2026-11-05"
+        },
+        {
+          "window": 2,
+          "params": {
+            "period": 30,
+            "sigma": 1.5
+          },
+          "trades": 18,
+          "expectancy_r": -0.9869,
+          "profit_factor": 0.243,
+          "pnl_net": -183.78,
+          "max_drawdown": 183.78,
+          "verdict": "RECHAZADA",
+          "first_day": "2026-11-06",
+          "last_day": "2026-11-13"
+        },
+        {
+          "window": 3,
+          "params": {
+            "period": 30,
+            "sigma": 1.5
+          },
+          "trades": 18,
+          "expectancy_r": -0.8092,
+          "profit_factor": 0.1298,
+          "pnl_net": -185.0,
+          "max_drawdown": 198.65,
+          "verdict": "RECHAZADA",
+          "first_day": "2026-11-16",
+          "last_day": "2026-11-23"
+        }
+      ]
+    },
+    {
+      "params": {
+        "period": 30,
+        "sigma": 2.5
+      },
+      "windows": 3,
+      "trades": 54,
+      "mean_expectancy_r": -0.9766,
+      "worst_window_pnl": -223.73,
+      "consistency": 0.0,
+      "runs": [
+        {
+          "window": 1,
+          "params": {
+            "period": 30,
+            "sigma": 2.5
+          },
+          "trades": 18,
+          "expectancy_r": -1.0871,
+          "profit_factor": 0.1046,
+          "pnl_net": -223.73,
+          "max_drawdown": 223.73,
+          "verdict": "RECHAZADA",
+          "first_day": "2026-10-29",
+          "last_day": "2026-11-05"
+        },
+        {
+          "window": 2,
+          "params": {
+            "period": 30,
+            "sigma": 2.5
+          },
+          "trades": 18,
+          "expectancy_r": -0.8942,
+          "profit_factor": 0.1463,
+          "pnl_net": -182.63,
+          "max_drawdown": 182.63,
+          "verdict": "RECHAZADA",
+          "first_day": "2026-11-06",
+          "last_day": "2026-11-13"
+        },
+        {
+          "window": 3,
+          "params": {
+            "period": 30,
+            "sigma": 2.5
+          },
+          "trades": 18,
+          "expectancy_r": -0.9486,
+          "profit_factor": 0.146,
+          "pnl_net": -196.79,
+          "max_drawdown": 196.79,
+          "verdict": "RECHAZADA",
+          "first_day": "2026-11-16",
+          "last_day": "2026-11-23"
+        }
+      ]
+    }
+  ],
+  "ranking": [
+    {
+      "period": 10,
+      "sigma": 1.5
+    },
+    {
+      "period": 20,
+      "sigma": 2.5
+    },
+    {
+      "period": 30,
+      "sigma": 1.5
+    },
+    {
+      "period": 10,
+      "sigma": 2.5
+    },
+    {
+      "period": 20,
+      "sigma": 1.5
+    },
+    {
+      "period": 30,
+      "sigma": 2.5
+    }
+  ],
+  "note": "La tabla no elige ganador. Un máximo sobre datos de desarrollo no es evidencia: el holdout se sella y se abre una vez.",
+  "experiments": [
+    "76c63e672b4cebc9",
+    "f9a09093991fb563",
+    "feec8124ecf02285",
+    "080dcc9fcf08bf3a",
+    "f59c53668869c7ea",
+    "a5198350910fa8ef",
+    "f77d9f88d90b0ade",
+    "b7b85b6307d5af09",
+    "31d6d3e80b997fdb",
+    "59baf5f2aa7f80ad",
+    "b6579525b7ad474c",
+    "051273a63872b906",
+    "ab5764b423f67a97",
+    "95905872a1f0f0fd",
+    "60f5ee6058172911",
+    "33beb3fe3b22239e",
+    "07b3ff7145c9cbbd",
+    "012de1e5bb42e43a"
+  ]
+}
