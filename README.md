@@ -107,8 +107,8 @@ docs/              arquitectura, contrato de plugins, decisiones, protocolo
 
 Ver `docs/ESTRATEGIA_REFERENCIA.md` para los números y por qué no cuenta como
 ventaja, `docs/COMO_ESCRIBIR_UNA_ESTRATEGIA.md` para el contrato de plugin,
-`docs/PROTOCOLO_BACKTEST.md` para las puertas y `docs/DECISIONES.md` para lo que
-falta decidir antes de la Fase 4.
+`docs/PROTOCOLO_BACKTEST.md` para las puertas, `docs/OPERACION.md` para el día a
+día y `docs/DECISIONES.md` para lo que falta decidir antes de la Fase 4.
 
 ## Siguiente
 
