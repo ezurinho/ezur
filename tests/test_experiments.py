@@ -67,3 +67,48 @@ def test_corrupt_line_is_skipped(tmp_path):
     target = tmp_path / "ledger.jsonl"
     target.write_text('{"a": 1}\nnot json\n', encoding="utf-8")
     assert len(load(target)) == 1
+
+
+def test_cli_prints_the_ledger(tmp_path, capsys):
+    from server.experiments import main
+
+    path = tmp_path / "ledger.jsonl"
+    record(
+        path,
+        kind="backtest",
+        strategy_id="reference",
+        strategy_version="0.1.0",
+        dataset_id="e" * 64,
+        config={},
+        metrics={"trades": 3},
+        verdict="RECHAZADA",
+    )
+    assert main(["--ledger", str(path)]) == 0
+    out = capsys.readouterr().out
+    assert "reference@0.1.0" in out
+    assert "1 experimento(s)" in out
+
+
+def test_cli_finds_one_experiment(tmp_path, capsys):
+    from server.experiments import main
+
+    path = tmp_path / "ledger.jsonl"
+    entry = _record(tmp_path)
+    assert main(["--ledger", str(path), "--find", entry["experiment_id"]]) == 0
+    assert entry["experiment_id"] in capsys.readouterr().out
+
+
+def test_cli_reports_a_missing_experiment(tmp_path, capsys):
+    from server.experiments import main
+
+    assert main(["--ledger", str(tmp_path / "none.jsonl"), "--find", "abc"]) == 1
+    assert "No existe" in capsys.readouterr().out
+
+
+def test_cli_json_summary(tmp_path, capsys):
+    from server.experiments import main
+
+    path = tmp_path / "ledger.jsonl"
+    _record(tmp_path)
+    assert main(["--ledger", str(path), "--json"]) == 0
+    assert '"experiments": 1' in capsys.readouterr().out
