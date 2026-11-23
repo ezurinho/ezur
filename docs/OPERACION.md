@@ -41,7 +41,8 @@ dinero por no poder salir.
 ```powershell
 python -m server.diagnostics --db profiles/demo/terminal.db   # solo lectura
 python -m server.funnel                                        # embudo de evaluación
-python -m server.experiments --help 2>$null; curl http://127.0.0.1:8765/api/stats
+python -m server.experiments                                     # ledger de experimentos
+curl http://127.0.0.1:8765/api/stats                              # estadísticas vivas
 ```
 
 | Síntoma | Dónde mirar |

@@ -7,10 +7,12 @@ greppable and cheap to keep in version control.
 
 from __future__ import annotations
 
+import argparse
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 
 from .confirmatory import canonical_hash
 
@@ -86,3 +88,58 @@ def summary(path: str | Path = DEFAULT_LEDGER) -> dict[str, Any]:
         "latest": entries[-1] if entries else None,
         "unique_ids": len({entry.get("experiment_id") for entry in entries}),
     }
+
+
+def format_table(entries: list[dict[str, Any]]) -> str:
+    if not entries:
+        return "Sin experimentos registrados."
+    lines = ["ID                ESTRATEGIA           VEREDICTO   DATASET     FECHA"]
+    for entry in entries:
+        strategy = entry.get("strategy") or {}
+        lines.append(
+            "  ".join(
+                [
+                    str(entry.get("experiment_id", "?"))[:16].ljust(16),
+                    f"{strategy.get('id', '?')}@{strategy.get('version', '?')}"[:20].ljust(20),
+                    str(entry.get("verdict", "?"))[:11].ljust(11),
+                    str(entry.get("dataset_id", ""))[:10].ljust(10),
+                    str(entry.get("ts", ""))[:19],
+                ]
+            )
+        )
+    return "\n".join(lines)
+
+
+def main(argv: Iterable[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Ledger de experimentos")
+    parser.add_argument("--ledger", default=str(DEFAULT_LEDGER))
+    parser.add_argument("--limit", type=int, default=20)
+    parser.add_argument("--json", action="store_true", help="salida JSON")
+    parser.add_argument("--find", default=None, help="buscar por experiment_id")
+    args = parser.parse_args(list(argv) if argv is not None else None)
+
+    stream = getattr(sys, "stdout", None)
+    if stream is not None and hasattr(stream, "reconfigure"):
+        stream.reconfigure(encoding="utf-8", errors="replace")
+
+    if args.find:
+        entry = find(args.find, args.ledger)
+        if entry is None:
+            print(f"No existe el experimento {args.find}")
+            return 1
+        print(json.dumps(entry, indent=2, sort_keys=True, ensure_ascii=False))
+        return 0
+
+    entries = load(args.ledger)
+    if args.json:
+        print(json.dumps(summary(args.ledger), indent=2, ensure_ascii=False))
+        return 0
+    print(format_table(list(reversed(entries))[: args.limit]))
+    report = summary(args.ledger)
+    print()
+    print(f"{report['experiments']} experimento(s), veredictos: {report['verdicts']}")
+    return 0
+
+
+if __name__ == "__main__":  # pragma: no cover
+    raise SystemExit(main())
