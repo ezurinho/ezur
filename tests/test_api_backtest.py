@@ -106,3 +106,25 @@ def test_dataset_validation_accepts_aligned_multi_symbol_file(app_client):
     assert report["ok"] is True
     assert report["symbols"] == ["PRIMARY", "CTX_A"]
     assert report["sessions"] == 1
+
+
+def test_backtest_run_measures_g8_and_g2(app_client):
+    client, tmp_path, settings = app_client
+    path = _dataset(tmp_path / "bars.csv", settings, ["PRIMARY", "CTX_A"])
+
+    payload = client.post("/api/backtest/run", json={"dataset_path": str(path)}).json()
+    outcomes = {item["id"]: item["status"] for item in payload["validation"]["outcomes"]}
+    assert outcomes["G8"] != "not_measured"
+    assert outcomes["G2"] == "pass"
+    assert "G2" not in payload["validation"]["not_measured"]
+
+
+def test_backtest_run_can_skip_the_stress_runs(app_client):
+    client, tmp_path, settings = app_client
+    path = _dataset(tmp_path / "bars.csv", settings, ["PRIMARY", "CTX_A"])
+
+    payload = client.post(
+        "/api/backtest/run", json={"dataset_path": str(path), "stress": False}
+    ).json()
+    outcomes = {item["id"]: item["status"] for item in payload["validation"]["outcomes"]}
+    assert outcomes["G8"] == "not_measured"

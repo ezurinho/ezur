@@ -79,8 +79,13 @@ def run_simulation(
     bars: int = 390,
     db_path: str | Path | None = None,
     max_ticks: int | None = None,
+    measured: dict | None = None,
 ) -> dict:
-    """Run the engine over several sessions and return real statistics."""
+    """Run the engine over several sessions and return real statistics.
+
+    ``measured`` carries gate outcomes obtained by re-running (G8 doubled costs,
+    G2 determinism); this function itself only measures one pass.
+    """
     calendar = trading_days(settings, days)
     store = Store(db_path or ":memory:")
     strategy = resolve_strategy(settings.strategy.id, settings.strategy.params)
@@ -108,12 +113,44 @@ def run_simulation(
         report = evaluate_gates(
             stats,
             initial_capital=settings.risk.initial_capital,
+            measured=measured,
         )
         stats["validation"] = report.model_dump(mode="json")
         stats["events"] = len(store.list_events(limit=100_000))
         return stats
     finally:
         store.close()
+
+
+def measure_simulation_gates(
+    settings: Settings,
+    base: dict,
+    *,
+    days: int,
+    bars: int,
+    multiplier: float = 2.0,
+) -> dict:
+    """G8 and G2 for a synthetic run: re-run instead of estimating."""
+    from .stress import cost_outcome, determinism_outcome, stressed_settings
+
+    repeat = run_simulation(settings, days=days, bars=bars)
+    stressed = run_simulation(
+        stressed_settings(settings, multiplier), days=days, bars=bars
+    )
+    deterministic = _result_key(repeat) == _result_key(base)
+    return {
+        "G8": cost_outcome(base["closed"], stressed["closed"], multiplier),
+        "G2": determinism_outcome(deterministic),
+    }
+
+
+def _result_key(result: dict) -> str:
+    payload = {
+        "closed": result["closed"],
+        "by_side": result["by_side"],
+        "by_day": result["by_day"],
+    }
+    return json.dumps(payload, sort_keys=True, default=str)
 
 
 def _dataset_id(strategy_id: str, days: int, bars: int) -> str:
@@ -138,19 +175,39 @@ def main() -> None:
     parser.add_argument(
         "--no-ledger", action="store_true", help="No registrar el experimento"
     )
+    parser.add_argument(
+        "--no-stress",
+        action="store_true",
+        help="No re-ejecutar para medir G8 (costes x2) y G2 (determinismo)",
+    )
     args = parser.parse_args()
 
     settings = Settings()
     settings.strategy.id = args.strategy
     settings.strategy.params = {}
 
-    result = run_simulation(
+    first = run_simulation(
         settings,
         days=args.days,
         bars=args.bars,
         db_path=args.db,
         max_ticks=args.max_ticks,
     )
+    measured = None
+    if not args.no_stress and args.max_ticks is None:
+        measured = measure_simulation_gates(
+            settings, first, days=args.days, bars=args.bars
+        )
+        result = run_simulation(
+            settings,
+            days=args.days,
+            bars=args.bars,
+            db_path=args.db,
+            max_ticks=args.max_ticks,
+            measured=measured,
+        )
+    else:
+        result = first
 
     target = Path(args.out)
     target.parent.mkdir(parents=True, exist_ok=True)
