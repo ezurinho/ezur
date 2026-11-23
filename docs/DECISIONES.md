@@ -235,3 +235,39 @@ falsa: «esto se arregla solo».
 **Consecuencia.** Activar alertas desde la UI reconstruye el notifier en el acto;
 sin eso, «guardado» era una promesa sin entrega (lo encontró la prueba de punta a
 punta contra un webhook local).
+
+## ADR 0.13 · Barrera temporal tras un reinicio e índice único de operaciones cerradas
+
+**Contexto.** El feed de OKX hace backfill de 4 h y el motor restaura la posición
+abierta al arrancar. Con las dos cosas a la vez, el motor recibía velas
+*anteriores* a la entrada de esa posición y las procesaba: la operación se cerraba
+«en el pasado», con `closed_ts` anterior a `opened_ts`, y el mismo cierre se
+insertaba otra vez, así que el P&L del día se contaba dos veces. Un reinicio no
+puede cambiar lo que pasó antes de él.
+
+**Decisión.**
+- `TradingEngine._restore()` fija `_replay_barrier` con `position.opened_ts`.
+  `_process()` descarta cualquier tick anterior a esa marca (solo actualiza
+  `last_bar_ts`) y levanta la barrera con el primer tick que la alcanza, dejando
+  un evento `info` «el mercado alcanzó la posición restaurada». La barrera no se
+  persiste: se reconstruye desde la posición guardada, y `_restore()` es la única
+  vía de restauración (se llama solo desde `__init__`).
+- Migración v2: índice único `idx_trades_unique` sobre
+  `(mode, symbol, side, opened_ts, closed_ts, entry_price, exit_price, units)`.
+  Antes de crearlo se deduplica la tabla —el índice no se puede crear sobre filas
+  repetidas— y se registra cuántas filas se borraron como evento `warn` de
+  categoría `maintenance`.
+- `insert_trade()` usa `ON CONFLICT DO NOTHING` y devuelve el `id` de la fila
+  existente en vez de fallar. No se usa `OR IGNORE`: eso también se tragaría una
+  violación de `NOT NULL` o `CHECK` y convertiría un bug en un `0` silencioso.
+
+**Consecuencia.** Un reinicio con backfill no puede fabricar una salida anterior
+a la entrada ni duplicar el P&L. Coste: mientras dura el backfill el motor no
+publica estado nuevo (solo `last_bar_ts`), y la identidad de una operación depende
+de precios en coma flotante exactos: dos fills con precios distintos son dos
+filas, con precios idénticos son una.
+
+**Pendiente conocido.** `apply_migrations()` no envuelve la migración v2 en una
+transacción explícita: si `CREATE UNIQUE INDEX` fallara, el `DELETE` de
+deduplicación quedaría en la transacción implícita de la conexión y un `commit`
+posterior lo consolidaría sin índice.
