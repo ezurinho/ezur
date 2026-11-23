@@ -30,6 +30,7 @@ from .models import (
 )
 from .risk import RiskManager
 from .snapshot import SnapshotBuilder
+from .stats import aggregate
 from .strategy.base import BaseStrategy, MarketData, Phase, StrategyOutput
 from .strategy.registry import resolve_strategy
 from .timeutil import now_utc, parse_hhmm, same_session, session_for, to_zone
@@ -98,6 +99,7 @@ class TradingEngine:
         self.last_exit_ts: datetime | None = None
         self._previous_tick_ts: datetime | None = None
         self._last_publish_at = 0.0
+        self._stats_cache: dict[str, Any] | None = None
         self._rejections: dict[str, dict[str, object]] = {}
         self._restore()
         if self.state.session is None:
@@ -157,6 +159,7 @@ class TradingEngine:
             item.symbol: item for item in settings.instruments.items
         }
         self.builder.settings = settings
+        self.invalidate_stats()
         self._sync_strategy_meta()
         if self.strategy_factory is not None and _strategy_key(settings) != self._strategy_key:
             # Swapping the plugin or its parameters keeps the engine honest: the
@@ -410,6 +413,7 @@ class TradingEngine:
 
     def _on_trade_closed(self, trade: TradeRecord) -> None:
         self.store.insert_trade(trade)
+        self.invalidate_stats()
         self.state.equity += trade.pnl_net
         self.state.day_stats.trades += 1
         self.state.day_stats.pnl += trade.pnl_net
@@ -543,6 +547,21 @@ class TradingEngine:
                 current["v"] += bar.v
         return list(buckets.values())[-limit:]
 
+    def stats(self) -> dict[str, Any]:
+        """Aggregate stats, cached until a trade closes.
+
+        The WebSocket snapshot carries stats too; recomputing them on every
+        publish would read the whole trade table ten times per second.
+        """
+        if self._stats_cache is None:
+            self._stats_cache = aggregate(
+                self.store.all_trades(), self.settings.risk.initial_capital
+            )
+        return self._stats_cache
+
+    def invalidate_stats(self) -> None:
+        self._stats_cache = None
+
     def snapshot(self, stats: dict[str, Any] | None = None) -> dict[str, Any]:
         primary = self.settings.instruments.primary
         return self.builder.build(
@@ -551,12 +570,13 @@ class TradingEngine:
             quotes=self.quotes(),
             candles=self._bars.get(primary, []),
             series=self.series(),
-            stats=stats,
+            stats=stats if stats is not None else self.stats(),
         )
 
     def invalidate_publish(self) -> None:
         """Force the next tick to publish, e.g. after a control action."""
         self._last_publish_at = 0.0
+        self._stats_cache: dict[str, Any] | None = None
 
     async def _publish(self) -> None:
         if not self._subscribers:

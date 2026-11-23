@@ -14,6 +14,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   status: () => request<SnapshotMessage>("/api/status"),
+  funnel: () =>
+    request<{
+      stages: Record<string, number>;
+      verdicts: Record<string, number>;
+      survival_rate: number;
+      by_strategy: Record<string, { experiments: number; verdicts: Record<string, number> }>;
+    }>("/api/funnel"),
   health: () => request<{ status: string; version: string }>("/api/health"),
   config: () => request<Record<string, unknown>>("/api/config"),
   patchConfig: (patch: Record<string, unknown>) =>
