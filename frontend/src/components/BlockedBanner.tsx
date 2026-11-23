@@ -68,12 +68,13 @@ export function BlockedBanner({ snapshot }: { snapshot: SnapshotData }) {
   }
 
   const when = ago(lastReject?.ts, Date.now());
-  const hint = unblockHint(risk.block_reason);
+  const context = { lossStreakCooldownMin: risk.limits.loss_streak_cooldown_min ?? 0 };
+  const hint = unblockHint(risk.block_reason, context);
   return (
     <div className="why-strip why-blocked" data-why="blocked" data-block-reason={risk.block_reason}>
       <span className="led led-stale" aria-hidden="true" />
       <div>
-        <b>{plainReason(risk.block_reason)}</b>
+        <b>{plainReason(risk.block_reason, context)}</b>
         <span className="why-meta">
           {risk.block_count > 0 ? `${risk.block_count} señales rechazadas` : "sin señales rechazadas"}
           {when ? ` · la última ${when}` : ""}

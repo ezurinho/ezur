@@ -37,12 +37,28 @@ const UNLOCK: Record<string, string> = {
   no_price: "se desbloquea cuando llegue el primer precio",
 };
 
-export function plainReason(code: string | null | undefined): string {
+export interface ReasonContext {
+  /** minutos de pausa tras la racha; 0 = bloqueo hasta la próxima sesión */
+  lossStreakCooldownMin?: number;
+}
+
+export function plainReason(code: string | null | undefined, context: ReasonContext = {}): string {
   if (!code) return "Sin bloqueo: puede operar.";
+  const cooldown = context.lossStreakCooldownMin ?? 0;
+  if (code === "consecutive_losses" && cooldown > 0) {
+    return `Falló varias veces seguidas y está en pausa: vuelve a mirar el mercado ${cooldown} minutos después de la última operación. Cada pérdida nueva reinicia la pausa.`;
+  }
   return WORDS[code] ?? `Motivo técnico: ${code}`;
 }
 
-export function unblockHint(code: string | null | undefined): string | null {
+export function unblockHint(
+  code: string | null | undefined,
+  context: ReasonContext = {},
+): string | null {
   if (!code) return null;
+  const cooldown = context.lossStreakCooldownMin ?? 0;
+  if (code === "consecutive_losses" && cooldown > 0) {
+    return `se desbloquea ${cooldown} min después de la última salida`;
+  }
   return UNLOCK[code] ?? null;
 }

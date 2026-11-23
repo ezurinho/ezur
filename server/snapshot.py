@@ -244,6 +244,10 @@ class SnapshotBuilder:
                 "risk_per_trade_pct": cfg.risk_per_trade_pct,
                 "max_daily_loss_pct": cfg.max_daily_loss_pct,
                 "max_trades_per_day": float(cfg.max_trades_per_day),
+                "loss_streak_cooldown_min": float(cfg.loss_streak_cooldown_min),
+                "no_trade_after_consecutive_losses": float(
+                    cfg.no_trade_after_consecutive_losses
+                ),
             },
         )
 
