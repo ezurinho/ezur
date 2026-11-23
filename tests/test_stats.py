@@ -115,3 +115,57 @@ def test_ambiguous_trades_are_counted():
     trade = _trade(0, -10.0)
     trade.diagnostics = {"ambiguous_bar": True}
     assert compute_stats([trade])["ambiguous_trades"] == 1
+
+
+def _timed_trade(closed_ts, pnl: float = 10.0):
+    from datetime import timedelta
+
+    from server.models import TradeRecord
+
+    return TradeRecord(
+        symbol="PRIMARY",
+        side="long",
+        units=1,
+        entry_price=100.0,
+        exit_price=101.0,
+        opened_ts=closed_ts - timedelta(minutes=5),
+        closed_ts=closed_ts,
+        pnl_gross=pnl,
+        pnl_net=pnl,
+        fees=0.0,
+        exit_reason="target",
+        mode="paper",
+        r_multiple=1.0,
+    )
+
+
+def test_hour_buckets_use_the_session_timezone():
+    from datetime import datetime, timezone
+
+    stamp = datetime(2026, 11, 20, 14, 30, tzinfo=timezone.utc)  # 09:30 New York
+    trades = [_timed_trade(stamp)]
+
+    utc = aggregate(trades, 0.0)
+    ny = aggregate(trades, 0.0, timezone_name="America/New_York")
+
+    assert list(utc["by_hour"]) == ["14:00"]
+    assert list(ny["by_hour"]) == ["09:00"]
+
+
+def test_day_buckets_use_the_session_timezone():
+    from datetime import datetime, timezone
+
+    # 00:30 UTC on the 21st is still the 20th in New York.
+    stamp = datetime(2026, 11, 21, 0, 30, tzinfo=timezone.utc)
+    trades = [_timed_trade(stamp)]
+
+    assert list(aggregate(trades, 0.0)["by_day"]) == ["2026-11-21"]
+    assert list(aggregate(trades, 0.0, timezone_name="America/New_York")["by_day"]) == [
+        "2026-11-20"
+    ]
+
+
+def test_stats_endpoint_reports_session_hours(client):
+    payload = client.get("/api/stats").json()
+    assert "by_hour" in payload
+    assert "by_day" in payload

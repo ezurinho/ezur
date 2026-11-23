@@ -99,7 +99,13 @@ def run_simulation(
         for tick in ticks:
             engine._process(tick)
         trades = store.all_trades()
-        stats = aggregate(trades, settings.risk.initial_capital)
+        stats = aggregate(
+            trades,
+            settings.risk.initial_capital,
+            timezone_name=settings.instruments.template_for(
+                settings.instruments.primary
+            ).timezone,
+        )
         stats["simulation"] = {
             "strategy_id": strategy.id,
             "strategy_version": strategy.version,

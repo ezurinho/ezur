@@ -53,8 +53,8 @@ nuevo tenga datos; el histórico de velas en memoria se descarta.
 
 | Método | Ruta | Parámetros |
 |---|---|---|
-| GET | `/trades` | `limit`, `offset`, `mode` |
-| GET | `/trades/export.csv` | `limit` |
+| GET | `/trades` | `limit`, `offset`, `mode`, `side`, `start`, `end` |
+| GET | `/trades/export.csv` | los mismos filtros que `/trades` |
 | GET | `/events` | `limit`, `level` |
 | GET | `/stats` | — |
 | GET | `/stats/reset/preview` | — |

@@ -121,3 +121,53 @@ def test_websocket_sends_an_initial_snapshot(pair):
         assert message["type"] == "snapshot"
         assert message["v"] == 1
         assert "strategy" in message["data"]
+
+
+def _insert(client, side="long", closed="2026-11-20T15:00:00Z", mode="paper"):
+    from server.models import TradeRecord
+
+    client.app.state.store.insert_trade(
+        TradeRecord(
+            symbol="PRIMARY",
+            side=side,
+            units=1,
+            entry_price=100.0,
+            exit_price=101.0,
+            opened_ts="2026-11-20T14:55:00Z",
+            closed_ts=closed,
+            pnl_gross=1.0,
+            pnl_net=0.9,
+            fees=0.1,
+            exit_reason="target",
+            mode=mode,
+            r_multiple=1.0,
+        )
+    )
+
+
+def test_trades_can_be_filtered_by_side(pair):
+    client, _ = pair
+    _insert(client, side="long")
+    _insert(client, side="short")
+    assert len(client.get("/api/trades").json()) == 2
+    assert len(client.get("/api/trades", params={"side": "short"}).json()) == 1
+
+
+def test_trades_can_be_filtered_by_date_range(pair):
+    client, _ = pair
+    _insert(client, closed="2026-11-19T15:00:00Z")
+    _insert(client, closed="2026-11-20T15:00:00Z")
+    rows = client.get(
+        "/api/trades",
+        params={"start": "2026-11-20T00:00:00Z", "end": "2026-11-20T23:59:59Z"},
+    ).json()
+    assert len(rows) == 1
+    assert rows[0]["closed_ts"].startswith("2026-11-20")
+
+
+def test_csv_export_honours_the_filters(pair):
+    client, _ = pair
+    _insert(client, side="long")
+    _insert(client, side="short")
+    body = client.get("/api/trades/export.csv", params={"side": "long"}).text
+    assert len(body.strip().splitlines()) == 2  # header + one row

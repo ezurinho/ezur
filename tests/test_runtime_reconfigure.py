@@ -82,7 +82,7 @@ def test_reconfigure_updates_risk_and_execution():
         store.close()
 
 
-def test_config_change_restarts_a_finished_replay(settings, store):
+def test_a_finished_replay_stops_the_engine_and_can_be_restarted(settings, store):
     import asyncio
 
     from server.engine import TradingEngine
@@ -99,18 +99,11 @@ def test_config_change_restarts_a_finished_replay(settings, store):
         def iter_ticks(self):
             self.starts += 1
             for minute in range(2):
-                stamp = settings.feed.start_date
+                stamp = __import__("datetime").datetime(2026, 11, 20, 14, 30 + minute)
                 yield Tick(
-                    ts=__import__("datetime").datetime(2026, 11, 20, 14, 30 + minute),
+                    ts=stamp,
                     bars={
-                        symbol: Bar(
-                            t=__import__("datetime").datetime(2026, 11, 20, 14, 30 + minute),
-                            o=100,
-                            h=101,
-                            l=99,
-                            c=100,
-                            v=1,
-                        )
+                        symbol: Bar(t=stamp, o=100, h=101, l=99, c=100, v=1)
                         for symbol in settings.instruments.symbols
                     },
                 )
@@ -123,6 +116,13 @@ def test_config_change_restarts_a_finished_replay(settings, store):
         return feed
 
     settings.feed.replay_speed = 1000.0
+    settings.feed.loop_sessions = False
+
+    async def drain(engine):
+        for _ in range(300):
+            if engine._task is None or engine._task.done():
+                return
+            await asyncio.sleep(0.01)
 
     async def scenario():
         engine = TradingEngine(
@@ -134,21 +134,24 @@ def test_config_change_restarts_a_finished_replay(settings, store):
         )
         engine.start()
         engine.start_task()
-        await asyncio.sleep(0.05)
-        while engine._task is not None and not engine._task.done():
-            await asyncio.sleep(0.01)
-        assert engine.state.bars_available == 2
+        await drain(engine)
+        finished = (engine.state.status, engine.state.bars_available)
 
+        # A stopped engine must not resurrect itself on a config change.
         engine.update_settings(settings.model_copy(deep=True))
-        for _ in range(200):
-            if engine.state.bars_available == 2:
-                break
-            await asyncio.sleep(0.01)
-        return engine, feeds
+        await asyncio.sleep(0.05)
+        after_config = engine.state.status
 
-    engine, feeds = asyncio.run(scenario())
-    assert len(feeds) == 2  # the feed was rebuilt
-    assert engine.state.bars_available == 2  # and the replay restarted from scratch
+        engine.start()
+        engine.start_task()
+        await drain(engine)
+        return engine, feeds, finished, after_config
+
+    engine, feeds, finished, after_config = asyncio.run(scenario())
+    assert finished == ("stopped", 2)
+    assert after_config == "stopped"
+    assert len(feeds) == 2  # the feed was rebuilt on reconfigure
+    assert engine.state.bars_available == 2  # and the restart replays it
 
 
 def _api_pair(tmp_path):

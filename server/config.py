@@ -153,7 +153,7 @@ class FeedConfig(_Model):
     provider: Literal["simulated", "csv", "live"] = "simulated"
     csv_path: str = "data/bars.csv"
     replay_speed: float = 2.5
-    loop_sessions: bool = True
+    loop_sessions: bool = False
     start_date: str | None = None
     latency_ms: int = 0
 
