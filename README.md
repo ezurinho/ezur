@@ -81,7 +81,7 @@ server/
     indicators.py  sma, stdev, atr, highest, lowest
   market/          feeds, CSV, sesiones, instrumentos, sintético
 frontend/src/      React 18 + TypeScript + Lightweight Charts
-docs/              arquitectura, contrato de plugins, decisiones, protocolo
+docs/              arquitectura, plugins, UI, protocolo, operación, competencia
 ```
 
 ## Reglas que el código hace cumplir
@@ -102,7 +102,7 @@ docs/              arquitectura, contrato de plugins, decisiones, protocolo
 | Hecho | Evidencia |
 |---|---|
 | Motor determinista | Mismo dataset ⇒ mismo hash de backtest |
-| Snapshot conforme al contrato | 293 tests de backend, 12 de frontend, 96 % de cobertura |
+| Snapshot conforme al contrato | 293 tests de backend, 18 de frontend, 96 % de cobertura |
 | Pipeline completo con trades reales | `reports/backtest/simulation-180d.json` |
 | Ninguna rejilla de parámetros se salva | `reports/backtest/walkforward-reference.json` (6 combinaciones × 3 ventanas, todas negativas) |
 | Estrategia de referencia rentable | **No.** Veredicto automático: RECHAZADA |
@@ -110,7 +110,9 @@ docs/              arquitectura, contrato de plugins, decisiones, protocolo
 | Costes, determinismo e integridad medidos | G8, G2 y G1/G3/G14 se re-ejecutan, no se estiman |
 | Única puerta abierta en un backtest | H1-H5 (holdout sellado), por diseño |
 
-Ver `docs/ESTRATEGIA_REFERENCIA.md` para los números y por qué no cuenta como
+Ver `docs/INVESTIGACION_COMPETENCIA.md` para la comparación medida con Freqtrade,
+Nautilus, LEAN y compañía, `docs/UI.md` para el sistema visual,
+`docs/ESTRATEGIA_REFERENCIA.md` para los números y por qué no cuenta como
 ventaja, `docs/COMO_ESCRIBIR_UNA_ESTRATEGIA.md` para el contrato de plugin,
 `docs/PROTOCOLO_BACKTEST.md` para las puertas, `docs/OPERACION.md` para el día a
 día y `docs/DECISIONES.md` para lo que falta decidir antes de la Fase 4.
@@ -122,6 +124,14 @@ día y `docs/DECISIONES.md` para lo que falta decidir antes de la Fase 4.
 2. Datos reales y reconciliación de costes (Fase 2).
 3. Escribir la estrategia candidata en `server/strategy/` y validarla con el
    protocolo de puertas antes de arriesgar capital.
+
+## Interfaz
+
+HUD oscuro con un solo acento, cifras tabulares y tres medidores propios: curva
+de equidad, sparkline por KPI y arcos de uso de límites. Todo dibujado a mano en
+SVG salvo los dos gráficos de velas (`lightweight-charts`). Ver `docs/UI.md`.
+
+![Inicio](docs/img/dashboard.png)
 
 ## Tres estrategias, un motor
 

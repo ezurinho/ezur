@@ -23,15 +23,33 @@ export function ChartPage() {
   useEffect(() => {
     if (!containerRef.current) return;
     const chart = createChart(containerRef.current, {
-      height: 420,
-      layout: { background: { color: "#0d1117" }, textColor: "#c9d1d9" },
-      grid: { vertLines: { color: "#161b22" }, horzLines: { color: "#161b22" } },
-      timeScale: { timeVisible: true },
+      height: 440,
+      layout: {
+        background: { color: "transparent" },
+        textColor: "#a9b6c6",
+        fontFamily: "JetBrains Mono, Cascadia Mono, ui-monospace, monospace",
+        fontSize: 11,
+      },
+      grid: {
+        vertLines: { color: "#ffffff08" },
+        horzLines: { color: "#ffffff08" },
+      },
+      rightPriceScale: { borderColor: "#1b2533" },
+      timeScale: { timeVisible: true, borderColor: "#1b2533" },
+      crosshair: {
+        mode: 0,
+        vertLine: { color: "#37e0d066", width: 1, style: 3, labelBackgroundColor: "#12303a" },
+        horzLine: { color: "#37e0d066", width: 1, style: 3, labelBackgroundColor: "#12303a" },
+      },
     });
     const series = chart.addCandlestickSeries({
-      upColor: "#2ea043",
-      downColor: "#f85149",
+      upColor: "#3ddc84",
+      downColor: "#ff5c6c",
       borderVisible: false,
+      wickUpColor: "#3ddc84aa",
+      wickDownColor: "#ff5c6caa",
+      priceLineColor: "#37e0d0",
+      priceLineStyle: 2,
     });
     chartRef.current = chart;
     seriesRef.current = series;
