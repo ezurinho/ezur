@@ -156,3 +156,11 @@ def test_strategy_schema_can_target_another_plugin(client):
 
 def test_strategy_schema_unknown_id_is_404(client):
     assert client.get("/api/strategy/schema", params={"strategy_id": "nope"}).status_code == 404
+
+
+def test_health_reports_the_engine_heartbeat(client):
+    body = client.get("/api/health").json()
+    assert body["status"] == "ok"
+    assert body["engine"]["status"] in {"idle", "stopped", "running"}
+    assert "last_bar_age_s" in body["engine"]
+    assert body["engine"]["mode"] in {"paper", "live", "backtest"}

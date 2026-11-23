@@ -3392,3 +3392,27 @@ label {
     transition: none;
   }
 }
+
+/* ---- frescura de los datos ---------------------------------------------- */
+
+.live-chip.live-lag {
+  color: var(--warn);
+  border-color: color-mix(in srgb, var(--warn) 45%, transparent);
+}
+
+.live-chip.live-stale,
+.live-chip.live-none {
+  color: var(--bad);
+  border-color: color-mix(in srgb, var(--bad) 45%, transparent);
+}
+
+.led-lag {
+  background: var(--warn);
+  box-shadow: 0 0 8px var(--warn);
+}
+
+.led-stale,
+.led-none {
+  background: var(--bad);
+  box-shadow: none;
+}

@@ -294,3 +294,31 @@ describe("frase de concentración", () => {
     expect(note).not.toContain("ruido");
   });
 });
+
+describe("frescura del gráfico", () => {
+  const now = Date.parse("2026-11-23T05:00:00Z");
+
+  it("una vela de hace un minuto está en vivo", async () => {
+    const { marketFreshness } = await import("../utils");
+    expect(marketFreshness("2026-11-23T04:59:10Z", now).tone).toBe("live");
+  });
+
+  it("diez minutos tarde no es en vivo", async () => {
+    const { marketFreshness } = await import("../utils");
+    const fresh = marketFreshness("2026-11-23T04:50:00Z", now);
+    expect(fresh.tone).toBe("lag");
+    expect(fresh.label).toContain("10 min");
+  });
+
+  it("sin datos lo dice y no finge", async () => {
+    const { marketFreshness } = await import("../utils");
+    expect(marketFreshness(null, now)).toEqual({ tone: "none", label: "sin datos" });
+  });
+
+  it("una hora parado se cuenta en horas", async () => {
+    const { marketFreshness } = await import("../utils");
+    const fresh = marketFreshness("2026-11-23T03:00:00Z", now);
+    expect(fresh.tone).toBe("stale");
+    expect(fresh.label).toContain("2 h");
+  });
+});

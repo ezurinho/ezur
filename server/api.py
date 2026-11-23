@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import csv
 import io
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request, WebSocket, WebSocketDisconnect
@@ -82,10 +83,32 @@ class CompareRequest(BaseModel):
 
 
 @router.get("/health")
-def health() -> dict[str, Any]:
+def health(request: Request) -> dict[str, Any]:
+    """¿Sigue vivo el proceso... y el motor?
+
+    Un ``200 ok`` que solo prueba que FastAPI responde es el tipo de salud que
+    tranquiliza sin informar. Aquí va también el latido del motor: estado, edad
+    de la última vela y si hay feed enganchado.
+    """
     from . import __version__
 
-    return {"status": "ok", "version": __version__}
+    payload: dict[str, Any] = {"status": "ok", "version": __version__}
+    engine = getattr(request.app.state, "engine", None)
+    if engine is None:
+        return payload
+    last_ts = getattr(engine.state, "last_bar_ts", None)
+    age: float | None = None
+    if isinstance(last_ts, datetime):
+        aware = last_ts if last_ts.tzinfo else last_ts.replace(tzinfo=timezone.utc)
+        age = max(0.0, (datetime.now(timezone.utc) - aware).total_seconds())
+    payload["engine"] = {
+        "status": engine.state.status,
+        "mode": engine.mode,
+        "feed": getattr(getattr(engine, "feed", None), "name", None),
+        "last_bar_age_s": None if age is None else round(age, 1),
+        "session": getattr(engine.state, "session", None),
+    }
+    return payload
 
 
 @router.get("/alerts")
