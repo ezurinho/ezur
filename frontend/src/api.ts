@@ -43,6 +43,21 @@ export const api = {
       by_strategy: Record<string, { experiments: number; verdicts: Record<string, number> }>;
     }>("/api/funnel"),
   health: () => request<{ status: string; version: string }>("/api/health"),
+  alerts: () =>
+    request<{
+      enabled: boolean;
+      reason?: string;
+      config_enabled?: boolean;
+      min_level?: string;
+      url_configured?: boolean;
+      dedupe_window_s?: number;
+      queued?: number;
+      sent?: number;
+      failed?: number;
+      dropped?: number;
+      deduped?: number;
+      filtered?: number;
+    }>("/api/alerts"),
   config: () => request<Record<string, unknown>>("/api/config"),
   patchConfig: (patch: Record<string, unknown>) =>
     request<Record<string, unknown>>("/api/config", {

@@ -80,6 +80,28 @@ Los valores deben venir del broker, no de una estimación propia.
 | Feriados aplicados | — |
 | Cierres anticipados | — |
 
+## ADR 0.8 — Alertas fuera de banda
+
+**Decisión.** Un webhook opcional, apagado por defecto, recibe los eventos de
+nivel `warn` y `error` como JSON. La entrega va en un hilo aparte con cola
+acotada, deduplicación de 60 s y reintentos contados.
+
+**Por qué.** Una parada de emergencia que solo se ve en la pantalla que no estás
+mirando no es una parada. Freqtrade y Hummingbot lo resuelven con Telegram; un
+webhook genérico sirve para Telegram, Slack, Discord o un endpoint propio sin
+depender de ninguna API concreta.
+
+**Por qué no bloquea.** Un `POST` dentro del bucle de ticks convierte un webhook
+lento en velas perdidas. La cola acotada prefiere descartar y contar antes que
+acumular memoria sin límite.
+
+**Por qué el contador y no el log.** Un webhook caído una hora genera cientos de
+fallos idénticos. Se cuentan (`failed`, `dropped`) y se muestra un evento, no uno
+por intento.
+
+**Alternativa descartada.** Escribir a un archivo y dejar que un tercero lo lea:
+menos código, pero nadie mira ese archivo a las 3 de la mañana.
+
 ## Registro
 
 | Fecha | ADR | Decisión | Autor |

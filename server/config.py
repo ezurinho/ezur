@@ -176,6 +176,17 @@ class LiveConfig(_Model):
         )
 
 
+class AlertsConfig(_Model):
+    """Out-of-band notifications. Off by default: no URL, no traffic."""
+
+    enabled: bool = False
+    webhook_url: str | None = None
+    min_level: Literal["warn", "error"] = "warn"
+    timeout_s: float = 5.0
+    max_retries: int = 3
+    dedupe_window_s: float = 60.0
+
+
 class UIConfig(_Model):
     panels: list[str] = Field(
         default_factory=lambda: ["strategy_state", "quotes", "position"]
@@ -192,6 +203,7 @@ class Settings(_Model):
     execution: ExecutionConfig = Field(default_factory=ExecutionConfig)
     feed: FeedConfig = Field(default_factory=FeedConfig)
     live: LiveConfig = Field(default_factory=LiveConfig)
+    alerts: AlertsConfig = Field(default_factory=AlertsConfig)
     ui: UIConfig = Field(default_factory=UIConfig)
 
 

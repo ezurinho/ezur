@@ -125,6 +125,12 @@ día y `docs/DECISIONES.md` para lo que falta decidir antes de la Fase 4.
 3. Escribir la estrategia candidata en `server/strategy/` y validarla con el
    protocolo de puertas antes de arriesgar capital.
 
+## Alertas
+
+Un webhook opcional envía los eventos `warn`/`error` (parada de emergencia,
+límite de pérdida, rechazos) como JSON, en un hilo aparte, con deduplicación y
+contadores visibles en `GET /api/alerts`. Apagado por defecto.
+
 ## Interfaz
 
 HUD oscuro con un solo acento, cifras tabulares y tres medidores propios: curva

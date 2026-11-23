@@ -12,6 +12,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from . import __version__
+from .alerts import build_notifier
 from .api import EventHub, router
 from .config import load_settings
 from .db import Store
@@ -78,6 +79,11 @@ def create_app(
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         settings = load_settings(config_path)
         store = Store(db_path)
+        notifier = build_notifier(
+            settings.alerts,
+            url_override=os.getenv("TERMINAL_ALERT_WEBHOOK_URL"),
+            on_failure=lambda reason: store.insert_event("warn", "alerts", reason),
+        )
         engine = TradingEngine(
             settings,
             store,
@@ -85,6 +91,7 @@ def create_app(
             strategy=resolve_strategy(settings.strategy.id, settings.strategy.params),
             feed_factory=build_feed,
             strategy_factory=lambda cfg: resolve_strategy(cfg.strategy.id, cfg.strategy.params),
+            notifier=notifier,
         )
         engine.subscribe(hub.broadcast)
         app.state.settings = settings
@@ -93,10 +100,13 @@ def create_app(
         app.state.hub = hub
         app.state.config_path = config_path
         app.state.experiment_ledger = ledger_path
+        app.state.notifier = notifier
         try:
             yield
         finally:
             await engine.stop_task()
+            if notifier is not None:
+                notifier.close()
             store.close()
 
     app = FastAPI(title="Trading Terminal", version=__version__, lifespan=lifespan)
