@@ -411,3 +411,38 @@ def test_control_actions_force_a_publish(settings, store):
 
     published = asyncio.run(scenario())
     assert len(published) == 2
+
+
+def test_snapshot_carries_stats_and_caches_them(settings, store):
+    engine = TradingEngine(settings, store, feed=None, strategy=NullStrategy())
+    first = engine.snapshot()["data"]["stats"]
+    second = engine.snapshot()["data"]["stats"]
+    assert first == second
+    assert first["closed"]["trades"] == 0
+    # The cache is invalidated when a trade is booked.
+    assert engine.stats() is engine.stats()
+
+
+def test_stats_cache_is_invalidated_after_a_trade(settings, store):
+    from server.models import TradeRecord
+
+    engine = TradingEngine(settings, store, feed=None, strategy=NullStrategy())
+    engine.stats()
+    trade = TradeRecord(
+        id="t1",
+        symbol="PRIMARY",
+        side="long",
+        units=1,
+        entry_price=100.0,
+        exit_price=101.0,
+        opened_ts=DAY_ONE,
+        closed_ts=DAY_ONE + timedelta(minutes=5),
+        pnl_gross=1.0,
+        pnl_net=0.9,
+        fees=0.1,
+        exit_reason="target",
+        mode="paper",
+        r_multiple=1.0,
+    )
+    engine._on_trade_closed(trade)
+    assert engine.snapshot()["data"]["stats"]["closed"]["trades"] == 1

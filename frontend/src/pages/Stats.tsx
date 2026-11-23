@@ -96,10 +96,68 @@ interface ValidationPayload {
   outcomes: { id: string; description: string; status: string; detail: string }[];
 }
 
+interface FunnelPayload {
+  stages: Record<string, number>;
+  verdicts: Record<string, number>;
+  survival_rate: number;
+  by_strategy: Record<string, { experiments: number; verdicts: Record<string, number> }>;
+}
+
+const FUNNEL_LABELS: Record<string, string> = {
+  experiments: "Experimentos registrados",
+  strategies: "Estrategias distintas",
+  datasets: "Datasets distintos",
+  rejected: "Rechazadas",
+  inconclusive: "Inconclusas",
+  approved: "Aprobadas",
+};
+
+function FunnelPanel({ funnel }: { funnel: FunnelPayload }) {
+  const rows = Object.keys(FUNNEL_LABELS).map((key) => ({
+    key,
+    label: FUNNEL_LABELS[key],
+    value: funnel.stages[key] ?? 0,
+  }));
+  const strategies = Object.entries(funnel.by_strategy);
+  return (
+    <section className="card" data-funnel>
+      <header className="card-header">
+        <h3>Embudo de evaluación</h3>
+        <span className="badge">{(funnel.survival_rate * 100).toFixed(1)} % supervivencia</span>
+      </header>
+      {funnel.stages.experiments === 0 ? (
+        <p className="empty">Sin experimentos registrados todavía</p>
+      ) : (
+        <>
+          <dl className="kv">
+            {rows.map((row) => (
+              <div key={row.key} className="kv-row">
+                <dt>{row.label}</dt>
+                <dd>{row.value}</dd>
+              </div>
+            ))}
+          </dl>
+          <ul className="gate-list">
+            {strategies.map(([id, node]) => (
+              <li key={id} className="gate">
+                <strong>{id}</strong> · {node.experiments} experimento(s) ·{" "}
+                {Object.entries(node.verdicts)
+                  .map(([verdict, count]) => `${verdict} ${count}`)
+                  .join(", ")}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </section>
+  );
+}
+
 export function StatsPage() {
   const [tab, setTab] = useState<Tab>("resumen");
   const [stats, setStats] = useState<StatsPayload | null>(null);
   const [validation, setValidation] = useState<ValidationPayload | null>(null);
+  const [funnel, setFunnel] = useState<FunnelPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -116,6 +174,12 @@ export function StatsPage() {
       .validation()
       .then((payload) => {
         if (!cancelled) setValidation(payload);
+      })
+      .catch(() => undefined);
+    api
+      .funnel()
+      .then((payload) => {
+        if (!cancelled) setFunnel(payload);
       })
       .catch(() => undefined);
     return () => {
@@ -173,6 +237,8 @@ export function StatsPage() {
           </ul>
         </section>
       ) : null}
+
+      {funnel && tab === "resumen" ? <FunnelPanel funnel={funnel} /> : null}
 
       {tab === "resumen" ? (
         <section className="card">
