@@ -3452,3 +3452,40 @@ label {
   font-size: 0.78rem;
   margin-top: 2px;
 }
+
+/* ---- barra de la consola ------------------------------------------------- */
+
+.console-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.console-bar .segmented button .count {
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  margin-left: 4px;
+  font-size: 0.72em;
+}
+
+.console-field select,
+.console-field input {
+  background: var(--surface-3);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+}
+
+.console-field input {
+  width: 180px;
+}
+
+.btn-warn {
+  border-color: color-mix(in srgb, var(--warn) 55%, transparent);
+  color: var(--warn);
+}
