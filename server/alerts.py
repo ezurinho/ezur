@@ -30,7 +30,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 LEVELS: dict[str, int] = {"debug": 10, "info": 20, "warn": 30, "error": 40}
-SOURCE = "trading-terminal"
+SOURCE = "ezur"
 
 
 @dataclass(slots=True)

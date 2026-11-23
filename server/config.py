@@ -119,6 +119,7 @@ class RiskConfig(_Model):
     risk_per_trade_pct: float = 1.0
     max_daily_loss_pct: float = 3.0
     max_daily_profit_pct: float = 0.0
+    max_drawdown_pct: float = 0.0
     max_trades_per_day: int = 3
     max_concurrent_positions: int = 1
     max_units_per_trade: int = 5
@@ -131,6 +132,13 @@ class RiskConfig(_Model):
     session_close_time: str = "15:55"
     cooldown_minutes: int = 0
     no_trade_after_consecutive_losses: int = 0
+
+    @field_validator("max_drawdown_pct")
+    @classmethod
+    def _drawdown_range(cls, value: float) -> float:
+        if not 0 <= value <= 100:
+            raise ValueError("max_drawdown_pct must be in [0, 100]")
+        return value
 
     @field_validator("risk_per_trade_pct")
     @classmethod

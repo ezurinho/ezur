@@ -1,4 +1,11 @@
-# Trading Terminal
+<img src="frontend/public/logo.svg" width="56" height="56" alt="ezur" align="left" hspace="12" vspace="2" />
+
+# ezur
+
+**Terminal de trading algorítmico con validación honesta.** Motor determinista,
+riesgo medido, puertas de validación versionadas y una interfaz que no inventa
+nada. El nombre viene de *ezur*; el resto del repositorio sigue igual de serio.
+
 
 Terminal local de trading algorítmico: motor determinista, gestión de riesgo,
 ejecución paper, persistencia SQLite en WAL y dashboard web. La lógica de
@@ -23,7 +30,7 @@ Panel en `http://127.0.0.1:8765`. El motor arranca **detenido**: hay que pulsar
 Con datos sintéticos y la estrategia de referencia:
 
 ```bash
-TERMINAL_PROFILE_DIR=profiles/demo python run.py      # Windows: set TERMINAL_PROFILE_DIR=profiles/demo
+EZUR_PROFILE_DIR=profiles/demo python run.py          # Windows: $env:EZUR_PROFILE_DIR="profiles/demo"
 ```
 
 ## Simulación multi-sesión
@@ -124,6 +131,14 @@ día y `docs/DECISIONES.md` para lo que falta decidir antes de la Fase 4.
 2. Datos reales y reconciliación de costes (Fase 2).
 3. Escribir la estrategia candidata en `server/strategy/` y validarla con el
    protocolo de puertas antes de arriesgar capital.
+
+## Lo que se copió de los mejores
+
+`docs/INVESTIGACION_IA_TRADING.md` compara 33 repositorios con datos reales de
+GitHub, papers y documentación. De ahí salieron, entre otras, dos piezas ya en
+el código: el guardián de drawdown sobre el pico de capital (lección de
+Freqtrade) y la cadena de hashes del ledger de experimentos (lección de
+ai-hedge-fund).
 
 ## Alertas
 

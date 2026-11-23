@@ -102,6 +102,24 @@ por intento.
 **Alternativa descartada.** Escribir a un archivo y dejar que un tercero lo lea:
 menos código, pero nadie mira ese archivo a las 3 de la mañana.
 
+## ADR 0.9 — Guardián de drawdown y ledger encadenado
+
+**Decisión.** Dos controles nuevos, ambos apagados por defecto:
+`risk.max_drawdown_pct` (drawdown sobre el pico de capital realizado) y una
+cadena SHA-256 en el ledger de experimentos (`prev_hash` / `chain_hash`).
+
+**Por qué el drawdown.** Teníamos pérdida diaria máxima, racha de pérdidas y
+cooldown, pero ninguna medida del daño acumulado desde el máximo. Freqtrade
+documenta el mismo problema y avisa de que su modo `ratios` **no** es el
+drawdown de la curva de capital; aquí se mide sobre equity, no sobre suma de R.
+
+**Por qué la cadena.** «Append-only» era una promesa del código, no algo que un
+lector pudiera comprobar. Con la cadena, cambiar un veredicto en el medio se
+detecta y se señala el índice. Es la idea de `ai-hedge-fund`, aplicada a un
+JSONL en vez de a un NAV.
+
+**Coste.** Dos columnas por línea y un SHA-256 por registro: despreciable.
+
 ## Registro
 
 | Fecha | ADR | Decisión | Autor |

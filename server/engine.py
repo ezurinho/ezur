@@ -95,6 +95,8 @@ class TradingEngine:
             provider=settings.feed.provider,
             equity=settings.risk.initial_capital,
         )
+        # Peak equity is what the trailing drawdown guard measures against.
+        self.peak_equity = settings.risk.initial_capital
         self._bars: dict[str, list[Bar]] = {
             symbol: [] for symbol in settings.instruments.symbols
         }
@@ -356,6 +358,7 @@ class TradingEngine:
         last_price = tick.bars[primary].c if primary in tick.bars else None
         portfolio = PortfolioState(
             equity=self.state.equity,
+            peak_equity=max(self.peak_equity, self.state.equity),
             open_risk=self.state.open_risk,
             daily_pnl=self.state.day_stats.pnl,
             daily_trades=self.state.day_stats.trades,
@@ -439,6 +442,7 @@ class TradingEngine:
         self.store.insert_trade(trade)
         self.invalidate_stats()
         self.state.equity += trade.pnl_net
+        self.peak_equity = max(self.peak_equity, self.state.equity)
         self.state.day_stats.trades += 1
         self.state.day_stats.pnl += trade.pnl_net
         if trade.pnl_net > 0:

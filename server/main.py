@@ -17,6 +17,7 @@ from .api import EventHub, router
 from .config import load_settings
 from .db import Store
 from .engine import TradingEngine
+from .env import env
 from .market.feed import CSVFeed, LiveFeed, MarketFeed, SimulatedFeed
 from .strategy.registry import resolve_strategy
 from .timeutil import session_open_utc
@@ -26,12 +27,12 @@ DEFAULT_DB = Path("data/terminal.db")
 
 
 def resolve_paths() -> tuple[Path, Path]:
-    profile = os.getenv("TERMINAL_PROFILE_DIR")
+    profile = env("PROFILE_DIR")
     if profile:
         base = Path(profile)
         return base / "config.json", base / "terminal.db"
-    config = os.getenv("TERMINAL_CONFIG_PATH")
-    database = os.getenv("TERMINAL_DB_PATH")
+    config = env("CONFIG_PATH")
+    database = env("DB_PATH")
     return (
         Path(config) if config else DEFAULT_CONFIG,
         Path(database) if database else DEFAULT_DB,
@@ -71,7 +72,7 @@ def create_app(
     config_path = Path(config_path) if config_path else default_config
     db_path = Path(db_path) if db_path else default_db
     ledger_path = Path(
-        experiment_ledger or os.getenv("TERMINAL_EXPERIMENT_LEDGER", "reports/experiments.jsonl")
+        experiment_ledger or env("EXPERIMENT_LEDGER", "reports/experiments.jsonl")
     )
     hub = EventHub()
 
@@ -81,7 +82,7 @@ def create_app(
         store = Store(db_path)
         notifier = build_notifier(
             settings.alerts,
-            url_override=os.getenv("TERMINAL_ALERT_WEBHOOK_URL"),
+            url_override=env("ALERT_WEBHOOK_URL"),
             on_failure=lambda reason: store.insert_event("warn", "alerts", reason),
         )
         engine = TradingEngine(
@@ -109,7 +110,7 @@ def create_app(
                 notifier.close()
             store.close()
 
-    app = FastAPI(title="Trading Terminal", version=__version__, lifespan=lifespan)
+    app = FastAPI(title="ezur", version=__version__, lifespan=lifespan)
     app.include_router(router)
 
     dist = Path("frontend/dist")

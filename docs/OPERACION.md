@@ -7,7 +7,7 @@ externos, ni colas, ni credenciales.
 
 ```powershell
 python run.py                                        # perfil por defecto
-$env:TERMINAL_PROFILE_DIR="profiles/demo"; python run.py   # perfil de ejemplo
+$env:EZUR_PROFILE_DIR="profiles/demo"; python run.py     # perfil de ejemplo
 ```
 
 Queda en `http://127.0.0.1:8765`. El motor arranca **detenido**: nada se evalúa
@@ -103,8 +103,8 @@ recibe un JSON por cada evento de nivel `warn` o `error` (parada de emergencia,
 límite de pérdida, rechazo repetido, caída de entrega).
 
 ```pwsh
-$env:TERMINAL_ALERT_WEBHOOK_URL = "https://hooks.example.com/term"
-$env:TERMINAL_PROFILE_DIR = "profiles/demo"
+$env:EZUR_ALERT_WEBHOOK_URL = "https://hooks.example.com/term"
+$env:EZUR_PROFILE_DIR = "profiles/demo"
 python run.py
 ```
 
@@ -126,6 +126,20 @@ curl -s -X POST http://127.0.0.1:8765/api/bot/start -d "{}" -H "Content-Type: ap
 curl -s -X POST http://127.0.0.1:8765/api/emergency
 curl -s http://127.0.0.1:8765/api/alerts   # sent debe haber subido a 1
 ```
+
+## Variables de entorno
+
+El prefijo es `EZUR_`. Los nombres antiguos `TERMINAL_*` siguen funcionando para
+no romper scripts anteriores; si ambos están definidos, gana `EZUR_*`.
+
+| Variable | Para qué |
+|---|---|
+| `EZUR_PROFILE_DIR` | Carpeta con `config.json` y `terminal.db` (perfil) |
+| `EZUR_CONFIG_PATH` / `EZUR_DB_PATH` | Rutas sueltas, si no se usa perfil |
+| `EZUR_HOST` / `EZUR_PORT` | Dónde escucha `run.py` (por defecto `127.0.0.1:8765`) |
+| `EZUR_OPEN` | `1` abre el navegador al arrancar |
+| `EZUR_EXPERIMENT_LEDGER` | Ruta del ledger JSONL de experimentos |
+| `EZUR_ALERT_WEBHOOK_URL` | Webhook de alertas; definirlo ya las activa |
 
 ## Lo que no hace
 

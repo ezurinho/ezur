@@ -16,6 +16,7 @@ from itertools import islice
 from pathlib import Path
 
 from .config import Settings
+from .env import env
 from .db import Store
 from .engine import TradingEngine
 from .market import synthetic
@@ -175,8 +176,14 @@ def main() -> None:
     parser.add_argument("--out", default="reports/backtest/simulation.json")
     parser.add_argument("--max-ticks", type=int, default=None)
     parser.add_argument(
+        "--fill-model",
+        choices=("next_open", "signal_price", "intrabar"),
+        default=None,
+        help="Modelo de fill; por defecto el de la configuración",
+    )
+    parser.add_argument(
         "--ledger",
-        default=os.getenv("TERMINAL_EXPERIMENT_LEDGER", "reports/experiments.jsonl"),
+        default=env("EXPERIMENT_LEDGER", "reports/experiments.jsonl"),
         help="Ledger JSONL donde registrar el experimento",
     )
     parser.add_argument(
@@ -192,6 +199,8 @@ def main() -> None:
     settings = Settings()
     settings.strategy.id = args.strategy
     settings.strategy.params = {}
+    if args.fill_model:
+        settings.execution.fill_model = args.fill_model
 
     first = run_simulation(
         settings,

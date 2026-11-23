@@ -101,6 +101,7 @@ class DayStats(_Model):
 
 class PortfolioState(_Model):
     equity: float = 0.0
+    peak_equity: float = 0.0
     open_risk: float = 0.0
     daily_pnl: float = 0.0
     daily_trades: int = 0
