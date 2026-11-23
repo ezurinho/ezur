@@ -153,21 +153,35 @@ def apply_migrations(conn: sqlite3.Connection) -> int:
         removed = 0
         if version == 2:
             removed = int(conn.execute(DUPLICATE_QUERY).fetchone()[0] or 0)
-        for statement in MIGRATIONS[version]:
-            conn.execute(statement)
-        if removed:
+        # SAVEPOINT y no BEGIN: funciona igual si el llamante ya tenía una
+        # transacción abierta, y en este driver el DDL sólo entra en la transacción
+        # cuando se abre una de forma explícita.
+        savepoint = f"migration_{version}"
+        conn.execute(f"SAVEPOINT {savepoint}")
+        try:
+            for statement in MIGRATIONS[version]:
+                conn.execute(statement)
+            if removed:
+                conn.execute(
+                    "INSERT INTO events (ts, level, category, message, meta) VALUES (?,?,?,?,?)",
+                    (
+                        datetime.now(timezone.utc).isoformat(),
+                        "warn",
+                        "maintenance",
+                        f"{removed} operación(es) duplicada(s) eliminadas al crear el índice único",
+                        "{}",
+                    ),
+                )
             conn.execute(
-                "INSERT INTO events (ts, level, category, message, meta) VALUES (?,?,?,?,?)",
-                (
-                    datetime.now(timezone.utc).isoformat(),
-                    "warn",
-                    "maintenance",
-                    f"{removed} operación(es) duplicada(s) eliminadas al crear el índice único",
-                    "{}",
-                ),
+                "INSERT INTO schema_migrations (version) VALUES (?)", (version,)
             )
-        conn.execute(
-            "INSERT INTO schema_migrations (version) VALUES (?)", (version,)
-        )
+        except sqlite3.Error:
+            # Media migración es peor que ninguna: la deduplicación sin su índice
+            # dejaría la tabla limpia y sin protección, y el commit posterior la
+            # consolidaría igual.
+            conn.execute(f"ROLLBACK TO {savepoint}")
+            conn.execute(f"RELEASE {savepoint}")
+            raise
+        conn.execute(f"RELEASE {savepoint}")
         conn.commit()
     return max(done | set(MIGRATIONS)) if MIGRATIONS else 0
