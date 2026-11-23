@@ -71,6 +71,14 @@ class BacktestRequest(BaseModel):
     dataset_path: str
     save: bool = True
     stress: bool = True
+    run_group: str | None = None
+
+
+class CompareRequest(BaseModel):
+    dataset_path: str
+    strategies: list[str] | None = None
+    save: bool = False
+    run_group: str | None = None
 
 
 @router.get("/health")
@@ -96,6 +104,24 @@ def alerts(request: Request) -> dict[str, Any]:
             "config_enabled": bool(getattr(config, "enabled", False)),
         }
     return notifier.snapshot()
+
+
+@router.post("/alerts/test")
+def post_alerts_test(request: Request) -> dict[str, Any]:
+    """Entrega una alerta de prueba y responde si llegó, no si se encoló."""
+    notifier = getattr(request.app.state, "notifier", None)
+    if notifier is None:
+        return {
+            "sent": False,
+            "reason": "alertas desactivadas: define alerts.webhook_url o EZUR_ALERT_WEBHOOK_URL",
+            "config_enabled": bool(getattr(request.app.state.settings.alerts, "enabled", False)),
+        }
+    return notifier.send_now(
+        "warn",
+        "test",
+        "alerta de prueba desde la interfaz de ezur",
+        {"source": "ui"},
+    )
 
 
 @router.get("/status")
@@ -344,7 +370,7 @@ def post_backtest(request: Request, body: BacktestRequest) -> dict[str, Any]:
     settings = engine.settings
     initial = settings.risk.initial_capital
     try:
-        result = run_backtest(settings, body.dataset_path)
+        result = run_backtest(settings, body.dataset_path, run_group=body.run_group)
     except (ValueError, FileNotFoundError) as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
     if body.save:
@@ -376,16 +402,130 @@ def post_backtest(request: Request, body: BacktestRequest) -> dict[str, Any]:
         metrics={**result.metrics, "validation": report.model_dump(mode="json")},
         verdict=report.verdict,
         notes="" if body.stress else "costes y determinismo no medidos",
+        run_id=result.run_id,
+        run_group=result.run_group or "",
     )
     return {
         "run_id": result.run_id,
+        "dataset_id": result.dataset_id,
+        "config_hash": result.config_hash,
+        "run_group": result.run_group,
         "metrics": result.metrics,
         "trades": len(result.trades),
-        "dataset_id": result.dataset_id,
         "verdict": report.verdict,
         "validation": report.model_dump(mode="json"),
         "experiment_id": entry["experiment_id"],
     }
+
+
+@router.get("/backtest/strategies")
+def get_backtest_strategies(request: Request) -> dict[str, Any]:
+    """Plugins instalados, con versión y parámetros por defecto de cada uno."""
+    from .strategy.registry import available, resolve_strategy
+
+    engine = _engine(request)
+    items = []
+    for strategy_id in available():
+        try:
+            strategy = resolve_strategy(strategy_id, None)
+            items.append(
+                {
+                    "id": strategy.id,
+                    "version": strategy.version,
+                    "params": strategy.params.model_dump(mode="json"),
+                }
+            )
+        except (KeyError, ValueError):
+            continue
+    return {"active": engine.settings.strategy.id, "items": items}
+
+
+@router.post("/backtest/compare")
+def post_backtest_compare(request: Request, body: CompareRequest) -> dict[str, Any]:
+    """Mismo dataset, varias estrategias, un veredicto por fila.
+
+    No elige ganador: ordena por esperanza en R y deja escrito qué puerta falla
+    cada una. Un ranking sin el motivo del fallo invita a quedarse con el número
+    grande y olvidar que no pasó G5.
+    """
+    from .backtest import config_fingerprint, run_backtest
+    from .experiments import record
+    from .gates import evaluate_gates
+    from .stats import aggregate
+    from .strategy.registry import available, resolve_strategy
+
+    engine = _engine(request)
+    settings = engine.settings
+    initial = settings.risk.initial_capital
+    wanted = body.strategies or available()
+    unknown = [item for item in wanted if item not in available()]
+    if unknown:
+        raise HTTPException(status_code=422, detail=f"estrategias desconocidas: {unknown}")
+
+    group = body.run_group or f"cmp-{config_fingerprint(settings)[:8]}"
+    rows: list[dict[str, Any]] = []
+    for strategy_id in wanted:
+        try:
+            result = run_backtest(
+                settings,
+                body.dataset_path,
+                resolve_strategy(strategy_id, None),
+                run_group=group,
+            )
+        except (ValueError, FileNotFoundError) as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+        stats = aggregate(
+            result.trades,
+            initial,
+            timezone_name=settings.instruments.template_for(
+                settings.instruments.primary
+            ).timezone,
+        )
+        report = evaluate_gates(stats, initial_capital=initial)
+        if body.save:
+            _store(request).save_backtest(result.run_id, result.model_dump(mode="json"))
+        entry = record(
+            request.app.state.experiment_ledger,
+            kind="backtest_compare",
+            strategy_id=result.strategy_id,
+            strategy_version=result.strategy_version,
+            dataset_id=result.dataset_id,
+            config=settings.model_dump(mode="json"),
+            metrics={**result.metrics, "validation": report.model_dump(mode="json")},
+            verdict=report.verdict,
+            notes="comparación sin stress: G8 y G2 no medidos",
+            run_id=result.run_id,
+            run_group=group,
+        )
+        rows.append(
+            {
+                "run_id": result.run_id,
+                "strategy_id": result.strategy_id,
+                "strategy_version": result.strategy_version,
+                "dataset_id": result.dataset_id,
+                "config_hash": result.config_hash,
+                "run_group": group,
+                "verdict": report.verdict,
+                "trades": len(result.trades),
+                "gates": report.model_dump(mode="json"),
+                "metrics": {
+                    key: result.metrics.get(key)
+                    for key in (
+                        "trades",
+                        "win_rate",
+                        "profit_factor",
+                        "expectancy_r",
+                        "max_drawdown",
+                        "net_pnl",
+                        "top5_share",
+                    )
+                },
+                "experiment_id": entry["experiment_id"],
+            }
+        )
+
+    rows.sort(key=lambda row: (row["metrics"].get("expectancy_r") or 0), reverse=True)
+    return {"dataset_id": rows[0]["dataset_id"] if rows else "", "run_group": group, "rows": rows}
 
 
 @router.get("/backtest/runs")

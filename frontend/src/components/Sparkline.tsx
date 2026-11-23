@@ -47,12 +47,11 @@ export function Sparkline({
 
   if (!geometry) return <div className="kpi-spark" />;
 
-  const color = stroke ?? (geometry.rising ? "#3ddc84" : "#ff5c6c");
   const gradientId = `spark-${geometry.rising ? "up" : "down"}`;
 
   return (
     <svg
-      className="sparkline"
+      className={`sparkline ${geometry.rising ? "up" : "down"}`}
       viewBox={`0 0 100 ${height}`}
       preserveAspectRatio="none"
       role="img"
@@ -60,14 +59,21 @@ export function Sparkline({
     >
       <defs>
         <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.28" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.28" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
         </linearGradient>
       </defs>
       {fill ? (
         <path className="area" d={geometry.area} fill={`url(#${gradientId})`} />
       ) : null}
-      <path className="line" d={geometry.line} stroke={color} />
+      <path
+        className="line"
+        d={geometry.line}
+        stroke={stroke ?? "currentColor"}
+        pathLength={1}
+        strokeDasharray={1}
+        strokeDashoffset={0}
+      />
     </svg>
   );
 }

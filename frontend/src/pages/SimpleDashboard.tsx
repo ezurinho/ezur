@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api";
 import { DispatchButton } from "../components/Controls";
 import { Sparkline } from "../components/Sparkline";
+import { AnimatedNumber } from "../components/AnimatedNumber";
 import { useUiMode } from "../mode";
 import { useStore } from "../store";
 import { formatDateTime, formatValue } from "../utils";
@@ -49,9 +50,17 @@ export function SimpleDashboard() {
 
   if (!snapshot) {
     return (
-      <div className="page">
-        <h2>Inicio</h2>
-        <p className="empty">Conectando con el motor…</p>
+      <div className="page" aria-busy="true" aria-label="Cargando estado del motor">
+        <div className="simple-hero skeleton-block" />
+        <div className="simple-cards">
+          {[0, 1, 2].map((index) => (
+            <div key={index} className="simple-card skeleton-card">
+              <span className="skeleton skeleton-line short" />
+              <span className="skeleton skeleton-line tall" />
+              <span className="skeleton skeleton-line" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -113,8 +122,7 @@ export function SimpleDashboard() {
         <article className="simple-card">
           <span className="simple-label">Hoy</span>
           <strong className={`simple-big ${risk.daily_pnl > 0 ? "tone-good" : risk.daily_pnl < 0 ? "tone-bad" : ""}`}>
-            {risk.daily_pnl > 0 ? "+" : ""}
-            {money(risk.daily_pnl)}
+            <AnimatedNumber value={risk.daily_pnl} format={(value) => `${value > 0 ? "+" : ""}${money(value)}`} />
           </strong>
           <span className="simple-foot">
             {dailyPct >= 0 ? "+" : ""}
@@ -130,7 +138,9 @@ export function SimpleDashboard() {
 
         <article className="simple-card">
           <span className="simple-label">Dinero en la cuenta</span>
-          <strong className="simple-big">{money(risk.equity)}</strong>
+          <strong className="simple-big">
+            <AnimatedNumber value={risk.equity} format={money} />
+          </strong>
           {equitySeries.length > 1 ? (
             <Sparkline values={equitySeries} label="Evolución del dinero" />
           ) : (

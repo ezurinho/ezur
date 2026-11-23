@@ -255,3 +255,74 @@ def test_webhook_posts_json_over_a_real_socket():
         notifier.close()
         server.shutdown()
         server.server_close()
+
+
+def test_send_now_delivers_on_the_calling_thread():
+    capture = Capture()
+    notifier = _notifier(capture)
+
+    result = notifier.send_now("warn", "test", "prueba desde la UI")
+
+    assert result["sent"] is True
+    assert result["reason"] is None
+    assert capture.sent[0]["category"] == "test"
+    assert result["stats"]["sent"] == 1
+    notifier.close()
+
+
+def test_send_now_reports_failure_instead_of_lying():
+    capture = Capture(fail_times=5)
+    notifier = _notifier(capture, max_retries=1)
+
+    result = notifier.send_now("warn", "test", "prueba")
+
+    assert result["sent"] is False
+    assert "webhook" in result["reason"]
+    assert result["stats"]["failed"] == 1
+    notifier.close()
+
+
+def test_send_now_bypasses_min_level_but_not_the_switch():
+    capture = Capture()
+    notifier = _notifier(capture, min_level="warn")
+    assert notifier.send_now("info", "test", "info explícita")["sent"] is True
+
+    disabled = WebhookNotifier(None, transport=capture, dedupe_window_s=0.0)
+    result = disabled.send_now("warn", "test", "sin webhook")
+    assert result["sent"] is False
+    assert "desactivadas" in result["reason"]
+    notifier.close()
+
+
+def test_alerts_test_endpoint_without_webhook_is_explicit(tmp_path: Path):
+    app = create_app(
+        config_path=tmp_path / "config.json",
+        db_path=tmp_path / "alerts.db",
+    )
+    with TestClient(app) as client:
+        body = client.post("/api/alerts/test").json()
+
+    assert body["sent"] is False
+    assert "desactivadas" in body["reason"]
+    assert body["config_enabled"] is False
+
+
+def test_alerts_test_endpoint_delivers_when_configured(tmp_path: Path, monkeypatch):
+    capture = Capture()
+    config = tmp_path / "config.json"
+    config.write_text(
+        Settings(
+            auto_start=False,
+            alerts=AlertsConfig(enabled=True, webhook_url="http://example.test/hook"),
+        ).model_dump_json(),
+        encoding="utf-8",
+    )
+    fake = _notifier(capture)
+    monkeypatch.setattr("server.main.build_notifier", lambda *args, **kwargs: fake)
+    app = create_app(config_path=config, db_path=tmp_path / "alerts.db")
+
+    with TestClient(app) as client:
+        body = client.post("/api/alerts/test").json()
+
+    assert body["sent"] is True
+    assert capture.sent[0]["source"] == "ezur"
