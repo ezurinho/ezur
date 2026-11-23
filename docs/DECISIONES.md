@@ -120,6 +120,33 @@ JSONL en vez de a un NAV.
 
 **Coste.** Dos columnas por línea y un SHA-256 por registro: despreciable.
 
+## ADR 0.10 — Dos modos de interfaz y arranque automático
+
+**Decisión.** `ui` deja de ser un único layout: la terminal tiene **Básico** y
+**Avanzado**, y el motor arranca solo (`auto_start: true`).
+
+**Por qué dos modos.** El snapshot v1 es deliberadamente rico: fases, métricas,
+zonas, marcadores, puertas, embudo. Eso es lo que un operador quiere cuando
+audita una estrategia y exactamente lo que hace inservible la pantalla para
+alguien que solo quiere saber si el bot está ganando o perdiendo. Enseñar todo a
+todos no es transparencia, es ruido: la información que no se puede interpretar
+se ignora igual que la que no existe.
+
+**Por qué el modo no va al servidor.** Es una preferencia de lectura, como el
+zoom. Va a `localStorage`; el snapshot no gana un campo y el contrato v1 no se
+mueve. Cambiar de modo no reinicia nada ni toca el motor.
+
+**Por qué arranque automático.** Un bot que necesita que un humano pulse
+«empezar» a las 3 de la mañana no opera a las 3 de la mañana. `auto_start` es
+`true` por defecto y el perfil lo repite para que se vea; con `false` el motor
+queda `idle` hasta `POST /api/bot/start`, que es lo que quieren los tests y
+quien prefiere revisar antes de exponer capital.
+
+**Contrapartida aceptada.** El modo básico esconde cosas que sí importan en una
+auditoría (R, drawdown, puertas). Por eso cada vista básica enlaza al avanzado y
+la configuración completa sigue a un clic; esconder sin salida habría sido otra
+decisión, peor.
+
 ## Registro
 
 | Fecha | ADR | Decisión | Autor |

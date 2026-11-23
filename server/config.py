@@ -217,6 +217,9 @@ class Settings(_Model):
     live: LiveConfig = Field(default_factory=LiveConfig)
     alerts: AlertsConfig = Field(default_factory=AlertsConfig)
     ui: UIConfig = Field(default_factory=UIConfig)
+    # The engine runs by itself on boot. A terminal that needs a human to press
+    # "start" every morning is a toy; this is the default and the UI says so.
+    auto_start: bool = True
 
 
 def load_settings(path: str | Path | None = None) -> Settings:

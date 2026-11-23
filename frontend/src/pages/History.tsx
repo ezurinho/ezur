@@ -1,12 +1,58 @@
 import { useEffect, useState } from "react";
 import { DynamicTable, type Column } from "../components/DynamicTable";
 import { api } from "../api";
+import { useUiMode } from "../mode";
 import { formatDateTime, formatValue } from "../utils";
 
 type Row = Record<string, unknown>;
 
 const PERIODS = ["today", "week", "month", "30d", "all"] as const;
 type Period = (typeof PERIODS)[number];
+
+const PERIOD_WORDS: Record<Period, string> = {
+  today: "hoy",
+  week: "7 días",
+  month: "mes",
+  "30d": "30 días",
+  all: "todo",
+};
+
+const SIDE_WORD: Record<string, string> = { long: "compra", short: "venta" };
+const EXIT_WORD: Record<string, string> = {
+  stop: "saltó el stop",
+  target: "objetivo",
+  manual: "a mano",
+  session_close: "fin del día",
+  cancel: "cancelada",
+};
+
+/** Beginner columns: when, what, how much. No R, no prices, no diagnostics. */
+export const SIMPLE_COLUMNS: Column<Row>[] = [
+  { key: "closed_ts", header: "Cuándo", render: (row) => formatDateTime(String(row.closed_ts)) },
+  {
+    key: "side",
+    header: "Qué hizo",
+    render: (row) => SIDE_WORD[String(row.side)] ?? String(row.side),
+  },
+  {
+    key: "pnl_net",
+    header: "Resultado",
+    render: (row) => {
+      const value = Number(row.pnl_net ?? 0);
+      return (
+        <span className={value > 0 ? "tone-good" : value < 0 ? "tone-bad" : ""}>
+          {value > 0 ? "+" : ""}
+          {formatValue(value, "price")}
+        </span>
+      );
+    },
+  },
+  {
+    key: "exit_reason",
+    header: "Por qué cerró",
+    render: (row) => EXIT_WORD[String(row.exit_reason)] ?? String(row.exit_reason),
+  },
+];
 
 /** Server-side range: a browser-side filter over 200 rows is a lie by omission. */
 function periodStart(period: Period): string | undefined {
@@ -34,6 +80,7 @@ const COLUMNS: Column<Row>[] = [
 ];
 
 export function HistoryPage() {
+  const { isSimple } = useUiMode();
   const [rows, setRows] = useState<Row[]>([]);
   const [period, setPeriod] = useState<(typeof PERIODS)[number]>("all");
   const [error, setError] = useState<string | null>(null);
@@ -67,19 +114,26 @@ export function HistoryPage() {
             className={value === period ? "btn active" : "btn"}
             onClick={() => setPeriod(value)}
           >
-            {value}
+            {isSimple ? PERIOD_WORDS[value] : value}
           </button>
         ))}
-        <a className="btn" href={api.tradesCsvUrl({ start })} download>
-          Exportar CSV
-        </a>
+        {isSimple ? null : (
+          <a className="btn" href={api.tradesCsvUrl({ start })} download>
+            Exportar CSV
+          </a>
+        )}
       </div>
+      {isSimple ? (
+        <p className="simple-lead">
+          Cada línea es una operación ya cerrada. El resultado es dinero, ya descontadas las comisiones.
+        </p>
+      ) : null}
       {error ? <p className="tone-bad">{error}</p> : null}
       <section className="card">
         <DynamicTable
           rows={rows}
-          columns={COLUMNS}
-          emptyLabel="Sin operaciones registradas"
+          columns={isSimple ? SIMPLE_COLUMNS : COLUMNS}
+          emptyLabel={isSimple ? "Todavía no hay operaciones" : "Sin operaciones registradas"}
           rowKey={(row) => String(row.id ?? Math.random())}
         />
       </section>

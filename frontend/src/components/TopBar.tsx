@@ -2,6 +2,7 @@ import type { ConnectionState } from "../api";
 import type { SnapshotData } from "../types";
 import { Logo } from "./Logo";
 import { useClock } from "./Sparkline";
+import { useUiMode } from "../mode";
 
 interface Props {
   snapshot: SnapshotData | null;
@@ -24,6 +25,7 @@ export function TopBar({ snapshot, connection }: Props) {
   const equity = snapshot?.risk.equity ?? 0;
   const dailyPnl = snapshot?.risk.daily_pnl ?? 0;
   const now = useClock();
+  const { isSimple, setMode } = useUiMode();
 
   return (
     <header className="top-bar">
@@ -60,6 +62,27 @@ export function TopBar({ snapshot, connection }: Props) {
       </div>
 
       <div className="top-bar-right">
+        <div className="mode-switch" role="group" aria-label="Nivel de detalle">
+          <button
+            type="button"
+            className={isSimple ? "mode-option active" : "mode-option"}
+            onClick={() => setMode("simple")}
+            aria-pressed={isSimple}
+            data-mode-option="simple"
+          >
+            Básico
+          </button>
+          <button
+            type="button"
+            className={!isSimple ? "mode-option active" : "mode-option"}
+            onClick={() => setMode("advanced")}
+            aria-pressed={!isSimple}
+            data-mode-option="advanced"
+          >
+            Avanzado
+          </button>
+        </div>
+        <span className="hud-sep" aria-hidden="true" />
         <div className="hud-group">
           <span className="hud-label">sesión</span>
           <span className="hud-value">

@@ -112,6 +112,12 @@ def create_app(
         app.state.config_path = config_path
         app.state.experiment_ledger = ledger_path
         app.state.notifier = notifier
+        if settings.auto_start and engine.state.status in {"idle", "stopped"}:
+            try:
+                engine.start()
+                engine.start_task()
+            except RuntimeError as error:  # a bad profile must not block the UI
+                store.insert_event("warn", "engine", f"auto_start falló: {error}")
         try:
             yield
         finally:

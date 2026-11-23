@@ -24,8 +24,9 @@ cd frontend ; npm install ; npm run build ; cd ..
 python run.py
 ```
 
-Panel en `http://127.0.0.1:8765`. El motor arranca **detenido**: hay que pulsar
-*Iniciar* en la vista de Inicio o llamar `POST /api/bot/start`.
+Panel en `http://127.0.0.1:8765`. El motor arranca **solo** (`auto_start`):
+consume el feed y evalúa la estrategia sin intervención. Con
+`"auto_start": false` en el perfil queda `idle` hasta `POST /api/bot/start`.
 
 Con datos sintéticos y la estrategia de referencia:
 
@@ -164,6 +165,10 @@ contadores visibles en `GET /api/alerts`. Apagado por defecto.
 HUD oscuro con un solo acento, cifras tabulares y tres medidores propios: curva
 de equidad, sparkline por KPI y arcos de uso de límites. Todo dibujado a mano en
 SVG salvo los dos gráficos de velas (`lightweight-charts`). Ver `docs/UI.md`.
+
+Dos densidades sobre el mismo snapshot: **Básico** (cuatro vistas, frases en vez
+de códigos, dinero en vez de R) y **Avanzado** (las siete vistas, fases,
+métricas, puertas y consola). El interruptor está en el HUD y se recuerda.
 
 ![Inicio](docs/img/dashboard.png)
 

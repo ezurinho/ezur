@@ -10,14 +10,19 @@ python run.py                                        # perfil por defecto
 $env:EZUR_PROFILE_DIR="profiles/demo"; python run.py     # perfil de ejemplo
 ```
 
-Queda en `http://127.0.0.1:8765`. El motor arranca **detenido**: nada se evalúa
-hasta pulsar Iniciar o llamar a `POST /api/bot/start`.
+Queda en `http://127.0.0.1:8765`. Con el `auto_start` por defecto (`true` en
+`config.json`) el motor ya está `running` al abrir: consume el feed y evalúa la
+estrategia sin que nadie pulse nada. Para que espere órdenes explícitas,
+`"auto_start": false` en el perfil.
+
+La interfaz tiene dos densidades —**Básico** y **Avanzado**— descritas en
+`docs/UI.md`; no cambian el comportamiento del motor, solo cuánto se enseña.
 
 ## Los cuatro controles
 
 | Control | Efecto | Estado persistido |
 |---|---|---|
-| Iniciar | el motor vuelve a evaluar y a consumir el feed | `running` |
+| Iniciar | vuelve a evaluar y a consumir el feed (con `auto_start` ya viene dado) | `running` |
 | Pausar | deja de evaluar; la posición y la orden pendiente siguen vivas | `paused` |
 | Detener | motor detenido; misma idea que pausa, distinto nombre de estado | `stopped` |
 | Emergencia | cancela órdenes pendientes y bloquea entradas nuevas | `paused` + `emergency` |

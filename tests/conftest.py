@@ -47,7 +47,11 @@ def engine(settings: Settings, store: Store) -> TradingEngine:
 
 @pytest.fixture
 def client(tmp_path: Path):
-    app = create_app(config_path=tmp_path / "config.json", db_path=tmp_path / "api.db")
+    # Los tests deciden cuándo arranca el motor: el arranque automático tiene su
+    # propio archivo (test_auto_start.py) y aquí solo ensuciaría el estado inicial.
+    config = tmp_path / "config.json"
+    config.write_text('{"auto_start": false}', encoding="utf-8")
+    app = create_app(config_path=config, db_path=tmp_path / "api.db")
     with TestClient(app) as test_client:
         yield test_client
 

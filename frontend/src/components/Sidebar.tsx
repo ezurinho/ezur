@@ -57,16 +57,36 @@ export const VIEWS: ViewDefinition[] = [
   { id: "console", label: "Consola", hint: "eventos" },
 ];
 
+/** Four views for a beginner: what is happening, the price, the history, the knobs. */
+export const SIMPLE_VIEWS: ViewDefinition[] = [
+  { id: "home", label: "Inicio", hint: "resumen" },
+  { id: "chart", label: "Gráfico", hint: "precio" },
+  { id: "history", label: "Historial", hint: "resultados" },
+  { id: "settings", label: "Ajustes", hint: "básico" },
+];
+
+const SIMPLE_ICONS: Record<string, JSX.Element> = {
+  settings: (
+    <>
+      <path d="M4 7h10M18 7h2M4 17h4M12 17h8" />
+      <circle cx="16" cy="7" r="2" />
+      <circle cx="10" cy="17" r="2" />
+    </>
+  ),
+};
+
 interface Props {
   active: string;
   onSelect: (id: string) => void;
+  simple?: boolean;
 }
 
-export function Sidebar({ active, onSelect }: Props) {
+export function Sidebar({ active, onSelect, simple = false }: Props) {
+  const views = simple ? SIMPLE_VIEWS : VIEWS;
   return (
-    <nav className="sidebar" aria-label="Vistas">
-      <span className="sidebar-title">consola</span>
-      {VIEWS.map((view) => (
+    <nav className="sidebar" aria-label="Vistas" data-mode={simple ? "simple" : "advanced"}>
+      <span className="sidebar-title">{simple ? "básico" : "consola"}</span>
+      {views.map((view) => (
         <button
           key={view.id}
           type="button"
@@ -75,17 +95,29 @@ export function Sidebar({ active, onSelect }: Props) {
           aria-current={active === view.id ? "page" : undefined}
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            {ICONS[view.id]}
+            {ICONS[view.id] ?? SIMPLE_ICONS[view.id]}
           </svg>
           {view.label}
         </button>
       ))}
       <div className="sidebar-foot">
-        <b>paper</b> · sin broker
-        <br />
-        adaptador live: pendiente
-        <br />
-        ADR 0.3
+        {simple ? (
+          <>
+            <b>modo básico</b>
+            <br />
+            solo lo importante
+            <br />
+            cambia a Avanzado arriba
+          </>
+        ) : (
+          <>
+            <b>paper</b> · sin broker
+            <br />
+            adaptador live: pendiente
+            <br />
+            ADR 0.3
+          </>
+        )}
       </div>
     </nav>
   );
