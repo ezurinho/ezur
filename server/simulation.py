@@ -80,13 +80,14 @@ def run_simulation(
     db_path: str | Path | None = None,
     max_ticks: int | None = None,
     measured: dict | None = None,
+    calendar_days: list[date] | None = None,
 ) -> dict:
     """Run the engine over several sessions and return real statistics.
 
     ``measured`` carries gate outcomes obtained by re-running (G8 doubled costs,
     G2 determinism); this function itself only measures one pass.
     """
-    calendar = trading_days(settings, days)
+    calendar = list(calendar_days) if calendar_days else trading_days(settings, days)
     store = Store(db_path or ":memory:")
     strategy = resolve_strategy(settings.strategy.id, settings.strategy.params)
     engine = TradingEngine(settings, store, feed=None, strategy=strategy, mode="dry_run")

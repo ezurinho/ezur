@@ -25,6 +25,17 @@ Los conteos de sesiones se derivan del calendario real, excluyendo sesiones de
 roll. El dataset, su hash y la configuración deben quedar registrados en
 `reports/experiments.jsonl` con cada ejecución.
 
+La rejilla de parámetros se evalúa con `server/walkforward.py`:
+
+```bash
+python -m server.walkforward --strategy donchian --grid "channel=10,20,40"   --windows 3 --days 20 --out reports/backtest/walkforward-donchian.json
+```
+
+Devuelve una fila por combinación con expectativa media, peor ventana y
+consistencia (fracción de ventanas positivas). **No elige ganador**: ordenar por
+expectativa media y quedarse con el primero es exactamente cómo se sobreajusta
+un desarrollo. La tabla sirve para descartar, no para coronar.
+
 ## 3. Puertas de desarrollo
 
 Implementadas y medibles con `server/gates.py`:
