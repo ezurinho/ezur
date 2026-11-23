@@ -7,7 +7,7 @@ agree about why nothing was traded.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .config import InstrumentConfig, RiskConfig
 from .models import PortfolioState, RiskDecision
@@ -48,7 +48,12 @@ class RiskManager:
             return reject("max_trades_reached", "límite de operaciones diarias")
         if cfg.no_trade_after_consecutive_losses and (
             portfolio.consecutive_losses >= cfg.no_trade_after_consecutive_losses
-        ):
+        ) and not _cooldown_elapsed(cfg, portfolio, clock):
+            if cfg.loss_streak_cooldown_min:
+                return reject(
+                    "consecutive_losses",
+                    f"racha de pérdidas: {cfg.loss_streak_cooldown_min} min desde la última salida",
+                )
             return reject("consecutive_losses", "racha de pérdidas alcanzada")
         if cfg.max_drawdown_pct and portfolio.peak_equity > 0:
             # Peak-to-trough on realised equity, not on the sum of trade ratios:
@@ -121,3 +126,24 @@ class RiskManager:
             if minutes(cfg.entry_exclusion_start) <= minute_of_day < minutes(cfg.entry_exclusion_end):
                 return ("excluded_window", "ventana de exclusión activa")
         return None
+
+
+def _cooldown_elapsed(
+    cfg: RiskConfig, portfolio: PortfolioState, clock: datetime | None
+) -> bool:
+    """¿Ya pasó la pausa que sigue a la racha de pérdidas?
+
+    Con ``loss_streak_cooldown_min == 0`` la respuesta es siempre «no»: el
+    bloqueo dura hasta el cambio de sesión, que es el comportamiento histórico.
+    """
+    if not cfg.loss_streak_cooldown_min:
+        return False
+    if portfolio.last_exit_ts is None:
+        return False
+    now = clock or datetime.now(timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
+    last = portfolio.last_exit_ts
+    if last.tzinfo is None:
+        last = last.replace(tzinfo=timezone.utc)
+    return (now - last).total_seconds() >= cfg.loss_streak_cooldown_min * 60

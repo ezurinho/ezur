@@ -164,6 +164,21 @@ curl -s -X POST http://127.0.0.1:8765/api/emergency
 curl -s http://127.0.0.1:8765/api/alerts   # sent debe haber subido a 1
 ```
 
+## Racha de pérdidas: pausa o parada
+
+`no_trade_after_consecutive_losses` (N) bloquea nuevas entradas al llegar a N
+pérdidas seguidas. Qué pasa después lo decide `loss_streak_cooldown_min`:
+
+| Valor | Comportamiento |
+|---|---|
+| `0` | el bloqueo dura hasta la próxima sesión (00:00 UTC del perfil) |
+| `> 0` | el bloqueo se levanta solo pasados esos minutos desde la última salida; cada pérdida nueva reinicia la pausa |
+
+El perfil `okx` usa `N=3` y 45 minutos: la serie de anoche acumuló 6 stops
+seguidos y con `0` el bot habría pasado el resto del día mirando la pared. La
+frase de la interfaz sale del mismo dato: si la pausa existe, dice cuántos
+minutos; si no, dice que dura hasta la próxima sesión.
+
 ## Configurar alertas desde la interfaz
 
 Configuración → avanzado → **Alertas externas**: activar, URL del webhook y
