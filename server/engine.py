@@ -105,6 +105,9 @@ class TradingEngine:
         self._task: asyncio.Task[None] | None = None
         self.last_exit_ts: datetime | None = None
         self._previous_tick_ts: datetime | None = None
+        # Barrera del backfill: velas anteriores a la posición restaurada no se
+        # procesan (cerrarían la operación antes de que existiera).
+        self._replay_barrier: datetime | None = None
         self._last_publish_at = 0.0
         self._stats_cache: dict[str, Any] | None = None
         self._rejections: dict[str, dict[str, object]] = {}
@@ -276,6 +279,22 @@ class TradingEngine:
 
     # --- cycle ------------------------------------------------------------
     def _process(self, tick: Tick) -> None:
+        # Un feed con backfill repite velas anteriores a la posición restaurada.
+        # Procesarlas cerraría la operación «en el pasado» y dejaría una salida
+        # anterior a la entrada: se espera a que el mercado alcance la posición.
+        barrier = self._replay_barrier
+        if barrier is not None and tick.ts < barrier:
+            self.state.last_bar_ts = tick.ts
+            return
+        if barrier is not None:
+            self._replay_barrier = None
+            self._event(
+                "info",
+                "engine",
+                "el mercado alcanzó la posición restaurada",
+                {"desde": barrier.isoformat()},
+            )
+
         primary = self.settings.instruments.primary
         template = self.settings.instruments.template_for(primary)
         session = session_for(tick.ts, template)
@@ -487,6 +506,8 @@ class TradingEngine:
                 self.state.position = self.execution.position
             except ValueError:
                 logger.warning("discarded unreadable position state")
+        if self.state.position is not None:
+            self._replay_barrier = self.state.position.opened_ts
         self.state.emergency = bool(self.store.kv_get("emergency") or False)
         if self.state.emergency:
             self.state.block_reason = "emergency_active"

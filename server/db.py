@@ -110,6 +110,9 @@ class Store:
 
     # --- trades -----------------------------------------------------------
     def insert_trade(self, trade: TradeRecord) -> int:
+        # Una operación cerrada es única: mismo modo, mismo instrumento, mismas
+        # horas y mismos precios. Un reinicio con backfill volvió a insertar una
+        # fila idéntica y el P&L del día se contó dos veces.
         with self.conn:
             cur = self.conn.execute(
                 """
@@ -119,6 +122,7 @@ class Store:
                     pnl_net, r_multiple, exit_reason, mode, signal_key,
                     diagnostics
                 ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                ON CONFLICT DO NOTHING
                 """,
                 (
                     trade.symbol,
@@ -140,6 +144,25 @@ class Store:
                     json.dumps(trade.diagnostics),
                 ),
             )
+        if cur.rowcount == 0:
+            existing = self.conn.execute(
+                """
+                SELECT id FROM trades
+                 WHERE mode=? AND symbol=? AND side=? AND opened_ts=? AND closed_ts=?
+                   AND entry_price=? AND exit_price=? AND units=?
+                """,
+                (
+                    trade.mode,
+                    trade.symbol,
+                    trade.side,
+                    _iso(trade.opened_ts),
+                    _iso(trade.closed_ts),
+                    trade.entry_price,
+                    trade.exit_price,
+                    trade.units,
+                ),
+            ).fetchone()
+            return int(existing["id"]) if existing else 0
         return int(cur.lastrowid or 0)
 
     def list_trades(
