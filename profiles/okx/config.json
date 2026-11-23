@@ -1,0 +1,100 @@
+{
+  "version": 1,
+  "instruments": {
+    "primary": "BTC",
+    "items": [
+      {
+        "symbol": "BTC",
+        "role": "primary",
+        "venue_symbol": "BTC-USDT",
+        "enabled": true,
+        "tick_size": 0.01,
+        "tick_value": 1e-05,
+        "decimals": 2,
+        "currency": "USDT",
+        "session_template": "CRYPTO24"
+      }
+    ],
+    "templates": [
+      {
+        "name": "CRYPTO24",
+        "timezone": "UTC",
+        "open": "00:00",
+        "close": "23:59",
+        "weekdays": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      }
+    ]
+  },
+  "strategy": {
+    "id": "reference",
+    "version": "0.1.0",
+    "params": {
+      "fast": 7,
+      "slow": 21,
+      "atr_period": 14,
+      "stop_atr": 6.0,
+      "rr": 1.2
+    }
+  },
+  "risk": {
+    "initial_capital": 25000.0,
+    "risk_per_trade_pct": 0.75,
+    "max_daily_loss_pct": 2.0,
+    "max_daily_profit_pct": 0.0,
+    "max_drawdown_pct": 5.0,
+    "max_trades_per_day": 12,
+    "max_concurrent_positions": 1,
+    "max_units_per_trade": 300,
+    "max_stop_ticks": 40000,
+    "trade_window_start": "00:00",
+    "trade_window_end": "23:59",
+    "close_at_session_end": false,
+    "session_close_time": "23:59",
+    "cooldown_minutes": 2,
+    "no_trade_after_consecutive_losses": 3
+  },
+  "execution": {
+    "commission_per_unit_side": 0.049,
+    "slippage_ticks": 1,
+    "max_slippage_ticks": 5,
+    "fill_model": "intrabar",
+    "simulate_partial_fills": false,
+    "partial_fill_ratio": 0.6
+  },
+  "feed": {
+    "provider": "okx",
+    "poll_interval_s": 5.0,
+    "backfill_bars": 240,
+    "replay_speed": 1.0,
+    "loop_sessions": false,
+    "latency_ms": 0,
+    "csv_path": "data/bars.csv"
+  },
+  "live": {
+    "broker": "none",
+    "environment": "demo",
+    "live_enabled": false,
+    "adapter_implemented": false,
+    "live_confirmation": null
+  },
+  "alerts": {
+    "enabled": false
+  },
+  "ui": {
+    "theme": "dark",
+    "locale": "es",
+    "panels": [
+      "strategy_state",
+      "quotes",
+      "position"
+    ]
+  }
+}

@@ -19,6 +19,7 @@ from .db import Store
 from .engine import TradingEngine
 from .env import env
 from .market.feed import CSVFeed, LiveFeed, MarketFeed, SimulatedFeed
+from .market.okx import OKXFeed
 from .strategy.registry import resolve_strategy
 from .timeutil import session_open_utc
 
@@ -57,6 +58,15 @@ def build_feed(settings) -> MarketFeed:
         return CSVFeed(settings.feed.csv_path, symbols)
     if provider == "live":
         return LiveFeed()
+    if provider == "okx":
+        return OKXFeed(
+            {
+                item.symbol: item.venue_symbol or item.symbol
+                for item in settings.instruments.enabled
+            },
+            bars=settings.feed.backfill_bars,
+            poll_interval_s=settings.feed.poll_interval_s,
+        )
     seed = settings.feed.start_date or default_session_date(settings)
     template = settings.instruments.template_for(settings.instruments.primary)
     start = session_open_utc(template, date.fromisoformat(seed))

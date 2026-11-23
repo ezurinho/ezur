@@ -18,6 +18,8 @@ profiles/*/
 !profiles/.gitkeep
 !profiles/demo/
 !profiles/demo/config.json
+!profiles/okx/
+!profiles/okx/config.json
 .superpowers/
 *.db
 *.db-wal
