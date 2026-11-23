@@ -13,6 +13,7 @@ backups/
 reports/backtest/*
 !reports/backtest/.gitkeep
 !reports/backtest/simulation-*.json
+!reports/backtest/walkforward-*.json
 profiles/*/
 !profiles/.gitkeep
 !profiles/demo/
