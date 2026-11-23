@@ -421,3 +421,37 @@ th {
 .gate-not_measured {
   color: var(--muted);
 }
+
+/* R histogram: fixed buckets, bars scaled to the tallest one. */
+.histogram {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.histogram li {
+  display: grid;
+  grid-template-columns: 8rem 1fr 2.5rem;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+}
+
+.histogram-label {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.histogram-bar {
+  display: block;
+  height: 0.7rem;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #4c8dff, #4c8dff88);
+}
+
+.histogram-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}

@@ -169,3 +169,41 @@ def test_stats_endpoint_reports_session_hours(client):
     payload = client.get("/api/stats").json()
     assert "by_hour" in payload
     assert "by_day" in payload
+
+
+def test_r_distribution_buckets_every_trade():
+    from server.stats import R_BUCKETS, r_distribution
+
+    counts = r_distribution([-3.0, -1.5, -0.75, -0.2, 0.3, 0.75, 1.5, 2.5])
+    assert sum(counts.values()) == 8
+    assert list(counts) == [label for label, _, _ in R_BUCKETS]
+    assert counts["<= -2R"] == 1
+    assert counts["-2R a -1R"] == 1
+    assert counts["> 2R"] == 1
+
+
+def test_r_distribution_places_zero_and_boundaries():
+    from server.stats import r_distribution
+
+    counts = r_distribution([0.0, 1.0, 2.0, -1.0])
+    # Buckets are (low, high]: the boundary closes the bucket below it.
+    assert counts["-0.5R a 0"] == 1  # 0.0
+    assert counts["0.5R a 1R"] == 1  # 1.0
+    assert counts["1R a 2R"] == 1  # 2.0
+    assert counts["-2R a -1R"] == 1  # -1.0
+    assert sum(counts.values()) == 4
+
+
+def test_median_is_robust_to_the_tail():
+    from server.stats import _median
+
+    assert _median([1.0, 2.0, 3.0]) == 2.0
+    assert _median([1.0, 2.0, 3.0, 100.0]) == 2.5
+    assert _median([]) == 0.0
+
+
+def test_compute_stats_includes_r_median_and_distribution():
+    trades = [_trade(index, 10.0 * (index + 1)) for index in range(3)]
+    stats = compute_stats(trades)
+    assert "r_median" in stats
+    assert sum(stats["r_distribution"].values()) == 3

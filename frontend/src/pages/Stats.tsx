@@ -18,7 +18,10 @@ interface BucketStats {
 }
 
 interface StatsPayload {
-  closed: Record<string, number>;
+  closed: Record<string, number> & {
+    r_median?: number;
+    r_distribution?: Record<string, number>;
+  };
   by_hour: Record<string, BucketStats>;
   by_weekday: Record<string, BucketStats>;
   by_month: Record<string, BucketStats>;
@@ -153,6 +156,41 @@ function FunnelPanel({ funnel }: { funnel: FunnelPayload }) {
   );
 }
 
+function RDistribution({ closed }: { closed: StatsPayload["closed"] }) {
+  const buckets = Object.entries(closed.r_distribution ?? {});
+  if (buckets.length === 0) return null;
+  const total = buckets.reduce((sum, [, count]) => sum + count, 0);
+  const peak = Math.max(...buckets.map(([, count]) => count), 1);
+  return (
+    <section className="card" data-r-distribution>
+      <header className="card-header">
+        <h3>Distribución de R</h3>
+        <span className="muted small">
+          mediana {(closed.r_median ?? 0).toFixed(2)} R · media{" "}
+          {(closed.expectancy_r ?? 0).toFixed(2)} R
+        </span>
+      </header>
+      {total === 0 ? (
+        <p className="empty">Sin operaciones cerradas</p>
+      ) : (
+        <ul className="histogram">
+          {buckets.map(([label, count]) => (
+            <li key={label}>
+              <span className="histogram-label">{label}</span>
+              <span
+                className="histogram-bar"
+                style={{ width: `${Math.max(2, (count / peak) * 100)}%` }}
+                data-count={count}
+              />
+              <span className="histogram-value">{count}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 export function StatsPage() {
   const [tab, setTab] = useState<Tab>("resumen");
   const [stats, setStats] = useState<StatsPayload | null>(null);
@@ -252,6 +290,8 @@ export function StatsPage() {
           )}
         </section>
       ) : null}
+
+      {tab === "rendimiento" && stats ? <RDistribution closed={stats.closed} /> : null}
 
       {tab === "rendimiento" ? (
         <section className="card">
