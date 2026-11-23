@@ -126,3 +126,32 @@ def test_pnl_totals_match_to_the_cent(tmp_path: Path):
         store.close()
 
     assert round(total - live_total, 6) == 0
+
+
+def test_parity_holds_with_the_intrabar_fill_model(tmp_path: Path):
+    """El modelo de fill también tiene que ser el mismo en los dos caminos."""
+    settings = _settings()
+    settings.execution.fill_model = "intrabar"
+    path = _dataset(tmp_path / "bars.csv", settings, ["PRIMARY", "CTX_A"], bars=180)
+
+    backtest = run_backtest(settings, path)
+    backtest_rows = [trade.model_dump(mode="json") for trade in backtest.trades]
+
+    store = Store(tmp_path / "live4.db")
+    try:
+        engine = TradingEngine(
+            settings,
+            store,
+            feed=CSVFeed(path, settings.instruments.symbols),
+            strategy=resolve_strategy("reference", None),
+            mode="paper",
+        )
+        engine.start()
+        for tick in CSVFeed(path, settings.instruments.symbols).iter_ticks():
+            engine._process(tick)
+        live_rows = list(reversed(store.list_trades(limit=1_000_000)))
+    finally:
+        store.close()
+
+    assert len(backtest_rows) == len(live_rows) > 0
+    assert _fingerprint(backtest_rows) == _fingerprint(live_rows)

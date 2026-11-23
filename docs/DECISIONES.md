@@ -216,3 +216,22 @@ Ninguno de estos valores es una decisión de producto, son supuestos heredados.
 Los valores de coste del ADR 0.6 son un supuesto de trabajo, no un dato del
 broker: el propio ADR exige que vengan del broker. Hasta entonces cuentan como
 `not_measured` en la puerta G8.
+
+## ADR 0.12 · La interfaz dice la edad del dato y la salida del bloqueo
+
+**Contexto.** El chip del gráfico decía «en vivo» siempre, y el bloqueo del motor
+se mostraba como un código con un contador. Ambos casos producen la misma lectura
+falsa: «esto se arregla solo».
+
+**Decisión.**
+- La frescura se calcula con la última vela (`≤150 s` vivo, `≤15 min` retrasado,
+  más `parado hace N`, sin vela `sin datos`). Es la misma medida que
+  `staleness_ms` del snapshot, aplicada a la pared del reloj.
+- `/api/health` incluye `engine.status`, `engine.feed` y `last_bar_age_s`: un 200
+  de FastAPI no prueba que el motor esté mirando el mercado.
+- El bloqueo se enseña con tres datos además del código: qué significa, cuántas
+  señales se rechazaron y desde cuándo, y qué lo desbloquea.
+
+**Consecuencia.** Activar alertas desde la UI reconstruye el notifier en el acto;
+sin eso, «guardado» era una promesa sin entrega (lo encontró la prueba de punta a
+punta contra un webhook local).
