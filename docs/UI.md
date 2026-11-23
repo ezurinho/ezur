@@ -72,6 +72,14 @@ sesión viva—, enseña puertas con ✓/✗ y motivo, y compara varias estrateg
 sobre las mismas velas. El ranking ordena por esperanza en R y manda al final a
 quien no operó.
 
+## Capturas
+
+| Vista | Imagen |
+|---|---|
+| Inicio (básico) | `docs/img/basic-home.png` |
+| Gráfico con medias y volumen | `docs/img/chart-layers.png` |
+| Laboratorio | `docs/img/lab.png` |
+
 ## Tokens
 
 | Token | Valor | Uso |

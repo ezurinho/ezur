@@ -261,7 +261,8 @@ function plainReason(code: string): string {
     max_trades_reached: "Ya hizo las operaciones máximas de hoy. Mañana vuelve a empezar.",
     daily_loss_limit: "Hoy ya perdió el máximo permitido. El bot se protege y para.",
     max_drawdown_reached: "La cuenta cayó demasiado desde su punto más alto. Se protege.",
-    consecutive_losses: "Falló varias veces seguidas. Espera un poco antes de volver.",
+    consecutive_losses:
+      "Falló varias veces seguidas y hoy ya no abre más. La racha se reinicia al empezar la próxima sesión (00:00 UTC), no esperando un rato.",
     cooldown_active: "Acaba de cerrar una operación; espera un momento antes de abrir otra.",
     emergency_active: "La parada de emergencia está activada. Desactívala para seguir.",
     order_pending: "Hay una orden en camino; espera a que se ejecute.",
