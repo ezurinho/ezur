@@ -23,6 +23,35 @@ const EXIT_WORD: Record<string, string> = {
   cancel: "cancelada",
 };
 
+export interface Recap {
+  total: number;
+  wins: number;
+  losses: number;
+  worst: number;
+  best: number;
+  mainReason: string | null;
+}
+
+/** Resumen en palabras de lo que pasó hoy. Exportado para poder probarlo. */
+export function summarize(trades: Trade[]): Recap {
+  const pnls = trades.map((trade) => Number(trade.pnl_net ?? 0));
+  const reasons = trades.map((trade) => String(trade.exit_reason ?? ""));
+  const counts = reasons.reduce<Record<string, number>>((acc, reason) => {
+    acc[reason] = (acc[reason] ?? 0) + 1;
+    return acc;
+  }, {});
+  const mainReason =
+    Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+  return {
+    total: trades.length,
+    wins: pnls.filter((value) => value > 0).length,
+    losses: pnls.filter((value) => value < 0).length,
+    worst: pnls.length ? Math.min(...pnls) : 0,
+    best: pnls.length ? Math.max(...pnls) : 0,
+    mainReason,
+  };
+}
+
 function money(value: number): string {
   return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -44,7 +73,7 @@ export function SimpleDashboard() {
   useEffect(() => {
     let alive = true;
     api
-      .trades({ limit: 4 })
+      .trades({ limit: 200 })
       .then((rows) => {
         if (alive) setTrades(rows as Trade[]);
       })
@@ -242,6 +271,7 @@ export function SimpleDashboard() {
             })}
           </ul>
         )}
+        {trades.length > 0 ? <RecapLine recap={summarize(trades)} /> : null}
         <footer className="simple-footer">
           <button type="button" className="btn btn-ghost" onClick={() => setMode("advanced")}>
             Ver todo (modo avanzado)
@@ -252,6 +282,19 @@ export function SimpleDashboard() {
         </footer>
       </section>
     </div>
+  );
+}
+
+function RecapLine({ recap }: { recap: Recap }) {
+  const reason = recap.mainReason ? EXIT_WORD[recap.mainReason] ?? recap.mainReason : null;
+  return (
+    <p className="simple-recap" data-recap>
+      Hoy: <b>{recap.total}</b> {recap.total === 1 ? "operación" : "operaciones"} ·{" "}
+      <b className="tone-good">{recap.wins}</b> a favor ·{" "}
+      <b className="tone-bad">{recap.losses}</b> en contra.
+      {recap.losses > 0 ? <> La peor: <b className="tone-bad">{money(recap.worst)}</b>.</> : null}
+      {reason ? <> Lo más habitual: {reason}.</> : null}
+    </p>
   );
 }
 

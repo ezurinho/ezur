@@ -254,3 +254,43 @@ describe("gráficos que explican", () => {
     expect(screen.getByText(/Sin objetivo definido/)).toBeInTheDocument();
   });
 });
+
+describe("resumen del día en modo básico", () => {
+  it("cuenta ganadoras, perdedoras y el peor resultado", async () => {
+    const { summarize } = await import("../pages/SimpleDashboard");
+    const recap = summarize([
+      { pnl_net: -10, exit_reason: "stop" },
+      { pnl_net: 30, exit_reason: "target" },
+      { pnl_net: -50, exit_reason: "stop" },
+    ]);
+    expect(recap.total).toBe(3);
+    expect(recap.wins).toBe(1);
+    expect(recap.losses).toBe(2);
+    expect(recap.worst).toBe(-50);
+    expect(recap.best).toBe(30);
+    expect(recap.mainReason).toBe("stop");
+  });
+
+  it("sin operaciones no inventa un resumen", async () => {
+    const { summarize } = await import("../pages/SimpleDashboard");
+    const recap = summarize([]);
+    expect(recap.total).toBe(0);
+    expect(recap.mainReason).toBeNull();
+  });
+});
+
+describe("frase de concentración", () => {
+  it("con pocas operaciones avisa de que es ruido", async () => {
+    const { concentrationNote } = await import("../pages/Stats");
+    const note = concentrationNote({ trades: 6, wins: 1, top5_share: 1 });
+    expect(note).toContain("ruido");
+    expect(note).toContain("una sola operación");
+  });
+
+  it("sin dependencia de las cinco mejores lo dice sin alarmar", async () => {
+    const { concentrationNote } = await import("../pages/Stats");
+    const note = concentrationNote({ trades: 120, wins: 60, top5_share: 0.22 });
+    expect(note).toContain("no depende");
+    expect(note).not.toContain("ruido");
+  });
+});
