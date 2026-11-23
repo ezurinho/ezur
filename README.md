@@ -64,6 +64,7 @@ server/
   stats.py         métricas descriptivas
   gates.py         puertas de validación como datos + veredicto
   stress.py        G8 (costes ×2) y G2 (determinismo) por re-ejecución
+  integrity.py     G1/G3/G14: validador + hash reproducible
   confirmatory.py  sellado del holdout (una sola vez)
   experiments.py   ledger JSONL de experimentos
   diagnostics.py   inspección SQLite de solo lectura
@@ -97,11 +98,12 @@ docs/              arquitectura, contrato de plugins, decisiones, protocolo
 | Hecho | Evidencia |
 |---|---|
 | Motor determinista | Mismo dataset ⇒ mismo hash de backtest |
-| Snapshot conforme al contrato | 249 tests de backend, 12 de frontend |
+| Snapshot conforme al contrato | 255 tests de backend, 12 de frontend |
 | Pipeline completo con trades reales | `reports/backtest/simulation-180d.json` |
 | Estrategia de referencia rentable | **No.** Veredicto automático: RECHAZADA |
 | Veredicto reproducible | `GET /api/validation` evalúa G4–G13 y nombra lo no medible |
-| Costes y determinismo medidos | G8 y G2 se re-ejecutan, no se estiman (`server/stress.py`) |
+| Costes, determinismo e integridad medidos | G8, G2 y G1/G3/G14 se re-ejecutan, no se estiman |
+| Única puerta abierta en un backtest | H1-H5 (holdout sellado), por diseño |
 
 Ver `docs/ESTRATEGIA_REFERENCIA.md` para los números y por qué no cuenta como
 ventaja, `docs/COMO_ESCRIBIR_UNA_ESTRATEGIA.md` para el contrato de plugin,

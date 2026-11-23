@@ -39,18 +39,24 @@ Implementadas y medibles con `server/gates.py`:
 | G13 | Barras ambiguas | ≤ 5 % |
 | G8 | Costes duplicados | Re-ejecución con comisión y slippage ×2: PF ≥ 1,0 y expectativa > 0 |
 | G2 | Determinismo | Dos ejecuciones con el mismo fingerprint |
+| G1/G3/G14 | Integridad del dataset | Validador sin errores + hash reproducible |
 
-G8 y G2 se **miden**, no se estiman: `server/stress.py` re-ejecuta el backtest con
-el doble de costes y dos veces con los mismos parámetros. En `POST /api/backtest/run`
-vienen activadas por defecto (`stress: true`) y en la simulación se controlan con
-`--no-stress`.
+G8, G2 y G1/G3/G14 se **miden**, no se estiman: `server/stress.py` re-ejecuta el
+backtest con el doble de costes y dos veces con los mismos parámetros, y
+`server/integrity.py` valida el dataset y comprueba que su hash sea reproducible.
+En `POST /api/backtest/run` vienen activadas por defecto (`stress: true`) y en la
+simulación se controlan con `--no-stress`.
 
-Declaradas como **no medibles** en una ejecución concreta:
+Límite explícito de G3: la continuidad de rolls solo se puede verificar con datos
+de contratos reales. Sobre una serie continua el informe lo dice
+("sin rolls que verificar en este dataset") en vez de dar por bueno algo que no
+se comprobó.
+
+Queda **una sola** fila no medible en un backtest completo:
 
 | ID | Por qué | Cómo se mide |
 |---|---|---|
-| G1/G3/G14 | Integridad de dataset, rolls y duplicados | Validador de CSV + hash del dataset |
-| H1-H5 | Holdout | Sellado con `confirmatory.seal_holdout` |
+| H1-H5 | Holdout | Sellado con `confirmatory.seal_holdout`, una sola vez |
 
 ## 4. Holdout
 
