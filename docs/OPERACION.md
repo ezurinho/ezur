@@ -96,6 +96,37 @@ sigue con la estrategia anterior: nunca se queda a medias.
 El ledger es append-only: es la única prueba de qué se probó y con qué veredicto.
 Perderlo convierte el historial de investigación en opiniones.
 
+## Alertas fuera de banda
+
+Si el bot corre en otra máquina o de noche, la pantalla no avisa. Un webhook
+recibe un JSON por cada evento de nivel `warn` o `error` (parada de emergencia,
+límite de pérdida, rechazo repetido, caída de entrega).
+
+```pwsh
+$env:TERMINAL_ALERT_WEBHOOK_URL = "https://hooks.example.com/term"
+$env:TERMINAL_PROFILE_DIR = "profiles/demo"
+python run.py
+```
+
+Reglas que aplica el notificador:
+
+| Regla | Comportamiento |
+|---|---|
+| Nivel mínimo | `warn` por defecto; `error` para recibir solo lo grave |
+| Duplicados | El mismo mensaje se envía una vez cada 60 s |
+| Cola | 256 alertas; si se llena, se descartan y se cuentan |
+| Fallos | 3 intentos con espera creciente; luego cuenta y deja un evento en la consola |
+| Bloqueo | Nunca: el envío ocurre en un hilo aparte |
+
+Comprobar que funciona sin esperar a un desastre:
+
+```pwsh
+curl -s http://127.0.0.1:8765/api/alerts
+curl -s -X POST http://127.0.0.1:8765/api/bot/start -d "{}" -H "Content-Type: application/json"
+curl -s -X POST http://127.0.0.1:8765/api/emergency
+curl -s http://127.0.0.1:8765/api/alerts   # sent debe haber subido a 1
+```
+
 ## Lo que no hace
 
 - No envía órdenes a un broker: no hay adaptador y LIVE está bloqueado por diseño.

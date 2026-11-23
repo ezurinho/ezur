@@ -80,6 +80,24 @@ def health() -> dict[str, Any]:
     return {"status": "ok", "version": __version__}
 
 
+@router.get("/alerts")
+def alerts(request: Request) -> dict[str, Any]:
+    """Delivery counters for the out-of-band notifier.
+
+    ``enabled=false`` is not an error: alerts are off until someone configures a
+    webhook. The counters exist so a silently broken webhook is visible.
+    """
+    notifier = getattr(request.app.state, "notifier", None)
+    if notifier is None:
+        config = getattr(request.app.state.settings, "alerts", None)
+        return {
+            "enabled": False,
+            "reason": "sin webhook configurado",
+            "config_enabled": bool(getattr(config, "enabled", False)),
+        }
+    return notifier.snapshot()
+
+
 @router.get("/status")
 def status(request: Request) -> dict[str, Any]:
     return _engine(request).snapshot()

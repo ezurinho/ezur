@@ -62,8 +62,10 @@ class TradingEngine:
         mode: str = "paper",
         feed_factory: Callable[[Settings], MarketFeed] | None = None,
         strategy_factory: Callable[[Settings], Any] | None = None,
+        notifier: Any | None = None,
     ) -> None:
         self.settings = settings
+        self.notifier = notifier
         self.store = store
         self.feed = feed
         self.feed_factory = feed_factory
@@ -620,6 +622,9 @@ class TradingEngine:
     # --- events -----------------------------------------------------------
     def _event(self, level: str, category: str, message: str, meta: dict[str, Any] | None = None) -> None:
         self.store.insert_event(level, category, message, meta)
+        # The notifier filters by level and dedupes; it never blocks this call.
+        if self.notifier is not None:
+            self.notifier.enqueue(level, category, message, meta)
 
 
 

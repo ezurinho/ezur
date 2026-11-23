@@ -95,6 +95,20 @@ G8 (costes ×2) y G2 (determinismo). Con `"save": true` guarda el resultado.
 - Después reenvía cada snapshot emitido por el motor.
 - Una cola por cliente: un cliente lento no bloquea al motor ni a los demás.
 
+## Alertas
+
+`GET /api/alerts` — estado del notificador fuera de banda.
+
+```json
+{"enabled": true, "min_level": "warn", "url_configured": true,
+ "dedupe_window_s": 60.0, "queued": 1, "sent": 1, "failed": 0,
+ "dropped": 0, "deduped": 0, "filtered": 12}
+```
+
+Apagado devuelve `{"enabled": false, "reason": "sin webhook configurado",
+"config_enabled": false}`: apagado no es un error, pero el motivo es explícito.
+Los contadores existen para que un webhook roto se vea en vez de suponerse.
+
 ## Errores
 
 | Código | Cuándo |

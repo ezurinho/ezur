@@ -1,6 +1,16 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
+import { KvPanel } from "../components/KvPanel";
 import { useStore } from "../store";
+
+function kv(
+  label: string,
+  value: number | string | boolean | null,
+  tone: "neutral" | "good" | "bad" | "warn" = "neutral",
+  format: "text" | "number" = "text",
+) {
+  return { label, value, format, unit: null, tone, group: null } as const;
+}
 
 const TABS = ["instrumentos", "estrategia", "riesgo", "horarios", "avanzado"] as const;
 type Tab = (typeof TABS)[number];
@@ -44,6 +54,24 @@ export function ConfigPage() {
   const [schedule, setSchedule] = useState<ScheduleFields | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [alerts, setAlerts] = useState<Awaited<ReturnType<typeof api.alerts>> | null>(
+    null,
+  );
+
+  useEffect(() => {
+    let alive = true;
+    api
+      .alerts()
+      .then((payload) => {
+        if (alive) setAlerts(payload);
+      })
+      .catch(() => {
+        /* el panel de alertas es informativo: si falla, no rompe la página */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [tab]);
 
   useEffect(() => {
     api
@@ -242,6 +270,33 @@ export function ConfigPage() {
 
       {tab === "avanzado" ? (
         <section className="card">
+          <header className="card-header">
+            <h3>Alertas externas</h3>
+            <span className={`badge ${alerts?.enabled ? "tone-good" : ""}`}>
+              {alerts?.enabled ? "activas" : "apagadas"}
+            </span>
+          </header>
+          {alerts ? (
+            <KvPanel
+              decimals={0}
+              entries={Object.fromEntries(
+                [
+                  kv("Webhook", alerts.enabled ? "configurado" : alerts.reason ?? "sin configurar", alerts.enabled ? "good" : "neutral"),
+                  kv("Nivel mínimo", alerts.min_level ?? "—"),
+                  kv("Enviadas", alerts.sent ?? 0, "neutral", "number"),
+                  kv("Fallidas", alerts.failed ?? 0, (alerts.failed ?? 0) > 0 ? "bad" : "neutral", "number"),
+                  kv("Descartadas", alerts.dropped ?? 0, (alerts.dropped ?? 0) > 0 ? "warn" : "neutral", "number"),
+                  kv("Duplicadas filtradas", alerts.deduped ?? 0, "neutral", "number"),
+                ].map((entry) => [entry.label, entry]),
+              )}
+            />
+          ) : (
+            <p className="muted small">Consultando estado de alertas…</p>
+          )}
+          <p className="muted small">
+            Un webhook caído o una cola llena se cuentan aquí y dejan un evento en la
+            consola: nunca detienen el motor.
+          </p>
           <pre className="code-block">{JSON.stringify(config, null, 2)}</pre>
           <p className="muted small">
             La configuración se valida en el servidor: un valor fuera de rango se rechaza
