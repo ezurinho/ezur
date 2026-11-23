@@ -135,7 +135,8 @@ saben cuál está corriendo.
 | `donchian` | 180 | 27.8 | 0.271 | -0.776 | -1998.18 | 1998.18 | 12 | RECHAZADA |
 | `fade` | 180 | 19.4 | 0.122 | -0.9 | -1910.5 | 1919.65 | 19 | RECHAZADA |
 
-Simulación de 60 sesiones × 390 velas sintéticas, 1 unidad por operación.
+Simulación de 60 sesiones × 390 velas sintéticas, dimensionado por riesgo
+(hasta 5 unidades por operación).
 Repetible con `python -m server.simulation --days 60 --bars 390 --strategy <id>`.
 
 Las tres pierden. Sobre un paseo aleatorio sin estructura, cualquier regla paga
