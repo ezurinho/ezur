@@ -109,7 +109,7 @@ backtest de esta lista: repintado, fills idealizados, sin portfolio risk.
 | Backtrader | 3 | 3 | 8 | 4 | 2 | 8 | 8 | 5 | **5,4** |
 | Superalgos | 6 | 2 | 4 | 4 | 8 | 6 | 6 | 5 | **5,0** |
 | Zipline | 1 | 2 | 6 | 2 | 2 | 5 | 6 | 6 | **4,8** |
-| **este repositorio** | **2** | **9** | **6** | **9** | **6** | **9** | **8** | **3** | **6,2** |
+| **este repositorio** | **2** | **9** | **6** | **9** | **8** | **9** | **8** | **3** | **6,4** |
 
 ### Desglose de la nota propia
 
@@ -119,17 +119,17 @@ backtest de esta lista: repintado, fills idealizados, sin portfolio risk.
 | Disciplina de validación | 9 | Puertas G con umbrales versionados, IC bootstrap, concentración top-5, costes ×2, determinismo, walk-forward, ledger append-only y holdout sellado |
 | Backtesting realista | 6 | `next_open`, comisión, slippage con tope, gana el stop en barra ambigua, costo de sesión. Falta modelo intrabar y datos reales |
 | Gestión de riesgo | 9 | Riesgo por operación, pérdida diaria, máximo de operaciones, cooldown, tope de stop, cierre de sesión, emergencia que no bloquea salidas |
-| Interfaz | 6 | Contrato de snapshot agnóstico y siete vistas; sin sparklines, sin HUD, densidad visual baja |
+| Interfaz | 8 | Contrato de snapshot agnóstico, siete vistas, HUD oscuro con un solo acento, sparklines y medidores de límite propios. Falta historial de snapshots y multi-ventana |
 | Extensibilidad | 9 | Tres plugins incompatibles sin tocar el núcleo; un test prohíbe nombres de activo en `server/` y `frontend/` |
 | Documentación | 8 | Arquitectura, protocolo, API, runbook, cómo escribir una estrategia, ADR con valores por defecto |
 | Datos | 3 | Sintético determinista y CSV; sin vendor, sin rolls reales, sin calidad de feed |
 
-**6,2/10.** Empatado con VectorBT y por encima de Backtrader o Zipline, muy por
-debajo de Nautilus. Somos el mejor de la lista en lo que impide engañarse a uno
+**6,4/10** (6,2 antes del rediseño de interfaz). Por encima de VectorBT y de
+Backtrader o Zipline, por debajo de Jesse o Freqtrade, lejos de Nautilus. Somos el mejor de la lista en lo que impide engañarse a uno
 mismo y el peor en lo que produce datos y ejecución. Ese es exactamente el perfil
 de un esqueleto de investigación serio con el motor de mercado pendiente.
 
-Un 6,2 con datos sintéticos vale menos que un 6,2 con datos reales: la nota mide
+Un 6,4 con datos sintéticos vale menos que un 6,4 con datos reales: la nota mide
 capacidades, no resultados. Ninguno de estos proyectos tiene ventaja demostrada
 en su repositorio, y el nuestro tampoco.
 
@@ -199,6 +199,12 @@ Reglas de diseño que se aplican en `frontend/src/styles.css`:
 
 Nuestro punto fuerte no es el motor: es el método. La lista de arriba está llena
 de motores mejores con métodos peores, y por eso casi todos sus repositorios
-públicos no pueden demostrar que funcionan. Un 6,2 con la mejor disciplina de
+públicos no pueden demostrar que funcionan. Un 6,4 con la mejor disciplina de
 validación de la tabla es una base honesta; sin datos reales es una base que
 todavía no ha tocado el mercado.
+
+La nota de interfaz subió de 6 a 8 al reescribir la capa visual: HUD oscuro con
+un solo acento, cifras tabulares en todo, sparkline por KPI y medidores de uso de
+límite dibujados a mano. Sigue faltando lo que separa un panel bonito de una
+herramienta profesional: historial de snapshots reproducible y comparación de
+varias ejecuciones en la misma pantalla.
