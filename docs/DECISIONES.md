@@ -306,3 +306,25 @@ sección por sección: `closed`, `equity`, los cinco desgloses y `validation` so
 idénticos (180 operaciones, −1.914,91 USD netos, PF 0,1236), porque el motor ya
 rechazaba esas señales; solo cambian `strategy_version` y el recuento de eventos
 (3.272 → 3.203: las 69 señales que dejan de nacer y su rechazo con él).
+
+## ADR 0.15 · Un cierre repetido no se contabiliza dos veces
+
+**Contexto.** El índice único de la migración v2 y la barrera temporal cierran la
+puerta a la fila duplicada, pero no a la suma duplicada: `_on_trade_closed`
+insertaba y después sumaba siempre el P&L a la equity, al día y a la curva.
+`insert_trade` ya sabía cuándo la operación existía —devolvía su id— y el motor
+tiraba ese dato.
+
+**Decisión.**
+- `Store.insert_trade_once()` devuelve `(id, era_nueva)`. `insert_trade()` se queda
+  como envoltorio que devuelve sólo el id, para no romper llamantes.
+- `_on_trade_closed` sólo contabiliza cuando la operación es nueva; si no, deja un
+  `warning` con el id y no toca equity, día, racha ni curva.
+- Las migraciones se aplican dentro de un `SAVEPOINT` con `ROLLBACK TO` al fallar.
+  Medido en este driver: `BEGIN` y `SAVEPOINT` hacen transaccional el DDL; sin
+  ninguno de los dos, un `CREATE TABLE` se autoconfirma y un fallo posterior deja
+  media migración aplicada.
+
+**Consecuencia.** Un cierre que llegue dos veces (reinicio con backfill, reintento,
+replay) deja una fila y una suma, no dos. Coste: una consulta extra en el caso
+raro de la fila duplicada.
