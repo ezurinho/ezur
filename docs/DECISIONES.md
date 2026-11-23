@@ -297,6 +297,12 @@ ni una cifra (60 d × 390 velas, mismo `pnl_net`); `fade` sí cambia (34 → 35
 ganancias, −1.931,70 → −1.914,91 USD netos) y sigue RECHAZADA: la corrección
 quita una ganancia que no existía, no crea edge.
 
-**Pendiente.** La causa está en `fade`, que puede emitir un objetivo detrás de la
-entrada cuando la vela cierra por encima de la media. Arreglarlo es cambiar
-lógica de estrategia y se decide aparte.
+**Resuelto en `fade` 0.2.0.** La causa estaba en `fade`, que podía emitir un
+objetivo detrás de la entrada cuando la vela cerraba por encima de la media.
+Ahora exige que el cierre quede por debajo de la media para el long y por encima
+para el short, y el disparo descartado se anota en la fase como «extremo sin
+recorrido hasta la media». Medido en 60 d × 390 velas, comparando las dos salidas
+sección por sección: `closed`, `equity`, los cinco desgloses y `validation` son
+idénticos (180 operaciones, −1.914,91 USD netos, PF 0,1236), porque el motor ya
+rechazaba esas señales; solo cambian `strategy_version` y el recuento de eventos
+(3.272 → 3.203: las 69 señales que dejan de nacer y su rechazo con él).
