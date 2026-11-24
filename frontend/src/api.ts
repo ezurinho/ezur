@@ -6,8 +6,17 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
   });
   if (!response.ok) {
-    const detail = await response.text();
-    throw new Error(`${response.status} ${detail}`);
+    // FastAPI contesta `{"detail": "..."}`: enseñar el JSON crudo en un aviso
+    // no dice más que el motivo, y estorba para leerlo.
+    const body = await response.text();
+    let detail = body;
+    try {
+      const parsed = JSON.parse(body) as { detail?: unknown };
+      if (typeof parsed?.detail === "string") detail = parsed.detail;
+    } catch {
+      // Un cuerpo que no es JSON (proxy, HTML de error) se enseña tal cual.
+    }
+    throw new Error(detail ? `${response.status}: ${detail}` : `${response.status}`);
   }
   return (await response.json()) as T;
 }
@@ -96,7 +105,7 @@ export const api = {
   closePosition: () =>
     request<{ closed: boolean }>("/api/position/close", { method: "POST" }),
   cancelOrders: () =>
-    request<{ cancelled: boolean }>("/api/orders/cancel", { method: "POST" }),
+    request<{ cancelled: boolean; count: number }>("/api/orders/cancel", { method: "POST" }),
   emergency: (on: boolean) =>
     request<{ emergency: boolean }>("/api/emergency", {
       method: on ? "POST" : "DELETE",
@@ -156,7 +165,12 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ dataset_path: datasetPath, strategies }),
     }),
-  backtestRuns: () => request<Record<string, unknown>>("/api/backtest/runs"),
+  backtestRuns: () =>
+    request<{
+      runs: Record<string, unknown>[];
+      has_more: boolean;
+      next_cursor: string | null;
+    }>("/api/backtest/runs"),
   alertsTest: () =>
     request<{ sent: boolean; reason: string | null; config_enabled?: boolean }>("/api/alerts/test", {
       method: "POST",
@@ -189,6 +203,7 @@ export interface CompareRow {
   trades: number;
   gates: ValidationReport;
   metrics: Record<string, number | null>;
+  rejections?: Record<string, number>;
 }
 
 export interface CompareResponse {
@@ -204,6 +219,14 @@ export interface BacktestRunResponse {
   run_group: string | null;
   trades: number;
   metrics: Record<string, number>;
+  diagnostics?: {
+    rejections?: Record<string, number>;
+    rows?: number;
+    dataset_sessions?: number;
+    open_position?: Record<string, unknown> | null;
+    pending_orders?: number;
+    marked_to_market?: boolean;
+  };
   verdict: string;
   validation: ValidationReport;
   experiment_id: string;
