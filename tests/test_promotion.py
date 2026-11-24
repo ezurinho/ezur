@@ -215,3 +215,12 @@ def test_la_puerta_no_usa_un_pbo_de_otro_marco():
     assert verdict["passed"] is False
     assert "pbo_del_ciclo" in verdict["failed"]
     assert verdict["reason"] == "el ciclo mide 1d, no 1h: PBO no comparable"
+
+
+def test_el_marco_del_dataset_se_lee_con_punto_o_guion_bajo():
+    from server import promotion
+
+    assert promotion._timeframe("data/BTC_1d.csv") == "1d"
+    assert promotion._timeframe("data/BTC_1h_binance.csv") == "1h"
+    assert promotion._timeframe("data/BTC_1m_2025.csv") == "1m"
+    assert promotion._timeframe("data/sin_marco.csv") == ""
