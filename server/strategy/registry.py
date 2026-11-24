@@ -13,12 +13,14 @@ from .donchian import DonchianStrategy
 from .fade import FadeStrategy
 from .null_strategy import NullStrategy
 from .reference import ReferenceStrategy
+from .trend import TrendStrategy
 
 _BUILDERS: dict[str, Callable[[dict[str, Any]], BaseStrategy]] = {
     "null": lambda params: NullStrategy(),
     "reference": lambda params: ReferenceStrategy(params),
     "donchian": lambda params: DonchianStrategy(params),
     "fade": lambda params: FadeStrategy(params),
+    "trend": lambda params: TrendStrategy(params),
 }
 
 
