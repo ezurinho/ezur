@@ -144,3 +144,51 @@ def test_un_latido_viejo_no_bloquea(tmp_path):
     _latido(db, datetime.now(timezone.utc) - timedelta(hours=1))
 
     assert equity.engine_alive(db) is False
+
+
+def test_el_reconstruir_arregla_tambien_el_pico(tmp_path):
+    db = _db(tmp_path)
+    conn = sqlite3.connect(db)
+    try:
+        conn.execute(
+            "INSERT INTO kv (key, value) VALUES ('peak_equity', ?) "
+            "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            (json.dumps(1.0),),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    equity.apply(db, 25000.0, backup_dir=tmp_path / "copias")
+
+    assert equity.current(db)["kv_peak"] == pytest.approx(25000.0)
+
+
+def test_el_pico_reconstruido_recoge_la_curva(tmp_path):
+    db = _db(tmp_path)
+    conn = sqlite3.connect(db)
+    try:
+        conn.execute(
+            "INSERT INTO trades "
+            "(symbol, side, units, entry_price, exit_price, opened_ts, closed_ts, signal_key, pnl_net) "
+            "VALUES (?,?,?,?,?,?,?,?,?)",
+            (
+                "BTC",
+                "long",
+                1,
+                100.0,
+                103.0,
+                "2026-11-23T09:00:00+00:00",
+                "2026-11-23T09:30:00+00:00",
+                "alta",
+                300.0,
+            ),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    equity.apply(db, 25000.0, backup_dir=tmp_path / "copias")
+
+    # 25.000 - 133,09 + 105,18 - 146,32 + 300 = 25.125,77
+    assert equity.current(db)["kv_peak"] == pytest.approx(25_125.77)
