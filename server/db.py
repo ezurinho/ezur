@@ -231,6 +231,12 @@ class Store:
             for row in reversed(self.list_trades(limit=limit))
         ]
 
+    def realized_pnl(self) -> float:
+        row = self.conn.execute(
+            "SELECT COALESCE(SUM(pnl_net), 0) AS total FROM trades"
+        ).fetchone()
+        return float(row["total"] or 0.0)
+
     def count_trades(self) -> int:
         return int(self.conn.execute("SELECT COUNT(*) AS c FROM trades").fetchone()["c"])
 
