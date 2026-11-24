@@ -125,8 +125,11 @@ def test_websocket_sends_an_initial_snapshot(pair):
 
 
 def _insert(client, side="long", closed="2026-11-20T15:00:00Z", mode="paper"):
+    from datetime import datetime, timedelta
+
     from server.models import TradeRecord
 
+    exit_ts = datetime.fromisoformat(closed.replace("Z", "+00:00"))
     client.app.state.store.insert_trade(
         TradeRecord(
             symbol="PRIMARY",
@@ -134,8 +137,8 @@ def _insert(client, side="long", closed="2026-11-20T15:00:00Z", mode="paper"):
             units=1,
             entry_price=100.0,
             exit_price=101.0,
-            opened_ts="2026-11-20T14:55:00Z",
-            closed_ts=closed,
+            opened_ts=exit_ts - timedelta(minutes=5),
+            closed_ts=exit_ts,
             pnl_gross=1.0,
             pnl_net=0.9,
             fees=0.1,
