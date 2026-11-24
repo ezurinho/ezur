@@ -121,3 +121,27 @@ def test_reset_stats_can_clear_backtests(store):
     deleted = store.reset_stats(include_backtests=True)
     assert deleted["backtests"] == 1
     assert store.stats_counts()["backtests"] == 0
+
+def test_reset_stats_clears_operational_state(store):
+    store.kv_set("equity", 24_000.0)
+    store.kv_set("peak_equity", 30_000.0)
+    store.kv_set("day_stats", {"trades": 2})
+    store.kv_set("session_id", "2026-11-24:CRYPTO24")
+    store.kv_set("last_exit_ts", "2026-11-24T00:00:00+00:00")
+    store.kv_set("position", {"symbol": "BTC"})
+    store.kv_set("heartbeat", "2026-11-24T00:00:00+00:00")
+    store.kv_set("emergency", True)
+
+    store.reset_stats()
+
+    for key in (
+        "equity",
+        "peak_equity",
+        "day_stats",
+        "session_id",
+        "last_exit_ts",
+        "position",
+        "heartbeat",
+    ):
+        assert store.kv_get(key) is None
+    assert store.kv_get("emergency") is True

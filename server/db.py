@@ -372,12 +372,22 @@ class Store:
         }
 
     def reset_stats(self, *, include_backtests: bool = False) -> dict[str, int]:
-        """Delete operational history. Backtests are preserved by default."""
+        """Delete operational history. Backtests are preserved by default.
+
+        También se borra el estado operativo de `kv`: si sobrevive, el próximo
+        arranque restaura una posición que ya no está en el libro o mide el
+        drawdown contra un pico de una cuenta que ya no existe. `emergency` se
+        conserva: es un interruptor manual, no historial.
+        """
         before = self.stats_counts()
         with self.conn:
             self.conn.execute("DELETE FROM trades")
             self.conn.execute("DELETE FROM equity")
             self.conn.execute("DELETE FROM events")
+            self.conn.execute(
+                "DELETE FROM kv WHERE key IN ('equity', 'peak_equity', 'day_stats', "
+                "'session_id', 'last_exit_ts', 'position', 'heartbeat')"
+            )
             if include_backtests:
                 self.conn.execute("DELETE FROM backtest_results")
                 self.conn.execute("DELETE FROM backtest_runs")
