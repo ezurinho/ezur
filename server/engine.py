@@ -607,6 +607,14 @@ class TradingEngine:
                 computed,
             )
         self.state.equity = computed
+        # El pico es lo que mide el drawdown: si no se guarda, cada reinicio
+        # devuelve el freno a tamaño completo como si no hubiera pasado nada.
+        saved_peak = self.store.kv_get("peak_equity")
+        if saved_peak is not None:
+            try:
+                self.peak_equity = max(float(saved_peak), self.state.equity)
+            except (TypeError, ValueError):
+                logger.warning("discarded unreadable peak equity")
         # La pausa tras una racha se cuenta desde la última salida: sin esto, un
         # reinicio del proceso dejaría el bloqueo sin fecha y sin final.
         last_exit = self.store.kv_get("last_exit_ts")
@@ -628,6 +636,7 @@ class TradingEngine:
     def _persist(self) -> None:
         self.store.kv_set("emergency", self.state.emergency)
         self.store.kv_set("equity", self.state.equity)
+        self.store.kv_set("peak_equity", self.peak_equity)
         if self.last_exit_ts is not None:
             self.store.kv_set("last_exit_ts", self.last_exit_ts.isoformat())
         self.store.kv_set("day_stats", self.state.day_stats.model_dump(mode="json"))
