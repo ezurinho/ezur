@@ -302,6 +302,7 @@ def run_spec(
     *,
     out_dir: Path,
     timeout: float = 3600.0,
+    validation: Path | None = None,
 ) -> dict[str, Any]:
     """Ejecuta una spec con el motor y devuelve el registro para el ledger."""
     started = time.time()
@@ -316,6 +317,10 @@ def run_spec(
         "--out",
         str(Path(out_dir).resolve()),
     ]
+    if validation is not None:
+        # Sin esto el runner coge el ciclo más reciente del directorio, que puede
+        # ser el de otra familia: un PBO ajeno juzgando esta spec.
+        command += ["--validation", str(Path(validation).resolve())]
     try:
         done = subprocess.run(
             command, cwd=home, capture_output=True, text=True, timeout=timeout
@@ -337,9 +342,92 @@ def run_spec(
         "verdict": verdict,
         "returncode": code,
         "seconds": round(time.time() - started, 1),
+        "validation": str(validation) if validation is not None else None,
         "error": (error or "").strip()[-800:] or None,
         "output": (output or "").strip()[-800:] or None,
     }
+
+
+CYCLE_SCRIPT = Path("runner") / "selection_cycle.py"
+CYCLES = Path("data/research/cycles")
+
+
+def run_cycle(
+    home: Path,
+    python: str,
+    spec: Path,
+    *,
+    axis: str = "N",
+    cycle: str | None = None,
+    timeout: float = 3600.0,
+) -> dict[str, Any]:
+    """Mide el ciclo de selección de un universo de variantes de una spec base.
+
+    El motor deja PBO, DSR, MinBTL y WFA nulos en una corrida suelta porque son
+    propiedades de una *selección*, no de un backtest. `selection_cycle` los
+    calcula sobre un universo de vecinos y escribe `runner/validation/<cycle>.json`;
+    el runner consume el más reciente, así que las corridas siguientes ya lo usan.
+    """
+    spec = Path(spec).resolve()
+    name = cycle or f"CYCLE-BOT-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}"
+    # Los ciclos viven en el bot y se pasan con `--validation`: escribir en el
+    # directorio del motor cambiaría en silencio el veredicto de otras familias.
+    out_dir = CYCLES.resolve()
+    command = [
+        python,
+        str(CYCLE_SCRIPT),
+        "--spec",
+        str(spec),
+        "--param",
+        axis,
+        "--cycle",
+        name,
+        "--out",
+        str(out_dir),
+        "--quiet",
+    ]
+    started = time.time()
+    try:
+        done = subprocess.run(
+            command, cwd=home, capture_output=True, text=True, timeout=timeout
+        )
+        output, error, code = done.stdout, done.stderr, done.returncode
+    except subprocess.TimeoutExpired as expired:
+        output = (expired.stdout or "") if isinstance(expired.stdout, str) else ""
+        error = f"timeout tras {timeout:.0f}s"
+        code = -9
+
+    path = out_dir / f"{name}.json"
+    document: dict[str, Any] = {}
+    if path.is_file():
+        try:
+            document = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            document = {}
+    return {
+        "cycle": name,
+        "path": str(path),
+        "returncode": code,
+        "seconds": round(time.time() - started, 1),
+        "error": (error or "").strip()[-800:] or None,
+        "output": (output or "").strip()[-800:] or None,
+        "pbo": (document.get("pbo") or {}).get("pbo"),
+        "dsr": (document.get("dsr") or {}).get("dsr"),
+        "minbtl_years": (document.get("minbtl") or {}).get("minbtl_years"),
+        "universe_size": (document.get("inputs") or {}).get("universe_size"),
+    }
+
+
+def spec_by_id(home: Path, ident: str) -> Path | None:
+    """La spec de la cola cuyo `id` coincide, para poder pedirla por nombre."""
+    for path in spec_paths(home):
+        try:
+            document = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if document.get("id") == ident:
+            return path
+    return None
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -351,6 +439,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--generate", action="store_true", help="crea variantes de las specs semilla")
     parser.add_argument("--report", action="store_true", help="resume el ledger por familia y marco")
     parser.add_argument("--rank", action="store_true", help="qué specs están más cerca de pasar")
+    parser.add_argument("--cycle", action="store_true", help="mide el ciclo de selección de un universo")
+    parser.add_argument("--cycle-spec", default=None, help="spec base (id o ruta); por defecto la mejor del ranking")
+    parser.add_argument("--cycle-axis", default="N", help="eje que se barre alrededor de la base")
+    parser.add_argument("--cycle-id", default=None, help="nombre del ciclo a escribir")
+    parser.add_argument("--validation", default=None, help="ciclo de validación con el que medir")
     parser.add_argument("--vault", action="store_true", help="escribe el vault de Markdown con la memoria")
     parser.add_argument("--vault-lint", action="store_true", help="revisa enlaces rotos y notas huérfanas")
     parser.add_argument("--vault-dir", default=None, help="dónde escribir el vault")
@@ -394,6 +487,42 @@ def main(argv: list[str] | None = None) -> int:
         print(
             f"variantes: {written} nuevas, {skipped} ya existían "
             f"({len(created)} calculadas de {len(seeds)} semillas)"
+        )
+        return 0
+
+    if args.cycle:
+        from server.vault import ARTIFACTS as ARTIFACTS_DIR
+        from server.vault import constant_gates, ranking, read_artifacts
+
+        base: Path | None = None
+        if args.cycle_spec:
+            candidate = Path(args.cycle_spec)
+            base = candidate if candidate.is_file() else spec_by_id(home, args.cycle_spec)
+        else:
+            artifacts = read_artifacts(ARTIFACTS_DIR)
+            rows = ranking(artifacts, constant_gates(artifacts))
+            if rows:
+                base = spec_by_id(home, rows[0]["id"])
+        if base is None:
+            print("no encuentro la spec base; pasa --cycle-spec con un id o una ruta", flush=True)
+            return 1
+        print(f"ciclo sobre {base.name} barriendo {args.cycle_axis}...", flush=True)
+        record = run_cycle(
+            home, interpreter(home), base, axis=args.cycle_axis, cycle=args.cycle_id
+        )
+        if record["returncode"] != 0 or not record["universe_size"]:
+            print(f"el ciclo falló (rc {record['returncode']}): {(record['error'] or '')[-400:]}")
+            return 1
+        print(
+            f"ciclo {record['cycle']}: {record['universe_size']} configuraciones, "
+            f"PBO {record['pbo']}, DSR {record['dsr']}, "
+            f"MinBTL {record['minbtl_years']} años ({record['seconds']:.0f}s)",
+            flush=True,
+        )
+        print(f"escrito en {record['path']}", flush=True)
+        print(
+            "para medir con él: --once --validation " + record["path"],
+            flush=True,
         )
         return 0
 
@@ -500,7 +629,12 @@ def main(argv: list[str] | None = None) -> int:
             print("nada pendiente: todas las specs están medidas")
             return 0
         record = run_spec(
-            home, python, queue[0], out_dir=out_dir, timeout=args.timeout
+            home,
+            python,
+            queue[0],
+            out_dir=out_dir,
+            timeout=args.timeout,
+            validation=Path(args.validation) if args.validation else None,
         )
         _append(record, ledger)
         runs += 1
