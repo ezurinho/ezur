@@ -202,3 +202,11 @@ def test_engine_drives_an_async_feed(tmp_path):
         assert engine.state.last_bar_ts == start + timedelta(minutes=2)
     finally:
         store.close()
+
+def test_parse_discards_the_candle_in_progress():
+    confirmed = bar_row("1795404000000", "101")
+    in_progress = ["1795404060000", "101", "102", "100", "101.5", "1", "1", "1", "0"]
+
+    bars = parse_candles(_payload(in_progress, confirmed))
+
+    assert [bar.c for bar in bars] == [101.0]

@@ -52,6 +52,11 @@ def parse_candles(payload: dict[str, Any]) -> list[Bar]:
     for row in rows:
         if len(row) < 6:
             continue
+        # La última vela llega en curso (`confirm = "0"`): su cierre todavía
+        # cambia. Colarla como cerrada fija un cierre parcial y, como la vela
+        # definitiva trae el mismo `t`, el motor ya no la procesa.
+        if len(row) > 8 and str(row[8]) == "0":
+            continue
         try:
             stamp = datetime.fromtimestamp(int(row[0]) / 1000, tz=timezone.utc)
             bars.append(
