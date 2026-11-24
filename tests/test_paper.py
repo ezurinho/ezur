@@ -89,10 +89,28 @@ def test_avisa_si_la_curva_o_el_estado_no_cuadran():
 
 def test_confirma_cuando_los_libros_cuadran():
     expected = 25_000.0 + SUMMARY["closed"]["pnl_net"]
-    text = paper.render(SUMMARY, 25_000.0, "db", {"curve": expected, "state": expected})
+    text = paper.render(
+        SUMMARY,
+        25_000.0,
+        "db",
+        {"curve": expected, "state": expected, "rows": 7},
+    )
 
     assert "cuadra con el libro" in text
     assert "NO cuadra" not in text
+
+
+def test_no_cuadra_si_la_curva_tiene_filas_de_mas():
+    expected = 25_000.0 + SUMMARY["closed"]["pnl_net"]
+    text = paper.render(
+        SUMMARY,
+        25_000.0,
+        "db",
+        {"curve": expected, "state": expected, "rows": 8},
+    )
+
+    assert "NO cuadra con el libro" in text
+    assert "filas de curva: 8 para 7 operaciones cerradas" in text
 
 
 def _trade(
@@ -120,11 +138,17 @@ def _trade(
 
 
 def test_la_exposicion_mide_el_nocional_contra_el_capital():
-    info = paper.exposure([_trade()], 25_000.0)
+    info = paper.exposure([_trade()], 25_000.0, contract_size=0.001)
 
     assert info["trades"] == 1
     assert info["max_notional"] == 18_000.0
     assert info["max_multiple"] == 0.72
+
+
+def test_sin_escala_no_inventa_la_exposicion():
+    info = paper.exposure([_trade()], 25_000.0)
+    assert info["max_notional"] is None
+    assert info["contract_size"] is None
 
 
 def test_sin_operaciones_la_exposicion_queda_vacia():
