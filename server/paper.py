@@ -44,13 +44,14 @@ def _instant(value: datetime) -> datetime:
     return value if value.tzinfo is not None else value.replace(tzinfo=timezone.utc)
 
 
-def exposure(trades: list[TradeRecord], capital: float) -> dict[str, Any]:
+def exposure(
+    trades: list[TradeRecord], capital: float, contract_size: float = 0.001
+) -> dict[str, Any]:
     """Cuántas veces el capital se movió en cada operación (nocional).
 
-    El tamaño sale del riesgo por operación y se redondea a unidades enteras,
-    así que con un instrumento caro el nocional puede quedar muy por encima del
-    capital. El P&L de papel sigue siendo correcto en R, pero la cifra en dinero
-    no sería ejecutable: mejor verlo que suponerlo.
+    Una unidad de BTC son 0,001 BTC (tick_value / tick_size), la misma escala
+    que usa el P&L. Sin ese tamaño de contrato el informe exageraba mil veces
+    la exposición: 300 unidades parecían 18 millones en vez de 18 000.
     """
     if not trades:
         return {"trades": 0, "max_multiple": None, "median_multiple": None, "max_notional": None}
@@ -58,7 +59,7 @@ def exposure(trades: list[TradeRecord], capital: float) -> dict[str, Any]:
     multiples: list[float] = []
     max_notional = 0.0
     for trade in trades:
-        notional = float(trade.units) * float(trade.entry_price)
+        notional = float(trade.units) * float(contract_size) * float(trade.entry_price)
         base = running if running > 0 else float(capital)
         multiples.append(notional / base if base else 0.0)
         max_notional = max(max_notional, notional)

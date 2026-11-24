@@ -123,8 +123,8 @@ def test_la_exposicion_mide_el_nocional_contra_el_capital():
     info = paper.exposure([_trade()], 25_000.0)
 
     assert info["trades"] == 1
-    assert info["max_notional"] == 18_000_000.0
-    assert info["max_multiple"] == 720.0
+    assert info["max_notional"] == 18_000.0
+    assert info["max_multiple"] == 0.72
 
 
 def test_sin_operaciones_la_exposicion_queda_vacia():
@@ -167,9 +167,9 @@ def test_el_informe_enseña_exposicion_libro_roto_y_puerta():
         25_000.0,
         "db",
         exposure_info={
-            "max_multiple": 720.0,
-            "median_multiple": 700.0,
-            "max_notional": 18_000_000.0,
+            "max_multiple": 0.72,
+            "median_multiple": 0.7,
+            "max_notional": 18_000.0,
         },
         anomalies={
             "trades": 2,
@@ -185,8 +185,8 @@ def test_el_informe_enseña_exposicion_libro_roto_y_puerta():
         },
     )
 
-    assert "nocional máximo 18 000 000.00 (720× el capital)" in text
-    assert "mediana 700×" in text
+    assert "nocional máximo 18 000.00 (0.7× el capital)" in text
+    assert "mediana 0.7×" in text
     assert "2 cierres anteriores a la apertura" in text
     assert "P&L -27.91 incluido" in text
     assert "equity sin ellas 24 515.67" in text
