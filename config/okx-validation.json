@@ -33,6 +33,7 @@
         "decimals": 2,
         "enabled": true,
         "point_value": null,
+        "reference_price": 60000,
         "role": "primary",
         "session_template": "CRYPTO24",
         "symbol": "BTC",
