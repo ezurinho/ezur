@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from .config import SessionTemplate
@@ -33,15 +33,31 @@ def session_open_utc(template: SessionTemplate, day: date) -> datetime:
 
 
 def session_for(clock: datetime, template: SessionTemplate) -> SessionInfo:
-    """Return the session window that contains (or precedes) ``clock``."""
+    """Return the session window that contains (or precedes) ``clock``.
+
+    Las sesiones que cruzan la medianoche (apertura 22:00, cierre 06:00) se
+    anclan al día en que abrieron: a las 02:00 sigue siendo la sesión de ayer,
+    y solo cambia cuando abre la siguiente. Sin esto nunca constaban abiertas
+    y el cambio de día partía la sesión en dos a las 00:00.
+    """
     local = to_zone(clock, template.timezone)
     open_h, open_m = parse_hhmm(template.open)
     close_h, close_m = parse_hhmm(template.close)
+    overnight = (close_h, close_m) <= (open_h, open_m)
     day = local.date()
     open_ts = local.replace(hour=open_h, minute=open_m, second=0, microsecond=0)
     close_ts = local.replace(hour=close_h, minute=close_m, second=0, microsecond=0)
 
-    trading_day = day.weekday() in template.weekdays
+    session_day = day
+    if overnight:
+        if local < open_ts:
+            # La sesión anterior abrió ayer y cierra esta madrugada.
+            open_ts -= timedelta(days=1)
+            session_day = day - timedelta(days=1)
+        else:
+            close_ts += timedelta(days=1)
+
+    trading_day = session_day.weekday() in template.weekdays
     is_open = trading_day and open_ts <= local < close_ts
     if not trading_day:
         phase = "closed"
@@ -49,13 +65,13 @@ def session_for(clock: datetime, template: SessionTemplate) -> SessionInfo:
         phase = "pre"
     elif local < close_ts:
         phase = "open"
-    elif local < close_ts.replace(hour=min(23, close_h + 1)):
+    elif local < (close_ts + timedelta(hours=1) if overnight else close_ts.replace(hour=min(23, close_h + 1))):
         phase = "close"
     else:
         phase = "closed"
 
     return SessionInfo(
-        id=f"{day.isoformat()}:{template.name}",
+        id=f"{session_day.isoformat()}:{template.name}",
         label=template.name,
         is_open=is_open,
         open_ts=open_ts,
