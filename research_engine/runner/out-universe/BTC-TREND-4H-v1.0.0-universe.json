@@ -1,0 +1,147 @@
+{
+  "spec_id": "BTC-TREND-4H",
+  "version": "1.0.0",
+  "label": "4h_24",
+  "generated_at": "2026-11-23T05:27:52Z",
+  "spec_hash": "sha256:29dc03baec5faac4b0287035dbad2cf9ee064296461170f95aca4c4cf1665129",
+  "universe": [
+    {
+      "symbol": "BTCUSDT",
+      "bars": 718848,
+      "start": "2020-01-01 00:00:00+00:00",
+      "end": "2026-10-31 23:55:00+00:00",
+      "gaps": 0,
+      "duplicates": 0,
+      "sha256": "80d6a6014eb92b23",
+      "funding_events": 7488
+    },
+    {
+      "symbol": "ETHUSDT",
+      "bars": 718848,
+      "start": "2020-01-01 00:00:00+00:00",
+      "end": "2026-10-31 23:55:00+00:00",
+      "gaps": 0,
+      "duplicates": 0,
+      "sha256": "51682fe9b887b549",
+      "funding_events": 7488
+    },
+    {
+      "symbol": "BNBUSDT",
+      "bars": 707232,
+      "start": "2020-02-10 08:00:00+00:00",
+      "end": "2026-10-31 23:55:00+00:00",
+      "gaps": 0,
+      "duplicates": 0,
+      "sha256": "d661312edf4d98c5",
+      "funding_events": 7367
+    },
+    {
+      "symbol": "XRPUSDT",
+      "bars": 717308,
+      "start": "2020-01-06 08:20:00+00:00",
+      "end": "2026-10-31 23:55:00+00:00",
+      "gaps": 0,
+      "duplicates": 0,
+      "sha256": "452e9ae1f4cad6d6",
+      "funding_events": 7472
+    }
+  ],
+  "aggregate": {
+    "symbols": [
+      "BTCUSDT",
+      "ETHUSDT",
+      "BNBUSDT",
+      "XRPUSDT"
+    ],
+    "assets_traded": 4,
+    "n": 2044,
+    "pf_net": 1.127,
+    "pf_stress": 1.063,
+    "exp_net_r": 0.0212,
+    "win": 0.329,
+    "sharpe": 0.66,
+    "t_stat": 1.72,
+    "t_stat_adjusted": 1.0,
+    "t_stat_conditional": 1.04,
+    "years": 6.83,
+    "mdd": -0.088,
+    "risk_scale_per_asset": 0.25
+  },
+  "by_symbol": [
+    {
+      "symbol": "BTCUSDT",
+      "n": 524,
+      "pf_net": 1.055,
+      "pf_stress": 0.982,
+      "sharpe": 0.15,
+      "t_stat": 0.4,
+      "mdd": -0.153,
+      "exp_net_r": 0.0373,
+      "win": 0.323
+    },
+    {
+      "symbol": "ETHUSDT",
+      "n": 517,
+      "pf_net": 1.237,
+      "pf_stress": 1.175,
+      "sharpe": 0.75,
+      "t_stat": 1.95,
+      "mdd": -0.133,
+      "exp_net_r": 0.1561,
+      "win": 0.333
+    },
+    {
+      "symbol": "BNBUSDT",
+      "n": 518,
+      "pf_net": 1.115,
+      "pf_stress": 1.048,
+      "sharpe": 0.39,
+      "t_stat": 1.0,
+      "mdd": -0.144,
+      "exp_net_r": 0.0769,
+      "win": 0.328
+    },
+    {
+      "symbol": "XRPUSDT",
+      "n": 485,
+      "pf_net": 1.104,
+      "pf_stress": 1.052,
+      "sharpe": 0.29,
+      "t_stat": 0.76,
+      "mdd": -0.172,
+      "exp_net_r": 0.0691,
+      "win": 0.332
+    }
+  ],
+  "correlation": {
+    "pairs": {
+      "BTCUSDT~ETHUSDT": 0.302,
+      "BTCUSDT~BNBUSDT": 0.189,
+      "BTCUSDT~XRPUSDT": 0.202,
+      "ETHUSDT~BNBUSDT": 0.214,
+      "ETHUSDT~XRPUSDT": 0.226,
+      "BNBUSDT~XRPUSDT": 0.155
+    },
+    "mean_rho": 0.215,
+    "mean_rho_market": 0.644,
+    "mean_rho_conditional": 0.575,
+    "market_pairs": {
+      "BTCUSDT~ETHUSDT": 0.823,
+      "BTCUSDT~BNBUSDT": 0.665,
+      "BTCUSDT~XRPUSDT": 0.583,
+      "ETHUSDT~BNBUSDT": 0.676,
+      "ETHUSDT~XRPUSDT": 0.608,
+      "BNBUSDT~XRPUSDT": 0.511
+    },
+    "rho_used": 0.644,
+    "effective_multiplier": 0.341,
+    "effective_multiplier_conditional": 0.367,
+    "note": "Tres correlaciones: la de la estrategia (baja porque no opera todos los días), la condicional a que ambos libros estén dentro, y la de mercado. El ajuste del t usa la mayor, que es la de mercado."
+  },
+  "caveats": [
+    "El t agregado trata cada trade como independiente; los activos están correlacionados. `t_stat_adjusted` descuenta la correlación media.",
+    "El riesgo por trade se divide entre los activos que operan, así que el MDD no se multiplica por el número de activos.",
+    "Un activo que pierde no se elimina: quitar el que falla convierte el universo en otra selección.",
+    "El benchmark es el de cada activo; el alpha agregado requiere comparar contra una cartera equiponderada de los mismos activos, y no se calcula aquí."
+  ]
+}
