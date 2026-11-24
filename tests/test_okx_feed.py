@@ -235,3 +235,29 @@ def test_tras_un_fallo_recupera_la_ventana_completa(monkeypatch):
     assert len(ticks) == 2
     # backfill 3, primer poll 5, y tras el fallo la ventana entera otra vez.
     assert limits == [3, 5, 3]
+
+def test_un_hueco_sin_fallo_tambien_se_recupera(monkeypatch):
+    limits: list[int] = []
+    base = 1795404000000
+    rows = [bar_row(str(base + i * 60_000), str(100 + i)) for i in range(9)]
+
+    def fake_fetch(self, limit, after=None):
+        limits.append(limit)
+        if len(limits) == 1:
+            return {"BTC": parse_candles(_payload(rows[0]))}
+        if len(limits) == 2:
+            # La ventana normal empieza en el minuto 4: faltan 1, 2 y 3.
+            return {"BTC": parse_candles(_payload(*rows[4:]))}
+        return {"BTC": parse_candles(_payload(*rows))}
+
+    monkeypatch.setattr(OKXFeed, "fetch", fake_fetch)
+    feed = OKXFeed({"BTC": "BTC-USDT"}, bars=9, poll_interval_s=0, max_ticks=3)
+
+    async def collect():
+        return [tick async for tick in feed.iter_ticks_async()]
+
+    ticks = asyncio.run(collect())
+
+    assert [tick.bars["BTC"].c for tick in ticks] == [100.0, 101.0, 102.0]
+    # backfill 9, poll normal 5, y al ver el hueco el backfill otra vez.
+    assert limits == [9, 5, 9]
