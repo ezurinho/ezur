@@ -79,3 +79,17 @@ def test_una_base_sin_operaciones_se_lee_sin_romperse(tmp_path, capsys):
     assert code == 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["summary"]["closed"]["trades"] == 0
+
+
+def test_avisa_si_la_curva_o_el_estado_no_cuadran():
+    text = paper.render(SUMMARY, 25_000.0, "db", {"curve": 24_210.09, "state": 24_210.09})
+
+    assert "NO cuadra con el libro" in text
+
+
+def test_confirma_cuando_los_libros_cuadran():
+    expected = 25_000.0 + SUMMARY["closed"]["pnl_net"]
+    text = paper.render(SUMMARY, 25_000.0, "db", {"curve": expected, "state": expected})
+
+    assert "cuadra con el libro" in text
+    assert "NO cuadra" not in text
