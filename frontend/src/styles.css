@@ -175,6 +175,9 @@ a {
   flex: 1;
   height: 1px;
   background: linear-gradient(90deg, var(--line), transparent);
+  /* La línea decorativa va antes de la acción: si va después, se come el
+     espacio libre y el botón de la derecha nunca llega al borde. */
+  order: 1;
 }
 
 @keyframes page-in {
@@ -231,6 +234,43 @@ a {
 .hud-clock,
 .badge {
   white-space: nowrap;
+}
+
+/* ---- aviso de enlace caído ---------------------------------------------- */
+
+.link-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.link-banner .led {
+  flex: 0 0 auto;
+}
+
+.link-banner-text {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+
+.link-banner .btn {
+  flex: 0 0 auto;
+}
+
+.link-bad {
+  border-bottom-color: color-mix(in srgb, var(--bad) 45%, var(--line));
+  background: color-mix(in srgb, var(--bad) 10%, var(--surface-2));
+}
+
+.link-warn {
+  border-bottom-color: color-mix(in srgb, var(--warn) 45%, var(--line));
+  background: color-mix(in srgb, var(--warn) 8%, var(--surface-2));
 }
 
 .hud-group {
@@ -912,6 +952,28 @@ a {
   opacity: 0.55;
 }
 
+.phase-mark {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  line-height: 1;
+  color: var(--muted);
+}
+
+.phase-done .phase-mark {
+  color: var(--good);
+}
+
+.phase-active .phase-mark {
+  color: var(--accent);
+}
+
+.phase-failed .phase-mark {
+  color: var(--bad);
+}
+
 /* strategy panel */
 
 .strategy-panel {
@@ -1496,6 +1558,62 @@ label {
   background: radial-gradient(60% 100% at 92% 20%, #ff5c6c14, transparent 70%);
 }
 
+.fresh-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  padding: 2px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.fresh-chip::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.fresh-chip.fresh-live {
+  border-color: color-mix(in srgb, var(--good) 40%, var(--line));
+  color: var(--good);
+}
+
+.fresh-chip.fresh-live::before {
+  background: var(--good);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--good) 60%, transparent);
+}
+
+.fresh-chip.fresh-lag {
+  border-color: color-mix(in srgb, var(--warn) 40%, var(--line));
+  color: var(--warn);
+}
+
+.fresh-chip.fresh-lag::before {
+  background: var(--warn);
+}
+
+.fresh-chip.fresh-stale {
+  border-color: color-mix(in srgb, var(--bad) 45%, var(--line));
+  color: var(--bad);
+}
+
+.fresh-chip.fresh-stale::before {
+  background: var(--bad);
+}
+
+/* En la barra superior convive con badges: sin margen inferior. */
+.top-bar .fresh-chip {
+  margin-bottom: 0;
+}
+
 .simple-hero h2 {
   margin: 0 0 6px;
   font-size: 1.55rem;
@@ -1513,6 +1631,18 @@ label {
   margin-top: 8px !important;
   color: var(--warn) !important;
   font-size: 0.82rem !important;
+}
+
+.simple-unlock {
+  margin-top: 4px !important;
+  color: var(--text-dim) !important;
+  font-size: 0.76rem !important;
+  opacity: 0.85;
+}
+
+.tone-cost {
+  color: var(--warn);
+  font-variant-numeric: tabular-nums;
 }
 
 .simple-led {
@@ -2553,6 +2683,18 @@ label {
   font-size: 0.78rem;
 }
 
+.instrument-add {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+  align-items: end;
+  margin: 12px 0;
+}
+
+.instrument-add .btn {
+  justify-self: start;
+}
+
 /* ---- atajos -------------------------------------------------------------- */
 
 .shortcuts {
@@ -2661,6 +2803,16 @@ label {
 .trade-range-win {
   background: color-mix(in srgb, var(--good) 34%, transparent);
   border-radius: 0 999px 999px 0;
+}
+
+/* En un corto el stop queda a la derecha y el objetivo a la izquierda: las
+   puntas redondeadas de cada zona siguen ese eje. */
+.trade-range[data-side="short"] .trade-range-loss {
+  border-radius: 0 999px 999px 0;
+}
+
+.trade-range[data-side="short"] .trade-range-win {
+  border-radius: 999px 0 0 999px;
 }
 
 .trade-range-entry {
@@ -2895,6 +3047,13 @@ label {
   font-weight: 400;
 }
 
+/* El botón de refrescar cierra la línea a la derecha sin separarse del título. */
+.page-title-action {
+  margin-left: auto;
+  align-self: center;
+  order: 2;
+}
+
 .price-flash .hud-value {
   transition: color 200ms ease;
 }
@@ -3060,6 +3219,38 @@ label {
   margin: 10px 0 2px;
   font-size: 0.8rem;
   color: var(--text-dim);
+}
+
+.lab-cost {
+  margin: 2px 0 10px;
+  line-height: 1.5;
+}
+
+.lab-cost b {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.lab-empty-reason {
+  margin: 4px 0 10px;
+  padding: 8px 12px;
+  border-left: 2px solid var(--warn);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--warn) 7%, transparent);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.lab-zero-notes {
+  margin-top: 10px;
+  display: grid;
+  gap: 2px;
+}
+
+.lab-zero-notes p {
+  margin: 0;
+  line-height: 1.5;
 }
 
 .gate {
@@ -3494,6 +3685,19 @@ label {
   box-shadow: 0 0 8px var(--warn);
 }
 
+/* `.led-live` se usaba en el aviso «Puede operar» sin regla propia: el punto
+   salía gris donde el texto prometía luz verde. */
+.led-live {
+  background: var(--good);
+  box-shadow: 0 0 8px var(--good);
+}
+
+/* Retención normal (posición abierta, orden en camino): informativa, no alarma. */
+.led-hold {
+  background: var(--accent-2);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent-2) 60%, transparent);
+}
+
 .led-stale,
 .led-none {
   background: var(--bad);
@@ -3523,6 +3727,10 @@ label {
 .why-blocked {
   border-color: color-mix(in srgb, var(--bad) 45%, transparent);
   background: color-mix(in srgb, var(--bad) 8%, var(--surface-2));
+}
+
+.why-hold {
+  border-color: color-mix(in srgb, var(--accent-2) 35%, transparent);
 }
 
 .why-ok {
@@ -3728,4 +3936,330 @@ label {
 
 .badge-update:hover {
   background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+/* ---- la sala respira ----------------------------------------------------- */
+
+/*
+ * The mood layer is ambient, not information: it changes the temperature of
+ * the room with the day's result so the screen reads at a glance from across
+ * the desk, and it never competes with the numbers themselves.
+ */
+.ambient {
+  position: fixed;
+  inset: -12%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(46% 38% at 78% 10%, var(--mood-a, #37e0d012), transparent 70%),
+    radial-gradient(42% 36% at 10% 90%, var(--mood-b, #6ea8ff0a), transparent 72%);
+  animation: ambient-drift 38s ease-in-out infinite alternate;
+}
+
+.app-shell[data-mood="gain"] {
+  --mood-a: #3ddc8418;
+  --mood-b: #37e0d00d;
+}
+
+.app-shell[data-mood="loss"] {
+  --mood-a: #ff5c6c1e;
+  --mood-b: #ff5c6c0a;
+}
+
+@keyframes ambient-drift {
+  from {
+    transform: translate3d(-1%, -1%, 0) scale(1.02);
+  }
+  to {
+    transform: translate3d(1.4%, 1.2%, 0) scale(1.06);
+  }
+}
+
+/* ---- hero: filo de luz que recorre el borde ------------------------------ */
+
+@property --sheen {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 120deg;
+}
+
+.simple-hero {
+  --hero-glow: var(--accent);
+}
+
+.simple-hero.state-waiting {
+  --hero-glow: var(--warn);
+}
+
+.simple-hero.state-paused,
+.simple-hero.state-stopped,
+.simple-hero.state-error {
+  --hero-glow: var(--muted);
+}
+
+.hero-sheen {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: conic-gradient(
+    from var(--sheen),
+    transparent 0 58%,
+    var(--hero-glow) 74%,
+    transparent 86%
+  );
+  opacity: 0.45;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  animation: sheen-turn 16s linear infinite;
+}
+
+.simple-hero.state-stopped .hero-sheen,
+.simple-hero.state-error .hero-sheen {
+  opacity: 0.22;
+  animation-duration: 30s;
+}
+
+@keyframes sheen-turn {
+  to {
+    --sheen: 480deg;
+  }
+}
+
+.simple-hero.state-working::after {
+  animation: hero-breathe 7s ease-in-out infinite;
+}
+
+@keyframes hero-breathe {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* ---- entrada escalonada -------------------------------------------------- */
+
+.simple .simple-hero,
+.simple .simple-cards .simple-card,
+.simple .simple-pulse,
+.simple .simple-history {
+  animation: rise-in 440ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+
+.simple .simple-cards .simple-card:nth-child(1) {
+  animation-delay: 50ms;
+}
+
+.simple .simple-cards .simple-card:nth-child(2) {
+  animation-delay: 100ms;
+}
+
+.simple .simple-cards .simple-card:nth-child(3) {
+  animation-delay: 150ms;
+}
+
+.simple .simple-pulse {
+  animation-delay: 190ms;
+}
+
+.simple .simple-history {
+  animation-delay: 230ms;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---- tarjetas: brillo al pasar el cursor -------------------------------- */
+
+.simple-card {
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 260ms ease,
+    border-color 260ms ease,
+    box-shadow 320ms ease;
+}
+
+.simple-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--line));
+  box-shadow: 0 18px 44px -34px #000;
+}
+
+.simple-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(115deg, transparent 34%, #ffffff0e 46%, transparent 58%);
+  transform: translateX(-32%);
+  transition:
+    opacity 280ms ease,
+    transform 760ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.simple-card:hover::after {
+  opacity: 1;
+  transform: translateX(32%);
+}
+
+.simple-big.tone-good {
+  text-shadow: 0 0 26px color-mix(in srgb, var(--good) 32%, transparent);
+}
+
+.simple-big.tone-bad {
+  text-shadow: 0 0 26px color-mix(in srgb, var(--bad) 30%, transparent);
+}
+
+.simple-bar span {
+  box-shadow: 0 0 10px #ff5c6c66;
+}
+
+/* ---- precio en vivo ------------------------------------------------------ */
+
+.live-price {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  padding: 0 3px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient,
+  .hero-sheen {
+    animation: none !important;
+  }
+
+  .simple-card:hover {
+    transform: none;
+  }
+}
+
+/*
+ * Con "reducir movimiento" activo la sala sigue viva, pero sin desplazar
+ * nada: la luz respira en opacidad y el borde recorre el hero muy despacio.
+ * Las entradas pasan de deslizar a fundirse.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .ambient {
+    animation: ambient-breathe 16s ease-in-out infinite alternate !important;
+  }
+
+  .hero-sheen {
+    animation: sheen-turn 40s linear infinite !important;
+  }
+
+  .simple .simple-hero,
+  .simple .simple-cards .simple-card,
+  .simple .simple-pulse,
+  .simple .simple-history {
+    animation: fade-in 320ms ease-out backwards !important;
+  }
+
+  .simple-hero.state-working::after {
+    animation: hero-breathe 10s ease-in-out infinite !important;
+  }
+
+  .live-price.flash-up,
+  .live-price.flash-down {
+    animation-duration: 600ms !important;
+  }
+}
+
+@keyframes ambient-breathe {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ---- aurora del panel simple --------------------------------------------- */
+
+/*
+ * A soft second light behind the beginner page, tinted by the day's mood.
+ * It sits under the content (isolated stacking context) so it warms the room
+ * without ever touching legibility.
+ */
+.page.simple {
+  position: relative;
+  isolation: isolate;
+}
+
+.page.simple::before {
+  content: "";
+  position: absolute;
+  inset: -30px -18px auto;
+  height: 380px;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: 32px;
+  background:
+    radial-gradient(42% 60% at 20% 0%, var(--mood-a, #37e0d012), transparent 70%),
+    radial-gradient(
+      34% 48% at 82% 4%,
+      color-mix(in srgb, var(--accent) 8%, transparent),
+      transparent 72%
+    );
+  animation: aurora-drift 24s ease-in-out infinite alternate;
+}
+
+@keyframes aurora-drift {
+  from {
+    transform: translate3d(-1.4%, 0, 0) scale(1);
+    opacity: 0.7;
+  }
+  to {
+    transform: translate3d(1.4%, 1%, 0) scale(1.05);
+    opacity: 1;
+  }
+}
+
+/* ---- sparkline: se dibuja al aparecer ----------------------------------- */
+
+.sparkline .line {
+  animation: spark-draw 900ms cubic-bezier(0.3, 0.7, 0.2, 1) both;
+}
+
+@keyframes spark-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page.simple::before {
+    animation: ambient-breathe 18s ease-in-out infinite alternate !important;
+  }
+
+  .sparkline .line {
+    animation: none !important;
+    stroke-dashoffset: 0;
+  }
 }
