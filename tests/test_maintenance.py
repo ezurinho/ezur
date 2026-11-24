@@ -252,3 +252,85 @@ def test_diagnose_entiende_un_pico_reiniciado(tmp_path):
     assert books["peak_expected"] == 25_010.0
     assert books["differences"] == {}
     assert books["consistent"] is True
+
+def _perfil(tmp_path, risk: dict) -> Path:
+    profile = tmp_path / "perfil"
+    profile.mkdir()
+    (profile / "config.json").write_text(
+        json.dumps({"risk": risk}), encoding="utf-8"
+    )
+    return profile
+
+
+def test_diagnose_avisa_cuando_la_parada_dura_esta_activa(tmp_path):
+    from datetime import datetime, timezone
+
+    path = tmp_path / "terminal.db"
+    store = Store(path)
+    closed = datetime(2026, 11, 24, 2, 0, tzinfo=timezone.utc)
+    _seed_trade(store, closed, pnl_net=-3_000.0)
+    store.kv_set("equity", 22_000.0)
+    store.kv_set("peak_equity", 25_000.0)
+    store.append_equity(22_000.0, closed)
+    store.close()
+
+    books = diagnose(
+        path,
+        25_000.0,
+        {"max_drawdown_pct": 5.0, "halt_multiple": 2.0, "soft_brakes": True},
+    )["books"]
+
+    assert books["drawdown_pct"] == 12.0
+    assert books["halt_at_pct"] == 10.0
+    assert books["halted"] is True
+
+
+def test_diagnose_no_avisa_si_el_drawdown_esta_dentro(tmp_path):
+    from datetime import datetime, timezone
+
+    path = tmp_path / "terminal.db"
+    store = Store(path)
+    closed = datetime(2026, 11, 24, 2, 0, tzinfo=timezone.utc)
+    _seed_trade(store, closed, pnl_net=-500.0)
+    store.kv_set("equity", 24_500.0)
+    store.kv_set("peak_equity", 25_000.0)
+    store.append_equity(24_500.0, closed)
+    store.close()
+
+    books = diagnose(
+        path,
+        25_000.0,
+        {"max_drawdown_pct": 5.0, "halt_multiple": 2.0, "soft_brakes": True},
+    )["books"]
+
+    assert books["halted"] is False
+    assert books["halt_at_pct"] == 10.0
+
+
+def test_el_cli_lee_los_limites_del_perfil(tmp_path, capsys):
+    from datetime import datetime, timezone
+
+    path = tmp_path / "terminal.db"
+    store = Store(path)
+    closed = datetime(2026, 11, 24, 2, 0, tzinfo=timezone.utc)
+    _seed_trade(store, closed, pnl_net=-3_000.0)
+    store.kv_set("equity", 22_000.0)
+    store.kv_set("peak_equity", 25_000.0)
+    store.append_equity(22_000.0, closed)
+    store.close()
+    from server import diagnostics
+
+    profile = _perfil(
+        tmp_path,
+        {
+            "initial_capital": 25_000.0,
+            "max_drawdown_pct": 5.0,
+            "soft_brake_halt_multiple": 2.0,
+            "soft_brakes": True,
+        },
+    )
+
+    assert diagnostics.main(["--db", str(path), "--profile", str(profile)]) == 0
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["books"]["halted"] is True
