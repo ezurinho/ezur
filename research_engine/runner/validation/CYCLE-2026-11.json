@@ -1,0 +1,330 @@
+{
+  "cycle_id": "CYCLE-2026-11",
+  "generated_at": "2026-11-22T05:32:16Z",
+  "method_version": "1.0.0",
+  "inputs": {
+    "data_hash": "80d6a6014eb92b23",
+    "specs_hash": "sha256:87eea8aa8f82cf5eee5dd54b81cbe77063f521583672ff6ba6baaebc622e309a",
+    "universe_size": 15,
+    "daily_observations": 2496,
+    "coverage_years": 6.83
+  },
+  "universe": [
+    {
+      "name": "1d_40_N20",
+      "spec_id": "BTC-TREND-1D",
+      "timeframe": "1d",
+      "variant": "N=20",
+      "trades": 78,
+      "pf_net": 1.4903,
+      "exp_r": 0.3555,
+      "days": 78
+    },
+    {
+      "name": "1d_40_N28",
+      "spec_id": "BTC-TREND-1D",
+      "timeframe": "1d",
+      "variant": "N=28",
+      "trades": 67,
+      "pf_net": 1.4572,
+      "exp_r": 0.3331,
+      "days": 67
+    },
+    {
+      "name": "1d_40_N40",
+      "spec_id": "BTC-TREND-1D",
+      "timeframe": "1d",
+      "variant": "N=40",
+      "trades": 58,
+      "pf_net": 1.6829,
+      "exp_r": 0.4715,
+      "days": 58
+    },
+    {
+      "name": "1d_40_N56",
+      "spec_id": "BTC-TREND-1D",
+      "timeframe": "1d",
+      "variant": "N=56",
+      "trades": 47,
+      "pf_net": 1.5912,
+      "exp_r": 0.4202,
+      "days": 47
+    },
+    {
+      "name": "1d_40_N80",
+      "spec_id": "BTC-TREND-1D",
+      "timeframe": "1d",
+      "variant": "N=80",
+      "trades": 43,
+      "pf_net": 0.9055,
+      "exp_r": -0.0782,
+      "days": 43
+    },
+    {
+      "name": "4h_24_N12",
+      "spec_id": "BTC-TREND-4H",
+      "timeframe": "4h",
+      "variant": "N=12",
+      "trades": 726,
+      "pf_net": 0.9331,
+      "exp_r": -0.0461,
+      "days": 726
+    },
+    {
+      "name": "4h_24_N17",
+      "spec_id": "BTC-TREND-4H",
+      "timeframe": "4h",
+      "variant": "N=17",
+      "trades": 617,
+      "pf_net": 1.0629,
+      "exp_r": 0.042,
+      "days": 617
+    },
+    {
+      "name": "4h_24_N24",
+      "spec_id": "BTC-TREND-4H",
+      "timeframe": "4h",
+      "variant": "N=24",
+      "trades": 524,
+      "pf_net": 1.0552,
+      "exp_r": 0.0373,
+      "days": 524
+    },
+    {
+      "name": "4h_24_N34",
+      "spec_id": "BTC-TREND-4H",
+      "timeframe": "4h",
+      "variant": "N=34",
+      "trades": 428,
+      "pf_net": 1.1239,
+      "exp_r": 0.0822,
+      "days": 428
+    },
+    {
+      "name": "4h_24_N48",
+      "spec_id": "BTC-TREND-4H",
+      "timeframe": "4h",
+      "variant": "N=48",
+      "trades": 358,
+      "pf_net": 1.1278,
+      "exp_r": 0.0858,
+      "days": 358
+    },
+    {
+      "name": "ema_12_48_slow24",
+      "spec_id": "BTC-MOM-5M",
+      "timeframe": "5m",
+      "variant": "slow=24",
+      "trades": 18582,
+      "pf_net": 0.5137,
+      "exp_r": -0.4838,
+      "days": 18582
+    },
+    {
+      "name": "ema_12_48_slow34",
+      "spec_id": "BTC-MOM-5M",
+      "timeframe": "5m",
+      "variant": "slow=34",
+      "trades": 16869,
+      "pf_net": 0.5089,
+      "exp_r": -0.4919,
+      "days": 16869
+    },
+    {
+      "name": "ema_12_48_slow48",
+      "spec_id": "BTC-MOM-5M",
+      "timeframe": "5m",
+      "variant": "slow=48",
+      "trades": 15102,
+      "pf_net": 0.4902,
+      "exp_r": -0.5178,
+      "days": 15102
+    },
+    {
+      "name": "ema_12_48_slow67",
+      "spec_id": "BTC-MOM-5M",
+      "timeframe": "5m",
+      "variant": "slow=67",
+      "trades": 13191,
+      "pf_net": 0.488,
+      "exp_r": -0.5218,
+      "days": 13191
+    },
+    {
+      "name": "ema_12_48_slow96",
+      "spec_id": "BTC-MOM-5M",
+      "timeframe": "5m",
+      "variant": "slow=96",
+      "trades": 11177,
+      "pf_net": 0.4853,
+      "exp_r": -0.5255,
+      "days": 11177
+    }
+  ],
+  "pbo": {
+    "pbo": 0.2381,
+    "n_splits": 252,
+    "blocks": 10,
+    "block_days": 249,
+    "median_logit": 0.5108,
+    "mean_oos_rank_pct": 0.6897,
+    "most_selected": {
+      "1d_40_N40": 109,
+      "4h_24_N34": 41,
+      "1d_40_N20": 41,
+      "1d_40_N56": 36,
+      "4h_24_N48": 13
+    },
+    "method": "CSCV (Bailey et al. 2015), S=10 blocks, all C(S,S/2) splits"
+  },
+  "dsr": {
+    "dsr": 0.7917,
+    "sharpe_daily": 0.0319,
+    "sharpe_annual": 0.6102,
+    "sr0_daily": 0.0179,
+    "sr0_annual": 0.3429,
+    "trials": 5,
+    "skew": 8.9658,
+    "kurtosis": 107.8168,
+    "observations": 2496,
+    "config": "1d_40_N40",
+    "source": "grupo BTC-TREND-1D"
+  },
+  "dsr_pooled": {
+    "dsr": 0.0,
+    "sharpe_daily": 0.0319,
+    "sharpe_annual": 0.6102,
+    "sr0_daily": 0.561,
+    "sr0_annual": 10.7174,
+    "trials": 15,
+    "skew": 8.9658,
+    "kurtosis": 107.8168,
+    "observations": 2496
+  },
+  "dsr_by_group": {
+    "BTC-TREND-1D": {
+      "dsr": 0.7917,
+      "sharpe_daily": 0.0319,
+      "sharpe_annual": 0.6102,
+      "sr0_daily": 0.0179,
+      "sr0_annual": 0.3429,
+      "trials": 5,
+      "skew": 8.9658,
+      "kurtosis": 107.8168,
+      "observations": 2496,
+      "config": "1d_40_N40"
+    },
+    "BTC-TREND-4H": {
+      "dsr": 0.5563,
+      "sharpe_daily": 0.0195,
+      "sharpe_annual": 0.3734,
+      "sr0_daily": 0.0168,
+      "sr0_annual": 0.3211,
+      "trials": 5,
+      "skew": 3.4459,
+      "kurtosis": 20.1971,
+      "observations": 2496,
+      "config": "4h_24_N34"
+    },
+    "BTC-MOM-5M": {
+      "dsr": 0.0,
+      "sharpe_daily": -0.5611,
+      "sharpe_annual": -10.7197,
+      "sr0_daily": 0.0601,
+      "sr0_annual": 1.1479,
+      "trials": 5,
+      "skew": -1.5759,
+      "kurtosis": 10.3156,
+      "observations": 2496,
+      "config": "ema_12_48_slow96"
+    }
+  },
+  "dsr_config": "1d_40_N40",
+  "minbtl": {
+    "minbtl_years": 14.55,
+    "n_trials": 15,
+    "sr_annual": 0.6102
+  },
+  "wfa": {
+    "folds": [
+      {
+        "fold": 1,
+        "is_end": "2022-01-18",
+        "oos": [
+          "2022-01-18",
+          "2023-01-03"
+        ],
+        "chosen": "1d_40_N40",
+        "is_trades": 18,
+        "is_pf": 2.0743,
+        "oos_trades": 6,
+        "oos_pf": 2.5698
+      },
+      {
+        "fold": 2,
+        "is_end": "2023-01-03",
+        "oos": [
+          "2023-01-03",
+          "2023-12-18"
+        ],
+        "chosen": "1d_40_N40",
+        "is_trades": 24,
+        "is_pf": 2.1784,
+        "oos_trades": 9,
+        "oos_pf": 0.9913
+      },
+      {
+        "fold": 3,
+        "is_end": "2023-12-18",
+        "oos": [
+          "2023-12-18",
+          "2024-12-02"
+        ],
+        "chosen": "1d_40_N40",
+        "is_trades": 33,
+        "is_pf": 1.7709,
+        "oos_trades": 11,
+        "oos_pf": 0.8358
+      },
+      {
+        "fold": 4,
+        "is_end": "2024-12-02",
+        "oos": [
+          "2024-12-02",
+          "2025-11-16"
+        ],
+        "chosen": "1d_40_N20",
+        "is_trades": 60,
+        "is_pf": 1.5743,
+        "oos_trades": 11,
+        "oos_pf": 0.8469
+      },
+      {
+        "fold": 5,
+        "is_end": "2025-11-16",
+        "oos": [
+          "2025-11-16",
+          "2026-10-31"
+        ],
+        "chosen": "1d_40_N40",
+        "is_trades": 52,
+        "is_pf": 1.4505,
+        "oos_trades": 6,
+        "oos_pf": 5.9923
+      }
+    ],
+    "folds_requested": 5,
+    "warmup_share": 0.3,
+    "evaluated_folds": 5,
+    "min_trades_per_fold": 6,
+    "total_oos_trades": 43,
+    "oos_pf_aggregate": 1.3866,
+    "distinct_configs_chosen": 2
+  },
+  "caveats": [
+    "PBO y DSR son propiedades de este universo, no de una configuración suelta.",
+    "El DSR de la puerta se calcula dentro del grupo de variantes de cada hipótesis (el espacio de búsqueda real); el valor agrupado se incluye solo como contexto y suele ser más severo porque suma familias con signo opuesto.",
+    "El universo son vecindades paramétricas de las specs de referencia: si el investigador probó otras variantes fuera de esta lista, el PBO real es peor.",
+    "WFA elige de nuevo en cada fold, así que mide el procedimiento de selección, no la config ganadora del ciclo."
+  ]
+}
