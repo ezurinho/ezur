@@ -12,6 +12,7 @@
  */
 
 import { plainReason } from "./reasons";
+import { phaseLabel, qualityLabel, sideLabel } from "./utils";
 import type { SnapshotData } from "./types";
 
 export type StepStatus = "pass" | "fail" | "warn" | "idle";
@@ -40,8 +41,6 @@ export interface Reasoning {
   /** Lo que el motor decidió no hacer, si consta. */
   veto: string | null;
 }
-
-const SIDE_WORD: Record<string, string> = { long: "compra", short: "venta" };
 
 const STRATEGY_STATES: Record<string, StepStatus> = {
   disabled: "fail",
@@ -82,11 +81,13 @@ export function buildReasoning(snapshot: SnapshotData): Reasoning {
 
   const maxTrades = risk.limits?.max_trades_per_day ?? 0;
   const maxLossPct = risk.limits?.max_daily_loss_pct ?? 0;
-  // La misma base que Inicio: el capital con el que se abrió el día, no la
-  // equidad actual. Si se calculara sobre la equidad, el presupuesto se
-  // encogería al perder y crecería al ganar, y el límite dejaría de ser fijo.
-  const capital = risk.equity - risk.daily_pnl || risk.equity;
-  const budget = maxLossPct > 0 ? (capital * maxLossPct) / 100 : null;
+  // El muro sale del servidor porque el motor lo aplica sobre el capital
+  // inicial; calcularlo aquí sobre la equidad del día daría otro número y la
+  // misma pantalla diría dos límites distintos. El cálculo local es el respaldo.
+  const initialCapital = risk.limits?.initial_capital ?? null;
+  const budget =
+    risk.limits?.daily_loss_limit ??
+    (initialCapital !== null && maxLossPct > 0 ? (initialCapital * maxLossPct) / 100 : null);
 
   const steps: ReasoningStep[] = [
     {
@@ -95,14 +96,14 @@ export function buildReasoning(snapshot: SnapshotData): Reasoning {
       status: data.quality === "ok" && data.bars_available > 0 ? "pass" : data.bars_available > 0 ? "warn" : "fail",
       detail:
         data.bars_available > 0
-          ? `${data.provider} · ${data.bars_available} velas · última hace ${seconds(data.staleness_ms)} · calidad ${data.quality}`
+          ? `${data.provider} · ${data.bars_available} velas · última hace ${seconds(data.staleness_ms)} · calidad ${qualityLabel(data.quality)}`
           : `${data.provider} · sin velas: no hay mercado que evaluar`,
     },
     {
       key: "session",
       label: "Sesión",
       status: session.is_open ? "pass" : "fail",
-      detail: `${session.label || "sin sesión"} · fase ${session.phase}${session.is_open ? "" : " · cerrada para operar"}`,
+      detail: `${session.label || "sin sesión"} · fase ${phaseLabel(session.phase)}${session.is_open ? "" : " · operativa cerrada"}`,
     },
     {
       key: "strategy",
@@ -115,7 +116,7 @@ export function buildReasoning(snapshot: SnapshotData): Reasoning {
       label: "Señal",
       status: signal ? "pass" : strategy.rejection ? "fail" : "idle",
       detail: signal
-        ? `${SIDE_WORD[signal.side] ?? signal.side} · ${signal.reason ?? "regla cumplida"} · stop ${money(signal.stop_price)}${signal.target_price !== null ? ` · objetivo ${money(signal.target_price)}` : ""}`
+        ? `${sideLabel(signal.side)} · ${signal.reason ?? "regla cumplida"} · stop ${money(signal.stop_price)}${signal.target_price !== null ? ` · objetivo ${money(signal.target_price)}` : ""}`
         : strategy.rejection
           ? `${strategy.rejection.code}: ${strategy.rejection.message ?? "rechazada"}`
           : "ninguna regla de entrada se cumple en esta vela",
@@ -124,15 +125,23 @@ export function buildReasoning(snapshot: SnapshotData): Reasoning {
       key: "risk",
       label: "Riesgo",
       status: risk.blocked ? "fail" : "pass",
-      // Solo medidas: el motivo en palabras va en el veredicto, una vez.
-      detail: `${risk.daily_trades}${maxTrades ? `/${maxTrades}` : ""} operaciones hoy · pérdida diaria ${money(Math.min(0, risk.daily_pnl))} ${budget === null ? "· sin límite" : `de ${money(budget)}`}`,
+      // Solo medidas: el motivo en palabras va en el veredicto, una vez. Si el
+      // veto nace de una regla que no aparece en esta fila (posición abierta,
+      // cooldown…), se avisa: un ✗ junto a cifras sanas se lee como un fallo.
+      detail:
+        `${risk.daily_trades}${maxTrades ? `/${maxTrades}` : ""} operaciones hoy · pérdida diaria ${money(Math.min(0, risk.daily_pnl))} ${budget === null ? "· límite sin dato" : `de ${money(budget)}`}` +
+        (risk.blocked &&
+        risk.block_reason !== "max_trades_reached" &&
+        risk.block_reason !== "daily_loss_limit"
+          ? " · el veto viene de otra regla de riesgo"
+          : ""),
     },
     {
       key: "execution",
       label: "Ejecución",
       status: position || orders.length ? "pass" : "idle",
       detail: position
-        ? `${SIDE_WORD[position.side] ?? position.side} abierta en ${position.symbol} · ${position.units} u · riesgo ${money(risk.open_risk)}`
+        ? `${sideLabel(position.side)} abierta en ${position.symbol} · ${position.units} u · riesgo ${money(risk.open_risk)}`
         : orders.length
           ? `${orders.length} orden(es) en curso`
           : "nada en curso",
@@ -174,7 +183,7 @@ export function buildReasoning(snapshot: SnapshotData): Reasoning {
     // Un bloqueo no cierra la posición abierta: si la hay, se dice, o el
     // operador creería que no queda nada gestionándose.
     const managing = position
-      ? ` La ${SIDE_WORD[position.side] ?? position.side} abierta en ${position.symbol} sigue gestionándose con su stop.`
+      ? ` La ${sideLabel(position.side)} abierta en ${position.symbol} sigue gestionándose con su stop.`
       : "";
     return {
       ...base,
@@ -189,7 +198,7 @@ export function buildReasoning(snapshot: SnapshotData): Reasoning {
       ...base,
       tone: "good",
       headline: "En posición",
-      verdict: `Decisión activa: gestionar la ${SIDE_WORD[position.side] ?? position.side} abierta en ${position.symbol}. Entrada ${money(position.entry_price)}, stop ${money(position.stop_price)}${position.target_price !== null ? `, objetivo ${money(position.target_price)}` : ""}.`,
+      verdict: `Decisión activa: gestionar la ${sideLabel(position.side)} abierta en ${position.symbol}. Entrada ${money(position.entry_price)}, stop ${money(position.stop_price)}${position.target_price !== null ? `, objetivo ${money(position.target_price)}` : ""}.`,
     };
   }
 
@@ -207,7 +216,7 @@ export function buildReasoning(snapshot: SnapshotData): Reasoning {
       ...base,
       tone: "good",
       headline: "Señal",
-      verdict: `${signal.reason ?? "Regla cumplida"}: ${SIDE_WORD[signal.side] ?? signal.side} con stop en ${money(signal.stop_price)}${signal.target_price !== null ? ` y objetivo en ${money(signal.target_price)}` : ""}.`,
+      verdict: `${signal.reason ?? "Regla cumplida"}: ${sideLabel(signal.side)} con stop en ${money(signal.stop_price)}${signal.target_price !== null ? ` y objetivo en ${money(signal.target_price)}` : ""}.`,
     };
   }
 
