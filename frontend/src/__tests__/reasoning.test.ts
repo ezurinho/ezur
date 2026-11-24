@@ -146,4 +146,19 @@ describe("buildReasoning", () => {
   it("sin bloqueo no inventa un veto", () => {
     expect(buildReasoning(snap()).veto).toBeNull();
   });
+
+  it("el presupuesto de pérdida usa el capital del día, no la equidad actual", () => {
+    const result = buildReasoning(snap({ risk: { equity: 26000, daily_pnl: 1000 } }));
+    const detail = result.steps.find((step) => step.key === "risk")?.detail ?? "";
+    // capital = 26.000 − 1.000 = 25.000 · 3 % = 750, no 26.000 · 3 % = 780
+    expect(detail).toContain("750.00");
+    expect(detail).not.toContain("780.00");
+  });
+
+  it("sin límite de pérdida configurado dice «sin límite», no «de 0.00»", () => {
+    const result = buildReasoning(snap({ risk: { limits: { max_trades_per_day: 3 } } }));
+    const detail = result.steps.find((step) => step.key === "risk")?.detail ?? "";
+    expect(detail).toContain("sin límite");
+    expect(detail).not.toContain("de 0.00");
+  });
 });

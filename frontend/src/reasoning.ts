@@ -82,6 +82,11 @@ export function buildReasoning(snapshot: SnapshotData): Reasoning {
 
   const maxTrades = risk.limits?.max_trades_per_day ?? 0;
   const maxLossPct = risk.limits?.max_daily_loss_pct ?? 0;
+  // La misma base que Inicio: el capital con el que se abrió el día, no la
+  // equidad actual. Si se calculara sobre la equidad, el presupuesto se
+  // encogería al perder y crecería al ganar, y el límite dejaría de ser fijo.
+  const capital = risk.equity - risk.daily_pnl || risk.equity;
+  const budget = maxLossPct > 0 ? (capital * maxLossPct) / 100 : null;
 
   const steps: ReasoningStep[] = [
     {
@@ -121,7 +126,7 @@ export function buildReasoning(snapshot: SnapshotData): Reasoning {
       status: risk.blocked ? "fail" : "pass",
       detail: risk.blocked
         ? plainReason(risk.block_reason, context)
-        : `${risk.daily_trades}${maxTrades ? `/${maxTrades}` : ""} operaciones hoy · pérdida diaria ${money(Math.min(0, risk.daily_pnl))} de ${money(-(risk.equity * maxLossPct) / 100)}`,
+        : `${risk.daily_trades}${maxTrades ? `/${maxTrades}` : ""} operaciones hoy · pérdida diaria ${money(Math.min(0, risk.daily_pnl))} ${budget === null ? "· sin límite" : `de ${money(budget)}`}`
     },
     {
       key: "execution",

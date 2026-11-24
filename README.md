@@ -154,7 +154,7 @@ docs/              arquitectura, plugins, UI, protocolo, operación, competencia
 | Hecho | Evidencia |
 |---|---|
 | Motor determinista | Mismo dataset ⇒ mismo hash de backtest |
-| Snapshot conforme al contrato | 396 tests de backend, 69 de frontend, `tsc` limpio, build 416,90 kB |
+| Snapshot conforme al contrato | 396 tests de backend, 71 de frontend, `tsc` limpio, build 416,97 kB |
 | Pipeline completo con trades reales | `reports/backtest/simulation-180d.json` |
 | Ninguna rejilla de parámetros se salva | `reports/backtest/walkforward-reference.json` (6 combinaciones × 3 ventanas, todas negativas) |
 | Estrategia de referencia rentable | **No.** Veredicto automático: RECHAZADA |
