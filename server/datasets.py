@@ -12,6 +12,8 @@ the only kind that can support a real verdict.
 from __future__ import annotations
 
 import argparse
+import csv
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -21,6 +23,62 @@ from .market.okx import MAX_LIMIT, OKXFeed
 from .models import Bar
 
 HEADER = ["ts", "symbol", "o", "h", "l", "c", "v"]
+
+
+def _bucket(stamp: datetime, rule: str) -> datetime:
+    if rule == "1D":
+        return stamp.replace(hour=0, minute=0, second=0, microsecond=0)
+    if rule == "4H":
+        return stamp.replace(hour=(stamp.hour // 4) * 4, minute=0, second=0, microsecond=0)
+    if rule == "1H":
+        return stamp.replace(minute=0, second=0, microsecond=0)
+    raise ValueError(f"regla no soportada: {rule!r} (usa 1H, 4H o 1D)")
+
+
+def resample(source: Path | str, output: Path | str, rule: str = "1D") -> dict[str, Any]:
+    """Agrega velas por cubo UTC sin cargar el fichero entero en memoria.
+
+    3,5 millones de velas de 1 m no caben en una lista de objetos; caben en un
+    bucle que escribe cada día cuando cambia el cubo.
+    """
+    src = Path(source)
+    dst = Path(output)
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    rows_out = 0
+    first: str | None = None
+    last: str | None = None
+    current: tuple[str, str] | None = None
+    o = h = l = c = v = 0.0
+
+    def flush(handle: csv.writer, key: tuple[str, str]) -> None:
+        nonlocal rows_out
+        handle.writerow([key[1], key[0], o, h, l, c, v])
+        rows_out += 1
+
+    with src.open(encoding="utf-8", newline="") as fin, dst.open("w", encoding="utf-8", newline="") as fout:
+        reader = csv.DictReader(fin)
+        writer = csv.writer(fout)
+        writer.writerow(HEADER)
+        for row in reader:
+            stamp = datetime.fromisoformat(row["ts"])
+            key = (row["symbol"], _bucket(stamp, rule).isoformat())
+            price = float(row["c"])
+            volume = float(row["v"])
+            if current is None:
+                current, o, h, l, c, v = key, float(row["o"]), float(row["h"]), float(row["l"]), price, volume
+                first = key[1]
+            elif key != current:
+                flush(writer, current)
+                current, o, h, l, c, v = key, float(row["o"]), float(row["h"]), float(row["l"]), price, volume
+            else:
+                h = max(h, float(row["h"]))
+                l = min(l, float(row["l"]))
+                c = price
+                v += volume
+            last = key[1]
+        if current is not None:
+            flush(writer, current)
+    return {"path": str(dst), "rows": rows_out, "first": first, "last": last}
 
 
 def data_dir() -> Path:
@@ -105,10 +163,51 @@ def main() -> None:
     list_cmd = sub.add_parser("list", help="lista los CSV disponibles")
     list_cmd.add_argument("--dir", default=None)
 
+    vision_cmd = sub.add_parser("vision", help="descarga velas históricas de Binance Vision")
+    vision_cmd.add_argument("--symbol", default="BTCUSDT")
+    vision_cmd.add_argument("--bot-symbol", default="BTC")
+    vision_cmd.add_argument("--interval", default="1m")
+    vision_cmd.add_argument("--market", default="spot", choices=["spot", "um"])
+    vision_cmd.add_argument("--start", required=True, help="YYYY-MM")
+    vision_cmd.add_argument("--end", required=True, help="YYYY-MM")
+    vision_cmd.add_argument("--out", default="data/BTC_1m_binance.csv")
+    vision_cmd.add_argument("--cache", default="data/vision")
+
+    resample_cmd = sub.add_parser("resample", help="agrega un CSV a 1H/4H/1D")
+    resample_cmd.add_argument("--in", dest="source", required=True)
+    resample_cmd.add_argument("--out", required=True)
+    resample_cmd.add_argument("--rule", default="1D", choices=["1H", "4H", "1D"])
+
     args = parser.parse_args()
     if args.command == "list":
         for item in list_datasets(args.dir):
             print(item)
+        return
+
+    if args.command == "vision":
+        from .market import binance_vision
+
+        def report(month: str, count: int, total: int, state: str) -> None:
+            print(f"{month} · {count:>6} velas · {state} · total {total}", flush=True)
+
+        result = binance_vision.build(
+            args.out,
+            args.cache,
+            binance_vision.months(args.start, args.end),
+            bot_symbol=args.bot_symbol,
+            symbol=args.symbol,
+            interval=args.interval,
+            market=args.market,
+            report=report,
+        )
+        print(
+            f"{result['path']} · {result['rows']} filas · {result['first']} -> {result['last']}"
+        )
+        return
+
+    if args.command == "resample":
+        result = resample(args.source, args.out, args.rule)
+        print(f"{result['path']} · {result['rows']} filas · {result['first']} -> {result['last']}")
         return
 
     settings = load_settings(args.config)

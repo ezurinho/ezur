@@ -7,6 +7,7 @@ paper mode by construction.
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import uuid
 import json
@@ -136,6 +137,68 @@ def _trade_row(row: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def main() -> None:
+    """Corre una estrategia sobre un CSV con el motor real, desde la terminal.
+
+    Es el mismo `run_backtest` que usa el Laboratorio: si el resultado de aquí y
+    el de la UI difieren, es un bug, no dos motores.
+    """
+    from .config import load_settings
+    from .gates import evaluate_gates
+    from .stats import aggregate
+
+    parser = argparse.ArgumentParser(description="Backtest sobre un dataset CSV")
+    parser.add_argument("--dataset", required=True)
+    parser.add_argument("--config", default=None, help="config.json del perfil")
+    parser.add_argument("--strategy", default=None, help="id de estrategia")
+    parser.add_argument("--params", default=None, help="parámetros en JSON")
+    parser.add_argument(
+        "--commission-per-unit",
+        type=float,
+        default=None,
+        help="comisión por unidad y lado (moneda de cotización); pisa la del perfil",
+    )
+    parser.add_argument("--gates", action="store_true", help="evalúa las puertas G4-G13")
+    args = parser.parse_args()
+
+    settings = load_settings(args.config).model_copy(deep=True)
+    if args.strategy:
+        settings.strategy.id = args.strategy
+    if args.params:
+        settings.strategy.params = json.loads(args.params)
+    if args.commission_per_unit is not None:
+        settings.execution.commission_per_unit_side = args.commission_per_unit
+
+    result = run_backtest(settings, args.dataset)
+    primary = settings.instruments.primary
+    timezone_name = settings.instruments.template_for(primary).timezone
+    stats = aggregate(
+        result.trades, settings.risk.initial_capital, timezone_name=timezone_name
+    )
+    closed = stats["closed"]
+    print(f"dataset   {args.dataset}")
+    print(f"estrategia {result.strategy_id} v{result.strategy_version}")
+    print(f"hash      {result.dataset_id[:16]}  config {result.config_hash}")
+    print(
+        "ops {trades} · acierto {win:.1%} · PF {pf:.3f} · esperanza {exp:+.3f} R · "
+        "P&L {pnl:+.2f} · DD {dd:.2f} · fees {fees:.2f}".format(
+            trades=closed.get("trades", 0),
+            win=closed.get("win_rate", 0.0),
+            pf=closed.get("profit_factor", 0.0),
+            exp=closed.get("expectancy_r", 0.0),
+            pnl=closed.get("pnl_net", 0.0),
+            dd=closed.get("max_drawdown", 0.0),
+            fees=closed.get("fees", 0.0),
+        )
+    )
+    if args.gates:
+        report = evaluate_gates(stats, initial_capital=settings.risk.initial_capital)
+        print(f"veredicto {report.verdict} · falla {', '.join(report.failed) or '—'}")
+        for outcome in report.outcomes:
+            if outcome.status == "fail":
+                print(f"  {outcome.id}: {outcome.detail}")
+
+
 def fingerprint(result: BacktestResult) -> str:
     payload = {
         "dataset": result.dataset_id,
@@ -145,3 +208,7 @@ def fingerprint(result: BacktestResult) -> str:
         "metrics": result.metrics,
     }
     return hashlib.sha256(repr(sorted(payload.items())).encode()).hexdigest()
+
+
+if __name__ == "__main__":
+    main()
