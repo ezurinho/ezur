@@ -10,10 +10,12 @@ Three fill models, all of them declared instead of assumed:
   trade dies on the bar it was born on and says ``same_bar_exit``.
 * ``signal_price`` uses the price the signal was generated at, but only when the
   next bar actually traded through it. If the bar opened past it, the fill
-  degrades to ``next_open`` and says ``fill_fallback`` in the diagnostics.
-* ``intrabar`` refuses an entry whose open is already through the stop: filling
-  it would book a position that is born dead. It is the model that admits gaps
-  exist.
+  degrades to ``next_open`` and says ``fill_fallback`` in the diagnostics. If
+  OHLC cannot establish whether a stop or target extreme happened before that
+  fill, it also degrades instead of using future information.
+* Every model rejects an entry whose opening fill is already through the stop
+  or has already reached the target. A later stop gap fills at the bar open with
+  adverse slippage, never at the stale stop price.
 
 A model that does not change behaviour is a config option that lies, which is
 worse than not offering it.
@@ -125,6 +127,10 @@ class ExecutionEngine:
         events: list[ExecutionEvent] = []
         pending = [order for order in self.orders if order.status == "pending"]
         for order in pending:
+            # Una cancelación puede haber llegado después de tomar la foto de
+            # pendientes. El estado manda justo antes de tocar el libro.
+            if order.status != "pending":
+                continue
             bar = bars.get(order.symbol)
             if bar is None:
                 continue
@@ -136,7 +142,7 @@ class ExecutionEngine:
                         type="cancel",
                         symbol=order.symbol,
                         units=order.units,
-                        reason="gap_through_stop",
+                        reason=self._entry_rejection(order, bar) or "gap_through_stop",
                         diagnostics={"signal_price": order.price, "bar_open": bar.o},
                     )
                 )
@@ -190,6 +196,28 @@ class ExecutionEngine:
                     )
         return events
 
+    def _entry_rejection(self, order: Order, bar: Bar) -> str | None:
+        spec = self._instrument(order.symbol)
+        slip = min(self.config.slippage_ticks, self.config.max_slippage_ticks) * spec.tick_size
+        slipped = bar.o + slip if order.side == "long" else bar.o - slip
+        if order.stop_price is not None:
+            gapped = (
+                slipped <= order.stop_price
+                if order.side == "long"
+                else slipped >= order.stop_price
+            )
+            if gapped:
+                return "gap_through_stop"
+        if order.target_price is not None:
+            reached = (
+                slipped >= order.target_price
+                if order.side == "long"
+                else slipped <= order.target_price
+            )
+            if reached:
+                return "gap_through_target"
+        return None
+
     def _fill_plan(
         self, order: Order, bar: Bar
     ) -> tuple[float, str, dict[str, Any]] | None:
@@ -200,19 +228,34 @@ class ExecutionEngine:
         slipped = bar.o + slip if order.side == "long" else bar.o - slip
         model = self.config.fill_model
 
-        if model == "intrabar" and order.stop_price is not None:
-            gapped = (
-                bar.o <= order.stop_price
-                if order.side == "long"
-                else bar.o >= order.stop_price
-            )
-            if gapped:
-                return None
+        if self._entry_rejection(order, bar) is not None:
+            return None
 
         if model == "signal_price":
             reference = order.price + slip if order.side == "long" else order.price - slip
             inside = bar.l <= reference <= bar.h
             if inside:
+                if order.stop_price is not None:
+                    tol = spec.tick_size / 2
+                    # OHLC no dice si este extremo ocurrió antes o después de
+                    # un fill dentro de la vela. Usarlo sería look-ahead; se
+                    # degrada a la apertura, donde todo el rango es posterior.
+                    pre_entry_stop = (
+                        bar.l <= order.stop_price + tol
+                        if order.side == "long"
+                        else bar.h >= order.stop_price - tol
+                    )
+                    if pre_entry_stop:
+                        return slipped, "next_open", {"fill_fallback": "pre_entry_stop_unknown"}
+                if order.target_price is not None:
+                    tol = spec.tick_size / 2
+                    pre_entry_target = (
+                        bar.h >= order.target_price - tol
+                        if order.side == "long"
+                        else bar.l <= order.target_price + tol
+                    )
+                    if pre_entry_target:
+                        return slipped, "next_open", {"fill_fallback": "pre_entry_target_unknown"}
                 return reference, "signal_price", {}
             return slipped, "next_open", {"fill_fallback": "outside_range"}
 
@@ -221,9 +264,18 @@ class ExecutionEngine:
     def _bracket_hit(self, position: Position, bar: Bar) -> "_Hit | None":
         spec = self._instrument(position.symbol)
         tol = spec.tick_size / 2
+        slip = min(self.config.slippage_ticks, self.config.max_slippage_ticks) * spec.tick_size
         stop = position.stop_price
         target = position.target_price
         if position.side == "long":
+            # Un stop de mercado no garantiza el precio de un gap: sale a la
+            # apertura, con deslizamiento adverso, no al nivel ya sobrepasado.
+            if bar.o <= stop + tol:
+                return _Hit(
+                    price=bar.o - slip,
+                    reason="stop",
+                    diagnostics={"gap_stop": True, "bar_open": bar.o},
+                )
             stop_hit = bar.l <= stop + tol
             target_hit = target is not None and bar.h >= target - tol
             if stop_hit and target_hit:
@@ -231,8 +283,14 @@ class ExecutionEngine:
             if stop_hit:
                 return _Hit(price=stop, reason="stop", diagnostics={})
             if target_hit and target is not None:
-                return _Hit(price=target, reason="target", diagnostics={})
+                return _Hit(price=max(target, bar.o), reason="target", diagnostics={})
         else:
+            if bar.o >= stop - tol:
+                return _Hit(
+                    price=bar.o + slip,
+                    reason="stop",
+                    diagnostics={"gap_stop": True, "bar_open": bar.o},
+                )
             stop_hit = bar.h >= stop - tol
             target_hit = target is not None and bar.l <= target + tol
             if stop_hit and target_hit:
@@ -240,7 +298,7 @@ class ExecutionEngine:
             if stop_hit:
                 return _Hit(price=stop, reason="stop", diagnostics={})
             if target_hit and target is not None:
-                return _Hit(price=target, reason="target", diagnostics={})
+                return _Hit(price=min(target, bar.o), reason="target", diagnostics={})
         return None
 
     def close(
@@ -249,16 +307,31 @@ class ExecutionEngine:
         price: float | None = None,
         when: datetime | None = None,
         diagnostics: dict[str, Any] | None = None,
+        funding: float = 0.0,
     ) -> TradeRecord | None:
         if self.position is None:
             return None
         position = self.position
-        exit_price = price if price is not None else (self.last_price or position.entry_price)
+        close_diagnostics = dict(diagnostics or {})
+        if price is not None:
+            exit_price = price
+        elif self.last_price is not None:
+            spec = self._instrument(position.symbol)
+            slip = min(self.config.slippage_ticks, self.config.max_slippage_ticks) * spec.tick_size
+            exit_price = (
+                self.last_price + slip if position.side == "long" else self.last_price - slip
+            )
+            close_diagnostics["exit_slippage"] = slip
+        else:
+            exit_price = position.entry_price
         stamp = when or datetime.now(timezone.utc)
         pnl_gross = self._pnl(position.symbol, position.side, position.entry_price, exit_price, position.units)
         fees = self.config.commission_per_unit_side * position.units * 2
         risk = self._risk_per_unit(position)
-        pnl_net = pnl_gross - fees
+        # El funding se pasa explícitamente cuando una fuente lo mide; por
+        # defecto 0, no un cargo inventado. El neto siempre es la suma de sus
+        # componentes y así la equity puede reconstruirse desde ellos.
+        pnl_net = pnl_gross - fees + funding
         trade = TradeRecord(
             symbol=position.symbol,
             side=position.side,
@@ -271,12 +344,13 @@ class ExecutionEngine:
             closed_ts=stamp,
             pnl_gross=pnl_gross,
             fees=fees,
+            funding=funding,
             pnl_net=pnl_net,
             r_multiple=(pnl_net / (risk * position.units)) if risk * position.units else 0.0,
             exit_reason=reason,
             mode=self.mode,  # type: ignore[arg-type]
             signal_key=position.signal_key,
-            diagnostics=diagnostics or {},
+            diagnostics=close_diagnostics,
         )
         self.position = None
         return trade
@@ -285,10 +359,13 @@ class ExecutionEngine:
         spec = self._instrument(position.symbol)
         return abs(position.entry_price - position.stop_price) / spec.tick_size * spec.tick_value
 
-    def cancel_all(self) -> None:
+    def cancel_all(self) -> int:
+        cancelled = 0
         for order in self.orders:
             if order.status == "pending":
                 order.status = "cancelled"
+                cancelled += 1
+        return cancelled
 
     def restore(self, position: Position | None) -> None:
         self.position = position
