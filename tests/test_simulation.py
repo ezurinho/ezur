@@ -32,6 +32,13 @@ def test_simulated_ticks_are_aligned_across_symbols():
     assert ticks[0].bars["PRIMARY"].t == ticks[0].bars["CTX_A"].t
 
 
+def test_simulated_ticks_honor_the_reference_price():
+    settings = _settings()
+    settings.instruments.items[0].reference_price = 60_000
+    ticks = simulated_ticks(settings, trading_days(settings, 1, end=date(2026, 1, 16)), bars=1)
+    assert ticks[0].bars["PRIMARY"].o == 60_000
+
+
 def test_simulation_produces_trades_and_statistics():
     result = run_simulation(_settings(), days=2, bars=90)
     closed = result["closed"]
@@ -71,12 +78,23 @@ def test_session_boundaries_reset_daily_counters():
     assert sum(day["trades"] for day in by_day.values()) == result["closed"]["trades"]
 
 
-def test_dataset_id_is_deterministic_and_strategy_specific():
-    from server.simulation import _dataset_id
+def test_dataset_id_describes_generated_data_not_strategy():
+    reference = _settings()
+    reference.strategy.params = {}
+    fade = _settings()
+    fade.strategy.id = "fade"
+    fade.strategy.params = {}
 
-    assert _dataset_id("reference", 60, 390) == _dataset_id("reference", 60, 390)
-    assert _dataset_id("reference", 60, 390) != _dataset_id("fade", 60, 390)
-    assert len(_dataset_id("reference", 60, 390)) == 64
+    first = run_simulation(reference, days=1, bars=30)
+    second = run_simulation(fade, days=1, bars=30)
+    changed = _settings()
+    changed.strategy.params = {}
+    changed.instruments.items[0].reference_price = 60_000
+    third = run_simulation(changed, days=1, bars=30)
+
+    assert first["simulation"]["dataset_id"] == second["simulation"]["dataset_id"]
+    assert first["simulation"]["dataset_id"] != third["simulation"]["dataset_id"]
+    assert len(first["simulation"]["dataset_id"]) == 64
 
 
 def test_simulation_cli_records_an_experiment(tmp_path, monkeypatch, capsys):
