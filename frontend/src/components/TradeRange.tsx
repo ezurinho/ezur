@@ -24,11 +24,21 @@ export function TradeRange({ side, entry, stop, target, price, decimals = 2 }: P
     const high = Math.max(stop, target);
     const span = high - low || 1;
     const clamp = (value: number) => Math.min(100, Math.max(0, ((value - low) / span) * 100));
+    const entryPct = clamp(entry);
+    const stopPct = clamp(stop);
+    const targetPct = clamp(target);
     return {
-      entry: clamp(entry),
-      stop: clamp(stop),
-      target: clamp(target),
+      entry: entryPct,
+      stop: stopPct,
+      target: targetPct,
       price: clamp(price),
+      // Rojo de la entrada al stop y verde de la entrada al objetivo. En un
+      // corto el stop queda a la derecha, así que las zonas se calculan desde
+      // la entrada y no desde el borde izquierdo.
+      lossLeft: Math.min(entryPct, stopPct),
+      lossWidth: Math.abs(entryPct - stopPct),
+      winLeft: Math.min(entryPct, targetPct),
+      winWidth: Math.abs(entryPct - targetPct),
       progress:
         side === "long"
           ? Math.min(100, Math.max(0, ((price - entry) / (target - entry || 1)) * 100))
@@ -37,38 +47,59 @@ export function TradeRange({ side, entry, stop, target, price, decimals = 2 }: P
   }, [side, entry, stop, target, price]);
 
   if (!geometry || price === null) {
-    return <p className="muted small">Sin objetivo definido: la barra necesita stop y objetivo.</p>;
+    // El aviso nombra lo que falta de verdad: sin precio no es culpa del objetivo.
+    return (
+      <p className="muted small">
+        {target === null
+          ? "Sin objetivo definido: la barra necesita stop y objetivo."
+          : "Sin precio actual: la barra necesita el último precio para situar la operación."}
+      </p>
+    );
   }
 
   const inProfit = side === "long" ? price >= entry : price <= entry;
+  // Justo en la entrada no se gana ni se pierde: verde ahí sería una promesa.
+  const flat = price === entry;
+  const tone = flat ? "" : inProfit ? "tone-good" : "tone-bad";
   const format = (value: number) =>
     value.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 
   return (
-    <div className="trade-range" data-trade-range>
+    <div className="trade-range" data-trade-range data-side={side}>
       <div className="trade-range-labels">
-        <span className="tone-bad mono">stop {format(stop)}</span>
-        <span className="mono">entrada {format(entry)}</span>
-        <span className="tone-good mono">objetivo {format(target as number)}</span>
+        {/* En un corto el eje va de objetivo a stop: las etiquetas siguen al
+            eje, no al hábito de leer «stop» primero. */}
+        {(side === "long"
+          ? [
+              <span key="stop" className="tone-bad mono">stop {format(stop)}</span>,
+              <span key="entry" className="mono">entrada {format(entry)}</span>,
+              <span key="target" className="tone-good mono">objetivo {format(target as number)}</span>,
+            ]
+          : [
+              <span key="target" className="tone-good mono">objetivo {format(target as number)}</span>,
+              <span key="entry" className="mono">entrada {format(entry)}</span>,
+              <span key="stop" className="tone-bad mono">stop {format(stop)}</span>,
+            ]
+        )}
       </div>
       <div className="trade-range-track" role="img" aria-label={`precio ${format(price)} entre stop y objetivo`}>
-        <span className="trade-range-loss" style={{ width: `${Math.min(geometry.entry, geometry.target)}%` }} />
+        <span
+          className="trade-range-loss"
+          style={{ left: `${geometry.lossLeft}%`, width: `${geometry.lossWidth}%` }}
+        />
         <span
           className="trade-range-win"
-          style={{
-            left: `${Math.min(geometry.entry, geometry.target)}%`,
-            width: `${Math.abs(geometry.target - geometry.entry)}%`,
-          }}
+          style={{ left: `${geometry.winLeft}%`, width: `${geometry.winWidth}%` }}
         />
         <span className="trade-range-entry" style={{ left: `${geometry.entry}%` }} aria-hidden="true" />
         <span
-          className={`trade-range-price ${inProfit ? "up" : "down"}`}
+          className={`trade-range-price ${flat ? "" : inProfit ? "up" : "down"}`.trim()}
           style={{ left: `${geometry.price}%` }}
           aria-hidden="true"
         />
       </div>
       <div className="trade-range-foot">
-        <span className={`mono ${inProfit ? "tone-good" : "tone-bad"}`}>{format(price)}</span>
+        <span className={`mono ${tone}`}>{format(price)}</span>
         <span className="muted small">{Math.round(geometry.progress)} % del camino al objetivo</span>
       </div>
     </div>
