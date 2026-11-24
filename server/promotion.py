@@ -158,9 +158,18 @@ def evaluate(
     }
     if (cycle or {}).get("timeframe"):
         cycle_tfs.add(str((cycle or {}).get("timeframe")))
-    comparable = not (evidence_tf and cycle_tfs) or evidence_tf in cycle_tfs
+    comparable = True
     pbo_reason = "sin ciclo de selección, o el universo es indistinguible del ruido"
-    if not comparable:
+    if not evidence_tf:
+        comparable = False
+        pbo_reason = (
+            "la evidencia no declara dataset: no se puede verificar el marco del PBO"
+        )
+    elif not cycle_tfs:
+        comparable = False
+        pbo_reason = "el ciclo no declara marco: no se puede verificar el PBO"
+    elif evidence_tf not in cycle_tfs:
+        comparable = False
         pbo_reason = (
             f"el ciclo mide {'/'.join(sorted(cycle_tfs))}, no {evidence_tf}: "
             "PBO no comparable"
