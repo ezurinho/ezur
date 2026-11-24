@@ -93,3 +93,123 @@ def test_confirma_cuando_los_libros_cuadran():
 
     assert "cuadra con el libro" in text
     assert "NO cuadra" not in text
+
+
+def _trade(
+    *,
+    units: int = 300,
+    entry: float = 60_000.0,
+    opened: str = "2026-11-24T01:00:00+00:00",
+    closed: str = "2026-11-24T01:30:00+00:00",
+    pnl_net: float = -100.0,
+):
+    from datetime import datetime
+
+    from server.models import TradeRecord
+
+    return TradeRecord(
+        symbol="BTC",
+        side="long",
+        units=units,
+        entry_price=entry,
+        exit_price=entry,
+        opened_ts=datetime.fromisoformat(opened),
+        closed_ts=datetime.fromisoformat(closed),
+        pnl_net=pnl_net,
+    )
+
+
+def test_la_exposicion_mide_el_nocional_contra_el_capital():
+    info = paper.exposure([_trade()], 25_000.0)
+
+    assert info["trades"] == 1
+    assert info["max_notional"] == 18_000_000.0
+    assert info["max_multiple"] == 720.0
+
+
+def test_sin_operaciones_la_exposicion_queda_vacia():
+    assert paper.exposure([], 25_000.0)["max_multiple"] is None
+
+
+def test_marca_los_cierres_anteriores_a_la_apertura():
+    broken = _trade(
+        opened="2026-11-24T04:00:00+00:00",
+        closed="2026-11-24T01:00:00+00:00",
+        pnl_net=-27.9,
+    )
+
+    info = paper.impossible([_trade(pnl_net=-100.0), broken], 25_000.0)
+
+    assert info["trades"] == 1
+    assert info["pnl_net"] == -27.9
+    assert info["equity_without"] == 24_900.0
+
+
+def test_el_informe_enseña_exposicion_libro_roto_y_puerta():
+    text = paper.render(
+        SUMMARY,
+        25_000.0,
+        "db",
+        exposure_info={
+            "max_multiple": 720.0,
+            "median_multiple": 700.0,
+            "max_notional": 18_000_000.0,
+        },
+        anomalies={"trades": 2, "pnl_net": -27.91, "equity_without": 24_515.67},
+        promotion={
+            "passed": False,
+            "reason": "pf con coste duplicado",
+            "mode": "reduce",
+            "size_factor": 0.25,
+        },
+    )
+
+    assert "nocional máximo 18 000 000.00 (720× el capital)" in text
+    assert "mediana 700×" in text
+    assert "2 cierres anteriores a la apertura" in text
+    assert "P&L -27.91 incluido" in text
+    assert "equity sin ellas 24 515.67" in text
+    assert "puerta: no promovida (pf con coste duplicado) · modo reduce al 25 %" in text
+
+
+def test_la_puerta_promovida_lo_dice():
+    text = paper.render(SUMMARY, 25_000.0, "db", promotion={"passed": True})
+
+    assert "puerta: promovida · riesgo completo" in text
+
+
+def test_el_perfil_sin_puerta_no_enseña_estado(tmp_path):
+    profile = tmp_path / "perfil"
+    profile.mkdir()
+    (profile / "config.json").write_text(
+        json.dumps({"risk": {"initial_capital": 25_000.0}}), encoding="utf-8"
+    )
+
+    assert paper.promotion_state(profile) is None
+
+
+def test_la_puerta_del_perfil_se_evalua(tmp_path):
+    profile = tmp_path / "perfil"
+    profile.mkdir()
+    (profile / "config.json").write_text(
+        json.dumps(
+            {
+                "promotion": {
+                    "required": True,
+                    "mode": "reduce",
+                    "size_factor": 0.25,
+                    "evidence": None,
+                    "stress_evidence": None,
+                    "cycle": None,
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    state = paper.promotion_state(profile)
+
+    assert state is not None
+    assert state["passed"] is False
+    assert state["mode"] == "reduce"
+    assert state["size_factor"] == 0.25

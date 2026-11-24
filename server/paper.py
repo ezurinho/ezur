@@ -14,11 +14,14 @@ import argparse
 import json
 import sqlite3
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
+from statistics import median
 from typing import Any
 
 from .db import row_to_trade
 from .models import TradeRecord
+from .promotion import evaluate_paths
 from .stats import aggregate
 
 
@@ -35,6 +38,79 @@ def read_trades(db_path: Path) -> list[TradeRecord]:
 
 def summary(db_path: Path, capital: float) -> dict[str, Any]:
     return aggregate(read_trades(db_path), capital)
+
+
+def _instant(value: datetime) -> datetime:
+    return value if value.tzinfo is not None else value.replace(tzinfo=timezone.utc)
+
+
+def exposure(trades: list[TradeRecord], capital: float) -> dict[str, Any]:
+    """Cuántas veces el capital se movió en cada operación (nocional).
+
+    El tamaño sale del riesgo por operación y se redondea a unidades enteras,
+    así que con un instrumento caro el nocional puede quedar muy por encima del
+    capital. El P&L de papel sigue siendo correcto en R, pero la cifra en dinero
+    no sería ejecutable: mejor verlo que suponerlo.
+    """
+    if not trades:
+        return {"trades": 0, "max_multiple": None, "median_multiple": None, "max_notional": None}
+    running = float(capital)
+    multiples: list[float] = []
+    max_notional = 0.0
+    for trade in trades:
+        notional = float(trade.units) * float(trade.entry_price)
+        base = running if running > 0 else float(capital)
+        multiples.append(notional / base if base else 0.0)
+        max_notional = max(max_notional, notional)
+        running += float(trade.pnl_net or 0.0)
+    return {
+        "trades": len(multiples),
+        "max_multiple": round(max(multiples), 2),
+        "median_multiple": round(median(multiples), 2),
+        "max_notional": round(max_notional, 2),
+    }
+
+
+def impossible(trades: list[TradeRecord], capital: float) -> dict[str, Any]:
+    """Operaciones que salieron antes de entrar: el libro las cuenta igual.
+
+    No se corrigen desde aquí —una fila del libro solo se toca con una decisión
+    explícita—, pero el informe tiene que decir cuánto pesan y cuál sería la
+    equity sin ellas, para que la diferencia no se descubra por sorpresa.
+    """
+    broken = [
+        trade for trade in trades if _instant(trade.closed_ts) < _instant(trade.opened_ts)
+    ]
+    pnl = sum(float(trade.pnl_net or 0.0) for trade in broken)
+    total = sum(float(trade.pnl_net or 0.0) for trade in trades)
+    return {
+        "trades": len(broken),
+        "pnl_net": round(pnl, 8),
+        "equity_without": round(float(capital) + total - pnl, 8),
+    }
+
+
+def promotion_state(profile: Path) -> dict[str, Any] | None:
+    """La puerta tal como la aplica el arranque, sin arrancar el servidor."""
+    config = profile / "config.json"
+    if not config.is_file():
+        return None
+    try:
+        document = json.loads(config.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    block = document.get("promotion")
+    if not isinstance(block, dict) or not block.get("required"):
+        return None
+    verdict = evaluate_paths(
+        block.get("evidence"), block.get("stress_evidence"), block.get("cycle")
+    )
+    return {
+        "passed": bool(verdict["passed"]),
+        "reason": verdict["reason"],
+        "mode": block.get("mode") or "block",
+        "size_factor": block.get("size_factor"),
+    }
 
 
 def books(db_path: Path) -> dict[str, Any]:
@@ -68,11 +144,19 @@ def _money(value: Any) -> str:
     return f"{float(value or 0.0):,.2f}".replace(",", " ")
 
 
+def _times(value: Any) -> str:
+    number = float(value)
+    return f"{number:,.0f}".replace(",", " ") if abs(number) >= 10 else f"{number:,.1f}"
+
+
 def render(
     summary: dict[str, Any],
     capital: float,
     label: str,
     books_state: dict[str, Any] | None = None,
+    exposure_info: dict[str, Any] | None = None,
+    anomalies: dict[str, Any] | None = None,
+    promotion: dict[str, Any] | None = None,
 ) -> str:
     closed = summary.get("closed") or {}
     trades = int(closed.get("trades") or 0)
@@ -99,6 +183,29 @@ def render(
         f"mejor operación {_money(closed.get('best_trade'))} · "
         f"peor {_money(closed.get('worst_trade'))}",
     ]
+    if exposure_info and exposure_info.get("max_multiple") is not None:
+        lines.append(
+            f"exposición: nocional máximo {_money(exposure_info.get('max_notional'))} "
+            f"({_times(exposure_info['max_multiple'])}× el capital) · "
+            f"mediana {_times(exposure_info.get('median_multiple') or 0)}×"
+        )
+    if anomalies and int(anomalies.get("trades") or 0):
+        lines.append(
+            f"libro: {int(anomalies['trades'])} cierres anteriores a la apertura · "
+            f"P&L {_money(anomalies.get('pnl_net'))} incluido · "
+            f"equity sin ellas {_money(anomalies.get('equity_without'))}"
+        )
+    if promotion is not None:
+        if promotion.get("passed"):
+            lines.append("puerta: promovida · riesgo completo")
+        else:
+            size = promotion.get("size_factor")
+            brake = (
+                f" · modo {promotion.get('mode')} al {float(size) * 100:.0f} %"
+                if size is not None and float(size) < 1
+                else f" · modo {promotion.get('mode')}"
+            )
+            lines.append(f"puerta: no promovida ({promotion.get('reason')}){brake}")
     if books_state:
         expected = capital + pnl
         curve = books_state.get("curve")
@@ -138,8 +245,9 @@ def main(argv: list[str] | None = None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
 
-    if args.profile:
-        db, capital = _profile_defaults(Path(args.profile))
+    profile = Path(args.profile) if args.profile else None
+    if profile:
+        db, capital = _profile_defaults(profile)
     else:
         db, capital = Path(args.db or "data/terminal.db"), 25_000.0
     if args.capital is not None:
@@ -149,17 +257,29 @@ def main(argv: list[str] | None = None) -> int:
         print(f"no hay base en {db}: el bot no ha operado todavía", flush=True)
         return 1
 
-    result = summary(db, capital)
+    trades = read_trades(db)
+    result = aggregate(trades, capital)
     stored = books(db)
+    leaked = exposure(trades, capital)
+    broken = impossible(trades, capital)
+    gate = promotion_state(profile) if profile else None
     if args.json:
         print(
             json.dumps(
-                {"db": str(db), "capital": capital, "summary": result, "books": stored},
+                {
+                    "db": str(db),
+                    "capital": capital,
+                    "summary": result,
+                    "books": stored,
+                    "exposure": leaked,
+                    "anomalies": broken,
+                    "promotion": gate,
+                },
                 indent=2,
             )
         )
     else:
-        print(render(result, capital, str(db), stored))
+        print(render(result, capital, str(db), stored, leaked, broken, gate))
     return 0
 
 
