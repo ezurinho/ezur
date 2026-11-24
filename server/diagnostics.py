@@ -115,7 +115,10 @@ def _peak_reset(
 
 
 def _books(
-    connection: sqlite3.Connection, tables: set[str], capital: float
+    connection: sqlite3.Connection,
+    tables: set[str],
+    capital: float,
+    limits: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Las tres copias de la verdad, comparadas: libro, curva y `kv`.
 
@@ -153,6 +156,22 @@ def _books(
     curve = float(last["equity"]) if last else None
     peak_expected = max(base, high) if high is not None else base
 
+    # La parada dura del riesgo deja el bot sin operar para siempre: sin
+    # operaciones la equity no vuelve al pico. Si está activa, el informe tiene
+    # que decirlo, no dejar que se descubra por la ausencia de operaciones.
+    drawdown_pct = (
+        (peak_state - book) / peak_state * 100
+        if peak_state and peak_state > 0
+        else 0.0
+    )
+    halt_at = None
+    if limits and limits.get("soft_brakes") and limits.get("max_drawdown_pct"):
+        halt_at = round(
+            float(limits["max_drawdown_pct"]) * float(limits.get("halt_multiple") or 1),
+            4,
+        )
+    halted = bool(halt_at is not None and drawdown_pct >= halt_at)
+
     differences: dict[str, float | int] = {}
     if state is not None and abs(state - book) > EQUITY_TOLERANCE:
         differences["state_vs_book"] = round(state - book, 8)
@@ -176,10 +195,17 @@ def _books(
         "peak_reset_at": reset_at,
         "differences": differences,
         "consistent": not differences,
+        "drawdown_pct": drawdown_pct,
+        "halt_at_pct": halt_at,
+        "halted": halted,
     }
 
 
-def diagnose(db_path: str | Path, capital: float = 25_000.0) -> dict[str, Any]:
+def diagnose(
+    db_path: str | Path,
+    capital: float = 25_000.0,
+    limits: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     path = Path(db_path)
     if not path.exists():
         return {"path": str(path), "exists": False, "errors": ["database not found"]}
@@ -220,7 +246,7 @@ def diagnose(db_path: str | Path, capital: float = 25_000.0) -> dict[str, Any]:
             "tables": counts,
             "missing_tables": sorted(table for table, count in counts.items() if count < 0),
             "ledger": _ledger_anomalies(connection, tables),
-            "books": _books(connection, tables, capital),
+            "books": _books(connection, tables, capital, limits),
             "size_bytes": path.stat().st_size,
             "wal_bytes": path.with_suffix(path.suffix + "-wal").stat().st_size
             if path.with_suffix(path.suffix + "-wal").exists()
@@ -236,8 +262,29 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--capital", type=float, default=25_000.0, help="capital inicial del libro"
     )
+    parser.add_argument(
+        "--profile",
+        default=None,
+        help="carpeta del perfil: toma capital y tope de drawdown de su config",
+    )
     args = parser.parse_args(argv)
-    print(json.dumps(diagnose(args.db, args.capital), indent=2))
+
+    capital = args.capital
+    limits = None
+    if args.profile:
+        config = Path(args.profile) / "config.json"
+        try:
+            document = json.loads(config.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            document = {}
+        risk = document.get("risk") or {}
+        capital = float(risk.get("initial_capital") or capital)
+        limits = {
+            "max_drawdown_pct": float(risk.get("max_drawdown_pct") or 0.0),
+            "halt_multiple": float(risk.get("soft_brake_halt_multiple") or 1.0),
+            "soft_brakes": bool(risk.get("soft_brakes")),
+        }
+    print(json.dumps(diagnose(args.db, capital, limits), indent=2))
     return 0
 
 
