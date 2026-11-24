@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import { plainReason, unblockHint } from "../reasons";
+import { unblockHint } from "../reasons";
 import type { SnapshotData } from "../types";
 
 interface EngineEvent {
@@ -22,11 +22,11 @@ function ago(iso: string | undefined, now: number): string | null {
 }
 
 /**
- * El bloqueo del motor, traducido y fechado.
+ * El bloqueo del motor, fechado.
  *
- * `block_reason` es un código; el operador necesita tres cosas más: qué
- * significa, desde cuándo y qué lo desbloquea. Sin la fecha, «racha de
- * pérdidas» parece un fallo de hace un segundo que va a pasar solo.
+ * Este aviso aporta lo que solo él sabe: cuándo fue el último rechazo y qué
+ * desbloquea. El **motivo** en palabras lo pone la tarjeta de razonamiento que
+ * va justo debajo; repetirlo aquí eran dos frases idénticas seguidas.
  */
 export function BlockedBanner({ snapshot }: { snapshot: SnapshotData }) {
   const risk = snapshot.risk;
@@ -74,7 +74,7 @@ export function BlockedBanner({ snapshot }: { snapshot: SnapshotData }) {
     <div className="why-strip why-blocked" data-why="blocked" data-block-reason={risk.block_reason}>
       <span className="led led-stale" aria-hidden="true" />
       <div>
-        <b>{plainReason(risk.block_reason, context)}</b>
+        <b>Bloqueo de riesgo activo</b>
         <span className="why-meta">
           {risk.block_count > 0 ? `${risk.block_count} señales rechazadas` : "sin señales rechazadas"}
           {when ? ` · la última ${when}` : ""}

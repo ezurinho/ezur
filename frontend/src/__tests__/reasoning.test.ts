@@ -75,7 +75,7 @@ describe("buildReasoning", () => {
     expect(result.verdict).toContain("no tiene regla que aplicar");
   });
 
-  it("un bloqueo de riesgo usa la misma frase que el resto de la app y cuenta los vetos", () => {
+  it("un bloqueo de riesgo usa la misma frase que el resto de la app, una sola vez", () => {
     const result = buildReasoning(
       snap({
         risk: { blocked: true, block_reason: "daily_loss_limit", block_count: 4 },
@@ -85,7 +85,89 @@ describe("buildReasoning", () => {
     expect(result.tone).toBe("warn");
     expect(result.verdict).toBe("Hoy ya perdió el máximo permitido. El bot se protege y para.");
     expect(result.steps.find((step) => step.key === "risk")?.status).toBe("fail");
-    expect(result.veto).toContain("4 señales");
+    // El recuento de rechazos lo da el aviso fechado: repetirlo aquí era ruido.
+    expect(result.veto).toBeNull();
+    // El motivo vive en el veredicto, no también en la fila del paso.
+    expect(result.steps.find((step) => step.key === "risk")?.detail).not.toContain("máximo permitido");
+  });
+
+  it("sin bloqueo activo sí nombra los rechazos del día", () => {
+    const result = buildReasoning(snap({ risk: { block_count: 2 } }));
+    expect(result.veto).toContain("2 señales");
+  });
+
+  it("en pausa no dice «parado»: es otro estado y se reanuda distinto", () => {
+    const result = buildReasoning(snap({ status: "paused" }));
+    expect(result.headline).toBe("En pausa");
+    expect(result.verdict).toContain("hasta que se reanude");
+  });
+
+  it("con bloqueo y posición abierta avisa de que la posición sigue viva", () => {
+    const result = buildReasoning(
+      snap({
+        risk: { blocked: true, block_reason: "daily_loss_limit", block_count: 1 },
+        position: {
+          symbol: "BTC",
+          side: "long",
+          units: 1,
+          entry_price: 100,
+          stop_price: 95,
+          target_price: 110,
+          opened_ts: "2026-11-23T11:00:00Z",
+          unrealized: null,
+          r_open: null,
+        },
+      }),
+    );
+    expect(result.headline).toBe("Bloqueado");
+    expect(result.verdict).toContain("Hoy ya perdió el máximo permitido");
+    expect(result.verdict).toContain("sigue gestionándose con su stop");
+  });
+
+  it("con una orden en camino la decisión es esperar, no «vigilando»", () => {
+    const result = buildReasoning(
+      snap({
+        orders: [
+          {
+            id: "o1",
+            symbol: "BTC",
+            side: "long",
+            units: 1,
+            kind: "limit",
+            price: 100,
+            status: "pending",
+            created_ts: "2026-11-23T11:00:00Z",
+            stop_price: 95,
+            target_price: 110,
+            signal_key: "k1",
+          },
+        ],
+      }),
+    );
+    expect(result.headline).toBe("Orden en curso");
+    expect(result.verdict).toContain("Una orden");
+    expect(result.steps.find((step) => step.key === "execution")?.status).toBe("pass");
+  });
+
+  it("una fuerza que no es un número no inventa convicción", () => {
+    const result = buildReasoning(
+      snap({
+        strategy: {
+          state: "armed",
+          signal: {
+            key: "k1",
+            side: "long",
+            strength: Number.NaN,
+            reason: "ruptura canal 20",
+            ts: "2026-11-23T12:00:00Z",
+            valid_until: null,
+            stop_price: 100,
+            target_price: 110,
+          },
+        },
+      }),
+    );
+    expect(result.conviction).toBeNull();
   });
 
   it("con señal publica lado, stop y la convicción que da la estrategia", () => {

@@ -124,9 +124,8 @@ export function buildReasoning(snapshot: SnapshotData): Reasoning {
       key: "risk",
       label: "Riesgo",
       status: risk.blocked ? "fail" : "pass",
-      detail: risk.blocked
-        ? plainReason(risk.block_reason, context)
-        : `${risk.daily_trades}${maxTrades ? `/${maxTrades}` : ""} operaciones hoy · pérdida diaria ${money(Math.min(0, risk.daily_pnl))} ${budget === null ? "· sin límite" : `de ${money(budget)}`}`
+      // Solo medidas: el motivo en palabras va en el veredicto, una vez.
+      detail: `${risk.daily_trades}${maxTrades ? `/${maxTrades}` : ""} operaciones hoy · pérdida diaria ${money(Math.min(0, risk.daily_pnl))} ${budget === null ? "· sin límite" : `de ${money(budget)}`}`,
     },
     {
       key: "execution",
@@ -140,19 +139,24 @@ export function buildReasoning(snapshot: SnapshotData): Reasoning {
     },
   ];
 
+  // Con el bloqueo activo el recuento ya lo da el aviso fechado de arriba;
+  // aquí solo aporta cuando el bloqueo ya no está y queda el historial del día.
   const veto =
-    risk.block_count > 0 && risk.block_reason
-      ? `Rechazó ${risk.block_count} ${risk.block_count === 1 ? "señal" : "señales"} hoy · ${plainReason(risk.block_reason, context)}`
+    !risk.blocked && risk.block_count > 0
+      ? `Rechazó ${risk.block_count} ${risk.block_count === 1 ? "señal" : "señales"} hoy por riesgo.`
       : null;
 
   const base = { conviction: band(signal?.strength ?? null), steps, veto };
 
   if (status !== "running") {
+    const paused = status === "paused";
     return {
       ...base,
       tone: status === "error" ? "bad" : "neutral",
-      headline: status === "error" ? "Con error" : "Parado",
-      verdict: "No evalúa el mercado mientras no está corriendo: cualquier señal que llegue ahora se descarta sin ejecutarse.",
+      headline: status === "error" ? "Con error" : paused ? "En pausa" : "Parado",
+      verdict: paused
+        ? "En pausa: no mira el mercado hasta que se reanude, así que ninguna señal se evalúa."
+        : "No evalúa el mercado mientras no está corriendo: cualquier señal que llegue ahora se descarta sin ejecutarse.",
     };
   }
 
@@ -167,11 +171,16 @@ export function buildReasoning(snapshot: SnapshotData): Reasoning {
   }
 
   if (risk.blocked) {
+    // Un bloqueo no cierra la posición abierta: si la hay, se dice, o el
+    // operador creería que no queda nada gestionándose.
+    const managing = position
+      ? ` La ${SIDE_WORD[position.side] ?? position.side} abierta en ${position.symbol} sigue gestionándose con su stop.`
+      : "";
     return {
       ...base,
       tone: "warn",
       headline: "Bloqueado",
-      verdict: plainReason(risk.block_reason, context),
+      verdict: plainReason(risk.block_reason, context) + managing,
     };
   }
 
@@ -181,6 +190,15 @@ export function buildReasoning(snapshot: SnapshotData): Reasoning {
       tone: "good",
       headline: "En posición",
       verdict: `Decisión activa: gestionar la ${SIDE_WORD[position.side] ?? position.side} abierta en ${position.symbol}. Entrada ${money(position.entry_price)}, stop ${money(position.stop_price)}${position.target_price !== null ? `, objetivo ${money(position.target_price)}` : ""}.`,
+    };
+  }
+
+  if (orders.length > 0) {
+    return {
+      ...base,
+      tone: "neutral",
+      headline: "Orden en curso",
+      verdict: `${orders.length === 1 ? "Una orden" : `${orders.length} órdenes`} en camino: no se abre otra hasta que se ejecute o se cancele.`,
     };
   }
 

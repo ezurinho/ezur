@@ -53,16 +53,6 @@ export function Logo({ size = 30, title }: Props) {
         <rect x="13" y="20.75" width="17" height="6.5" />
         <rect x="13" y="30.5" width="23" height="6.5" />
       </g>
-      <rect
-        x="1.5"
-        y="1.5"
-        width="45"
-        height="45"
-        rx="12"
-        fill="none"
-        stroke="#ffffff"
-        strokeOpacity=".16"
-      />
     </svg>
   );
 }
