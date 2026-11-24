@@ -24,6 +24,17 @@ cd frontend ; npm install ; npm run build ; cd ..
 python run.py
 ```
 
+Con el perfil que opera (datos reales, ejecución en papel) y su arranque propio:
+
+```bash
+start_paper.bat          # o: EZUR_PROFILE_DIR=profiles/okx python run.py
+python -m server.paper --profile profiles/okx   # la cuenta, también con el bot parado
+```
+
+La cuenta vive en `profiles/okx/terminal.db`, no en el proceso: parar y arrancar
+no borra el histórico, y cada operación cerrada se inserta una sola vez aunque
+el backfill la vuelva a ver.
+
 Panel en `http://127.0.0.1:8765`. El motor arranca **solo** (`auto_start`):
 consume el feed y evalúa la estrategia sin intervención. Con
 `"auto_start": false` en el perfil queda `idle` hasta `POST /api/bot/start`.
@@ -127,6 +138,7 @@ sintéticos no validan rentabilidad.
 | Comando | Qué hace |
 |---|---|
 | `python -m pytest` | Suite del backend |
+| `python -m server.paper --profile profiles/okx` | Cuenta de papel: gana o pierde, sin arrancar el servidor |
 | `cd frontend && npm run test` | Suite de componentes |
 | `cd frontend && npm run build` | `tsc --noEmit` + build de Vite |
 | `python -m server.simulation --days 20` | Simulación multi-sesión |
