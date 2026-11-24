@@ -37,11 +37,43 @@ def summary(db_path: Path, capital: float) -> dict[str, Any]:
     return aggregate(read_trades(db_path), capital)
 
 
+def books(db_path: Path) -> dict[str, Any]:
+    """Lo guardado aparte del libro: última fila de la curva y equity del estado.
+
+    Si estos números y el libro no coinciden, el panel enseña una cifra y la
+    cuenta de papel otra. Se leen aquí para poder avisar sin abrir el servidor.
+    """
+    conn = sqlite3.connect(f"file:{db_path.resolve().as_posix()}?mode=ro", uri=True)
+    conn.row_factory = sqlite3.Row
+    try:
+        # Una base a medio crear puede no tener aún curva ni estado: se avisa
+        # con `None`, no se rompe la lectura del libro.
+        try:
+            row = conn.execute("SELECT equity FROM equity ORDER BY ts DESC LIMIT 1").fetchone()
+        except sqlite3.OperationalError:
+            row = None
+        try:
+            kv = conn.execute("SELECT value FROM kv WHERE key = 'equity'").fetchone()
+        except sqlite3.OperationalError:
+            kv = None
+    finally:
+        conn.close()
+    return {
+        "curve": float(row["equity"]) if row else None,
+        "state": float(json.loads(kv["value"])) if kv else None,
+    }
+
+
 def _money(value: Any) -> str:
     return f"{float(value or 0.0):,.2f}".replace(",", " ")
 
 
-def render(summary: dict[str, Any], capital: float, label: str) -> str:
+def render(
+    summary: dict[str, Any],
+    capital: float,
+    label: str,
+    books_state: dict[str, Any] | None = None,
+) -> str:
     closed = summary.get("closed") or {}
     trades = int(closed.get("trades") or 0)
     lines = [f"cuenta de papel · {label}", ""]
@@ -67,6 +99,19 @@ def render(summary: dict[str, Any], capital: float, label: str) -> str:
         f"mejor operación {_money(closed.get('best_trade'))} · "
         f"peor {_money(closed.get('worst_trade'))}",
     ]
+    if books_state:
+        expected = capital + pnl
+        curve = books_state.get("curve")
+        state = books_state.get("state")
+        agree = (
+            curve is not None
+            and abs(float(curve) - expected) < 0.01
+            and (state is None or abs(float(state) - expected) < 0.01)
+        )
+        lines.append(
+            f"curva {_money(curve)} · estado {_money(state)} · "
+            + ("cuadra con el libro" if agree else "NO cuadra con el libro")
+        )
     return "\n".join(lines)
 
 
@@ -105,10 +150,16 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     result = summary(db, capital)
+    stored = books(db)
     if args.json:
-        print(json.dumps({"db": str(db), "capital": capital, "summary": result}, indent=2))
+        print(
+            json.dumps(
+                {"db": str(db), "capital": capital, "summary": result, "books": stored},
+                indent=2,
+            )
+        )
     else:
-        print(render(result, capital, str(db)))
+        print(render(result, capital, str(db), stored))
     return 0
 
 
