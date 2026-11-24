@@ -20,9 +20,10 @@ from pathlib import Path
 from statistics import median
 from typing import Any
 
+from .config import Settings
 from .db import row_to_trade
 from .models import TradeRecord
-from .promotion import evaluate_paths
+from .promotion import evaluate_paths, execution_model
 from .stats import aggregate
 
 
@@ -123,6 +124,10 @@ def promotion_state(profile: Path) -> dict[str, Any] | None:
     if not isinstance(block, dict) or not block.get("required"):
         return None
     strategy = document.get("strategy") or {}
+    try:
+        execution = execution_model(Settings.model_validate(document))
+    except ValueError:
+        execution = None
     verdict = evaluate_paths(
         block.get("evidence"),
         block.get("stress_evidence"),
@@ -130,6 +135,7 @@ def promotion_state(profile: Path) -> dict[str, Any] | None:
         {"id": strategy.get("id"), "version": strategy.get("version")}
         if strategy.get("id")
         else None,
+        execution=execution,
     )
     return {
         "passed": bool(verdict["passed"]),
@@ -430,9 +436,7 @@ def _profile_contract_size(profile: Path | None) -> float | None:
         item = next((row for row in items if row.get("symbol") == primary), None)
         if not item:
             return None
-        tick_size = float(item["tick_size"])
-        tick_value = float(item["tick_value"])
-        size = tick_value / tick_size
+        size = float(item["contract_size"])
         return size if math.isfinite(size) and size > 0 else None
     except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError, ZeroDivisionError):
         return None
