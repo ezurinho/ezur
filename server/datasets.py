@@ -38,49 +38,51 @@ def _bucket(stamp: datetime, rule: str) -> datetime:
 
 
 def resample(source: Path | str, output: Path | str, rule: str = "1D") -> dict[str, Any]:
-    """Agrega velas por cubo UTC sin cargar el fichero entero en memoria.
+    """Agrega velas por cubo UTC: un cubo por (símbolo, intervalo).
 
-    3,5 millones de velas de 1 m no caben en una lista de objetos; caben en un
-    bucle que escribe cada día cuando cambia el cubo.
+    El fichero puede traer los símbolos intercalados vela a vela —es lo que
+    escribe `write_dataset`—, así que comparar con la fila anterior no agrega
+    nada: cada fila sería su propio cubo. Se acumula un cubo por clave y se
+    vuelca al final; para 1 m a 1 h o 1 D son decenas de miles de claves, no
+    millones de velas.
     """
     src = Path(source)
     dst = Path(output)
     dst.parent.mkdir(parents=True, exist_ok=True)
-    rows_out = 0
-    first: str | None = None
-    last: str | None = None
-    current: tuple[str, str] | None = None
-    o = h = l = c = v = 0.0
+    buckets: dict[tuple[str, str], list[float]] = {}
 
-    def flush(handle: csv.writer, key: tuple[str, str]) -> None:
-        nonlocal rows_out
-        handle.writerow([key[1], key[0], o, h, l, c, v])
-        rows_out += 1
-
-    with src.open(encoding="utf-8", newline="") as fin, dst.open("w", encoding="utf-8", newline="") as fout:
-        reader = csv.DictReader(fin)
-        writer = csv.writer(fout)
-        writer.writerow(HEADER)
-        for row in reader:
+    with src.open(encoding="utf-8", newline="") as fin:
+        for row in csv.DictReader(fin):
             stamp = datetime.fromisoformat(row["ts"])
             key = (row["symbol"], _bucket(stamp, rule).isoformat())
             price = float(row["c"])
             volume = float(row["v"])
-            if current is None:
-                current, o, h, l, c, v = key, float(row["o"]), float(row["h"]), float(row["l"]), price, volume
-                first = key[1]
-            elif key != current:
-                flush(writer, current)
-                current, o, h, l, c, v = key, float(row["o"]), float(row["h"]), float(row["l"]), price, volume
+            bucket = buckets.get(key)
+            if bucket is None:
+                buckets[key] = [
+                    float(row["o"]),
+                    float(row["h"]),
+                    float(row["l"]),
+                    price,
+                    volume,
+                ]
             else:
-                h = max(h, float(row["h"]))
-                l = min(l, float(row["l"]))
-                c = price
-                v += volume
-            last = key[1]
-        if current is not None:
-            flush(writer, current)
-    return {"path": str(dst), "rows": rows_out, "first": first, "last": last}
+                bucket[1] = max(bucket[1], float(row["h"]))
+                bucket[2] = min(bucket[2], float(row["l"]))
+                bucket[3] = price
+                bucket[4] += volume
+
+    ordered = sorted(buckets, key=lambda item: (item[1], item[0]))
+    with dst.open("w", encoding="utf-8", newline="") as fout:
+        writer = csv.writer(fout)
+        writer.writerow(HEADER)
+        for key in ordered:
+            o, h, l, c, v = buckets[key]
+            writer.writerow([key[1], key[0], o, h, l, c, v])
+
+    first = ordered[0][1] if ordered else None
+    last = ordered[-1][1] if ordered else None
+    return {"path": str(dst), "rows": len(ordered), "first": first, "last": last}
 
 
 def data_dir() -> Path:
