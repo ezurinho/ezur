@@ -57,3 +57,31 @@ def test_auto_start_off_leaves_it_waiting_for_orders(tmp_path, monkeypatch):
     with TestClient(app) as client:
         assert client.get("/api/status").json()["data"]["status"] in {"idle", "stopped"}
     assert started == []
+
+def test_un_perfil_ilegible_no_arranca_solo(tmp_path, monkeypatch):
+    started: list[bool] = []
+    monkeypatch.setattr(TradingEngine, "start_task", lambda self: started.append(True))
+    bad = tmp_path / "config.json"
+    bad.write_text("{esto no es json", encoding="utf-8")
+    db = tmp_path / "roto.db"
+
+    app = server_main.create_app(
+        config_path=bad,
+        db_path=db,
+        experiment_ledger=tmp_path / "ledger.jsonl",
+    )
+    with TestClient(app) as client:
+        status = client.get("/api/status").json()["data"]["status"]
+
+    assert status in {"idle", "stopped"}
+    assert started == []
+    assert (tmp_path / "config.json.broken").exists()
+
+    from server.db import Store
+
+    store = Store(db)
+    try:
+        events = store.list_events()
+    finally:
+        store.close()
+    assert any("config inválida" in event["message"] for event in events)

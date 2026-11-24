@@ -88,8 +88,19 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-        settings = load_settings(config_path)
         store = Store(db_path)
+        config_failed = False
+
+        def _config_error(message: str) -> None:
+            nonlocal config_failed
+            config_failed = True
+            store.insert_event("error", "config", f"{message}; usando valores por defecto")
+
+        settings = load_settings(config_path, on_error=_config_error)
+        if config_failed:
+            # Un perfil ilegible no puede acabar operando con los valores por
+            # defecto sobre el libro vivo: se queda esperando a que lo arreglen.
+            settings.auto_start = False
         notifier = build_notifier(
             settings.alerts,
             url_override=env("ALERT_WEBHOOK_URL"),

@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import os
 import shutil
+from collections.abc import Callable
 from datetime import time
 from pathlib import Path
 from typing import Any, Literal
@@ -278,16 +279,27 @@ class Settings(_Model):
     auto_start: bool = True
 
 
-def load_settings(path: str | Path | None = None) -> Settings:
-    """Load settings, archiving a corrupt file and falling back to defaults."""
+def load_settings(
+    path: str | Path | None = None,
+    *,
+    on_error: Callable[[str], None] | None = None,
+) -> Settings:
+    """Load settings, archiving a corrupt file and falling back to defaults.
+
+    El respaldo mantiene la interfaz en pie, pero es un perfil distinto: quien
+    llame puede pasarse ``on_error`` para dejar constancia en vez de que el
+    arranque parezca normal.
+    """
     target = Path(path) if path is not None else DEFAULT_CONFIG_PATH
     if not target.exists():
         return Settings()
     try:
         raw = json.loads(target.read_text(encoding="utf-8"))
         return Settings.model_validate(raw)
-    except (json.JSONDecodeError, ValueError):
+    except (json.JSONDecodeError, ValueError) as error:
         shutil.copy2(target, target.with_suffix(target.suffix + ".broken"))
+        if on_error is not None:
+            on_error(f"config inválida en {target}: {error}")
         return Settings()
 
 
