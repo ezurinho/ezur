@@ -55,7 +55,7 @@ def _frontmatter(fields: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def _read_artifacts(directory: Path) -> list[dict[str, Any]]:
+def read_artifacts(directory: Path) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
     if not directory.is_dir():
         return out
@@ -186,6 +186,226 @@ def spec_note(artifact: dict[str, Any]) -> tuple[str, str]:
     return title, "\n".join(lines) + "\n"
 
 
+_SMALLER_BETTER = {"≤", "<=", "<"}
+_LARGER_BETTER = {"≥", ">=", ">"}
+
+
+def gate_margin(gate: dict[str, Any]) -> float | None:
+    """Cuánto le faltó a una puerta para pasar, en fracción de su umbral.
+
+    Positivo = se quedó corta. Cada puerta mide cosas distintas, así que esto
+    sirve para ordenar dentro de una puerta, no para comparar su gravedad.
+    """
+    value, threshold = gate.get("value"), gate.get("threshold")
+    op = str(gate.get("op") or "").strip()
+    if value is None or threshold is None or isinstance(value, bool):
+        return None
+    try:
+        value, threshold = float(value), float(threshold)
+    except (TypeError, ValueError):
+        return None
+    scale = abs(threshold) if abs(threshold) > 1e-12 else 1.0
+    if op in _SMALLER_BETTER:
+        return (value - threshold) / scale
+    if op in _LARGER_BETTER:
+        return (threshold - value) / scale
+    if op == "==":
+        return abs(value - threshold) / scale
+    return None
+
+
+def constant_gates(artifacts: list[dict[str, Any]]) -> set[str]:
+    """Puertas que dan el mismo valor en todas las specs: no ordenan nada."""
+    return {entry["gate"] for entry in gate_audit(artifacts) if entry["constant"]}
+
+
+def closeness(artifact: dict[str, Any], ignore: set[str] | None = None) -> dict[str, Any]:
+    """Cuántas puertas pasó y cuál fue su obstáculo más pequeño."""
+    ignored = ignore or set()
+    gates = {
+        name: gate
+        for name, gate in (artifact.get("gates") or {}).items()
+        if isinstance(gate, dict) and name not in ignored
+    }
+    failed = {
+        name: margin
+        for name, margin in (
+            (name, gate_margin(gate)) for name, gate in gates.items() if gate.get("pass") is False
+        )
+    }
+    margins = {name: margin for name, margin in failed.items() if margin is not None}
+    blocker = min(margins, key=lambda name: abs(margins[name])) if margins else None
+    return {
+        "passed": sum(1 for gate in gates.values() if gate.get("pass") is True),
+        "measured": len(gates),
+        "failed": len(failed),
+        "blocker": blocker,
+        "margin": margins.get(blocker) if blocker else None,
+    }
+
+
+def gate_audit(artifacts: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Puertas que no distinguen una spec de otra.
+
+    Una puerta que da el mismo valor en todas las corridas —o que no la pasa
+    ninguna— no informa: si además está en el camino crítico, ninguna spec
+    puede aprobar jamás.
+    """
+    stats: dict[str, dict[str, Any]] = {}
+    for artifact in artifacts:
+        for name, gate in (artifact.get("gates") or {}).items():
+            if not isinstance(gate, dict):
+                continue
+            entry = stats.setdefault(name, {"values": set(), "passes": 0, "total": 0})
+            entry["total"] += 1
+            entry["passes"] += 1 if gate.get("pass") is True else 0
+            entry["values"].add(json.dumps(gate.get("value")))
+    audit: list[dict[str, Any]] = []
+    for name, entry in sorted(stats.items()):
+        constant = len(entry["values"]) == 1 and entry["total"] > 1
+        never = entry["passes"] == 0
+        if not (constant or never):
+            continue
+        audit.append(
+            {
+                "gate": name,
+                "constant": constant,
+                "never_passes": never,
+                "value": next(iter(entry["values"])) if constant else None,
+                "specs": entry["total"],
+            }
+        )
+    return audit
+
+
+def ranking(
+    artifacts: list[dict[str, Any]], ignore: set[str] | None = None
+) -> list[dict[str, Any]]:
+    """Ordena por cercanía a pasar: menos puertas falladas y obstáculo menor."""
+    rows: list[dict[str, Any]] = []
+    for artifact in artifacts:
+        metrics = (artifact.get("metrics") or {}).get("all") or {}
+        row = {
+            "id": _name(artifact.get("spec_id")),
+            "version": str(artifact.get("version") or "0.0.0"),
+            "family": _name(artifact.get("family") or "desconocida"),
+            "timeframe": str((artifact.get("data") or {}).get("timeframe_signal") or "?"),
+            "verdict": str(artifact.get("verdict") or "SIN VEREDICTO"),
+            "pf_net": metrics.get("pf_net"),
+            "trades": metrics.get("n"),
+            **closeness(artifact, ignore),
+        }
+        rows.append(row)
+    rows.sort(
+        key=lambda row: (
+            row["failed"],
+            abs(row["margin"]) if row.get("margin") is not None else 9e9,
+            -(row.get("pf_net") or 0.0),
+        )
+    )
+    return rows
+
+
+def grouped_ranking(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Una fila por familia y marco: cuántas specs y cuál es la mejor de ellas.
+
+    Sin agrupar, el podio lo copan veinte variantes del mismo barrido, que son
+    la misma hipótesis contada veinte veces.
+    """
+    groups: dict[tuple[str, str], dict[str, Any]] = {}
+    for row in rows:
+        key = (row["family"], row["timeframe"])
+        group = groups.setdefault(
+            key,
+            {
+                "family": row["family"],
+                "timeframe": row["timeframe"],
+                "specs": 0,
+                "best": row,
+            },
+        )
+        group["specs"] += 1
+        best = group["best"]
+        candidate = (row["failed"], abs(row["margin"]) if row.get("margin") is not None else 9e9)
+        current = (best["failed"], abs(best["margin"]) if best.get("margin") is not None else 9e9)
+        if candidate < current:
+            group["best"] = row
+    return sorted(
+        groups.values(),
+        key=lambda group: (
+            group["best"]["failed"],
+            abs(group["best"]["margin"]) if group["best"].get("margin") is not None else 9e9,
+        ),
+    )
+
+
+def ranking_note(artifacts: list[dict[str, Any]]) -> str:
+    ignored = constant_gates(artifacts)
+    rows = ranking(artifacts, ignored)
+    lines = [
+        _frontmatter({"tipo": "ranking", "specs": len(rows), "tags": ["ranking"]}),
+        "",
+        "# Ranking por cercanía",
+        "",
+        "> [!warning] Es una heurística de triaje, no una probabilidad",
+        "> Ordena por puertas superadas y, a igualdad, por lo que le faltó a la más",
+        "> cercana en fracción de su umbral. Cada puerta mide cosas distintas: que",
+        "> una quede a un 5 % no significa que sea más fácil de arreglar que otra al",
+        "> 40 %. Sirve para decidir qué mirar primero. Índice: [[index]].",
+    ]
+    if ignored:
+        lines += [
+            "",
+            f"> [!note] Fuera del margen: {', '.join(sorted(ignored))}",
+            "> Valen lo mismo en todas las specs, así que no ordenan ninguna: se",
+            "> cuentan arriba como sospechosas y no como obstáculo.",
+        ]
+    audit = gate_audit(artifacts)
+    if audit:
+        lines += ["", "> [!danger] Puertas que no discriminan"]
+        for entry in audit:
+            if entry["constant"]:
+                lines.append(
+                    f"> `{entry['gate']}` da el mismo valor ({entry['value']}) en las "
+                    f"{entry['specs']} specs: no distingue nada."
+                )
+            else:
+                lines.append(
+                    f"> `{entry['gate']}` no la pasó ninguna de las {entry['specs']} specs."
+                )
+    lines += [
+        "",
+        "## Por familia y marco",
+        "",
+        "| familia | marco | specs | mejor pasó | obstáculo | margen | la mejor |",
+        "| --- | --- | --- | --- | --- | --- | --- |",
+    ]
+    for group in grouped_ranking(rows):
+        best = group["best"]
+        note = f"{best['id']}-v{best['version']}"
+        lines.append(
+            f"| {group['family']} | {group['timeframe']} | {group['specs']} | "
+            f"{best['passed']}/{best['measured']} | {best['blocker'] or '—'} | "
+            f"{_num(best['margin'], 3)} | [[{note}]] |"
+        )
+    lines += [
+        "",
+        "## Las veinte más cercanas",
+        "",
+        "| # | spec | marco | veredicto | pasó | falló | obstáculo | margen |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- |",
+    ]
+    for position, row in enumerate(rows[:20], start=1):
+        note = f"{row['id']}-v{row['version']}"
+        verdict = row["verdict"] or "SIN VEREDICTO"
+        lines.append(
+            f"| {position} | [[{note}]] | {row['timeframe']} | {verdict} | "
+            f"{row['passed']}/{row['measured']} | {row['failed']} | "
+            f"{row['blocker'] or '—'} | {_num(row['margin'], 3)} |"
+        )
+    return "\n".join(lines) + "\n"
+
+
 def identity_path(artifact: dict[str, Any]) -> str:
     artifacts = artifact.get("artifacts") or {}
     return str(artifacts.get("spec_path") or "—")
@@ -265,6 +485,8 @@ def index_note(
     lines += ["", "## Marcos", ""]
     for frame, count in sorted(frames.items()):
         lines.append(f"- [[Marco - {frame}]] — {count} specs")
+    if artifacts:
+        lines += ["", "## Ranking", "", "- [[Ranking]] — qué spec está más cerca de pasar y en qué puerta"]
     if days:
         lines += ["", "## Bitácora", ""]
         for day in days[-10:]:
@@ -312,7 +534,7 @@ def write_vault(
     ledger: Path = LEDGER,
     out_dir: Path = VAULT,
 ) -> dict[str, int]:
-    artifacts = _read_artifacts(artifacts_dir)
+    artifacts = read_artifacts(artifacts_dir)
     records = _read_ledger(ledger)
     files: dict[str, str] = {}
 
@@ -336,6 +558,8 @@ def write_vault(
     for day, group in sorted(days.items()):
         title, body = bitacora_note(day, group)
         files[f"Bitacora/{title}.md"] = body
+    if artifacts:
+        files["Ranking.md"] = ranking_note(artifacts)
     files["index.md"] = index_note(artifacts, records, sorted(days))
 
     for relative, body in files.items():

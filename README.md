@@ -365,6 +365,7 @@ python -m server.research --list      # specs y estado
 python -m server.research --once      # la siguiente pendiente
 python -m server.research --loop      # sigue buscando mientras el bot corre
 python -m server.research --report    # qué ha encontrado, por familia y marco
+python -m server.research --rank      # qué spec está más cerca de pasar
 python -m server.research --vault     # memoria navegable en Markdown
 python -m server.research --vault-lint  # enlaces rotos y notas huérfanas
 ```
@@ -399,6 +400,17 @@ Los tres contratos compartidos: el fichero de umbrales, los datos de
 `--report` lee ese ledger y responde a la única pregunta que importa cuando el
 bucle lleva horas: cuántas specs se midieron por familia y marco, cuántas
 pasaron y cuáles. Sin él, cien corridas son cien líneas.
+
+`--rank` ordena los artefactos por cercanía a pasar: puertas superadas y, a
+igualdad, cuánto le faltó a la más cercana en fracción de su umbral. Es triaje,
+no una probabilidad —cada puerta mide otra cosa— y evita releer sesenta y nueve
+rechazos a mano para decidir qué mirar primero.
+
+Antes de ordenar, audita las puertas: una que da el mismo valor en todas las
+specs no distingue nada y se queda fuera del margen (se sigue mostrando, como
+sospechosa). En este motor, PBO, DSR, CPCV y WFA vienen del ciclo de selección
+—su propio `note` lo dice— así que llegan idénticas a cada spec y no pueden
+ordenar ninguna. `--rank` enseña cuáles deja fuera y por qué.
 
 `--vault` lleva eso un paso más allá: cada artefacto del motor se convierte en
 una nota de Markdown enlazada —cifras, puertas que fallaron con su valor y su
