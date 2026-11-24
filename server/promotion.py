@@ -282,6 +282,11 @@ def render(verdict: dict[str, Any]) -> str:
         )
     lines.append("")
     lines.append("promovida" if verdict["passed"] else f"no promovida: {verdict['reason']}")
+    failed = [check for check in verdict["checks"] if not check["pass"]]
+    if failed:
+        lines.append("motivos:")
+        for check in failed:
+            lines.append(f"  · {check['name']}: {check['reason']}")
     return "\n".join(lines)
 
 
