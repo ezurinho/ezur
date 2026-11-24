@@ -53,8 +53,15 @@ class Dataset:
     @classmethod
     def load(cls, path: str | Path, symbols: list[str]) -> "Dataset":
         target = Path(path)
-        digest = hashlib.sha256(target.read_bytes()).hexdigest()
-        return cls(path=target, dataset_id=digest, symbols=list(symbols))
+        if target.suffix.lower() != ".csv":
+            raise ValueError("el dataset debe ser un CSV")
+        if target.stat().st_size > 250 * 1024 * 1024:
+            raise ValueError("el dataset supera el límite de 250 MB")
+        digest = hashlib.sha256()
+        with target.open("rb") as stream:
+            for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                digest.update(chunk)
+        return cls(path=target, dataset_id=digest.hexdigest(), symbols=list(symbols))
 
 
 def config_fingerprint(settings: Settings) -> str:
@@ -81,6 +88,8 @@ def run_backtest(
         settings.strategy.id, settings.strategy.params
     )
     store = Store(":memory:")
+    open_position = None
+    pending_count = 0
     try:
         engine = TradingEngine(
             settings,
@@ -92,8 +101,10 @@ def run_backtest(
         engine.start()
         for tick in CSVFeed(dataset.path, symbols).iter_ticks():
             engine._process(tick)
-        rows = list(reversed(store.list_trades(limit=1_000_000)))
+        rows = list(reversed(store.list_trades(limit=1_000_000, mode="backtest")))
         equity = [point["equity"] for point in store.equity_curve(limit=1_000_000)]
+        open_position = engine.execution.position
+        pending_count = len(engine.execution.pending_orders())
     finally:
         store.close()
 
@@ -116,6 +127,11 @@ def run_backtest(
             "dataset_sessions": report.sessions,
             "rows": report.rows,
             "rejections": engine.rejection_totals(),
+            # La curva es realizada. Si el dataset termina con exposición, el
+            # informe lo dice en vez de presentar el último cierre como el final.
+            "open_position": open_position.model_dump(mode="json") if open_position else None,
+            "pending_orders": pending_count,
+            "marked_to_market": False,
         },
     )
 
@@ -133,6 +149,7 @@ def _trade_row(row: dict[str, Any]) -> dict[str, Any]:
         "closed_ts": row["closed_ts"],
         "pnl_gross": row["pnl_gross"],
         "fees": row["fees"],
+        "funding": row.get("funding", 0.0),
         "pnl_net": row["pnl_net"],
         "r_multiple": row["r_multiple"],
         "exit_reason": row["exit_reason"],
@@ -169,6 +186,20 @@ def main() -> None:
         default=None,
         help="fecha ISO (AAAA-MM-DD): lo cerrado antes es in-sample, lo demás out-of-sample",
     )
+    parser.add_argument(
+        "--years",
+        action="store_true",
+        help="desglose por año natural de cierre (un total puede esconder años perdedores)",
+    )
+    parser.add_argument(
+        "--max-stop-ticks",
+        type=int,
+        default=None,
+        help=(
+            "tope de stop en ticks para esta corrida; el perfil intradía rechaza "
+            "las señales de velas grandes por stop_too_wide"
+        ),
+    )
     parser.add_argument("--json", action="store_true", help="imprime el resultado como JSON")
     parser.add_argument("--out", default=None, help="escribe ese JSON en una ruta")
     args = parser.parse_args()
@@ -180,6 +211,8 @@ def main() -> None:
         settings.strategy.params = json.loads(args.params)
     if args.commission_per_unit is not None:
         settings.execution.commission_per_unit_side = args.commission_per_unit
+    if args.max_stop_ticks is not None:
+        settings.risk.max_stop_ticks = args.max_stop_ticks
 
     result = run_backtest(settings, args.dataset)
     primary = settings.instruments.primary
@@ -192,17 +225,23 @@ def main() -> None:
     print(f"estrategia {result.strategy_id} v{result.strategy_version}")
     print(f"hash      {result.dataset_id[:16]}  config {result.config_hash}")
     print(
-        "ops {trades} · acierto {win:.1%} · PF {pf:.3f} · esperanza {exp:+.3f} R · "
-        "P&L {pnl:+.2f} · DD {dd:.2f} · fees {fees:.2f}".format(
+        "ops {trades} · acierto {win:.1%} · PF {pf:.3f} · esperanza {exp:+.3f} R "
+        "(IC80 {ci:+.3f}) · P&L {pnl:+.2f} (bruto {gross:+.2f}) · DD {dd:.2f} · "
+        "fees {fees:.2f}".format(
             trades=closed.get("trades", 0),
             win=closed.get("win_rate", 0.0),
             pf=closed.get("profit_factor", 0.0),
             exp=closed.get("expectancy_r", 0.0),
+            ci=closed.get("expectancy_ci80_low", 0.0),
             pnl=closed.get("pnl_net", 0.0),
+            gross=closed.get("pnl_gross", 0.0),
             dd=closed.get("max_drawdown", 0.0),
             fees=closed.get("fees", 0.0),
         )
     )
+    if args.years:
+        _print_years(result.trades)
+
     report = None
     if args.gates:
         report = evaluate_gates(stats, initial_capital=settings.risk.initial_capital)
@@ -212,6 +251,24 @@ def main() -> None:
                 print(f"  {outcome.id}: {outcome.detail}")
 
     _report_run(args, settings, result, stats, report)
+
+
+def _print_years(trades) -> None:
+    """Un año por línea, con bruto y fees: el total agregado puede esconder que
+    un solo año carga el resultado y los demás pierden."""
+    from .stats import compute_stats
+
+    years: dict[int, list[Any]] = {}
+    for trade in trades:
+        years.setdefault(trade.closed_ts.year, []).append(trade)
+    print("año     ops   PF     IC80 R   neto      bruto     fees")
+    for year in sorted(years):
+        stats = compute_stats(years[year])
+        print(
+            f"{year}  {stats['trades']:>5}  {stats['profit_factor']:.3f}  "
+            f"{stats['expectancy_ci80_low']:+.3f}  {stats['pnl_net']:+9.2f}  "
+            f"{stats['pnl_gross']:+9.2f}  {stats['fees']:8.2f}"
+        )
 
 
 def partition_by_split(trades, cut):
