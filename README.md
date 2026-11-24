@@ -359,10 +359,17 @@ que se une es el mando: un comando del bot lo descubre, lo ejecuta y guarda cada
 veredicto en `data/research/runs.jsonl`.
 
 ```bash
-python -m server.research --list    # specs y estado
-python -m server.research --once    # la siguiente pendiente
-python -m server.research --loop    # sigue buscando mientras el bot corre
+python -m server.research --generate  # variantes de las specs semilla
+python -m server.research --list      # specs y estado
+python -m server.research --once      # la siguiente pendiente
+python -m server.research --loop      # sigue buscando mientras el bot corre
 ```
+
+`--generate` barre los parámetros que cada spec declara —`N` 20/40/60, `atr_k`
+1,2/2,0/3,0 y `tp_r` 2/4— y escribe las candidatas en `data/research/specs`.
+Solo se barre lo declarado (una spec sin `N` no recibe uno inventado), la
+combinación idéntica a la semilla se descarta y repetir el comando no duplica
+nada. De las seis semillas salen 96 candidatas.
 
 Cada spec se identifica por la huella de su JSON, así que reiniciar el bucle no
 repite lo ya medido; un fallo no marca la spec como medida y tres fallos seguidos
