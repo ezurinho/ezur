@@ -27,16 +27,27 @@ from pathlib import Path
 from typing import Any
 
 
+def _instant(value: Any) -> datetime:
+    """Texto ISO a instante: ordenar por texto miente si hay desfases distintos."""
+    text = str(value).strip()
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    stamp = datetime.fromisoformat(text)
+    return stamp if stamp.tzinfo is not None else stamp.replace(tzinfo=timezone.utc)
+
+
 def load_trades(db_path: Path) -> list[dict[str, Any]]:
     conn = sqlite3.connect(f"file:{db_path.resolve().as_posix()}?mode=ro", uri=True)
     conn.row_factory = sqlite3.Row
     try:
         rows = conn.execute(
-            "SELECT id, opened_ts, closed_ts, pnl_net FROM trades ORDER BY closed_ts, id"
+            "SELECT id, opened_ts, closed_ts, pnl_net FROM trades"
         ).fetchall()
     finally:
         conn.close()
-    return [dict(row) for row in rows]
+    trades = [dict(row) for row in rows]
+    trades.sort(key=lambda trade: (_instant(trade["closed_ts"]), trade["id"]))
+    return trades
 
 
 def curve(trades: list[dict[str, Any]], initial: float) -> list[dict[str, Any]]:
