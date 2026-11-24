@@ -4,6 +4,7 @@ import { Logo } from "./Logo";
 import { useClock } from "./Sparkline";
 import { useUiMode } from "../mode";
 import { ThemePicker } from "./ThemePicker";
+import { VersionBadge } from "./VersionBadge";
 import { AnimatedNumber } from "./AnimatedNumber";
 import { usePrevious } from "../motion";
 
@@ -136,6 +137,7 @@ export function TopBar({ snapshot, connection, onOpenPalette }: Props) {
           <kbd>⌘</kbd>
           <kbd>K</kbd>
         </button>
+        <VersionBadge />
         <ThemePicker />
       </div>
     </header>

@@ -33,8 +33,19 @@ function tradeQuery(params: TradeQuery, withLimit = false): string {
   return query.toString();
 }
 
+export interface UpdateInfo {
+  current: string;
+  latest: string | null;
+  available: boolean;
+  url: string | null;
+  notes: string | null;
+  checked_at: string | null;
+  error: string | null;
+}
+
 export const api = {
   status: () => request<SnapshotMessage>("/api/status"),
+  update: () => request<UpdateInfo>("/api/update"),
   funnel: () =>
     request<{
       stages: Record<string, number>;

@@ -51,6 +51,13 @@ El gráfico de velas elige tipo de serie —velas, línea o área—, rejilla y 
 de O/H/L/C bajo el cursor; las tres preferencias se guardan en `ezur.chart.prefs`
 junto al marco temporal.
 
+El chip de versión, junto al selector de tema, dice qué se está ejecutando. Solo
+se enciende con el acento y se convierte en enlace cuando `/api/update` ve una
+versión más nueva publicada: avisa, no instala. Si la comprobación falla o no hay
+canal configurado, el chip se queda quieto y el motivo vive en el `title`; una
+terminal de trading no debe gritar por no tener red. La respuesta se reutiliza
+diez minutos en `sessionStorage`.
+
 ## Dos modos, un motor
 
 El mismo snapshot se puede leer a dos densidades. El interruptor está en el HUD

@@ -3710,3 +3710,15 @@ label {
     grid-column: 2;
   }
 }
+
+/* Chip de versión: solo se enciende con el acento cuando hay actualización. */
+.badge-update {
+  color: var(--accent);
+  border-color: var(--accent);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.badge-update:hover {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}

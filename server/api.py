@@ -129,6 +129,23 @@ def alerts(request: Request) -> dict[str, Any]:
     return notifier.snapshot()
 
 
+@router.get("/update")
+def get_update() -> dict[str, Any]:
+    """Versión publicada frente a la que corre: solo lectura y con caché.
+
+    No descarga ni instala nada; devuelve qué hay publicado y dónde. Se puede
+    apagar con `EZUR_UPDATE_CHECK=0` y apuntar a otro manifiesto con
+    `EZUR_UPDATE_URL`.
+    """
+    from . import __version__ as current_version
+    from .env import env, env_flag
+    from .update import DEFAULT_URL, current_status, empty_status
+
+    if not env_flag("UPDATE_CHECK", True):
+        return empty_status(current_version, "comprobación desactivada")
+    return current_status(env("UPDATE_URL", DEFAULT_URL) or DEFAULT_URL, current_version)
+
+
 @router.post("/alerts/test")
 def post_alerts_test(request: Request) -> dict[str, Any]:
     """Entrega una alerta de prueba y responde si llegó, no si se encoló."""
