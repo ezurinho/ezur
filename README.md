@@ -146,7 +146,7 @@ sintéticos no validan rentabilidad.
 | `python -m server.funnel` | Embudo de evaluación del ledger |
 | `python -m server.walkforward` | Ventanas W1–W6 sobre una rejilla de parámetros |
 | `python -m server.experiments` | Ledger de experimentos con veredictos |
-| `python -m server.diagnostics` | Diagnóstico de SQLite en solo lectura; `--profile` añade drawdown y parada dura, `--strict` sale con 1 si algo no cuadra |
+| `python -m server.diagnostics` | Diagnóstico de SQLite en solo lectura; con `--profile` usa `<perfil>/terminal.db` y añade drawdown y parada dura; `--strict` sale con 1 si algo no cuadra |
 | `python -m server.reset --dry-run` | Previsualiza el reinicio operativo |
 | `python -m server.reset --yes` | Archiva estado y deja todo limpio |
 | `python -m server.promotion --evidence bt.json --stress bt2x.json --cycle ciclo.json` | Decide si una configuración puede operar (sale con 1 si no) |
@@ -218,8 +218,11 @@ python -m server.promotion --evidence bt.json --stress bt-2x.json --cycle CYCLE-
 
 Sale con 1 si no está promovida. En el perfil, `"promotion": {"required": true,
 "evidence": "...", "stress_evidence": "...", "cycle": "..."}` impide el
-`auto_start` y deja un evento con el criterio que falló. Apagada por defecto:
-encenderla es decisión del perfil.
+`auto_start`; con `"mode": "reduce"` arranca, pero multiplica el riesgo efectivo
+por `size_factor` y deja un evento con el criterio que falló. La reducción no se
+escribe en `config.json`: el valor configurado se conserva y Ajustes y
+Configuración muestran el efectivo. Apagada por defecto: encenderla es decisión
+del perfil.
 
 ## Libros que cuadran
 
@@ -237,7 +240,7 @@ encenderla es decisión del perfil.
 | Hecho | Evidencia |
 |---|---|
 | Motor determinista | Mismo dataset ⇒ mismo hash de backtest |
-| Snapshot conforme al contrato | 422 tests de backend, 76 de frontend, `tsc` limpio, build 418,33 kB |
+| Snapshot conforme al contrato | Suites de backend y frontend, `tsc` limpio y build de Vite |
 | Pipeline completo con trades reales | `reports/backtest/simulation-180d.json` |
 | Ninguna rejilla de parámetros se salva | `reports/backtest/walkforward-reference.json` (6 combinaciones × 3 ventanas, todas negativas) |
 | Estrategia de referencia rentable | **No.** Veredicto automático: RECHAZADA |
