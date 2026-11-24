@@ -105,6 +105,7 @@ def current(db_path: Path) -> dict[str, Any]:
         last = conn.execute("SELECT ts, equity FROM equity ORDER BY ts DESC LIMIT 1").fetchone()
         kv = conn.execute("SELECT value FROM kv WHERE key = 'equity'").fetchone()
         stats = conn.execute("SELECT value FROM kv WHERE key = 'day_stats'").fetchone()
+        peak = conn.execute("SELECT value FROM kv WHERE key = 'peak_equity'").fetchone()
     finally:
         conn.close()
     return {
@@ -112,6 +113,7 @@ def current(db_path: Path) -> dict[str, Any]:
         "last_ts": last["ts"] if last else None,
         "last_equity": float(last["equity"]) if last else None,
         "kv_equity": float(json.loads(kv["value"])) if kv else None,
+        "kv_peak": float(json.loads(peak["value"])) if peak else None,
         "kv_day_stats": json.loads(stats["value"]) if stats else None,
     }
 
@@ -123,6 +125,8 @@ def plan(db_path: Path, initial: float) -> dict[str, Any]:
         "trades": len(trades),
         "curve": points,
         "last_equity": points[-1]["equity"] if points else float(initial),
+        # El pico es lo que mide el drawdown: también se reconstruye.
+        "peak_equity": max([float(initial)] + [p["equity"] for p in points]),
         "day_stats": day_stats(trades),
         "last_exit_ts": trades[-1]["closed_ts"] if trades else None,
     }
@@ -149,6 +153,11 @@ def apply(db_path: Path, initial: float, backup_dir: Path | None = None) -> Path
                 "INSERT INTO kv (key, value) VALUES ('equity', ?) "
                 "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
                 (json.dumps(planned["last_equity"]),),
+            )
+            conn.execute(
+                "INSERT INTO kv (key, value) VALUES ('peak_equity', ?) "
+                "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                (json.dumps(planned["peak_equity"]),),
             )
             conn.execute(
                 "INSERT INTO kv (key, value) VALUES ('day_stats', ?) "
@@ -210,6 +219,7 @@ def main(argv: list[str] | None = None) -> int:
         "after": {
             "rows": len(planned["curve"]),
             "last_equity": planned["last_equity"],
+            "peak_equity": planned["peak_equity"],
             "day_stats": planned["day_stats"],
         },
         "apply": bool(args.apply),
@@ -229,7 +239,8 @@ def main(argv: list[str] | None = None) -> int:
         )
         print(
             f"después: curva {len(planned['curve'])} filas, última {planned['last_equity']}, "
-            f"estado {planned['last_equity']}, día {planned['day_stats']}"
+            f"estado {planned['last_equity']}, pico {planned['peak_equity']}, "
+            f"día {planned['day_stats']}"
         )
         if args.apply:
             print(f"copia: {report['backup']}")
