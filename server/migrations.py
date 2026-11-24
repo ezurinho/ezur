@@ -10,7 +10,7 @@ from __future__ import annotations
 import sqlite3
 from datetime import datetime, timezone
 
-CURRENT_VERSION = 3
+CURRENT_VERSION = 4
 
 MIGRATIONS: dict[int, list[str]] = {
     1: [
@@ -104,6 +104,18 @@ MIGRATIONS: dict[int, list[str]] = {
 # rastro de cuántas filas se tocaron sería otra forma de mentir.
 MIGRATIONS[2] = [
     """
+    CREATE TABLE IF NOT EXISTS trade_archive AS SELECT * FROM trades WHERE 0
+    """,
+    """
+    INSERT INTO trade_archive
+    SELECT * FROM trades
+     WHERE id NOT IN (
+        SELECT MIN(id) FROM trades
+         GROUP BY mode, symbol, side, opened_ts, closed_ts,
+                  entry_price, exit_price, units
+     )
+    """,
+    """
     DELETE FROM trades
      WHERE id NOT IN (
         SELECT MIN(id) FROM trades
@@ -123,6 +135,16 @@ MIGRATIONS[2] = [
 # del índice parcial.
 MIGRATIONS[3] = [
     """
+    INSERT INTO trade_archive
+    SELECT * FROM trades
+     WHERE signal_key <> ''
+       AND id NOT IN (
+        SELECT MIN(id) FROM trades
+         WHERE signal_key <> ''
+         GROUP BY mode, signal_key
+     )
+    """,
+    """
     DELETE FROM trades
      WHERE signal_key <> ''
        AND id NOT IN (
@@ -134,6 +156,14 @@ MIGRATIONS[3] = [
     """CREATE UNIQUE INDEX IF NOT EXISTS idx_trades_signal
          ON trades(mode, signal_key)
       WHERE signal_key <> ''""",
+]
+
+# v4: el P&L neto tiene que poder reconstruirse desde sus componentes. El
+# funding se guarda por operación (positivo = cobrado, negativo = pagado); las
+# filas antiguas quedan a 0, que es el valor correcto para el histórico que no
+# lo registró. No se inventa un cargo que el motor de papel no haya medido.
+MIGRATIONS[4] = [
+    "ALTER TABLE trades ADD COLUMN funding REAL NOT NULL DEFAULT 0",
 ]
 
 DUPLICATE_QUERY = """
