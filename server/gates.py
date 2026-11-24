@@ -3,17 +3,39 @@
 The thresholds are configurable and versioned; the verdict is mechanical. A
 strategy is not approved because it looks good, and not rejected because the
 author feels bad about it: it is evaluated against these rows.
+
+The numbers live in ``config/gates.json``, not here. The strategy research
+engine reads the same file, so a threshold cannot drift between the terminal
+that measures a live session and the lab that measures six years of history:
+changing it once changes both, and each side has a test that fails if its code
+stops reading the file.
 """
 
 from __future__ import annotations
 
+import json
+import os
+import sys
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
 Verdict = Literal["APROBADA", "RECHAZADA", "INCONCLUSO"]
 GateStatus = Literal["pass", "fail", "not_measured"]
+
+GATES_ENV = "EZUR_GATES_FILE"
+
+
+def _default_path() -> Path:
+    """Empaquetado: el contrato viaja junto al .exe; en fuentes, en la raíz."""
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent / "config" / "gates.json"
+    return Path(__file__).resolve().parents[1] / "config" / "gates.json"
+
+
+DEFAULT_GATES_PATH = _default_path()
 
 
 class GateThresholds(BaseModel):
@@ -29,6 +51,43 @@ class GateThresholds(BaseModel):
     min_bootstrap_low: float = 0.0
     max_top5_share: float = 0.50
     max_ambiguous_pct: float = 5.0
+
+
+def gates_path() -> Path:
+    """`EZUR_GATES_FILE` wins, then `config/gates.json` next to the package."""
+    configured = os.getenv(GATES_ENV)
+    return Path(configured) if configured else DEFAULT_GATES_PATH
+
+
+def load_document(path: Path | str | None = None) -> dict[str, Any]:
+    """The whole contract, both sections, straight from disk.
+
+    No cache on purpose: the file is a kilobyte and a stale threshold is a
+    wrong verdict, which is worse than a read.
+    """
+    target = Path(path) if path is not None else gates_path()
+    with target.open(encoding="utf-8") as handle:
+        document = json.load(handle)
+    if not isinstance(document, dict):
+        raise ValueError(f"{target}: el contrato de puertas debe ser un objeto JSON")
+    return document
+
+
+def load_thresholds(path: Path | str | None = None) -> GateThresholds:
+    """Bot thresholds, validated by the model so a typo fails at load, not mid-run."""
+    document = load_document(path)
+    section = document.get("bot")
+    if not isinstance(section, dict):
+        raise ValueError(f"{gates_path()}: falta la sección 'bot'")
+    return GateThresholds.model_validate({**section, "version": str(document.get("version", ""))})
+
+
+def research_thresholds(path: Path | str | None = None) -> dict[str, float]:
+    """The research section, for whoever wants to show both contracts together."""
+    section = load_document(path).get("research")
+    if not isinstance(section, dict):
+        raise ValueError(f"{gates_path()}: falta la sección 'research'")
+    return section
 
 
 class GateOutcome(BaseModel):
@@ -216,7 +275,7 @@ def evaluate_gates(
     holdout). Anything not supplied stays ``not_measured``: the report never
     invents a number to look complete.
     """
-    limits = thresholds or GateThresholds()
+    limits = thresholds or load_thresholds()
     provided = dict(measured or {})
     context = _Context(
         closed=aggregate_payload.get("closed", {}),

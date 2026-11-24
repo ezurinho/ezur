@@ -115,6 +115,11 @@ for profile in ("demo", "okx"):
 for csv_name in ("BTC_1m.csv", "demo_bars.csv"):
     shutil.copy2(ROOT / "data" / csv_name, OUT / "data" / csv_name)
 
+# El contrato de umbrales es dato, no código: la app lo lee de `config/` al
+# lado del .exe. Sin él, `server.gates` no puede evaluar ninguna estrategia.
+(OUT / "config").mkdir(parents=True, exist_ok=True)
+shutil.copy2(ROOT / "config" / "gates.json", OUT / "config" / "gates.json")
+
 # Configuración por defecto del ejecutable: el perfil demo (estrategia
 # `reference` sobre datos simulados). Sin esto, una instalación recién hecha
 # arrancaría con `strategy.id = "null"` y Reanudar no tendría nada que evaluar.

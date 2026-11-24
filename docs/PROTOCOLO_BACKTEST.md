@@ -141,3 +141,11 @@ centavo. Con dos estrategias distintas (referencia y donchian).
 
 Si algún día la investigación y la operación divergen, este test es el que lo
 dice. No mide rentabilidad: mide que lo medido sea lo mismo.
+
+## Los umbrales viven fuera del código
+
+Los números de estas puertas están en `config/gates.json`, sección `bot`. No se
+escriben aquí ni en `server/gates.py`: un test de contrato
+(`tests/test_gates_contract.py`) falla si el fichero y el modelo se separan, y el
+motor de estrategias lee la misma sección `research` del mismo fichero. Un
+veredicto no puede depender de qué copia se actualizó.
