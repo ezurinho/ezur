@@ -66,6 +66,13 @@ body,
   height: 100%;
 }
 
+/* Sloplint 34: clip no crea contenedor de scroll, así que la página sigue
+   scrolleando en vertical y los popovers de 100vw no abren barra horizontal. */
+html,
+body {
+  overflow-x: clip;
+}
+
 body {
   margin: 0;
   background-color: var(--bg);
@@ -96,7 +103,7 @@ body::before {
 
 ::selection {
   background: color-mix(in srgb, var(--accent) 22%, transparent);
-  color: #fff;
+  color: var(--text);
 }
 
 h1,
