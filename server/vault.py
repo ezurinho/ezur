@@ -562,6 +562,13 @@ def write_vault(
         files["Ranking.md"] = ranking_note(artifacts)
     files["index.md"] = index_note(artifacts, records, sorted(days))
 
+    # El vault se regenera entero: una nota de un artefacto que ya no existe
+    # quedaría huérfana y el índice no la enlazaría. Se borran solo las .md que
+    # esta corrida no escribió; lo demás (adjuntos) se respeta.
+    for path in out_dir.rglob("*.md"):
+        if path.relative_to(out_dir).as_posix() not in files:
+            path.unlink(missing_ok=True)
+
     for relative, body in files.items():
         path = out_dir / relative
         path.parent.mkdir(parents=True, exist_ok=True)

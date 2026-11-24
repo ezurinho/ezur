@@ -198,3 +198,21 @@ def test_un_artefacto_sin_benchmark_no_rompe_la_nota(tmp_path):
 
     assert "CAGR de la estrategia: —" in note
     assert vault.lint_vault(out) == []
+
+
+def test_al_regenerar_el_vault_no_quedan_notas_de_artefactos_borrados(tmp_path):
+    out = _vault(tmp_path)
+    assert (out / "specs" / "BTC-X-v1.0.0.md").is_file()
+
+    artifacts_dir = tmp_path / "artifacts"
+    for path in artifacts_dir.glob("*.json"):
+        path.unlink()
+    vault.write_vault(
+        artifacts_dir=artifacts_dir,
+        ledger=tmp_path / "runs.jsonl",
+        out_dir=out,
+    )
+
+    assert not (out / "specs" / "BTC-X-v1.0.0.md").exists()
+    assert not (out / "Familias" / "Familia - trend.md").exists()
+    assert vault.lint_vault(out) == []
