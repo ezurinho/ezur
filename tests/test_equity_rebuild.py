@@ -99,3 +99,48 @@ def test_el_modo_seco_no_escribe(tmp_path):
     assert equity.main(["--db", str(db), "--capital", "25000"]) == 0
 
     assert equity.current(db) == before
+
+
+def _latido(db: Path, cuando: datetime) -> None:
+    conn = sqlite3.connect(db)
+    try:
+        conn.execute(
+            "INSERT INTO kv (key, value) VALUES ('heartbeat', ?) "
+            "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            (json.dumps(cuando.isoformat()),),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def test_no_reescribe_con_el_motor_vivo(tmp_path, capsys):
+    from datetime import datetime, timezone
+
+    db = _db(tmp_path)
+    _latido(db, datetime.now(timezone.utc))
+
+    code = equity.main(["--db", str(db), "--apply"])
+
+    assert code == 2
+    assert "motor está vivo" in capsys.readouterr().out
+
+
+def test_force_reescribe_aunque_el_motor_este_vivo(tmp_path):
+    from datetime import datetime, timezone
+
+    db = _db(tmp_path)
+    _latido(db, datetime.now(timezone.utc))
+
+    code = equity.main(["--db", str(db), "--apply", "--force"])
+
+    assert code == 0
+
+
+def test_un_latido_viejo_no_bloquea(tmp_path):
+    from datetime import datetime, timedelta, timezone
+
+    db = _db(tmp_path)
+    _latido(db, datetime.now(timezone.utc) - timedelta(hours=1))
+
+    assert equity.engine_alive(db) is False
