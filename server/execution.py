@@ -33,6 +33,10 @@ from .strategy.base import Signal
 
 ExitReason = Literal["stop", "target", "manual", "session_close", "cancel"]
 
+# El histórico viaja en cada snapshot: acotarlo evita que el estado que sirve
+# la API crezca con cada señal de una corrida de meses.
+MAX_ORDERS = 200
+
 
 class ExecutionEvent(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -106,7 +110,16 @@ class ExecutionEngine:
         )
         self.orders.append(order)
         self._seen_signals.add(signal.key)
+        self._trim_orders()
         return order
+
+    def _trim_orders(self) -> None:
+        if len(self.orders) <= MAX_ORDERS:
+            return
+        pending = [order for order in self.orders if order.status == "pending"]
+        history = [order for order in self.orders if order.status != "pending"]
+        room = max(0, MAX_ORDERS - len(pending))
+        self.orders = (history[-room:] if room else []) + pending
 
     def on_bar(self, bars: dict[str, Bar]) -> list[ExecutionEvent]:
         events: list[ExecutionEvent] = []
