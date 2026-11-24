@@ -80,6 +80,20 @@ describe("PhaseTimeline", () => {
     const { container } = render(<PhaseTimeline phases={phases} />);
     expect(container.querySelector("[data-phase]")?.getAttribute("data-status")).toBe("active");
   });
+
+  it("el estado de una fase no vive solo en el color", () => {
+    const statuses = ["done", "active", "pending"] as const;
+    const phases = makePhases(3).map((phase, index) => ({
+      ...phase,
+      status: statuses[index],
+    }));
+    const { container } = render(<PhaseTimeline phases={phases} />);
+    const marks = [...container.querySelectorAll(".phase-mark")].map((el) => el.textContent);
+    expect(marks).toEqual(["✓", "▸", "·"]);
+    expect(container.textContent).toContain(": hecha");
+    expect(container.textContent).toContain(": en curso");
+    expect(container.textContent).toContain(": pendiente");
+  });
 });
 
 describe("KvPanel", () => {
@@ -141,6 +155,11 @@ describe("ZoneLayer", () => {
     const { container } = render(<ZoneLayer zones={[makeZone({ active: false })]} />);
     expect(container.querySelector("[data-zone]")?.getAttribute("data-active")).toBe("false");
   });
+
+  it("does not hide a zone just because the server omitted its label", () => {
+    render(<ZoneLayer zones={[makeZone({ label: null })]} />);
+    expect(screen.getByText("rango")).toBeInTheDocument();
+  });
 });
 
 describe("MarkerLayer", () => {
@@ -149,6 +168,11 @@ describe("MarkerLayer", () => {
       <MarkerLayer markers={[makeMarker(), makeMarker({ id: "m2", kind: "arrow" })]} />,
     );
     expect(container.querySelectorAll("[data-marker]").length).toBe(1);
+  });
+
+  it("names an unlabeled marker instead of leaving only a dot", () => {
+    render(<MarkerLayer markers={[makeMarker({ label: null, kind: "warning" })]} />);
+    expect(screen.getByText("aviso")).toBeInTheDocument();
   });
 });
 
