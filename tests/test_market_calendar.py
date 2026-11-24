@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from datetime import date, datetime, time, timezone
+from zoneinfo import ZoneInfo
 
 from server.config import SessionTemplate
 from server.market.instruments import RollPlan, third_friday
 from server.market.sessions import Calendar
+from server.timeutil import session_for
 
 
 def test_third_friday_is_always_a_friday():
@@ -86,3 +88,39 @@ def test_session_on_a_holiday_is_closed():
     session = calendar.session(datetime(2026, 1, 16, 15, 0, tzinfo=timezone.utc), _template())
     assert session.is_open is False
     assert session.phase == "closed"
+
+
+def _overnight() -> SessionTemplate:
+    return SessionTemplate(
+        name="NIGHT",
+        timezone="America/New_York",
+        open="22:00",
+        close="06:00",
+        weekdays=[0, 1, 2, 3, 4, 5],
+    )
+
+
+def test_una_sesion_nocturna_sigue_abierta_de_madrugada():
+    calendar = Calendar()
+    local = datetime(2026, 1, 16, 2, 0, tzinfo=ZoneInfo("America/New_York"))
+
+    session = calendar.session(local, _overnight())
+
+    assert session.is_open is True
+    assert session.id == "2026-01-15:NIGHT"
+
+
+def test_el_calendario_y_el_motor_ven_la_misma_sesion_nocturna():
+    calendar = Calendar()
+    template = _overnight()
+    for hour in (21, 22, 23, 2, 6, 7):
+        clock = datetime(2026, 1, 16, hour, 0, tzinfo=ZoneInfo("America/New_York"))
+        assert calendar.session(clock, template) == session_for(clock, template)
+
+
+def test_el_calendario_y_el_motor_ven_la_misma_sesion_diurna():
+    calendar = Calendar()
+    template = _template()
+    for hour in (9, 10, 16, 17, 22):
+        clock = datetime(2026, 1, 16, hour, 0, tzinfo=ZoneInfo("America/New_York"))
+        assert calendar.session(clock, template) == session_for(clock, template)

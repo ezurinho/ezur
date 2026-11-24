@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
+from zoneinfo import ZoneInfo
 
 from ..config import SessionTemplate
 from ..models import SessionInfo
@@ -27,20 +28,39 @@ class Calendar:
         return self.early_closes.get(day, template.close_time)
 
     def session(self, clock: datetime, template: SessionTemplate) -> SessionInfo:
-        local = clock.astimezone(__import__("zoneinfo").ZoneInfo(template.timezone))
+        """La misma ventana que usa el motor, con festivos y cierres tempranos.
+
+        Las sesiones que cruzan la medianoche se anclan al día en que abrieron:
+        a las 02:00 sigue siendo la sesión de ayer. Sin esto nunca constaban
+        abiertas y el cambio de día partía la sesión en dos a las 00:00.
+        """
+        local = clock.astimezone(ZoneInfo(template.timezone))
         day = local.date()
-        if not self.is_trading_day(day, template):
+        open_h, open_m = template.open_time.hour, template.open_time.minute
+        close_h, close_m = template.close_time.hour, template.close_time.minute
+        overnight = (close_h, close_m) <= (open_h, open_m)
+        open_ts = local.replace(hour=open_h, minute=open_m, second=0, microsecond=0)
+        close_ts = local.replace(hour=close_h, minute=close_m, second=0, microsecond=0)
+        session_day = day
+        if overnight:
+            if local < open_ts:
+                open_ts -= timedelta(days=1)
+                session_day = day - timedelta(days=1)
+            else:
+                close_ts += timedelta(days=1)
+
+        if not self.is_trading_day(session_day, template):
             return SessionInfo(
-                id=f"{day.isoformat()}:{template.name}",
+                id=f"{session_day.isoformat()}:{template.name}",
                 label=template.name,
                 is_open=False,
                 phase="closed",
             )
-        open_ts = local.replace(
-            hour=template.open_time.hour, minute=template.open_time.minute, second=0, microsecond=0
+
+        close_at = self.close_time(session_day, template)
+        close_ts = close_ts.replace(
+            hour=close_at.hour, minute=close_at.minute, second=0, microsecond=0
         )
-        close_at = self.close_time(day, template)
-        close_ts = local.replace(hour=close_at.hour, minute=close_at.minute, second=0, microsecond=0)
         is_open = open_ts <= local < close_ts
         if local < open_ts:
             phase = "pre"
@@ -51,7 +71,7 @@ class Calendar:
         else:
             phase = "closed"
         return SessionInfo(
-            id=f"{day.isoformat()}:{template.name}",
+            id=f"{session_day.isoformat()}:{template.name}",
             label=template.name,
             is_open=is_open,
             open_ts=open_ts,
