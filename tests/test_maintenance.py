@@ -6,6 +6,7 @@ from pathlib import Path
 from server.config import Settings, save_settings
 from server.db import Store
 from server.diagnostics import diagnose
+from server.migrations import CURRENT_VERSION
 from server.reset import plan_reset, run_reset
 
 
@@ -23,11 +24,12 @@ def test_diagnose_reports_schema_and_counts(tmp_path):
 
     report = diagnose(path)
     assert report["exists"] is True
-    assert report["schema_version"] == 2
+    assert report["schema_version"] == CURRENT_VERSION
     assert report["journal_mode"] == "wal"
     assert report["integrity"] == "ok"
     assert report["tables"]["events"] == 1
     assert report["missing_tables"] == []
+    assert report["ledger"]["impossible"] == []
 
 
 def test_diagnose_does_not_write(tmp_path):
