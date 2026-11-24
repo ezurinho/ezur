@@ -36,7 +36,7 @@ def test_new_instrument_gets_bars_after_reconfigure():
         )
         try:
             engine.start()
-            engine.start_task()
+            await engine.start_task()
             await asyncio.sleep(0.15)
 
             updated = Settings()
@@ -78,6 +78,24 @@ def test_reconfigure_updates_risk_and_execution():
         assert engine.risk.config.max_trades_per_day == 9
         assert engine.execution.config.slippage_ticks == 3
         assert engine.builder.settings.risk.max_trades_per_day == 9
+    finally:
+        store.close()
+
+
+def test_reconfigure_synchronizes_the_feed_provider():
+    settings = _settings()
+    store = Store(":memory:")
+    engine = TradingEngine(settings, store, feed=None, strategy=NullStrategy())
+    try:
+        live = Settings()
+        live.feed.provider = "okx"
+        engine.update_settings(live)
+        assert engine.state.provider == "okx"
+
+        replay = Settings()
+        replay.feed.provider = "csv"
+        engine.update_settings(replay)
+        assert engine.state.provider == "csv"
     finally:
         store.close()
 
@@ -133,7 +151,7 @@ def test_a_finished_replay_stops_the_engine_and_can_be_restarted(settings, store
             feed_factory=factory,
         )
         engine.start()
-        engine.start_task()
+        await engine.start_task()
         await drain(engine)
         finished = (engine.state.status, engine.state.bars_available)
 
@@ -143,7 +161,7 @@ def test_a_finished_replay_stops_the_engine_and_can_be_restarted(settings, store
         after_config = engine.state.status
 
         engine.start()
-        engine.start_task()
+        await engine.start_task()
         await drain(engine)
         return engine, feeds, finished, after_config
 
