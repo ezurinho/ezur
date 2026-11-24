@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sqlite3
 import sys
 from datetime import datetime, timezone
@@ -45,16 +46,23 @@ def _instant(value: datetime) -> datetime:
 
 
 def exposure(
-    trades: list[TradeRecord], capital: float, contract_size: float = 0.001
+    trades: list[TradeRecord], capital: float, contract_size: float | None = None
 ) -> dict[str, Any]:
     """Cuántas veces el capital se movió en cada operación (nocional).
 
-    Una unidad de BTC son 0,001 BTC (tick_value / tick_size), la misma escala
-    que usa el P&L. Sin ese tamaño de contrato el informe exageraba mil veces
-    la exposición: 300 unidades parecían 18 millones en vez de 18 000.
+    El tamaño de contrato sale de `tick_value / tick_size` del perfil. Sin ese
+    dato no se inventa la escala BTC: los múltiplos quedan sin medir.
     """
     if not trades:
         return {"trades": 0, "max_multiple": None, "median_multiple": None, "max_notional": None}
+    if contract_size is None or not math.isfinite(contract_size) or contract_size <= 0:
+        return {
+            "trades": len(trades),
+            "max_multiple": None,
+            "median_multiple": None,
+            "max_notional": None,
+            "contract_size": None,
+        }
     running = float(capital)
     multiples: list[float] = []
     max_notional = 0.0
@@ -244,9 +252,11 @@ def books(db_path: Path) -> dict[str, Any]:
         # Una base a medio crear puede no tener aún curva ni estado: se avisa
         # con `None`, no se rompe la lectura del libro.
         try:
-            row = conn.execute("SELECT equity FROM equity ORDER BY ts DESC LIMIT 1").fetchone()
+            row = conn.execute("SELECT equity FROM equity ORDER BY id DESC LIMIT 1").fetchone()
+            curve_rows = int(conn.execute("SELECT COUNT(*) FROM equity").fetchone()[0])
         except sqlite3.OperationalError:
             row = None
+            curve_rows = None
         state = _kv(conn, "equity")
         peak = _kv(conn, "peak_equity")
         heartbeat = _kv(conn, "heartbeat")
@@ -257,6 +267,7 @@ def books(db_path: Path) -> dict[str, Any]:
         conn.close()
     return {
         "curve": float(row["equity"]) if row else None,
+        "rows": curve_rows,
         "state": _number(state),
         "peak": _number(peak),
         "heartbeat": heartbeat,
@@ -369,15 +380,22 @@ def render(
         expected = capital + pnl
         curve = books_state.get("curve")
         state = books_state.get("state")
+        rows = books_state.get("rows")
+        closed_trades = int(closed.get("trades") or 0)
         agree = (
             curve is not None
             and abs(float(curve) - expected) < 0.01
             and (state is None or abs(float(state) - expected) < 0.01)
+            and (rows is None or int(rows) == closed_trades)
         )
         lines.append(
             f"curva {_money(curve)} · estado {_money(state)} · "
             + ("cuadra con el libro" if agree else "NO cuadra con el libro")
         )
+        if rows is not None and int(rows) != closed_trades:
+            lines.append(
+                f"filas de curva: {int(rows)} para {closed_trades} operaciones cerradas"
+            )
     return "\n".join(lines)
 
 
@@ -400,6 +418,24 @@ def _profile_defaults(profile: Path) -> tuple[Path, float]:
         except (OSError, json.JSONDecodeError, TypeError, ValueError):
             pass
     return db, capital
+
+
+def _profile_contract_size(profile: Path | None) -> float | None:
+    if profile is None:
+        return None
+    try:
+        document = json.loads((profile / "config.json").read_text(encoding="utf-8"))
+        items = (document.get("instruments") or {}).get("items") or []
+        primary = (document.get("instruments") or {}).get("primary")
+        item = next((row for row in items if row.get("symbol") == primary), None)
+        if not item:
+            return None
+        tick_size = float(item["tick_size"])
+        tick_value = float(item["tick_value"])
+        size = tick_value / tick_size
+        return size if math.isfinite(size) and size > 0 else None
+    except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError, ZeroDivisionError):
+        return None
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -432,7 +468,7 @@ def main(argv: list[str] | None = None) -> int:
     trades = read_trades(db)
     result = aggregate(trades, capital)
     stored = books(db)
-    leaked = exposure(trades, capital)
+    leaked = exposure(trades, capital, _profile_contract_size(profile))
     broken = impossible(trades, capital)
     gate = promotion_state(profile) if profile else None
     health = (
