@@ -138,6 +138,26 @@ class RiskConfig(_Model):
     # levanta solo tras ese tiempo desde la última salida: una parada de un día
     # entero no protege más, solo deja de mirar el mercado.
     loss_streak_cooldown_min: int = 0
+    # Frenos que reducen tamaño en vez de cerrar la puerta entera. Un bot parado
+    # no aprende y deja el histórico sin muestra; el que opera a media máquina
+    # sigue midiendo y sigue protegido. Apagado se mantiene el corte histórico.
+    soft_brakes: bool = False
+    soft_brake_floor: float = 0.25
+    soft_brake_halt_multiple: float = 2.0
+
+    @field_validator("soft_brake_floor")
+    @classmethod
+    def _floor_range(cls, value: float) -> float:
+        if not 0 < value <= 1:
+            raise ValueError("soft_brake_floor debe estar en (0, 1]")
+        return value
+
+    @field_validator("soft_brake_halt_multiple")
+    @classmethod
+    def _halt_range(cls, value: float) -> float:
+        if value < 1:
+            raise ValueError("soft_brake_halt_multiple no puede ser menor que 1")
+        return value
 
     @field_validator("loss_streak_cooldown_min")
     @classmethod
@@ -218,11 +238,24 @@ class UIConfig(_Model):
     locale: str = "es"
 
 
+class PromotionConfig(_Model):
+    """La puerta de promoción del estudio, aplicada antes de arrancar.
+
+    Apagada por defecto: activarla es una decisión del perfil, no del código.
+    """
+
+    required: bool = False
+    evidence: str | None = None
+    stress_evidence: str | None = None
+    cycle: str | None = None
+
+
 class Settings(_Model):
     version: int = 1
     instruments: InstrumentsConfig = Field(default_factory=InstrumentsConfig)
     strategy: StrategyConfig = Field(default_factory=StrategyConfig)
     risk: RiskConfig = Field(default_factory=RiskConfig)
+    promotion: PromotionConfig = Field(default_factory=PromotionConfig)
     execution: ExecutionConfig = Field(default_factory=ExecutionConfig)
     feed: FeedConfig = Field(default_factory=FeedConfig)
     live: LiveConfig = Field(default_factory=LiveConfig)
