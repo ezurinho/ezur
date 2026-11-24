@@ -39,7 +39,8 @@ def test_la_huella_ignora_el_orden_de_las_claves():
     assert research.fingerprint({"a": 1}) != research.fingerprint({"a": 2})
 
 
-def test_pending_salta_lo_ya_medido(tmp_path):
+def test_pending_salta_lo_ya_medido(tmp_path, monkeypatch):
+    monkeypatch.setattr(research, "GENERATED", tmp_path / "sin-generadas")
     home = _fake_home(tmp_path)
     spec = json.loads((home / "runner" / "specs" / "a.json").read_text(encoding="utf-8"))
     records = [{"fingerprint": research.fingerprint(spec), "verdict": "APPROVED"}]
@@ -49,7 +50,8 @@ def test_pending_salta_lo_ya_medido(tmp_path):
     assert [path.stem for path in queue] == ["b"]
 
 
-def test_un_fallo_no_marca_la_spec_como_medida(tmp_path):
+def test_un_fallo_no_marca_la_spec_como_medida(tmp_path, monkeypatch):
+    monkeypatch.setattr(research, "GENERATED", tmp_path / "sin-generadas")
     home = _fake_home(tmp_path)
     spec = json.loads((home / "runner" / "specs" / "a.json").read_text(encoding="utf-8"))
     records = [{"fingerprint": research.fingerprint(spec), "verdict": None}]
@@ -57,6 +59,44 @@ def test_un_fallo_no_marca_la_spec_como_medida(tmp_path):
     queue = research.pending(home, records)
 
     assert [path.stem for path in queue] == ["a", "b"]
+
+
+def test_las_variantes_no_repiten_la_semilla():
+    spec = {"id": "X", "params": {"N": 40, "atr_k": 1.5, "tp_r": 4.0}}
+
+    out = research.variants(spec)
+
+    assert out
+    assert not any(variant["params"] == spec["params"] for variant in out)
+    assert len({variant["id"] for variant in out}) == len(out)
+    assert all(variant["derived_from"] == "X" for variant in out)
+    assert all(set(variant["params"]) == set(spec["params"]) for variant in out)
+
+
+def test_una_spec_sin_parametros_barribles_no_genera_nada():
+    assert research.variants({"id": "Y", "params": {"fast": 12, "slow": 48}}) == []
+
+
+def test_write_variants_es_idempotente(tmp_path):
+    spec = {"id": "X", "params": {"N": 40, "atr_k": 1.5, "tp_r": 4.0}}
+    generated = research.variants(spec)
+
+    first = research.write_variants(generated, tmp_path)
+    second = research.write_variants(generated, tmp_path)
+
+    assert first == (len(generated), 0)
+    assert second == (0, len(generated))
+
+
+def test_las_variantes_entran_en_la_cola(tmp_path):
+    home = _fake_home(tmp_path)
+    generated = tmp_path / "generadas"
+    generated.mkdir()
+    (generated / "v.json").write_text(json.dumps({"id": "V", "params": {"N": 20}}), encoding="utf-8")
+
+    names = {path.stem for path in research.spec_paths(home, generated=generated)}
+
+    assert {"a", "b", "v"} <= names
 
 
 def test_run_spec_lee_el_veredicto(tmp_path):

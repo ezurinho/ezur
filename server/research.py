@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import itertools
 import json
 import os
 import subprocess
@@ -31,8 +32,20 @@ DEFAULT_HOME = (
     / "2026-11-22-motor-ia-para-estrategias-btc-a2100b36"
 )
 LEDGER = Path("data/research/runs.jsonl")
+GENERATED = Path("data/research/specs")
 SPECS_DIR = Path("runner") / "specs"
 RUNNER = Path("runner") / "run_strategy.py"
+
+# Rejillas por parámetro. Solo se barre lo que la spec declara en `params`, así
+# que una spec sin `N` no recibe un `N` inventado. `fast`/`slow` no se barren:
+# cualquier combinación desordenada rompería la regla de entrada.
+GRIDS: dict[str, list[float | int]] = {
+    "N": [20, 40, 60],
+    "z": [1.5, 2.0, 2.5],
+    "atr_k": [1.2, 2.0, 3.0],
+    "tp_r": [2.0, 4.0],
+}
+SWEEPABLE = ("N", "z", "atr_k", "tp_r")
 
 
 class ResearchUnavailable(RuntimeError):
@@ -67,11 +80,60 @@ def interpreter(home: Path) -> str:
     return sys.executable
 
 
-def spec_paths(home: Path) -> list[Path]:
-    directory = home / SPECS_DIR
-    if not directory.is_dir():
+def spec_paths(home: Path, generated: Path | None = None) -> list[Path]:
+    """Semillas del motor + variantes que ha escrito el bot."""
+    paths: list[Path] = []
+    for directory in (home / SPECS_DIR, GENERATED if generated is None else generated):
+        if directory.is_dir():
+            paths.extend(directory.glob("*.json"))
+    return sorted(paths, key=lambda path: path.stat().st_mtime)
+
+
+def _slug(value: float | int) -> str:
+    return str(value).replace(".", "-")
+
+
+def variants(spec: dict[str, Any]) -> list[dict[str, Any]]:
+    """Producto cartesiano de los parámetros que la spec declara.
+
+    La combinación igual a la semilla se descarta: ya está medida por definición.
+    """
+    params = spec.get("params") or {}
+    keys = [key for key in SWEEPABLE if key in params]
+    if not keys:
         return []
-    return sorted(directory.glob("*.json"), key=lambda path: path.stat().st_mtime)
+    base_id = str(spec.get("id") or "SPEC")
+    tag = fingerprint(spec)[:4]
+    out: list[dict[str, Any]] = []
+    for combo in itertools.product(*(GRIDS[key] for key in keys)):
+        if all(params[key] == value for key, value in zip(keys, combo)):
+            continue
+        suffix = "-".join(f"{key}{_slug(value)}" for key, value in zip(keys, combo))
+        document = json.loads(json.dumps(spec))
+        document["params"] = {**params, **dict(zip(keys, combo))}
+        document["id"] = f"{base_id}-{suffix}-{tag}"
+        document["label"] = f"{spec.get('label', base_id)}-{suffix}"
+        document["derived_from"] = base_id
+        out.append(document)
+    return out
+
+
+def write_variants(
+    specs: list[dict[str, Any]], directory: Path | str = GENERATED
+) -> tuple[int, int]:
+    """Escribe variantes nuevas; devuelve (escritas, ya existentes)."""
+    target = Path(directory)
+    target.mkdir(parents=True, exist_ok=True)
+    written = skipped = 0
+    for spec in specs:
+        name = f"{str(spec['id']).lower()}.json"
+        path = target / name
+        if path.exists():
+            skipped += 1
+            continue
+        path.write_text(json.dumps(spec, indent=2, ensure_ascii=False), encoding="utf-8")
+        written += 1
+    return written, skipped
 
 
 def fingerprint(spec: dict[str, Any]) -> str:
@@ -182,6 +244,7 @@ def main(argv: list[str] | None = None) -> int:
         description="Puente único con el motor de estrategias"
     )
     parser.add_argument("--home", default=None, help="raíz del motor (o EZUR_RESEARCH_HOME)")
+    parser.add_argument("--generate", action="store_true", help="crea variantes de las specs semilla")
     parser.add_argument("--list", action="store_true", help="specs y estado, sin ejecutar")
     parser.add_argument("--once", action="store_true", help="ejecuta la siguiente pendiente")
     parser.add_argument("--loop", action="store_true", help="sigue buscando hasta --max-runs")
@@ -200,6 +263,21 @@ def main(argv: list[str] | None = None) -> int:
     python = interpreter(home)
     ledger = Path(args.ledger)
     records = load_ledger(ledger)
+
+    if args.generate:
+        seeds = sorted((home / SPECS_DIR).glob("*.json"))
+        created: list[dict[str, Any]] = []
+        for path in seeds:
+            try:
+                created.extend(variants(json.loads(path.read_text(encoding="utf-8"))))
+            except (OSError, json.JSONDecodeError):
+                continue
+        written, skipped = write_variants(created)
+        print(
+            f"variantes: {written} nuevas, {skipped} ya existían "
+            f"({len(created)} calculadas de {len(seeds)} semillas)"
+        )
+        return 0
 
     if args.list:
         done = measured(records)
