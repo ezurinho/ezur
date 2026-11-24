@@ -637,6 +637,9 @@ class TradingEngine:
         self.store.kv_set("emergency", self.state.emergency)
         self.store.kv_set("equity", self.state.equity)
         self.store.kv_set("peak_equity", self.peak_equity)
+        # Latido para que las herramientas de mantenimiento sepan que la base
+        # está viva y no la reescriban bajo un motor que sigue operando.
+        self.store.kv_set("heartbeat", datetime.now(timezone.utc).isoformat())
         if self.last_exit_ts is not None:
             self.store.kv_set("last_exit_ts", self.last_exit_ts.isoformat())
         self.store.kv_set("day_stats", self.state.day_stats.model_dump(mode="json"))
