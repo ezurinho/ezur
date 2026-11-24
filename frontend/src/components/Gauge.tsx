@@ -23,6 +23,9 @@ export function Gauge({
 }: GaugeProps) {
   const ratio = max > 0 ? Math.max(0, Math.min(1.4, value / max)) : 0;
   const clamped = Math.min(1, ratio);
+  // El arco se recorta al 100 % por geometría, pero la cifra central no:
+  // 9 sobre un máximo de 3 es 300 %, no «lleno».
+  const usage = max > 0 ? Math.max(0, (value / max) * 100) : 0;
   const radius = size / 2 - 8;
   const center = size / 2;
   const startAngle = 150;
@@ -44,6 +47,8 @@ export function Gauge({
   };
 
   const tone = ratio >= 1 ? "bad" : ratio >= warnAt ? "warn" : "accent";
+  const spoken = (number: number) =>
+    number.toLocaleString(undefined, { maximumFractionDigits: 2 });
   const endAngle = startAngle + sweep * clamped;
   const tickAngle = startAngle + sweep * warnAt;
   const tickOuter = polar(tickAngle);
@@ -54,7 +59,7 @@ export function Gauge({
 
   return (
     <div className="gauge" data-gauge={label}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={`${label}: ${value} de ${max} ${unit}`}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={`${label}: ${spoken(value)} de ${spoken(max)} ${unit}`}>
         <path
           d={arcPath(startAngle, startAngle + sweep)}
           fill="none"
@@ -92,7 +97,7 @@ export function Gauge({
           fontSize="13"
           fontWeight="600"
         >
-          {Math.round(clamped * 100)}%
+          {Math.round(usage)}%
         </text>
       </svg>
       <div className="gauge-readout">
