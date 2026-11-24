@@ -215,6 +215,19 @@ def test_run_spec_lee_el_veredicto(tmp_path):
     assert record["returncode"] == 0
 
 
+def test_run_spec_no_acepta_un_artefacto_viejo(tmp_path):
+    home = _fake_home(tmp_path)
+    spec = home / "runner" / "specs" / "a.json"
+    out = tmp_path / "out"
+    out.mkdir()
+    stale = out / "A-vNone.json"
+    stale.write_text(json.dumps({"verdict": "REJECTED"}), encoding="utf-8")
+
+    record = research.run_spec(home, "python", spec, out_dir=out, timeout=30)
+
+    assert record["verdict"] == "APPROVED"
+
+
 def test_run_spec_pasa_una_ruta_absoluta(tmp_path, monkeypatch):
     """El runner corre en su árbol: el relativo del bot no le sirve."""
     body = (
@@ -330,3 +343,85 @@ def test_el_bucle_para_tras_tres_fallos(tmp_path, monkeypatch):
 
     assert code == 1
     assert len(ledger.read_text(encoding="utf-8").strip().splitlines()) == 3
+
+
+# ---- el veredicto es un dato del artefacto, no una línea de log -------------
+
+
+def _spec_with_version(tmp_path: Path, version: str = "1.0.0") -> Path:
+    spec = tmp_path / "spec.json"
+    spec.write_text(
+        json.dumps({"id": "BTC-TEST", "version": version, "family": "trend",
+                    "timeframe_signal": "1d"}),
+        encoding="utf-8",
+    )
+    return spec
+
+
+def _runner_that_writes(verdict: str | None, log: str = "") -> str:
+    """Un runner falso que escribe el artefacto (y opcionalmente imprime)."""
+    write = ""
+    if verdict is not None:
+        write = (
+            "from pathlib import Path\n"
+            "Path(out).mkdir(parents=True, exist_ok=True)\n"
+            f"Path(out, f\"{{spec['id']}}-v{{spec['version']}}.json\").write_text("
+            f"json.dumps({{'verdict': {verdict!r}}}))\n"
+        )
+    return (
+        "import json, sys\n"
+        "from pathlib import Path\n"
+        "args = sys.argv[1:]\n"
+        "out = args[args.index('--out') + 1]\n"
+        "spec = json.loads(Path(args[args.index('--spec') + 1]).read_text())\n"
+        + write
+        + (f"print({log!r})\n" if log else "")
+    )
+
+
+def test_el_veredicto_sale_del_artefacto_aunque_no_haya_log(tmp_path):
+    home = _fake_home(tmp_path, body=_runner_that_writes("REJECTED"))
+    record = research.run_spec(
+        home, sys.executable, _spec_with_version(tmp_path),
+        out_dir=tmp_path / "out", timeout=60,
+    )
+    assert record["returncode"] == 0
+    assert record["verdict"] == "REJECTED"
+
+
+def test_el_artefacto_manda_sobre_el_log(tmp_path):
+    home = _fake_home(
+        tmp_path, body=_runner_that_writes("REJECTED", log="VERDICT APPROVED")
+    )
+    record = research.run_spec(
+        home, sys.executable, _spec_with_version(tmp_path),
+        out_dir=tmp_path / "out", timeout=60,
+    )
+    assert record["verdict"] == "REJECTED"
+
+
+def test_sin_artefacto_se_lee_el_log_antiguo(tmp_path):
+    home = _fake_home(tmp_path, body=_runner_that_writes(None, log="VERDICT APPROVED"))
+    record = research.run_spec(
+        home, sys.executable, _spec_with_version(tmp_path),
+        out_dir=tmp_path / "out", timeout=60,
+    )
+    assert record["verdict"] == "APPROVED"
+
+
+def test_un_fallo_no_lee_veredicto_ni_del_artefacto(tmp_path):
+    body = _runner_that_writes("APPROVED") + "sys.exit(3)\n"
+    home = _fake_home(tmp_path, body=body)
+    record = research.run_spec(
+        home, sys.executable, _spec_with_version(tmp_path),
+        out_dir=tmp_path / "out", timeout=60,
+    )
+    assert record["returncode"] == 3
+    assert record["verdict"] is None
+
+
+def test_el_motor_por_defecto_es_el_del_repo(monkeypatch):
+    monkeypatch.delenv("EZUR_RESEARCH_HOME", raising=False)
+    assert research.DEFAULT_HOME == research.REPO_ROOT / "research_engine"
+    assert (research.DEFAULT_HOME / research.RUNNER).is_file()
+    assert research.research_home() == research.DEFAULT_HOME
