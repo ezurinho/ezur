@@ -26,3 +26,8 @@ profiles/*/
 *.db
 *.db-wal
 *.db-shm
+# Empaquetado de escritorio: el venv de build y lo que producen PyInstaller e Inno.
+.build/
+dist_exe/
+dist_installer/
+*.spec.bak
