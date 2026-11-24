@@ -262,6 +262,7 @@ class ExecutionEngine:
             r_multiple=(pnl_net / (risk * position.units)) if risk * position.units else 0.0,
             exit_reason=reason,
             mode=self.mode,  # type: ignore[arg-type]
+            signal_key=position.signal_key,
             diagnostics=diagnostics or {},
         )
         self.position = None
