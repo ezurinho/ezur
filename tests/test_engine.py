@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime, timedelta, timezone
 
+import pytest
 from pydantic import BaseModel
 
 from server.engine import TradingEngine
-from server.models import Bar, Position, Tick
+from server.models import Bar, Position, Tick, TradeRecord
 from server.strategy.base import MarketData, StrategyOutput, Warmup
 from server.strategy.null_strategy import NullParams, NullStrategy
 
@@ -26,6 +28,32 @@ def test_engine_starts_stopped(engine):
     assert engine.state.status == "stopped"
     assert engine.snapshot()["data"]["strategy"]["signal"] is None
     assert engine.state.position is None
+
+
+def test_paper_account_ignores_trades_from_other_modes(settings, store):
+    store.insert_trade(
+        TradeRecord(
+            symbol="PRIMARY",
+            side="long",
+            units=1,
+            entry_price=100.0,
+            exit_price=101.0,
+            stop_price=99.5,
+            target_price=102.0,
+            opened_ts=DAY_ONE,
+            closed_ts=DAY_ONE,
+            pnl_gross=1.0,
+            fees=0.0,
+            pnl_net=100.0,
+            r_multiple=2.0,
+            exit_reason="target",
+            mode="backtest",
+            signal_key="foreign-mode",
+        )
+    )
+    paper = TradingEngine(settings, store, feed=None, mode="paper")
+    assert paper.state.equity == pytest.approx(settings.risk.initial_capital)
+    assert paper.stats()["closed"]["trades"] == 0
 
 
 def test_engine_does_not_trade_with_null_strategy(engine):
@@ -85,6 +113,30 @@ def test_strategy_evaluated_when_running(settings, store):
     engine._process(_tick(DAY_ONE))
     assert spy.calls == 1
     assert engine.snapshot()["data"]["strategy"]["state"] == "running"
+
+
+def test_streak_block_expires_when_the_cooldown_ends(settings, store):
+    settings.risk.loss_streak_cooldown_min = 45
+    settings.risk.no_trade_after_consecutive_losses = 3
+    engine = TradingEngine(settings, store, feed=None, strategy=NullStrategy())
+    engine.state.block_reason = "consecutive_losses"
+    engine.state.block_count = 3
+    engine.state.day_stats.consecutive_losses = settings.risk.no_trade_after_consecutive_losses
+    engine.last_exit_ts = DAY_ONE - timedelta(minutes=45)
+    engine._expire_blocks(DAY_ONE)
+    assert engine.state.block_reason is None
+    assert engine.state.block_count == 0
+
+
+def test_streak_block_survives_inside_the_cooldown(settings, store):
+    settings.risk.loss_streak_cooldown_min = 45
+    settings.risk.no_trade_after_consecutive_losses = 3
+    engine = TradingEngine(settings, store, feed=None, strategy=NullStrategy())
+    engine.state.block_reason = "consecutive_losses"
+    engine.state.day_stats.consecutive_losses = settings.risk.no_trade_after_consecutive_losses
+    engine.last_exit_ts = DAY_ONE - timedelta(minutes=44)
+    engine._expire_blocks(DAY_ONE)
+    assert engine.state.block_reason == "consecutive_losses"
 
 
 def test_emergency_persists_across_restart(settings, store):
@@ -306,6 +358,363 @@ def test_repeated_rejections_are_counted_but_logged_once(settings, store):
     assert expected < 30
 
 
+def test_a_closed_session_cannot_arm_an_order(settings, store):
+    settings.instruments.templates[0].open = "16:00"
+    settings.instruments.templates[0].close = "17:00"
+    engine = TradingEngine(settings, store, feed=None, strategy=_AlwaysSignalStrategy())
+    engine.start()
+    engine._process(_tick(DAY_ONE))  # 15:00, antes de la apertura
+    assert engine.execution.pending_orders() == []
+    assert engine.state.block_reason == "outside_window"
+
+
+def test_a_signal_specific_veto_does_not_outlive_the_signal(engine):
+    engine.start()
+    engine.state.block_reason = "stop_too_wide"
+    engine.state.block_count = 4
+    engine._process(_tick(DAY_ONE))
+    assert engine.state.block_reason is None
+    assert engine.state.block_count == 0
+
+
+def test_cooldown_block_expires_with_the_clock(engine):
+    engine.settings.risk.cooldown_minutes = 5
+    engine.last_exit_ts = DAY_ONE
+    engine.state.block_reason = "cooldown_active"
+    engine._process(_tick(DAY_ONE + timedelta(minutes=6)))
+    assert engine.state.block_reason is None
+
+
+def test_stale_feed_blocks_a_new_entry(settings, store, monkeypatch):
+    engine = TradingEngine(settings, store, feed=None, strategy=_AlwaysSignalStrategy())
+    engine.state.provider = "okx"
+    engine.start()
+    monkeypatch.setattr("server.engine.now_utc", lambda: DAY_ONE)
+    engine._process(_tick(DAY_ONE))
+    engine.execution.cancel_all()
+    engine.state.orders = list(engine.execution.orders)
+
+    monkeypatch.setattr("server.engine.now_utc", lambda: DAY_ONE + timedelta(minutes=20))
+    engine._process(_tick(DAY_ONE + timedelta(minutes=1)))
+
+    assert engine.state.quality == "stale"
+    assert engine.state.block_reason == "stale_data"
+    assert engine.execution.pending_orders() == []
+
+
+def test_stale_block_clears_when_fresh_data_returns(settings, store, monkeypatch):
+    engine = TradingEngine(settings, store, feed=None, strategy=_AlwaysSignalStrategy())
+    engine.state.provider = "okx"
+    engine.start()
+    monkeypatch.setattr("server.engine.now_utc", lambda: DAY_ONE)
+    engine._process(_tick(DAY_ONE))
+    engine.execution.cancel_all()
+    engine.state.orders = list(engine.execution.orders)
+    monkeypatch.setattr("server.engine.now_utc", lambda: DAY_ONE + timedelta(minutes=20))
+    engine._process(_tick(DAY_ONE + timedelta(minutes=1)))
+    assert engine.state.block_reason == "stale_data"
+
+    monkeypatch.setattr("server.engine.now_utc", lambda: DAY_ONE + timedelta(minutes=18))
+    engine._process(_tick(DAY_ONE + timedelta(minutes=18)))
+
+    assert engine.state.quality == "ok"
+    assert engine.state.block_reason is None
+
+
+def test_stale_feed_cancels_a_pending_entry_before_it_can_fill(settings, store, monkeypatch):
+    engine = TradingEngine(settings, store, feed=None, strategy=_AlwaysSignalStrategy())
+    engine.state.provider = "okx"
+    engine.start()
+    monkeypatch.setattr("server.engine.now_utc", lambda: DAY_ONE)
+    engine._process(_tick(DAY_ONE))
+    assert len(engine.execution.pending_orders()) == 1
+
+    monkeypatch.setattr("server.engine.now_utc", lambda: DAY_ONE + timedelta(minutes=20))
+    engine._process(_tick(DAY_ONE + timedelta(minutes=1)))
+
+    assert engine.state.quality == "stale"
+    assert engine.execution.position is None
+    assert engine.execution.pending_orders() == []
+    assert engine.execution.orders[-1].status == "cancelled"
+    assert engine.state.block_reason == "stale_data"
+
+
+def test_live_recovery_backfill_cannot_fill_with_wall_clock_stale_data(settings, store, monkeypatch):
+    engine = TradingEngine(settings, store, feed=None, strategy=_AlwaysSignalStrategy())
+    engine.state.provider = "okx"
+    engine.start()
+    monkeypatch.setattr("server.engine.now_utc", lambda: DAY_ONE)
+    engine._process(_tick(DAY_ONE))
+    assert len(engine.execution.pending_orders()) == 1
+
+    monkeypatch.setattr("server.engine.now_utc", lambda: DAY_ONE + timedelta(minutes=20))
+    engine._process(_tick(DAY_ONE + timedelta(minutes=1)))
+
+    assert engine.state.quality == "stale"
+    assert engine.state.staleness_ms >= 19 * 60_000
+    assert engine.execution.position is None
+    assert engine.execution.pending_orders() == []
+
+
+def test_live_watchdog_cancels_pending_during_silence(settings, store, monkeypatch):
+    engine = TradingEngine(settings, store, feed=None, strategy=_AlwaysSignalStrategy())
+    engine.state.provider = "okx"
+    engine.start()
+    monkeypatch.setattr("server.engine.now_utc", lambda: DAY_ONE)
+    engine._process(_tick(DAY_ONE))
+    assert len(engine.execution.pending_orders()) == 1
+
+    monkeypatch.setattr("server.engine.now_utc", lambda: DAY_ONE + timedelta(minutes=20))
+    engine._check_live_freshness()
+
+    assert engine.state.quality == "stale"
+    assert engine.state.staleness_ms >= 19 * 60_000
+    assert engine.execution.position is None
+    assert engine.execution.pending_orders() == []
+    assert engine.execution.orders[-1].status == "cancelled"
+    assert engine.state.block_reason == "stale_data"
+
+
+def test_watchdog_does_not_age_a_historical_replay(settings, store, monkeypatch):
+    engine = TradingEngine(settings, store, feed=None, strategy=NullStrategy(), mode="backtest")
+    engine.state.provider = "okx"
+    engine.state.last_bar_ts = DAY_ONE
+    engine.state.quality = "ok"
+    engine.state.staleness_ms = 60_000
+    monkeypatch.setattr("server.engine.now_utc", lambda: DAY_ONE + timedelta(days=30))
+
+    engine._check_live_freshness()
+
+    assert engine.state.quality == "ok"
+    assert engine.state.staleness_ms == 60_000
+
+
+def test_watchdog_task_runs_without_ticks(settings, store, monkeypatch):
+    from server.market.feed import MarketFeed
+
+    class SilentFeed(MarketFeed):
+        async def iter_ticks_async(self):
+            await asyncio.Event().wait()
+            if False:
+                yield Tick()
+
+    async def scenario():
+        engine = TradingEngine(settings, store, feed=SilentFeed(), strategy=NullStrategy())
+        engine.state.provider = "okx"
+        engine.state.last_bar_ts = DAY_ONE
+        published = []
+
+        async def hook(snapshot):
+            published.append(snapshot)
+
+        engine.subscribe(hook)
+        monkeypatch.setattr("server.engine.WATCHDOG_INTERVAL_S", 0.001)
+        monkeypatch.setattr("server.engine.now_utc", lambda: DAY_ONE + timedelta(minutes=20))
+        try:
+            engine.start()
+            await engine.start_task()
+            await asyncio.sleep(0.02)
+            assert engine.state.quality == "stale"
+            assert engine._watchdog_task is not None
+            assert any(item["data"]["data"]["quality"] == "stale" for item in published)
+        finally:
+            await engine.stop_task()
+        assert engine._watchdog_task is None
+
+    asyncio.run(scenario())
+
+
+def test_historical_gap_does_not_cancel_or_block_entries(settings, store):
+    engine = TradingEngine(settings, store, feed=None, strategy=_AlwaysSignalStrategy(), mode="backtest")
+    engine.start()
+    engine._process(_tick(DAY_ONE))
+    assert len(engine.execution.pending_orders()) == 1
+
+    engine._process(_tick(DAY_ONE + timedelta(minutes=16)))
+
+    assert engine.execution.position is not None
+    assert engine.state.block_reason != "stale_data"
+
+
+def test_queued_refresh_cannot_restart_a_stopped_engine(settings, store):
+    from server.market.feed import MarketFeed
+
+    active = 0
+
+    class CountingFeed(MarketFeed):
+        async def iter_ticks_async(self):
+            nonlocal active
+            active += 1
+            try:
+                await asyncio.Event().wait()
+                if False:
+                    yield Tick()
+            finally:
+                active -= 1
+
+    async def scenario():
+        engine = TradingEngine(
+            settings,
+            store,
+            feed=CountingFeed(),
+            strategy=NullStrategy(),
+            feed_factory=lambda cfg: CountingFeed(),
+        )
+        try:
+            engine.start()
+            await engine.start_task()
+            updated = settings.model_copy(deep=True)
+            updated.feed.replay_speed = 1000
+            engine.update_settings(updated)
+            engine.stop()
+            await engine.stop_task()
+            await asyncio.sleep(0)
+            assert engine.state.status == "stopped"
+            assert engine._task is None
+            assert active == 0
+        finally:
+            await engine.stop_task()
+
+    asyncio.run(scenario())
+
+
+def test_refresh_rechecks_stop_after_teardown(settings, store):
+    from server.market.feed import MarketFeed
+
+    starts = 0
+
+    class CountingFeed(MarketFeed):
+        async def iter_ticks_async(self):
+            nonlocal starts
+            starts += 1
+            await asyncio.Event().wait()
+            if False:
+                yield Tick()
+
+    async def scenario():
+        engine = TradingEngine(settings, store, feed=CountingFeed(), strategy=NullStrategy())
+        original = engine._stop_tasks_unlocked
+
+        async def teardown_then_stop():
+            await original()
+            engine.stop()
+
+        try:
+            engine.start()
+            await engine.start_task()
+            await asyncio.sleep(0)
+            assert starts == 1
+            engine._stop_tasks_unlocked = teardown_then_stop
+            await engine.refresh_task()
+            assert starts == 1
+            assert engine._task is None
+        finally:
+            engine._stop_tasks_unlocked = original
+            await engine.stop_task()
+
+    asyncio.run(scenario())
+
+
+def test_concurrent_refreshes_leave_only_one_feed_consumer(settings, store):
+    from server.market.feed import MarketFeed
+
+    starts = 0
+    active = 0
+
+    class CountingFeed(MarketFeed):
+        async def iter_ticks_async(self):
+            nonlocal starts, active
+            starts += 1
+            active += 1
+            try:
+                await asyncio.Event().wait()
+                if False:
+                    yield Tick()
+            finally:
+                active -= 1
+
+    async def scenario():
+        engine = TradingEngine(settings, store, feed=CountingFeed(), strategy=NullStrategy())
+        try:
+            engine.start()
+            await engine.start_task()
+            await asyncio.gather(engine.refresh_task(), engine.refresh_task())
+            await asyncio.sleep(0)
+            assert starts == 3
+            assert active == 1
+            assert engine._task is not None and not engine._task.done()
+        finally:
+            await engine.stop_task()
+        await asyncio.sleep(0)
+        assert active == 0
+
+    asyncio.run(scenario())
+
+
+def test_stale_feed_still_manages_an_open_position(settings, store, monkeypatch):
+    engine = TradingEngine(settings, store, feed=None, strategy=NullStrategy())
+    engine.state.provider = "okx"
+    engine.execution.restore(
+        Position(
+            symbol="PRIMARY",
+            side="long",
+            units=5,
+            entry_price=100.0,
+            stop_price=99.5,
+            target_price=102.0,
+            opened_ts=DAY_ONE,
+        )
+    )
+    engine.state.position = engine.execution.position
+    monkeypatch.setattr("server.engine.now_utc", lambda: DAY_ONE + timedelta(minutes=20))
+
+    engine._process(_tick(DAY_ONE + timedelta(minutes=1), price=99.0))
+
+    assert engine.state.quality == "stale"
+    assert engine.execution.position is None
+    trades = store.all_trades(mode="paper")
+    assert len(trades) == 1
+    assert trades[0].exit_reason == "stop"
+
+
+def test_watchdog_survives_a_failed_check(settings, store, monkeypatch):
+    from server.market.feed import MarketFeed
+
+    class SilentFeed(MarketFeed):
+        async def iter_ticks_async(self):
+            await asyncio.Event().wait()
+            if False:
+                yield Tick()
+
+    async def scenario():
+        engine = TradingEngine(settings, store, feed=SilentFeed(), strategy=NullStrategy())
+        engine.state.provider = "okx"
+        engine.state.last_bar_ts = DAY_ONE
+        calls = 0
+
+        def flaky():
+            nonlocal calls
+            calls += 1
+            if calls == 1:
+                raise RuntimeError("one bad check")
+            engine.state.quality = "stale"
+            return True
+
+        monkeypatch.setattr(engine, "_check_live_freshness", flaky)
+        monkeypatch.setattr("server.engine.WATCHDOG_INTERVAL_S", 0.001)
+        try:
+            engine.start()
+            await engine.start_task()
+            await asyncio.sleep(0.02)
+            assert calls >= 2
+            assert engine.state.quality == "stale"
+            assert engine._watchdog_task is not None and not engine._watchdog_task.done()
+        finally:
+            await engine.stop_task()
+
+    asyncio.run(scenario())
+
+
 def test_rejection_is_logged_again_after_the_window(settings, store):
     engine = TradingEngine(settings, store, feed=None, strategy=_AlwaysSignalStrategy())
     engine.start()
@@ -378,7 +787,7 @@ def test_snapshot_publishing_is_rate_limited(settings, store):
         engine = TradingEngine(settings, store, feed=BurstFeed(), strategy=NullStrategy())
         engine.subscribe(hook)
         engine.start()
-        engine.start_task()
+        await engine.start_task()
         while engine._task is not None and not engine._task.done():
             await asyncio.sleep(0.005)
         return engine
