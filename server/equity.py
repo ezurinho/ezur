@@ -26,6 +26,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from .migrations import apply_migrations
+
+EQUITY_TOLERANCE = 0.01
+
 
 def _instant(value: Any) -> datetime:
     """Texto ISO a instante: ordenar por texto miente si hay desfases distintos."""
@@ -36,12 +40,18 @@ def _instant(value: Any) -> datetime:
     return stamp if stamp.tzinfo is not None else stamp.replace(tzinfo=timezone.utc)
 
 
-def load_trades(db_path: Path) -> list[dict[str, Any]]:
+def load_trades(db_path: Path, mode: str | None = "paper") -> list[dict[str, Any]]:
     conn = sqlite3.connect(f"file:{db_path.resolve().as_posix()}?mode=ro", uri=True)
     conn.row_factory = sqlite3.Row
     try:
+        columns = {row["name"] for row in conn.execute("PRAGMA table_info(trades)")}
+        funding = "funding" if "funding" in columns else "0.0 AS funding"
+        where = "WHERE mode = ?" if mode else ""
+        params: tuple[Any, ...] = (mode,) if mode else ()
         rows = conn.execute(
-            "SELECT id, opened_ts, closed_ts, pnl_net FROM trades"
+            "SELECT id, opened_ts, closed_ts, pnl_gross, fees, "
+            f"{funding}, pnl_net FROM trades {where}",
+            params,
         ).fetchall()
     finally:
         conn.close()
@@ -50,12 +60,25 @@ def load_trades(db_path: Path) -> list[dict[str, Any]]:
     return trades
 
 
+def _net(trade: dict[str, Any]) -> float:
+    """P&L neto desde sus componentes, no desde la copia que se pueda haber
+    quedado atrás. Las filas anteriores a la columna `funding` no tienen
+    componentes y conservan su `pnl_net` guardado; no se inventa nada."""
+    gross = float(trade.get("pnl_gross") or 0.0)
+    fees = float(trade.get("fees") or 0.0)
+    funding = float(trade.get("funding") or 0.0)
+    stored = float(trade.get("pnl_net") or 0.0)
+    if gross == 0.0 and fees == 0.0 and funding == 0.0 and stored != 0.0:
+        return stored
+    return gross - fees + funding
+
+
 def curve(trades: list[dict[str, Any]], initial: float) -> list[dict[str, Any]]:
     """Un punto por operación cerrada, en orden de cierre, acumulando el P&L neto."""
     running = float(initial)
     points: list[dict[str, Any]] = []
     for trade in trades:
-        running += float(trade["pnl_net"] or 0.0)
+        running += _net(trade)
         points.append({"ts": trade["closed_ts"], "equity": round(running, 8)})
     return points
 
@@ -66,17 +89,17 @@ def day_stats(trades: list[dict[str, Any]]) -> dict[str, Any]:
         return {"trades": 0, "wins": 0, "losses": 0, "pnl": 0.0, "consecutive_losses": 0}
     session = str(trades[-1]["closed_ts"])[:10]
     same_day = [t for t in trades if str(t["closed_ts"])[:10] == session]
-    wins = sum(1 for t in same_day if float(t["pnl_net"] or 0) > 0)
+    wins = sum(1 for t in same_day if _net(t) > 0)
     streak = 0
     for trade in reversed(same_day):
-        if float(trade["pnl_net"] or 0) > 0:
+        if _net(trade) > 0:
             break
         streak += 1
     return {
         "trades": len(same_day),
         "wins": wins,
         "losses": len(same_day) - wins,
-        "pnl": round(sum(float(t["pnl_net"] or 0) for t in same_day), 8),
+        "pnl": round(sum(_net(t) for t in same_day), 8),
         "consecutive_losses": streak,
     }
 
@@ -113,7 +136,7 @@ def current(db_path: Path) -> dict[str, Any]:
     conn.row_factory = sqlite3.Row
     try:
         rows = int(conn.execute("SELECT COUNT(*) AS c FROM equity").fetchone()["c"])
-        last = conn.execute("SELECT ts, equity FROM equity ORDER BY ts DESC LIMIT 1").fetchone()
+        last = conn.execute("SELECT ts, equity FROM equity ORDER BY id DESC LIMIT 1").fetchone()
         kv = conn.execute("SELECT value FROM kv WHERE key = 'equity'").fetchone()
         stats = conn.execute("SELECT value FROM kv WHERE key = 'day_stats'").fetchone()
         peak = conn.execute("SELECT value FROM kv WHERE key = 'peak_equity'").fetchone()
@@ -129,23 +152,140 @@ def current(db_path: Path) -> dict[str, Any]:
     }
 
 
-def plan(db_path: Path, initial: float) -> dict[str, Any]:
-    trades = load_trades(db_path)
+def stored_curve(db_path: Path) -> list[dict[str, Any]]:
+    """La curva guardada completa, en el orden en que se escribió."""
+    conn = sqlite3.connect(f"file:{db_path.resolve().as_posix()}?mode=ro", uri=True)
+    conn.row_factory = sqlite3.Row
+    try:
+        rows = conn.execute("SELECT ts, equity FROM equity ORDER BY id").fetchall()
+    finally:
+        conn.close()
+    return [dict(row) for row in rows]
+
+
+def audit(db_path: Path, initial: float, mode: str | None = "paper") -> dict[str, Any]:
+    """¿Coinciden libro, curva y estado guardados?
+
+    No solo la última cifra: una curva desplazada puede terminar en el número
+    correcto y aun así contar operaciones que ya no están en el libro. Se
+    comparan todos los puntos, el número de filas y el estado de `kv`.
+    """
+    planned = plan(db_path, initial, mode)
+    stored = current(db_path)
+    points = stored_curve(db_path)
+    issues: list[str] = []
+    differences: dict[str, Any] = {}
+    expected = float(planned["last_equity"])
+    state = stored["kv_equity"]
+    last = stored["last_equity"]
+
+    # Una base recién creada no tiene copias guardadas: el libro es la verdad y
+    # no hay contradicción que bloquear.
+    if state is None and not points:
+        return {
+            "ok": True,
+            "uninitialized": True,
+            "trades": planned["trades"],
+            "expected_equity": expected,
+            "stored_state": None,
+            "stored_last": None,
+            "stored_peak": stored["kv_peak"],
+            "curve_rows": 0,
+            "expected_rows": 0,
+            "issues": [],
+            "differences": {},
+        }
+
+    if state is None:
+        issues.append("missing_state")
+    if not points and planned["trades"]:
+        issues.append("missing_curve")
+    if len(points) != len(planned["curve"]):
+        differences["curve_rows"] = len(points) - len(planned["curve"])
+        issues.append("curve_rows")
+    for index, (got, want) in enumerate(zip(points, planned["curve"])):
+        if _instant(got["ts"]) != _instant(want["ts"]):
+            differences[f"curve_ts_{index}"] = {
+                "stored": str(got["ts"]),
+                "ledger": str(want["ts"]),
+            }
+            issues.append("curve_timestamp")
+            break
+        delta = float(got["equity"]) - float(want["equity"])
+        if abs(delta) > EQUITY_TOLERANCE:
+            differences[f"curve_equity_{index}"] = round(delta, 8)
+            issues.append("curve_equity")
+            break
+    if state is not None and abs(float(state) - expected) > EQUITY_TOLERANCE:
+        differences["state_vs_ledger"] = round(float(state) - expected, 8)
+        issues.append("state")
+    if last is not None and abs(float(last) - expected) > EQUITY_TOLERANCE:
+        differences["curve_vs_ledger"] = round(float(last) - expected, 8)
+        issues.append("curve")
+    peak = stored["kv_peak"]
+    if peak is not None:
+        required = max(float(initial), float(planned["peak_equity"]), expected)
+        if float(peak) < required - EQUITY_TOLERANCE:
+            differences["peak_below_equity"] = round(float(peak) - required, 8)
+            issues.append("peak")
+
+    return {
+        "ok": not issues,
+        "uninitialized": False,
+        "trades": planned["trades"],
+        "expected_equity": expected,
+        "stored_state": state,
+        "stored_last": last,
+        "stored_peak": peak,
+        "curve_rows": len(points),
+        "expected_rows": len(planned["curve"]),
+        "issues": issues,
+        "differences": differences,
+    }
+
+
+def plan(db_path: Path, initial: float, mode: str | None = "paper") -> dict[str, Any]:
+    trades = load_trades(db_path, mode)
     points = curve(trades, initial)
     return {
+        "mode": mode,
         "trades": len(trades),
         "curve": points,
         "last_equity": points[-1]["equity"] if points else float(initial),
         # El pico es lo que mide el drawdown: también se reconstruye.
         "peak_equity": max([float(initial)] + [p["equity"] for p in points]),
+        "gross": round(sum(float(t.get("pnl_gross") or 0.0) for t in trades), 8),
+        "fees": round(sum(float(t.get("fees") or 0.0) for t in trades), 8),
+        "funding": round(sum(float(t.get("funding") or 0.0) for t in trades), 8),
+        "net": round(sum(_net(t) for t in trades), 8),
         "day_stats": day_stats(trades),
         "last_exit_ts": trades[-1]["closed_ts"] if trades else None,
     }
 
 
-def apply(db_path: Path, initial: float, backup_dir: Path | None = None) -> Path:
-    """Reescribe `equity` y el estado de `kv` desde el libro. Devuelve la copia."""
-    planned = plan(db_path, initial)
+def ensure_schema(db_path: Path) -> None:
+    """Aplica migraciones antes de escribir; `load_trades` tolera bases viejas."""
+    conn = sqlite3.connect(db_path)
+    try:
+        apply_migrations(conn)
+    finally:
+        conn.close()
+
+
+def apply(
+    db_path: Path,
+    initial: float,
+    backup_dir: Path | None = None,
+    mode: str | None = "paper",
+) -> Path:
+    """Reescribe `equity`, `kv` y el `pnl_net` derivado desde el libro.
+
+    Es idempotente: dos pasadas dejan exactamente la misma curva, el mismo
+    estado y el mismo pico. La copia se hace antes de tocar nada.
+    """
+    ensure_schema(db_path)
+    planned = plan(db_path, initial, mode)
+    trades = load_trades(db_path, mode)
     stored_peak = current(db_path)["kv_peak"]
     # El pico guardado puede ser más alto que la curva (se escribe por vela):
     # bajarlo sin más debilitaría el freno duro. Para bajarlo está --reset-peak.
@@ -157,6 +297,7 @@ def apply(db_path: Path, initial: float, backup_dir: Path | None = None) -> Path
     shutil.copy2(db_path, backup)
 
     conn = sqlite3.connect(db_path)
+    repaired = 0
     try:
         with conn:
             conn.execute("DELETE FROM equity")
@@ -185,19 +326,46 @@ def apply(db_path: Path, initial: float, backup_dir: Path | None = None) -> Path
                     "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
                     (json.dumps(planned["last_exit_ts"]),),
                 )
+            # `pnl_net` es una copia derivada: si no coincide con sus
+            # componentes, se corrige en la misma transacción. No se toca
+            # `r_multiple` porque no se puede reconstruir sin el riesgo original.
+            for trade in trades:
+                net = _net(trade)
+                if abs(net - float(trade.get("pnl_net") or 0.0)) > 1e-9:
+                    conn.execute(
+                        "UPDATE trades SET pnl_net=? WHERE id=?", (net, trade["id"])
+                    )
+                    repaired += 1
+            if repaired:
+                conn.execute(
+                    "INSERT INTO events (ts, level, category, message, meta) "
+                    "VALUES (?,?,?,?,?)",
+                    (
+                        datetime.now(timezone.utc).isoformat(),
+                        "warn",
+                        "maintenance",
+                        f"{repaired} operación(es): pnl_net corregido desde gross - fees + funding",
+                        json.dumps({"repaired": repaired}),
+                    ),
+                )
     finally:
         conn.close()
     return backup
 
 
-def reset_peak(db_path: Path, initial: float, backup_dir: Path | None = None) -> dict[str, Any]:
+def reset_peak(
+    db_path: Path,
+    initial: float,
+    backup_dir: Path | None = None,
+    mode: str | None = "paper",
+) -> dict[str, Any]:
     """Pone el pico en la equity del libro: la salida de una parada dura.
 
     El freno duro bloquea para siempre porque, sin operar, la equity no puede
     volver al pico. Esto no cambia el riesgo: deja constancia —evento y copia—
     de que alguien aceptó la pérdida y vuelve a medir el drawdown desde aquí.
     """
-    planned = plan(db_path, initial)
+    planned = plan(db_path, initial, mode)
     before = current(db_path)
     backup_dir = backup_dir or Path(".build") / "books-backup"
     backup_dir.mkdir(parents=True, exist_ok=True)
@@ -246,6 +414,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--db", default=None, help="base de datos (por defecto data/terminal.db)")
     parser.add_argument("--profile", default=None, help="perfil, p. ej. profiles/okx")
     parser.add_argument("--capital", type=float, default=25000.0, help="capital inicial")
+    parser.add_argument(
+        "--mode",
+        default="paper",
+        help="modo del libro a reconstruir (paper por defecto; 'all' para todos)",
+    )
     parser.add_argument("--apply", action="store_true", help="reescribe la base (con copia)")
     parser.add_argument(
         "--force",
@@ -275,19 +448,29 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 2
 
+    mode = None if args.mode == "all" else args.mode
     if args.reset_peak:
-        result = reset_peak(db_path, args.capital)
+        result = reset_peak(db_path, args.capital, mode=mode)
         print(f"pico reiniciado: {result['before']} -> {result['after']}", flush=True)
         print(f"copia: {result['backup']}", flush=True)
         return 0
 
-    planned = plan(db_path, args.capital)
+    planned = plan(db_path, args.capital, mode)
     before = current(db_path)
+    audit_before = audit(db_path, args.capital, mode)
     effective_peak = max(planned["peak_equity"], float(before["kv_peak"] or 0.0))
     report = {
         "db": str(db_path),
+        "mode": args.mode,
         "trades": planned["trades"],
+        "components": {
+            "gross": planned["gross"],
+            "fees": planned["fees"],
+            "funding": planned["funding"],
+            "net": planned["net"],
+        },
         "before": before,
+        "audit_before": audit_before,
         "after": {
             "rows": len(planned["curve"]),
             "last_equity": planned["last_equity"],
@@ -299,16 +482,26 @@ def main(argv: list[str] | None = None) -> int:
     }
 
     if args.apply:
-        report["backup"] = str(apply(db_path, args.capital))
+        report["backup"] = str(apply(db_path, args.capital, mode=mode))
+        report["audit_after"] = audit(db_path, args.capital, mode)
 
     if args.json:
         print(json.dumps(report, indent=2, ensure_ascii=False))
     else:
-        print(f"base: {db_path}")
+        print(f"base: {db_path} · modo: {args.mode}")
         print(f"operaciones en el libro: {planned['trades']}")
+        print(
+            f"componentes: bruto {planned['gross']}, fees {planned['fees']}, "
+            f"funding {planned['funding']}, neto {planned['net']}"
+        )
         print(
             f"antes: curva {before['rows']} filas, última {before['last_equity']}, "
             f"estado {before['kv_equity']}, día {before['kv_day_stats']}"
+        )
+        print(
+            "auditoría antes: "
+            + ("cuadra" if audit_before["ok"] else "NO cuadra")
+            + (f" · {', '.join(audit_before['issues'])}" if audit_before["issues"] else "")
         )
         print(
             f"después: curva {len(planned['curve'])} filas, última {planned['last_equity']}, "
@@ -322,6 +515,12 @@ def main(argv: list[str] | None = None) -> int:
             )
         if args.apply:
             print(f"copia: {report['backup']}")
+            after_audit = report["audit_after"]
+            print(
+                "auditoría después: "
+                + ("cuadra" if after_audit["ok"] else "NO cuadra")
+                + (f" · {', '.join(after_audit['issues'])}" if after_audit["issues"] else "")
+            )
         else:
             print("modo seco: nada escrito (usa --apply)")
     return 0
