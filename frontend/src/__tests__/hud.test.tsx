@@ -19,6 +19,24 @@ describe("Sparkline", () => {
     render(<Sparkline values={[1, 2, 3]} />);
     expect(screen.getByRole("img")).toHaveAttribute("aria-label", "tendencia alcista");
   });
+
+  it("gives each instance its own gradient id", () => {
+    const { container } = render(
+      <>
+        <Sparkline values={[1, 2, 3]} />
+        <Sparkline values={[2, 4, 6]} />
+      </>,
+    );
+    const ids = [...container.querySelectorAll("linearGradient")].map(
+      (node) => node.getAttribute("id"),
+    );
+    expect(ids).toHaveLength(2);
+    expect(new Set(ids).size).toBe(2);
+    for (const node of container.querySelectorAll("path.area")) {
+      const href = node.getAttribute("fill") ?? "";
+      expect(ids).toContain(href.replace(/^url\(#|\)$/g, ""));
+    }
+  });
 });
 
 describe("Gauge", () => {
@@ -28,9 +46,9 @@ describe("Gauge", () => {
     expect(screen.getByText("3 / 6 ops")).toBeInTheDocument();
   });
 
-  it("clamps above 100 % without breaking the arc", () => {
+  it("clamps the arc at 100 % but still reports the real overrun", () => {
     render(<Gauge value={9} max={3} label="operaciones" unit="ops" />);
-    expect(screen.getByText("100%")).toBeInTheDocument();
+    expect(screen.getByText("300%")).toBeInTheDocument();
     expect(screen.getByText("9 / 3 ops")).toBeInTheDocument();
   });
 
