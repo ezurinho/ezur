@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import shutil
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -62,12 +63,22 @@ def run_reset(
     moved: list[str] = []
     for source in plan["files"]:
         origin = Path(source)
-        shutil.move(str(origin), str(destination / origin.name))
+        try:
+            shutil.move(str(origin), str(destination / origin.name))
+        except OSError as exc:
+            # En Windows la base abierta por el bot no se puede renombrar. Decir
+            # qué se movió evita que el operador crea que el reset no tocó nada.
+            return {
+                **plan,
+                "executed": False,
+                "moved": moved,
+                "error": f"no se pudo mover {origin.name}: {exc}",
+            }
         moved.append(str(destination / origin.name))
     return {**plan, "executed": True, "moved": moved}
 
 
-def main() -> None:
+def main() -> int:
     parser = argparse.ArgumentParser(description="Reinicio operativo con backup previo")
     parser.add_argument("--db", default=str(DEFAULT_DB))
     parser.add_argument("--config", default=str(DEFAULT_CONFIG))
@@ -84,11 +95,18 @@ def main() -> None:
         print(f"  destino: {plan['destination']}")
         if not args.dry_run:
             print("Ejecuta con --yes para aplicar.")
-        return
+        return 0
 
     result = run_reset(args.db, args.config, args.backups, confirm=True)
+    if result.get("error"):
+        print(f"Reset incompleto: {result['error']}", file=sys.stderr)
+        if result.get("moved"):
+            print("Ya archivados: " + ", ".join(result["moved"]), file=sys.stderr)
+        print("Cierra el bot y repite; nada se borra sin backup.", file=sys.stderr)
+        return 1
     print(f"Archivado en {result['destination']}: {len(result.get('moved', []))} archivos")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
