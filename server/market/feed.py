@@ -71,17 +71,37 @@ class CSVFeed(MarketFeed):
         self.instruments = list(instruments)
 
     def iter_ticks(self) -> Iterator[Tick]:
+        """Lee vela a vela, sin cargar el dataset entero en memoria.
+
+        El formato guarda las velas ordenadas por tiempo e intercala los
+        símbolos, así que basta con un cubo: cuando cambia el `ts` se emite el
+        anterior si están todos los instrumentos. Un fichero desordenado se
+        rechaza en vez de emitir ticks fuera de orden que el motor descartaría.
+        """
         if not self.path.exists():
             raise FileNotFoundError(self.path)
-        buckets: dict[datetime, dict[str, Bar]] = {}
+        current_stamp: datetime | None = None
+        current: dict[str, Bar] = {}
         with self.path.open(newline="", encoding="utf-8") as handle:
-            reader = csv.DictReader(handle)
-            for row in reader:
+            for row in csv.DictReader(handle):
                 symbol = row["symbol"]
                 if symbol not in self.instruments:
                     continue
                 stamp = _parse_ts(row["ts"])
-                buckets.setdefault(stamp, {})[symbol] = Bar(
+                if current_stamp is not None and stamp < current_stamp:
+                    raise ValueError(
+                        f"dataset no ordenado por ts: {stamp.isoformat()} "
+                        f"después de {current_stamp.isoformat()}"
+                    )
+                if current_stamp is not None and stamp != current_stamp:
+                    if len(current) == len(self.instruments):
+                        yield Tick(
+                            ts=current_stamp,
+                            bars={name: current[name] for name in self.instruments},
+                        )
+                    current = {}
+                current_stamp = stamp
+                current[symbol] = Bar(
                     t=stamp,
                     o=float(row["o"]),
                     h=float(row["h"]),
@@ -89,11 +109,11 @@ class CSVFeed(MarketFeed):
                     c=float(row["c"]),
                     v=float(row.get("v") or 0.0),
                 )
-        for stamp in sorted(buckets):
-            bars = buckets[stamp]
-            if len(bars) != len(self.instruments):
-                continue
-            yield Tick(ts=stamp, bars={symbol: bars[symbol] for symbol in self.instruments})
+        if current_stamp is not None and len(current) == len(self.instruments):
+            yield Tick(
+                ts=current_stamp,
+                bars={name: current[name] for name in self.instruments},
+            )
 
 
 class LiveFeed(MarketFeed):
