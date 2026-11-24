@@ -5,7 +5,7 @@ from pathlib import Path
 
 from server.config import Settings, save_settings
 from server.db import Store
-from server.diagnostics import diagnose
+from server.diagnostics import diagnose, main
 from server.migrations import CURRENT_VERSION
 from server.reset import plan_reset, run_reset
 
@@ -38,6 +38,22 @@ def test_diagnose_does_not_write(tmp_path):
     before = path.stat().st_size
     diagnose(path)
     assert path.stat().st_size == before
+
+
+def test_diagnostics_profile_uses_profile_database(tmp_path, capsys):
+    profile = tmp_path / "okx"
+    profile.mkdir()
+    save_settings(Settings(), profile / "config.json")
+    store = Store(profile / "terminal.db")
+    store.insert_event("info", "test", "hola")
+    store.close()
+
+    code = main(["--profile", str(profile), "--strict"])
+    report = json.loads(capsys.readouterr().out)
+
+    assert code == 0
+    assert report["path"] == str(profile / "terminal.db")
+    assert report["tables"]["events"] == 1
 
 
 def test_reset_plan_lists_existing_files(tmp_path):
