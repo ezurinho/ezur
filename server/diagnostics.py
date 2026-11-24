@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import json
 import sqlite3
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -267,6 +268,11 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="carpeta del perfil: toma capital y tope de drawdown de su config",
     )
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="sale con 1 si hay desviaciones, filas imposibles o parada dura",
+    )
     args = parser.parse_args(argv)
 
     capital = args.capital
@@ -284,7 +290,28 @@ def main(argv: list[str] | None = None) -> int:
             "halt_multiple": float(risk.get("soft_brake_halt_multiple") or 1.0),
             "soft_brakes": bool(risk.get("soft_brakes")),
         }
-    print(json.dumps(diagnose(args.db, capital, limits), indent=2))
+    report = diagnose(args.db, capital, limits)
+    print(json.dumps(report, indent=2))
+    if not args.strict:
+        return 0
+
+    problems: list[str] = []
+    if not report.get("exists"):
+        problems.append("sin base")
+    if report.get("integrity") != "ok":
+        problems.append("integridad")
+    if report.get("missing_tables"):
+        problems.append("faltan tablas")
+    if (report.get("ledger") or {}).get("impossible"):
+        problems.append("filas imposibles")
+    books = report.get("books") or {}
+    if books.get("checked") and not books.get("consistent"):
+        problems.append("libros descuadrados")
+    if books.get("halted"):
+        problems.append("parada dura")
+    if problems:
+        print("revisar: " + ", ".join(problems), file=sys.stderr)
+        return 1
     return 0
 
 

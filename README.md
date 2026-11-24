@@ -146,7 +146,7 @@ sintéticos no validan rentabilidad.
 | `python -m server.funnel` | Embudo de evaluación del ledger |
 | `python -m server.walkforward` | Ventanas W1–W6 sobre una rejilla de parámetros |
 | `python -m server.experiments` | Ledger de experimentos con veredictos |
-| `python -m server.diagnostics` | Diagnóstico de SQLite en solo lectura |
+| `python -m server.diagnostics` | Diagnóstico de SQLite en solo lectura; `--profile` añade drawdown y parada dura, `--strict` sale con 1 si algo no cuadra |
 | `python -m server.reset --dry-run` | Previsualiza el reinicio operativo |
 | `python -m server.reset --yes` | Archiva estado y deja todo limpio |
 | `python -m server.promotion --evidence bt.json --stress bt2x.json --cycle ciclo.json` | Decide si una configuración puede operar (sale con 1 si no) |
