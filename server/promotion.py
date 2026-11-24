@@ -133,11 +133,20 @@ def evaluate(
         )
 
     failed = [check for check in checks if not check["pass"]]
+    found = (evidence or {}).get("strategy") or {}
     return {
         "passed": not failed,
         "checks": checks,
         "reason": failed[0]["reason"] if failed else "",
         "failed": [check["name"] for check in failed],
+        # De qué corrida sale el veredicto: sin esto, una tabla de criterios no
+        # dice si se midió la estrategia, el marco temporal o la muestra buenos.
+        "source": {
+            "strategy": f"{found.get('id') or '?'}@{found.get('version') or '?'}",
+            "dataset": (evidence or {}).get("dataset"),
+            "split_at": ((evidence or {}).get("split") or {}).get("at"),
+            "oos_trades": trades,
+        },
     }
 
 
@@ -172,7 +181,19 @@ def _shown(value: Any) -> str:
 
 
 def render(verdict: dict[str, Any]) -> str:
-    lines = [f"{'criterio':<26} {'valor':>10} {'umbral':>14}  pasa"]
+    source = verdict.get("source") or {}
+    parts = [
+        str(part)
+        for part in (
+            source.get("strategy"),
+            source.get("dataset"),
+            f"corte {source['split_at']}" if source.get("split_at") else None,
+            f"{source['oos_trades']} ops OOS" if source.get("oos_trades") is not None else None,
+        )
+        if part
+    ]
+    lines: list[str] = [f"evidencia: {' · '.join(parts)}", ""] if parts else []
+    lines.append(f"{'criterio':<26} {'valor':>10} {'umbral':>14}  pasa")
     for check in verdict["checks"]:
         lines.append(
             f"{check['name']:<26} {_shown(check['value']):>10} "

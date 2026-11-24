@@ -81,6 +81,25 @@ def test_la_evidencia_de_la_estrategia_correcta_pasa():
     assert len(verdict["checks"]) == 6
 
 
+def test_el_informe_dice_de_que_corrida_sale_el_veredicto(tmp_path, capsys):
+    evidencia = {
+        **EVIDENCE,
+        "strategy": {"id": "reference", "version": "0.1.0"},
+        "dataset": "data/BTC_1h_binance.csv",
+        "split": {"at": "2024-01-01T00:00:00+00:00", "out_of_sample": {"trades": 169, "profit_factor": 1.12}},
+    }
+    path = tmp_path / "bt.json"
+    path.write_text(json.dumps(evidencia), encoding="utf-8")
+
+    code = promotion.main(["--evidence", str(path), "--cycle", str(tmp_path / "no.json")])
+
+    assert code == 1
+    out = capsys.readouterr().out
+    assert "evidencia: reference@0.1.0 · data/BTC_1h_binance.csv" in out
+    assert "corte 2024-01-01T00:00:00+00:00" in out
+    assert "169 ops OOS" in out
+
+
 def test_el_cli_sale_con_uno_si_no_esta_promovida(tmp_path, capsys):
     evidencia = tmp_path / "bt.json"
     evidencia.write_text(json.dumps(EVIDENCE), encoding="utf-8")

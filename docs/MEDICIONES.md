@@ -56,3 +56,27 @@ de muestra en diario harían falta más de diez años.
   al duplicar el coste o al mirar su PBO.
 
 La siguiente idea tendría que ser otra fuente de señal, no otra rejilla.
+
+## La configuración que opera no tiene evidencia propia
+
+`profiles/okx/config.json` opera `reference v0.1.0` sobre velas de **1 minuto**
+(el feed de OKX pide `bar=1m`). Toda la tabla anterior es de **1 hora**, y las
+filas con estrategia son de `donchian`. Medida con su propia config sobre el
+dataset de 1 h:
+
+```
+python -m server.backtest --dataset data/BTC_1h_binance.csv   --config profiles/okx/config.json --split 2024-01-01   --out data/research/promotion/reference-1x.json
+```
+
+| config | IS ops | IS PF | OOS ops | OOS PF | OOS esp. | coste |
+|---|---|---|---|---|---|---|
+| reference · fast7 · slow21 · sa6.0 · rr1.2 (1 h) | 84 | 0.660 | 1 | 0.000 | −1.320 R | 0.078 R |
+
+Con el coste duplicado: 84 dentro, PF 0.364, 1 fuera, coste 0.102 R.
+
+El tope de stop del perfil (`max_stop_ticks 40000`, 400 USD con tick 0,01) no
+escala con el precio y rechaza **3108** señales en la corrida; fuera de muestra
+solo queda una. La reducción al 25 % no está respaldada por ninguna evidencia
+de la config que opera: es una precaución, no una decisión medida. La puerta lo
+dice desde ahora en su primera línea (`evidencia: donchian@0.1.0 ·
+data/BTC_1h_binance.csv · …`) y en el criterio de procedencia.
