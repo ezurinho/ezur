@@ -30,6 +30,16 @@ MAX_COST_R = 0.25
 MAX_PBO = 0.20
 
 
+def _number(value: Any) -> float | None:
+    """Número o None. Una evidencia con texto no debe tumbar la puerta."""
+    if value is None or isinstance(value, bool):
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def _check(name: str, value: Any, threshold: str, passed: bool, reason: str) -> dict[str, Any]:
     return {
         "name": name,
@@ -60,7 +70,7 @@ def evaluate(
             "pf_fuera_de_muestra",
             pf,
             f"> {MIN_OOS_PF}",
-            pf is not None and float(pf) > MIN_OOS_PF,
+            (pf_value := _number(pf)) is not None and pf_value > MIN_OOS_PF,
             "sin PF fuera de muestra, o por debajo de 1",
         )
     )
@@ -69,7 +79,8 @@ def evaluate(
             "operaciones_fuera_de_muestra",
             trades,
             f">= {MIN_OOS_TRADES}",
-            trades is not None and int(trades) >= MIN_OOS_TRADES,
+            (trades_value := _number(trades)) is not None
+            and trades_value >= MIN_OOS_TRADES,
             "muestra fuera de muestra insuficiente",
         )
     )
@@ -80,7 +91,7 @@ def evaluate(
             "coste_por_operacion",
             cost,
             f"< {MAX_COST_R} R",
-            cost is not None and float(cost) < MAX_COST_R,
+            (cost_value := _number(cost)) is not None and cost_value < MAX_COST_R,
             "sin coste medido, o demasiado alto para dejar margen",
         )
     )
@@ -92,7 +103,8 @@ def evaluate(
             "pf_con_coste_duplicado",
             stressed_pf,
             f"> {MIN_OOS_PF}",
-            stressed_pf is not None and float(stressed_pf) > MIN_OOS_PF,
+            (stressed_value := _number(stressed_pf)) is not None
+            and stressed_value > MIN_OOS_PF,
             "falta la corrida con coste duplicado, o su PF no llega a 1",
         )
     )
@@ -103,7 +115,7 @@ def evaluate(
             "pbo_del_ciclo",
             pbo,
             f"<= {MAX_PBO}",
-            pbo is not None and float(pbo) <= MAX_PBO,
+            (pbo_value := _number(pbo)) is not None and pbo_value <= MAX_PBO,
             "sin ciclo de selección, o el universo es indistinguible del ruido",
         )
     )

@@ -123,3 +123,28 @@ def test_el_cli_promueve_con_las_tres_piezas(tmp_path, capsys):
 
     assert code == 0
     assert "promovida" in capsys.readouterr().out
+
+
+def test_una_evidencia_con_texto_no_tumba_la_puerta():
+    from server import promotion
+
+    verdict = promotion.evaluate(
+        {
+            "strategy": {"id": "reference", "version": "1.0.0"},
+            "split": {"out_of_sample": {"profit_factor": "n/a", "trades": "muchas"}},
+            "cost_per_trade_r": "barato",
+        },
+        {"split": {"out_of_sample": {"profit_factor": "n/a"}}},
+        {"pbo": {"pbo": "n/a"}},
+        {"id": "reference", "version": "1.0.0"},
+    )
+
+    assert verdict["passed"] is False
+    assert verdict["failed"] == [
+        "pf_fuera_de_muestra",
+        "operaciones_fuera_de_muestra",
+        "coste_por_operacion",
+        "pf_con_coste_duplicado",
+        "pbo_del_ciclo",
+    ]
+    assert verdict["reason"] == "sin PF fuera de muestra, o por debajo de 1"
