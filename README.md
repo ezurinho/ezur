@@ -71,8 +71,13 @@ evaluar. Sin eso, `strategy.id = "null"` dejaría Reanudar sin efecto.
 Instalador (requiere Inno Setup 6):
 
 ```bat
-"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\ezur.iss
+winget install --id JRSoftware.InnoSetup -e
+"%LOCALAPPDATA%\Programs\Inno Setup 6\ISCC.exe" installer\ezur.iss
 ```
+
+El `winget` instala Inno Setup por usuario en `%LOCALAPPDATA%\Programs`; si lo
+instalas para todos los usuarios, el compilador está en
+`C:\Program Files (x86)\Inno Setup 6\ISCC.exe`.
 
 Deja `dist_installer\ezur-setup-0.1.0.exe`. No se firma: un instalador sin
 firma dispara SmartScreen y algunos antivirus marcan el bootloader de

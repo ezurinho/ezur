@@ -1,7 +1,7 @@
 ; Instalador de ezur (Inno Setup 6).
 ;
-; Se compila con:
-;   "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\ezur.iss
+; Se compila con (winget lo instala por usuario, no en Program Files):
+;   "%LOCALAPPDATA%\Programs\Inno Setup 6\ISCC.exe" installer\ezur.iss
 ; y deja dist_installer\ezur-setup-0.1.0.exe
 ;
 ; Instalación por usuario en %LOCALAPPDATA%\ezur, sin privilegios de
