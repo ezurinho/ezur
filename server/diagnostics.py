@@ -25,6 +25,41 @@ TABLES = (
 )
 
 
+def _ledger_anomalies(connection: sqlite3.Connection, tables: set[str]) -> dict[str, Any]:
+    """Filas que ningún veredicto debería haber producido.
+
+    Una salida anterior a la entrada delata una barra vieja ejecutada sobre una
+    posición viva; dos filas con el mismo signal_key son la misma operación
+    contada dos veces. Se cuentan, no se corrigen: este comando es de lectura.
+    """
+    if "trades" not in tables:
+        return {"impossible": [], "duplicate_signals": [], "without_signal_key": 0}
+    impossible = [
+        dict(row)
+        for row in connection.execute(
+            "SELECT id, opened_ts, closed_ts FROM trades WHERE closed_ts < opened_ts ORDER BY id"
+        )
+    ]
+    duplicate_signals = [
+        dict(row)
+        for row in connection.execute(
+            """
+            SELECT signal_key, COUNT(*) AS rows FROM trades
+             WHERE signal_key <> ''
+             GROUP BY signal_key HAVING COUNT(*) > 1
+            """
+        )
+    ]
+    without_signal_key = connection.execute(
+        "SELECT COUNT(*) AS c FROM trades WHERE signal_key = ''"
+    ).fetchone()["c"]
+    return {
+        "impossible": impossible,
+        "duplicate_signals": duplicate_signals,
+        "without_signal_key": without_signal_key,
+    }
+
+
 def diagnose(db_path: str | Path) -> dict[str, Any]:
     path = Path(db_path)
     if not path.exists():
@@ -65,6 +100,7 @@ def diagnose(db_path: str | Path) -> dict[str, Any]:
             "integrity": integrity,
             "tables": counts,
             "missing_tables": sorted(table for table, count in counts.items() if count < 0),
+            "ledger": _ledger_anomalies(connection, tables),
             "size_bytes": path.stat().st_size,
             "wal_bytes": path.with_suffix(path.suffix + "-wal").stat().st_size
             if path.with_suffix(path.suffix + "-wal").exists()
