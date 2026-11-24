@@ -20,6 +20,7 @@
     "min_oos_pf_ci_low": 1.0,
     "min_trades": 300,
     "min_wfa_trades_per_fold": 30,
+    "min_minbtl_coverage": 1.0,
     "cost_stress_multiplier": 2.0,
     "min_cost_stress_pf": 1.0,
     "min_plateau_pf": 1.0,
