@@ -7,6 +7,7 @@ import {
 } from "lightweight-charts";
 import { MarkerLayer } from "../components/MarkerLayer";
 import { ZoneLayer } from "../components/ZoneLayer";
+import { useClock } from "../components/Sparkline";
 import { useUiMode } from "../mode";
 import { useTheme } from "../theme";
 import { api } from "../api";
@@ -15,6 +16,14 @@ import { marketFreshness } from "../utils";
 import type { Candle } from "../types";
 
 const TIMEFRAMES = ["1m", "5m", "15m", "30m"] as const;
+// La frase del modo básico nombra la vela que hay en pantalla; con 5m fijo
+// decir «cada vela es un minuto» era falso en cuanto el operador cambiaba.
+const VELA_WORDS: Record<(typeof TIMEFRAMES)[number], string> = {
+  "1m": "un minuto",
+  "5m": "cinco minutos",
+  "15m": "quince minutos",
+  "30m": "media hora",
+};
 const CHART_TYPES = ["candles", "line", "area"] as const;
 type ChartType = (typeof CHART_TYPES)[number];
 const TYPE_LABELS: Record<ChartType, string> = {
@@ -122,6 +131,7 @@ export function ChartPage() {
     }
   }, [timeframe, chartType, grid, overlays]);
   const [candles, setCandles] = useState<Candle[]>([]);
+  const [chartError, setChartError] = useState<string | null>(null);
   const lastBarRef = useRef<string | null>(null);
 
   const periods = useMemo(
@@ -249,16 +259,24 @@ export function ChartPage() {
   }, [theme, periods, chartType, grid, accentOverride]);
 
   const liveBar = snapshot?.data.last_bar_ts ?? null;
-  // La frescura se recalcula con cada snapshot; no hace falta un reloj propio.
-  const fresh = marketFreshness(liveBar, Date.now());
+  // Un reloj propio: si el feed se para, no llegan snapshots y el chip se
+  // quedaría diciendo «en vivo» para siempre con la última hora congelada.
+  const tick = useClock(15_000);
+  const fresh = marketFreshness(liveBar, tick.getTime());
 
   useEffect(() => {
     let cancelled = false;
     const keepRange = chartRef.current?.timeScale().getVisibleLogicalRange() ?? null;
+    const styles = getComputedStyle(document.documentElement);
+    const read = (name: string, fallback: string) =>
+      styles.getPropertyValue(name).trim() || fallback;
+    const upColor = `${read("--good", "#3ddc84")}40`;
+    const downColor = `${read("--bad", "#ff5c6c")}40`;
     api
       .chart(timeframe)
       .then((payload) => {
         if (cancelled || !priceRef.current) return;
+        setChartError(null);
         const rows = payload.candles as Candle[];
         setCandles(rows);
         if (chartType === "candles") {
@@ -283,7 +301,7 @@ export function ChartPage() {
           rows.map((candle) => ({
             time: (Date.parse(candle.t) / 1000) as UTCTimestamp,
             value: candle.v ?? 0,
-            color: candle.c >= candle.o ? "#3ddc8440" : "#ff5c6c40",
+            color: candle.c >= candle.o ? upColor : downColor,
           })),
         );
         periods.slice(0, 2).forEach((period, index) => {
@@ -308,11 +326,15 @@ export function ChartPage() {
         }
         lastBarRef.current = liveBar;
       })
-      .catch(() => undefined);
+      .catch((cause: Error) => {
+        if (!cancelled) setChartError(cause.message);
+      });
     return () => {
       cancelled = true;
     };
-  }, [timeframe, liveBar, periods, chartType]);
+    // Recrear el lienzo (tema, rejilla, tipo) deja la serie vacía: sin volver a
+    // pedir las velas, el gráfico quedaba en blanco hasta la siguiente vela.
+  }, [timeframe, liveBar, periods, chartType, grid, theme, accentOverride]);
 
   useEffect(() => {
     volumeRef.current?.applyOptions({ visible: overlays.volume });
@@ -343,8 +365,8 @@ export function ChartPage() {
 
       <p className="simple-lead">
         {isSimple
-          ? "Cada vela es un minuto: verde sube, roja baja. La línea de puntos es el precio de ahora."
-          : "Las medias suavizan el ruido; el volumen dice cuánta gente movió cada vela. Apaga lo que no estés mirando."}
+          ? `Cada vela resume ${VELA_WORDS[timeframe]}: verde sube, roja baja. La línea de puntos es el precio de ahora. El eje de horas va en UTC, el reloj de la sesión.`
+          : "Las medias suavizan el ruido; el volumen dice cuánta gente movió cada vela. Apaga lo que no estés mirando. El eje de horas va en UTC, el reloj del motor."}
       </p>
 
       <div className="chart-toolbar">
@@ -413,9 +435,13 @@ export function ChartPage() {
             <>
               <b className="mono">{lastClose.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b>
               {changePct !== null ? (
-                <span className={`mono small ${changePct >= 0 ? "tone-good" : "tone-bad"}`}>
-                  {changePct >= 0 ? "+" : ""}
-                  {changePct.toFixed(2)} % en la ventana
+                <span
+                  className={`mono small ${
+                    changePct > 0 ? "tone-good" : changePct < 0 ? "tone-bad" : ""
+                  }`}
+                >
+                  {changePct > 0 ? "+" : ""}
+                  {changePct.toFixed(2)} % en las últimas {candles.length} velas
                 </span>
               ) : null}
             </>
@@ -429,6 +455,13 @@ export function ChartPage() {
           </button>
         </div>
       </div>
+
+      {chartError ? (
+        <p className="tone-bad small">
+          No se pudo cargar el histórico del gráfico: {chartError}. Lo que se vea en el lienzo
+          puede ser de la carga anterior.
+        </p>
+      ) : null}
 
       <div className="card chart-card">
         <div ref={containerRef} className="chart-canvas" data-chart />
