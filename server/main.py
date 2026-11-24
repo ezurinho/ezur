@@ -112,7 +112,23 @@ def create_app(
         app.state.config_path = config_path
         app.state.experiment_ledger = ledger_path
         app.state.notifier = notifier
-        if settings.auto_start and engine.state.status in {"idle", "stopped"}:
+        promoted = True
+        if settings.promotion.required:
+            from .promotion import evaluate_paths
+
+            verdict = evaluate_paths(
+                settings.promotion.evidence,
+                settings.promotion.stress_evidence,
+                settings.promotion.cycle,
+            )
+            promoted = bool(verdict["passed"])
+            if not promoted:
+                store.insert_event(
+                    "warn",
+                    "promotion",
+                    f"auto_start bloqueado: {verdict['reason']}",
+                )
+        if settings.auto_start and promoted and engine.state.status in {"idle", "stopped"}:
             try:
                 engine.start()
                 engine.start_task()
