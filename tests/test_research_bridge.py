@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 import pytest
@@ -156,6 +157,23 @@ def test_run_spec_lee_el_veredicto(tmp_path):
     assert record["verdict"] == "APPROVED"
     assert record["id"] == "A"
     assert record["returncode"] == 0
+
+
+def test_run_spec_pasa_una_ruta_absoluta(tmp_path, monkeypatch):
+    """El runner corre en su árbol: el relativo del bot no le sirve."""
+    body = (
+        "import pathlib, sys\n"
+        "spec = pathlib.Path(sys.argv[sys.argv.index('--spec') + 1])\n"
+        "assert spec.is_file(), spec\n"
+        "print('VERDICT APPROVED')\n"
+    )
+    home = _fake_home(tmp_path, body=body)
+    monkeypatch.chdir(tmp_path)
+    relative = home.relative_to(tmp_path) / "runner" / "specs" / "a.json"
+
+    record = research.run_spec(home, sys.executable, relative, out_dir=tmp_path / "out", timeout=30)
+
+    assert record["verdict"] == "APPROVED"
 
 
 def test_run_spec_registra_el_fallo(tmp_path):

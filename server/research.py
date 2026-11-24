@@ -222,14 +222,16 @@ def run_spec(
 ) -> dict[str, Any]:
     """Ejecuta una spec con el motor y devuelve el registro para el ledger."""
     started = time.time()
-    spec_doc = json.loads(Path(spec).read_text(encoding="utf-8"))
+    # El runner corre con cwd en su árbol: una ruta relativa al bot no existe allí.
+    spec = Path(spec).resolve()
+    spec_doc = json.loads(spec.read_text(encoding="utf-8"))
     command = [
         python,
         str(RUNNER),
         "--spec",
-        str(Path(spec)),
+        str(spec),
         "--out",
-        str(out_dir),
+        str(Path(out_dir).resolve()),
     ]
     try:
         done = subprocess.run(
@@ -244,7 +246,7 @@ def run_spec(
     verdict = _parse_verdict(output) if code == 0 else None
     return {
         "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "spec": str(Path(spec).relative_to(home)) if Path(spec).is_relative_to(home) else str(spec),
+        "spec": str(spec.relative_to(home)) if spec.is_relative_to(home) else str(spec),
         "id": spec_doc.get("id"),
         "family": spec_doc.get("family"),
         "timeframe": spec_doc.get("timeframe_signal"),
