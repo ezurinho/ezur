@@ -53,6 +53,15 @@ def test_commission_applied_per_side(engine, decision, signal_long):
     assert trade.fees == pytest.approx(2 * 0.62 * decision.units)
 
 
+def test_market_close_applies_adverse_slippage(engine, decision, signal_long):
+    engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, NOW)
+    engine.execution.on_bar({"PRIMARY": make_bar(o=100.0, h=101.0, l=99.8)})
+    trade = engine.execution.close("manual", when=NOW)
+    assert trade is not None
+    assert trade.exit_price == pytest.approx(100.75)
+    assert trade.diagnostics["exit_slippage"] == pytest.approx(0.25)
+
+
 def test_signal_is_executed_only_once(engine, decision, signal_long):
     first = engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, NOW)
     second = engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, NOW)
@@ -75,8 +84,9 @@ def test_unapproved_decision_arms_nothing(engine, signal_long):
 
 def test_cancel_all_clears_pending(engine, decision, signal_long):
     engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, NOW)
-    engine.execution.cancel_all()
+    assert engine.execution.cancel_all() == 1
     assert engine.execution.pending_orders() == []
+    assert engine.execution.cancel_all() == 0
 
 
 def test_slippage_is_capped_by_max_slippage_ticks(settings):
@@ -133,15 +143,63 @@ def test_entry_bar_can_kill_the_trade_and_says_so(engine, decision, signal_long)
     assert engine.execution.position is None
 
 
-def test_next_open_fills_through_a_gap_that_intrabar_would_refuse(
-    engine, decision, signal_long
-):
+@pytest.mark.parametrize("model", ["next_open", "signal_price", "intrabar"])
+def test_every_fill_model_rejects_an_entry_gap_through_the_stop(engine, decision, signal_long, model):
+    _with_model(engine, model)
     engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, NOW)
+    # Entrar con el stop por encima de la entrada convertiría el gap en un
+    # beneficio al cerrar inmediatamente: ningún modelo puede bookearlo.
     events = engine.execution.on_bar({"PRIMARY": make_bar(o=99.0, h=99.4, l=98.6)})
-    # next_open takes the bad fill and books the loss; intrabar refuses it.
-    assert [event.type for event in events] == ["fill", "exit"]
-    assert events[1].diagnostics["same_bar_exit"] is True
-    assert events[0].price == pytest.approx(99.25)
+    assert engine.execution.position is None
+    assert [event.type for event in events] == ["cancel"]
+    assert events[0].reason == "gap_through_stop"
+    assert engine.execution.orders[-1].status == "rejected"
+
+
+def test_later_stop_gap_fills_at_open_with_adverse_slippage(engine, decision, signal_long):
+    engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, NOW)
+    engine.execution.on_bar({"PRIMARY": make_bar(o=100.0, h=100.4, l=99.8)})
+    events = engine.execution.on_bar({"PRIMARY": make_bar(o=98.0, h=99.4, l=97.5)})
+    trade = events[-1].trade
+    assert trade is not None
+    assert trade.exit_reason == "stop"
+    assert trade.exit_price == pytest.approx(97.75)
+    assert trade.diagnostics["gap_stop"] is True
+    assert trade.pnl_net < 0
+
+
+def test_short_stop_gap_fills_at_open_with_adverse_slippage(engine, decision):
+    from server.strategy.base import Signal
+
+    signal = Signal(key="short-gap", side="short", reason="t", ts=NOW, stop_price=100.5, target_price=97.75)
+    engine.execution.arm(decision, signal, "PRIMARY", 100.0, NOW)
+    engine.execution.on_bar({"PRIMARY": make_bar(o=100.0, h=100.2, l=99.8)})
+    events = engine.execution.on_bar({"PRIMARY": make_bar(o=102.0, h=102.5, l=100.6)})
+    trade = events[-1].trade
+    assert trade is not None
+    assert trade.exit_price == pytest.approx(102.25)
+    assert trade.diagnostics["gap_stop"] is True
+    assert trade.pnl_net < 0
+
+
+def test_target_gap_fills_at_the_better_open(engine, decision, signal_long):
+    engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, NOW)
+    engine.execution.on_bar({"PRIMARY": make_bar(o=100.0, h=100.4, l=99.8)})
+    events = engine.execution.on_bar({"PRIMARY": make_bar(o=103.0, h=104.0, l=100.8)})
+    trade = events[-1].trade
+    assert trade is not None
+    assert trade.exit_reason == "target"
+    assert trade.exit_price == pytest.approx(103.0)
+
+
+def test_signal_price_degrades_when_pre_entry_stop_is_unknowable(engine, decision, signal_long):
+    _with_model(engine, "signal_price")
+    engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, NOW)
+    events = engine.execution.on_bar({"PRIMARY": make_bar(o=100.6, h=101.0, l=99.0)})
+    assert events[0].reason == "next_open"
+    assert events[0].diagnostics["fill_fallback"] == "pre_entry_stop_unknown"
+    assert engine.execution.position is None
+    assert events[-1].reason == "stop"
 
 
 def test_signal_price_fills_at_the_signal_when_the_bar_trades_through_it(
