@@ -1,0 +1,55 @@
+{
+  "seeds": [
+    {
+      "id": "BTC-ZREV-1H",
+      "label": "zrev_1h_96",
+      "name": "Reversion z-score 1h",
+      "family": "mean_reversion",
+      "timeframe_signal": "1h",
+      "rule": "zscore_fade",
+      "hypothesis": "Las seis semillas del motor prueban tendencia y todas fueron rechazadas. El lado contrario no esta medido: una desviacion grande respecto a la media de 96 barras de hora revierte antes de que el stop de 2 ATR se toque. A 96 barras la media cubre cuatro dias, que es el horizonte donde la reversion de BTC ya no la come el coste de 5 pb por lado.",
+      "long": "z[t] <= -z (cierre muy por debajo de la media)",
+      "short": "z[t] >= z (cierre muy por encima de la media)",
+      "params": { "N": 96, "z": 2.0, "atr_k": 2.0, "tp_r": 2.0 },
+      "exit": { "stop": "2.0 * ATR(14)[t]", "target": "2.0 * R", "time_stop_bars": 48, "trailing": null },
+      "failure_modes": [
+        "tendencia sostenida: el precio no vuelve a la media y el stop corta",
+        "el z-score se dispara con el hueco, sin entrada posible al precio teorico"
+      ]
+    },
+    {
+      "id": "BTC-ZREV-4H",
+      "label": "zrev_4h_60",
+      "name": "Reversion z-score 4h",
+      "family": "mean_reversion",
+      "timeframe_signal": "4h",
+      "rule": "zscore_fade",
+      "hypothesis": "La misma reversion que en 1h, medida en barras de 4h: 60 barras son diez dias de media y el coste por operacion baja a la mitad. Si la reversion existe en BTC, deberia verse mejor cuanto menos se paga por operar.",
+      "long": "z[t] <= -z (cierre muy por debajo de la media)",
+      "short": "z[t] >= z (cierre muy por encima de la media)",
+      "params": { "N": 60, "z": 2.0, "atr_k": 2.0, "tp_r": 2.0 },
+      "exit": { "stop": "2.0 * ATR(14)[t]", "target": "2.0 * R", "time_stop_bars": 30, "trailing": null },
+      "failure_modes": [
+        "tendencia sostenida: el precio no vuelve a la media y el stop corta",
+        "con 60 barras la media reacciona tarde y el z-score llega agotado"
+      ]
+    },
+    {
+      "id": "BTC-ORB-5M",
+      "label": "orb_5m_12",
+      "name": "Opening range breakout 5m",
+      "family": "orb",
+      "timeframe_signal": "5m",
+      "rule": "orb_session",
+      "hypothesis": "La primera hora del dia UTC define un rango y el primer cierre fuera de el suele continuar durante las horas siguientes. En futuros con campana de apertura el patron esta documentado; en BTC el dia UTC no tiene campana, asi que la hipotesis es debil y por eso importa medirla en vez de citarla. Doce barras de 5m son esa primera hora.",
+      "long": "close[t] > max(high[apertura .. apertura+range_bars])",
+      "short": "close[t] < min(low[apertura .. apertura+range_bars])",
+      "params": { "range_bars": 12, "atr_k": 2.0, "tp_r": 2.0 },
+      "exit": { "stop": "2.0 * ATR(14)[t]", "target": "2.0 * R", "time_stop_bars": 96, "trailing": null },
+      "failure_modes": [
+        "falsas rupturas en un rango estrecho: el primer cierre fuera vuelve dentro",
+        "el rango de la primera hora es tan ancho que el stop queda lejos"
+      ]
+    }
+  ]
+}
