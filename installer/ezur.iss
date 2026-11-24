@@ -44,11 +44,13 @@ Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
 Name: "desktopicon"; Description: "Crear un acceso directo en el escritorio"; GroupDescription: "Accesos directos:"; Flags: unchecked
 
 [Files]
-Source: "..\dist_exe\ezur\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-; Configuración inicial: no se pisa una que ya exista (una actualización
-; respeta el perfil del usuario).
-Source: "..\profiles\demo\config.json"; DestDir: "{app}\profiles\demo"; Flags: onlyifdoesntexist
-Source: "..\profiles\okx\config.json"; DestDir: "{app}\profiles\okx"; Flags: onlyifdoesntexist
+; El árbol del programa, salvo lo que es del usuario: su configuración y su base
+; de datos. Eso va aparte, se instala solo si no existe y no se toca al
+; actualizar ni al desinstalar.
+Source: "..\dist_exe\ezur\*"; DestDir: "{app}"; Excludes: "data\config.json,data\*.db,data\*.db-wal,data\*.db-shm,profiles\demo\config.json,profiles\okx\config.json"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\dist_exe\ezur\data\config.json"; DestDir: "{app}\data"; Flags: onlyifdoesntexist uninsneveruninstall
+Source: "..\profiles\demo\config.json"; DestDir: "{app}\profiles\demo"; Flags: onlyifdoesntexist uninsneveruninstall
+Source: "..\profiles\okx\config.json"; DestDir: "{app}\profiles\okx"; Flags: onlyifdoesntexist uninsneveruninstall
 
 [Icons]
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExe}"
@@ -58,8 +60,7 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; Tasks: desktopico
 [Run]
 Filename: "{app}\{#AppExe}"; Description: "Abrir {#AppName}"; Flags: nowait postinstall skipifsilent
 
-[UninstallDelete]
-; La base de datos y los logs son del usuario, no del programa: se borran solo
-; si viven dentro de la carpeta de instalación, que es el caso por defecto.
-Type: filesandordirs; Name: "{app}\data"
-Type: filesandordirs; Name: "{app}\profiles"
+; Sin [UninstallDelete]: desinstalar quita el programa, no el historial. La base
+; de datos (`data\terminal.db`) y la configuración son del usuario y se quedan
+; donde están, así que volver a instalar retoma el estado anterior. Para
+; borrarlo todo hay que eliminar la carpeta a mano.
