@@ -52,3 +52,29 @@ def test_sin_operaciones_la_equity_es_el_capital_inicial(tmp_path):
         assert engine.state.equity == pytest.approx(Settings().risk.initial_capital)
     finally:
         store.close()
+
+
+def test_el_pico_de_equity_sobrevive_al_reinicio(tmp_path):
+    store = Store(tmp_path / "pico.db")
+    try:
+        store.insert_trade(_trade(-100.0, "a"))
+        store.kv_set("peak_equity", 26_000.0)
+
+        engine = TradingEngine(Settings(), store, feed=None)
+
+        assert engine.peak_equity == pytest.approx(26_000.0)
+    finally:
+        store.close()
+
+
+def test_el_pico_nunca_queda_por_debajo_de_la_equity(tmp_path):
+    store = Store(tmp_path / "pico-bajo.db")
+    try:
+        store.insert_trade(_trade(-100.0, "a"))
+        store.kv_set("peak_equity", 1.0)
+
+        engine = TradingEngine(Settings(), store, feed=None)
+
+        assert engine.peak_equity == pytest.approx(engine.state.equity)
+    finally:
+        store.close()
