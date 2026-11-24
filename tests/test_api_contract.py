@@ -100,6 +100,7 @@ def test_ws_snapshot_has_no_strategy_specific_keys(client):
         "metrics",
         "signal",
         "rejection",
+        "rejections",
     }
     assert data["strategy"]["phases"] == []
     assert data["strategy"]["metrics"] == {}
@@ -126,6 +127,14 @@ def test_stats_reset_preview_and_apply(client):
     applied = client.post("/api/stats/reset", json={"include_backtests": False})
     assert applied.status_code == 200
     assert "deleted" in applied.json()
+
+
+def test_stats_reset_refuses_a_running_engine(client):
+    engine = client.app.state.engine
+    engine.start()
+    response = client.post("/api/stats/reset", json={"include_backtests": False})
+    assert response.status_code == 409
+    engine.stop()
 
 
 def test_chart_history_rejects_unknown_timeframe(client):
