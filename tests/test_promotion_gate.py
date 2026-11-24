@@ -11,11 +11,12 @@ from server.engine import TradingEngine
 
 EVIDENCE = {
     "strategy": {"id": "null", "version": "0.0.0"},
+    "dataset": "data/BTC_1h_binance.csv",
     "split": {"out_of_sample": {"trades": 169, "profit_factor": 1.12}},
     "cost_per_trade_r": 0.09,
 }
 STRESS = {"split": {"out_of_sample": {"trades": 169, "profit_factor": 1.03}}}
-CYCLE = {"pbo": {"pbo": 0.11}}
+CYCLE = {"pbo": {"pbo": 0.11}, "universe": [{"timeframe": "1h"}]}
 
 
 def _write(path: Path, payload: dict) -> str:

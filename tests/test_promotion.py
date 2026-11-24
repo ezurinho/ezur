@@ -6,11 +6,12 @@ import json
 from server import promotion
 
 EVIDENCE = {
+    "dataset": "data/BTC_1h_binance.csv",
     "split": {"out_of_sample": {"trades": 169, "profit_factor": 1.12}},
     "cost_per_trade_r": 0.09,
 }
 STRESS = {"split": {"out_of_sample": {"trades": 169, "profit_factor": 1.03}}}
-CYCLE = {"pbo": {"pbo": 0.11}}
+CYCLE = {"pbo": {"pbo": 0.11}, "universe": [{"timeframe": "1h"}]}
 
 
 def test_una_configuracion_que_cumple_todo_se_promueve():
@@ -50,7 +51,9 @@ def test_sin_corrida_con_coste_duplicado_no_hay_promocion():
 
 
 def test_un_universo_que_es_ruido_no_se_promueve():
-    verdict = promotion.evaluate(EVIDENCE, STRESS, {"pbo": {"pbo": 0.976}})
+    verdict = promotion.evaluate(
+        EVIDENCE, STRESS, {"pbo": {"pbo": 0.976}, "universe": [{"timeframe": "1h"}]}
+    )
 
     assert "pbo_del_ciclo" in verdict["failed"]
 
@@ -224,3 +227,22 @@ def test_el_marco_del_dataset_se_lee_con_punto_o_guion_bajo():
     assert promotion._timeframe("data/BTC_1h_binance.csv") == "1h"
     assert promotion._timeframe("data/BTC_1m_2025.csv") == "1m"
     assert promotion._timeframe("data/sin_marco.csv") == ""
+
+
+def test_la_puerta_no_acepta_un_ciclo_sin_marco():
+    from server import promotion
+
+    verdict = promotion.evaluate(EVIDENCE, STRESS, {"pbo": {"pbo": 0.01}})
+
+    assert "pbo_del_ciclo" in verdict["failed"]
+    assert verdict["reason"] == "el ciclo no declara marco: no se puede verificar el PBO"
+
+
+def test_la_puerta_no_acepta_una_evidencia_sin_dataset():
+    from server import promotion
+
+    evidence = {key: value for key, value in EVIDENCE.items() if key != "dataset"}
+    verdict = promotion.evaluate(evidence, STRESS, CYCLE)
+
+    assert "pbo_del_ciclo" in verdict["failed"]
+    assert "no declara dataset" in verdict["reason"]
