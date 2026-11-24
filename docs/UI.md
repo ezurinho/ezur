@@ -114,8 +114,15 @@ veredicto no se genera: sale de `buildReasoning()` (`frontend/src/reasoning.ts`)
 una función pura con tests, y de los códigos ya traducidos en `reasons.ts`; por
 eso la tarjeta lleva el sello **determinista**. La convicción solo aparece si la
 estrategia publica `signal.strength`, en bandas alta/media/baja: un 0,73 suelto
-no se puede accionar. El veto —«rechazó N señales hoy»— solo aparece si
-`risk.block_count > 0`; un panel que siempre felicita es decoración.
+no se puede accionar. El veto —«rechazó N señales hoy por riesgo»— solo aparece
+cuando **no** hay bloqueo activo: con el bloqueo puesto, el recuento y la fecha
+ya los da el aviso de arriba. Un panel que siempre felicita es decoración, y dos
+frases idénticas seguidas se leen como un fallo.
+
+El reparto con `BlockedBanner` es deliberado: el aviso se queda con lo que solo
+él sabe —cuándo fue el último rechazo y qué desbloquea— y la tarjeta con el
+motivo en palabras, una sola vez, en el veredicto. Los pasos muestran medidas,
+no prosa.
 
 ## Laboratorio
 
