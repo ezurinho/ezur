@@ -41,6 +41,7 @@ def test_la_seccion_de_investigacion_tiene_exactamente_lo_que_usa_el_runner():
         "min_oos_pf_ci_low",
         "min_trades",
         "min_wfa_trades_per_fold",
+        "min_minbtl_coverage",
         "cost_stress_multiplier",
         "min_cost_stress_pf",
         "min_plateau_pf",
@@ -104,19 +105,62 @@ def test_el_veredicto_lleva_la_version_del_fichero(monkeypatch):
     assert report.thresholds_version == "9.9"
 
 
-def test_el_motor_de_estrategias_apunta_al_mismo_fichero():
-    """El otro lector: si su ruta canónica no existe, el contrato está roto."""
+def test_los_dos_lectores_obtienen_los_mismos_numeros():
+    """El test que el contrato promete: si un lector diverge del fichero, falla.
+
+    Ejecuta `runner/gates.py` del motor en un subproceso (solo stdlib, sin
+    pandas), le pide sus constantes y las compara una a una con el JSON. Si
+    alguien vuelve a escribir un 0.20 dentro del motor, este test se pone rojo
+    aunque su suite siga verde.
+    """
+    import json as _json
     import os
+    import subprocess
+    import sys
     from pathlib import Path
 
     research_home = Path(
         os.getenv("EZUR_RESEARCH_HOME")
-        or Path.home() / ".deepai-code" / "scratch" / "2026-11-22-motor-ia-para-estrategias-btc-a2100b36"
+        or Path.home()
+        / ".deepai-code"
+        / "scratch"
+        / "2026-11-22-motor-ia-para-estrategias-btc-a2100b36"
     )
-    research_loader = research_home / "runner" / "gates.py"
-    if not research_loader.is_file():
-        pytest.skip(f"motor de estrategias no encontrado en {research_loader}")
+    loader = research_home / "runner" / "gates.py"
+    if not loader.is_file():
+        pytest.skip(f"motor de estrategias no encontrado en {loader}")
 
-    source = research_loader.read_text(encoding="utf-8")
-    assert "config" in source and "gates.json" in source
-    assert "max_pbo" in source and "min_dsr" in source
+    script = "\n".join(
+        [
+            "import json, sys",
+            f"sys.path.insert(0, {str(loader.parent)!r})",
+            "import gates as g",
+            "print(json.dumps({",
+            " 'file': str(g.GATES_FILE),",
+            " 'max_pbo': g.MAX_PBO,",
+            " 'min_dsr': g.MIN_DSR,",
+            " 'min_oos_t_stat': g.MIN_OOS_T_STAT,",
+            " 'min_oos_pf_ci_low': g.MIN_OOS_PF_CI_LOW,",
+            " 'min_trades': g.MIN_TRADES,",
+            " 'min_wfa_trades_per_fold': g.MIN_WFA_TRADES_PER_FOLD,",
+            " 'min_minbtl_coverage': g.MIN_MINBTL_COVERAGE,",
+            " 'cost_stress_multiplier': g.COST_STRESS_MULTIPLIER,",
+            " 'min_cost_stress_pf': g.MIN_COST_STRESS_PF,",
+            " 'min_plateau_pf': g.MIN_PLATEAU_PF,",
+            " 'min_benchmark_alpha_ci_low': g.MIN_BENCHMARK_ALPHA_CI_LOW,",
+            " 'max_unexplained_gaps': g.MAX_UNEXPLAINED_GAPS,",
+            "}))",
+        ]
+    )
+    env = {**os.environ, gates.GATES_ENV: str(gates.gates_path())}
+    done = subprocess.run(
+        [sys.executable, "-c", script], capture_output=True, text=True, env=env, timeout=90
+    )
+    assert done.returncode == 0, done.stderr
+
+    motor = _json.loads(done.stdout)
+    assert Path(motor.pop("file")) == gates.gates_path(), "el motor apunta a otro fichero"
+    canonico = gates.research_thresholds()
+    assert set(motor) == set(canonico), "el motor lee claves que el contrato no tiene (o al revés)"
+    for clave, valor in canonico.items():
+        assert motor[clave] == valor, f"{clave}: motor {motor[clave]} ≠ contrato {valor}"
