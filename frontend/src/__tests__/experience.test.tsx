@@ -497,6 +497,25 @@ describe("la frase de la racha depende de la pausa configurada", () => {
     expect(unblockHint("stale_data")).toContain("velas frescas");
   });
 
+  it("una orden con señal antigua se explica sin jerga técnica", async () => {
+    const { plainReason, unblockHint } = await import("../reasons");
+    expect(plainReason("stale_order")).toContain("señal antigua");
+    expect(unblockHint("stale_order")).toContain("nueva señal");
+  });
+
+  it("una señal vencida se explica sin jerga técnica", async () => {
+    const { plainReason, unblockHint } = await import("../reasons");
+    expect(plainReason("stale_signal")).toContain("señal");
+    expect(plainReason("stale_signal")).toContain("venció");
+    expect(unblockHint("stale_signal")).toContain("nueva señal");
+  });
+
+  it("un rechazo por notional mínimo se explica sin jerga técnica", async () => {
+    const { plainReason, unblockHint } = await import("../reasons");
+    expect(plainReason("below_min_notional")).toContain("valor mínimo");
+    expect(unblockHint("below_min_notional")).toContain("mayor tamaño");
+  });
+
   it("ningún rechazo del motor cae en 'Motivo técnico'", async () => {
     const { plainReason } = await import("../reasons");
     // Los códigos que devuelve server/risk.py: todos deben tener frase humana.
@@ -508,6 +527,11 @@ describe("la frase de la racha depende de la pausa configurada", () => {
       "consecutive_losses",
       "no_price",
       "stale_data",
+      "stale_order",
+      "stale_signal",
+      "below_min_notional",
+      "gap_through_stop",
+      "gap_through_target",
       "invalid_stop",
       "invalid_stop_side",
       "invalid_target_side",

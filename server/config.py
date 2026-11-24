@@ -18,6 +18,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 DEFAULT_CONFIG_PATH = Path("data/config.json")
+MIN_TICK_SIZE = 1e-12
 
 
 class _Model(BaseModel):
@@ -77,17 +78,27 @@ class InstrumentConfig(_Model):
     enabled: bool = True
     tick_size: float = 0.25
     tick_value: float = 0.5
+    lot_size: int = Field(default=1, strict=True)
+    min_notional: float | None = None
+    contract_size: float | None = None
     point_value: float | None = None
     reference_price: float | None = None
     currency: str = "USD"
     decimals: int = 2
     session_template: str = "RTH"
 
-    @field_validator("tick_size", "tick_value", "point_value", "reference_price")
+    @field_validator("tick_size")
     @classmethod
-    def _positive_tick(cls, value: float | None) -> float | None:
+    def _tick_size_range(cls, value: float) -> float:
+        if value < MIN_TICK_SIZE:
+            raise ValueError(f"tick_size must be at least {MIN_TICK_SIZE}")
+        return value
+
+    @field_validator("tick_value", "point_value", "reference_price", "contract_size")
+    @classmethod
+    def _positive_metadata(cls, value: float | None) -> float | None:
         if value is not None and value <= 0:
-            raise ValueError("tick and point values must be positive")
+            raise ValueError("instrument metadata must be positive")
         return value
 
     @field_validator("decimals")
@@ -96,6 +107,26 @@ class InstrumentConfig(_Model):
         if not 0 <= value <= 12:
             raise ValueError("decimals must be in [0, 12]")
         return value
+
+    @field_validator("lot_size")
+    @classmethod
+    def _lot_size_range(cls, value: int) -> int:
+        if value < 1:
+            raise ValueError("lot_size must be at least 1")
+        return value
+
+    @field_validator("min_notional")
+    @classmethod
+    def _min_notional_range(cls, value: float | None) -> float | None:
+        if value is not None and value <= 0:
+            raise ValueError("min_notional must be positive")
+        return value
+
+    @model_validator(mode="after")
+    def _notional_requires_contract_size(self) -> "InstrumentConfig":
+        if self.min_notional is not None and self.contract_size is None:
+            raise ValueError("min_notional requires an explicit contract_size")
+        return self
 
 
 class InstrumentsConfig(_Model):
@@ -260,7 +291,7 @@ class ExecutionConfig(_Model):
     commission_per_unit_side: float = 0.62
     slippage_ticks: int = 1
     max_slippage_ticks: int = 4
-    fill_model: Literal["next_open", "signal_price", "intrabar"] = "next_open"
+    fill_model: Literal["next_open", "signal_price"] = "next_open"
     simulate_partial_fills: bool = False
     partial_fill_ratio: float = 0.6
 
@@ -398,6 +429,10 @@ def load_settings(
         return Settings(auto_start=False)
     try:
         raw = json.loads(target.read_text(encoding="utf-8"))
+        execution = raw.get("execution") if isinstance(raw, dict) else None
+        if isinstance(execution, dict) and execution.get("fill_model") == "intrabar":
+            # Alias histórico: tenía el mismo comportamiento que next_open.
+            execution["fill_model"] = "next_open"
         return Settings.model_validate(raw)
     except (json.JSONDecodeError, ValueError) as error:
         shutil.copy2(target, target.with_suffix(target.suffix + ".broken"))

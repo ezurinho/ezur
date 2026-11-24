@@ -50,6 +50,8 @@ RESTART_PAUSE_S = 0.5
 
 MAX_BARS = 500
 WATCHDOG_INTERVAL_S = 30
+PENDING_ORDER_TTL_S = 120
+EXECUTION_REJECTIONS = {"below_min_notional", "gap_through_stop", "gap_through_target"}
 
 SnapshotHook = Callable[[dict[str, Any]], Awaitable[None] | None]
 
@@ -297,6 +299,8 @@ class TradingEngine:
             if self.state.status in {"stopped", "error"}:
                 return
             await self._stop_tasks_unlocked()
+            if self.state.status in {"stopped", "error"}:
+                return
             self._start_task_unlocked()
 
     async def run(self) -> None:
@@ -402,6 +406,18 @@ class TradingEngine:
             self.state.quality = "ok"
         if self.state.quality == "stale":
             self._cancel_stale_pending()
+        elif self.execution.has_pending():
+            expired = self.execution.expire_pending(PENDING_ORDER_TTL_S, now_utc())
+            if expired:
+                self.state.orders = list(self.execution.orders)
+                self.state.block_reason = "stale_order"
+                self.state.block_count = 0
+                self._event(
+                    "warn",
+                    "execution",
+                    "orden pendiente cancelada por señal antigua",
+                    {"expired": expired},
+                )
         return before != (self.state.quality, self.state.staleness_ms, self.state.block_reason)
 
     async def _stop_tasks_unlocked(self) -> None:
@@ -506,6 +522,8 @@ class TradingEngine:
         self._previous_tick_ts = tick.ts
         self._check_live_freshness(tick.ts)
 
+        rejections_before = dict(self._rejection_totals)
+        execution_rejections: list[str] = []
         for event in self.execution.on_bar(tick.bars):
             if event.type == "exit" and event.trade is not None:
                 self._on_trade_closed(event.trade)
@@ -516,6 +534,25 @@ class TradingEngine:
                     "orden ejecutada",
                     {"symbol": event.symbol, "price": event.price, "units": event.units},
                 )
+            elif event.type == "cancel":
+                if event.reason in EXECUTION_REJECTIONS:
+                    execution_rejections.append(event.reason)
+                    self.state.block_reason = event.reason
+                self._event(
+                    "warn",
+                    "execution",
+                    "orden no ejecutada",
+                    {
+                        "symbol": event.symbol,
+                        "units": event.units,
+                        "reason": event.reason,
+                        "diagnostics": event.diagnostics,
+                    },
+                )
+
+        if not execution_rejections and self.state.block_reason in EXECUTION_REJECTIONS:
+            self.state.block_reason = None
+            self.state.block_count = 0
 
         if self.execution.position is not None and self.settings.risk.close_at_session_end:
             self._maybe_close_at_session_end(tick)
@@ -525,6 +562,10 @@ class TradingEngine:
         self._expire_blocks(tick.ts)
         if self.state.status == "running":
             self._evaluate(tick, session)
+        for reason in execution_rejections:
+            # Si la evaluación de esta vela ya contó el mismo motivo, no duplicar.
+            if self._rejection_totals.get(reason, 0) == rejections_before.get(reason, 0):
+                self._note_rejection(reason, "orden no ejecutada", tick.ts)
 
         # En un backtest el estado vive en memoria y nadie reinicia a mitad: no
         # hay nada que restaurar. Persistirlo en cada vela son ~250.000
@@ -584,6 +625,11 @@ class TradingEngine:
                 "no_price",
             }:
                 self.state.block_reason = None
+                self.state.block_count = 0
+            return
+        if self.execution.seen_signal(output.signal.key):
+            # `arm` descarta una clave repetida; evaluarla antes de riesgo
+            # contaba un rechazo que nunca podía convertirse en orden.
             return
         if not session.is_open:
             self.state.block_reason = "outside_window"
@@ -599,7 +645,6 @@ class TradingEngine:
             self.state.block_reason = "stale_data"
             self._note_rejection("stale_data", "el feed está obsoleto", tick.ts)
             return
-
         spec = self.settings.instruments.by_symbol(primary)
         template = self.settings.instruments.template_for(primary)
         last_price = tick.bars[primary].c if primary in tick.bars else None
@@ -627,13 +672,29 @@ class TradingEngine:
             self.state.block_reason = decision.code
             self._note_rejection(decision.code, decision.message, tick.ts)
             return
+        if output.signal.valid_until is not None:
+            live = self.mode in {"paper", "live"} and self.state.provider in {"okx", "live"}
+            clock = now_utc() if live else tick.ts
+            if _aware(clock) > _aware(output.signal.valid_until):
+                # Riesgo ya evaluó el estado duro para no enmascarar un muro
+                # activo; la caducidad veta antes de crear cualquier orden.
+                self.state.block_reason = "stale_signal"
+                self._note_rejection("stale_signal", "la señal venció", clock)
+                return
 
-        self.state.block_reason = None
-        self.state.block_count = 0
+        prior_block = self.state.block_reason
+        live = self.mode in {"paper", "live"} and self.state.provider in {"okx", "live"}
         order = self.execution.arm(
-            decision, output.signal, primary, last_price or output.signal.stop_price, tick.ts
+            decision,
+            output.signal,
+            primary,
+            last_price or output.signal.stop_price,
+            tick.ts,
+            armed_at=now_utc() if live else None,
         )
         if order is not None:
+            self.state.block_reason = None
+            self.state.block_count = 0
             self.state.orders = list(self.execution.orders)
             self._event(
                 "info",
@@ -641,6 +702,12 @@ class TradingEngine:
                 "orden armada",
                 {"symbol": primary, "units": decision.units, "side": output.signal.side},
             )
+        elif prior_block == "stale_order" or prior_block in EXECUTION_REJECTIONS:
+            self.state.block_reason = prior_block
+            self.state.block_count = 0
+        else:
+            self.state.block_reason = None
+            self.state.block_count = 0
 
     def _expire_blocks(self, clock: datetime) -> None:
         """Un bloqueo caduca cuando su condición deja de cumplirse, no solo al reevaluar."""
@@ -685,10 +752,9 @@ class TradingEngine:
         return dict(self._rejection_totals)
 
     def _note_rejection(self, code: str, message: str, when: datetime) -> None:
-        """Count every rejection, log the first one and then at most one per window.
+        """Cuenta cada rechazo y registra el primero más uno por ventana.
 
-        A strategy that fires on every bar would otherwise write thousands of
-        identical events and bury the console.
+        Una estrategia que dispara en cada vela no debe enterrar la consola.
         """
         entry = self._rejections.setdefault(
             code, {"count": 0, "last": None, "message": message}

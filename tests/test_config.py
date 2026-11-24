@@ -9,6 +9,7 @@ from server.config import (
     InstrumentConfig,
     InstrumentsConfig,
     Settings,
+    ExecutionConfig,
     apply_settings,
     load_settings,
     save_settings,
@@ -25,6 +26,9 @@ def test_defaults_match_spec():
     assert settings.execution.commission_per_unit_side == 0.62
     assert settings.live.live_enabled is False
     assert settings.live.can_start() is False
+    assert settings.instruments.items[0].lot_size == 1
+    assert settings.instruments.items[0].min_notional is None
+    assert settings.instruments.items[0].contract_size is None
 
 
 def test_corrupt_config_is_archived_and_defaults_restored(tmp_path):
@@ -66,6 +70,50 @@ def test_synthetic_reference_price_is_explicit_and_positive():
     assert InstrumentConfig(symbol="AAA", reference_price=60_000).reference_price == 60_000
     with pytest.raises(ValidationError):
         InstrumentConfig(symbol="AAA", reference_price=0)
+
+
+def test_tick_size_below_supported_precision_is_rejected():
+    with pytest.raises(ValidationError):
+        InstrumentConfig(symbol="AAA", tick_size=1e-13)
+
+
+def test_lot_and_notional_metadata_are_validated():
+    instrument = InstrumentConfig(symbol="AAA", lot_size=5, min_notional=100, contract_size=2)
+    assert instrument.lot_size == 5
+    assert instrument.min_notional == 100
+    assert instrument.contract_size == 2
+    with pytest.raises(ValidationError):
+        InstrumentConfig(symbol="AAA", lot_size=0)
+    with pytest.raises(ValidationError):
+        InstrumentConfig(symbol="AAA", min_notional=0)
+    with pytest.raises(ValidationError):
+        InstrumentConfig(symbol="AAA", min_notional=100)
+
+
+@pytest.mark.parametrize("value", [True, 1.5, "2", -1])
+def test_lot_size_must_be_a_positive_integer(value):
+    with pytest.raises(ValidationError):
+        InstrumentConfig(symbol="AAA", lot_size=value)
+
+
+def test_tiny_positive_tick_value_remains_valid():
+    assert InstrumentConfig(symbol="AAA", tick_value=1e-13).tick_value == 1e-13
+
+
+def test_intrabar_alias_is_not_accepted_as_a_fill_model():
+    with pytest.raises(ValidationError):
+        ExecutionConfig(fill_model="intrabar")
+
+
+def test_legacy_intrabar_profile_migrates_to_next_open(tmp_path):
+    path = tmp_path / "config.json"
+    path.write_text(
+        json.dumps({"auto_start": True, "execution": {"fill_model": "intrabar"}}),
+        encoding="utf-8",
+    )
+    settings = load_settings(path)
+    assert settings.execution.fill_model == "next_open"
+    assert settings.auto_start is True
 
 
 def test_save_is_atomic(tmp_path):

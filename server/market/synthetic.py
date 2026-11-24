@@ -11,6 +11,7 @@ import math
 import random
 from datetime import datetime, timedelta, timezone
 
+from ..config import MIN_TICK_SIZE
 from ..models import Bar
 
 
@@ -41,8 +42,8 @@ def generate_session(
         raise ValueError("reference_price must be positive and finite")
     if not math.isfinite(volatility_pct) or volatility_pct <= 0:
         raise ValueError("volatility_pct must be positive and finite")
-    if not math.isfinite(tick_size) or tick_size <= 0:
-        raise ValueError("tick_size must be positive and finite")
+    if not math.isfinite(tick_size) or tick_size < MIN_TICK_SIZE:
+        raise ValueError(f"tick_size must be at least {MIN_TICK_SIZE}")
     precision = max(6, min(15, math.ceil(-math.log10(tick_size)) + 2))
     rng = random.Random(_seed(date_key, symbol))
     start_price = reference_price if reference_price is not None else base_price(symbol)

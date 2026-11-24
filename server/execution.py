@@ -3,7 +3,7 @@
 Fill, bracket and close. The rule that matters: when a bar touches both the
 stop and the target, the stop wins and the trade says so in its diagnostics.
 
-Three fill models, all of them declared instead of assumed:
+Two fill models, both declared instead of assumed:
 
 * ``next_open`` (default) market order at the next bar's open, slippage bounded
   by ``max_slippage_ticks``. The entry bar counts: if it reaches the stop, the
@@ -66,6 +66,7 @@ class ExecutionEngine:
         self.orders: list[Order] = []
         self.last_price: float | None = None
         self._seen_signals: set[str] = set()
+        self._armed_at: dict[str, datetime] = {}
 
     # --- helpers ----------------------------------------------------------
     def _instrument(self, symbol: str) -> InstrumentConfig:
@@ -81,6 +82,10 @@ class ExecutionEngine:
     def has_pending(self) -> bool:
         return any(order.status == "pending" for order in self.orders)
 
+    def seen_signal(self, key: str) -> bool:
+        """La clave ya se armó: reevaluarla solo inflaría los rechazos."""
+        return key in self._seen_signals
+
     # --- lifecycle --------------------------------------------------------
     def arm(
         self,
@@ -89,6 +94,7 @@ class ExecutionEngine:
         symbol: str,
         reference_price: float,
         now: datetime | None = None,
+        armed_at: datetime | None = None,
     ) -> Order | None:
         if not decision.approved:
             return None
@@ -111,6 +117,7 @@ class ExecutionEngine:
             signal_key=signal.key,
         )
         self.orders.append(order)
+        self._armed_at[order.id] = armed_at or stamp
         self._seen_signals.add(signal.key)
         self._trim_orders()
         return order
@@ -137,17 +144,50 @@ class ExecutionEngine:
             plan = self._fill_plan(order, bar)
             if plan is None:
                 order.status = "rejected"
+                spec = self._instrument(order.symbol)
+                slip = min(self.config.slippage_ticks, self.config.max_slippage_ticks) * spec.tick_size
+                candidate_fill = bar.o + slip if order.side == "long" else bar.o - slip
                 events.append(
                     ExecutionEvent(
                         type="cancel",
                         symbol=order.symbol,
                         units=order.units,
                         reason=self._entry_rejection(order, bar) or "gap_through_stop",
-                        diagnostics={"signal_price": order.price, "bar_open": bar.o},
+                        diagnostics={
+                            "signal_price": order.price,
+                            "bar_open": bar.o,
+                            "candidate_fill": candidate_fill,
+                            "stop_price": order.stop_price,
+                            "target_price": order.target_price,
+                            "fill_model": self.config.fill_model,
+                            "order_id": order.id,
+                            "signal_key": order.signal_key,
+                        },
                     )
                 )
                 continue
             fill, reason, fill_diagnostics = plan
+            notional_rejection = self._notional_rejection(order, fill)
+            if notional_rejection is not None:
+                order.status = "rejected"
+                events.append(
+                    ExecutionEvent(
+                        type="cancel",
+                        symbol=order.symbol,
+                        units=order.units,
+                        reason=notional_rejection,
+                        diagnostics={
+                            "fill_price": fill,
+                            "fill_model": self.config.fill_model,
+                            "notional": fill * self._instrument(order.symbol).contract_size * order.units,
+                            "min_notional": self._instrument(order.symbol).min_notional,
+                            "contract_size": self._instrument(order.symbol).contract_size,
+                            "order_id": order.id,
+                            "signal_key": order.signal_key,
+                        },
+                    )
+                )
+                continue
             order.status = "filled"
             order.price = fill
             self.position = Position(
@@ -216,6 +256,16 @@ class ExecutionEngine:
             )
             if reached:
                 return "gap_through_target"
+        return None
+
+    def _notional_rejection(self, order: Order, fill: float) -> str | None:
+        spec = self._instrument(order.symbol)
+        if spec.min_notional is None:
+            return None
+        if spec.contract_size is None:
+            raise ValueError("min_notional requires contract_size")
+        if fill * spec.contract_size * order.units < spec.min_notional:
+            return "below_min_notional"
         return None
 
     def _fill_plan(
@@ -358,6 +408,22 @@ class ExecutionEngine:
     def _risk_per_unit(self, position: Position) -> float:
         spec = self._instrument(position.symbol)
         return abs(position.entry_price - position.stop_price) / spec.tick_size * spec.tick_value
+
+    def expire_pending(self, max_age_s: float, now: datetime) -> int:
+        """Cancela órdenes de entrada demasiado antiguas antes de poder rellenarse."""
+        if max_age_s <= 0:
+            return 0
+        stamp = now if now.tzinfo is not None else now.replace(tzinfo=timezone.utc)
+        expired = 0
+        for order in self.orders:
+            if order.status != "pending":
+                continue
+            created = self._armed_at.get(order.id, order.created_ts)
+            created = created if created.tzinfo is not None else created.replace(tzinfo=timezone.utc)
+            if (stamp - created).total_seconds() > max_age_s:
+                order.status = "cancelled"
+                expired += 1
+        return expired
 
     def cancel_all(self) -> int:
         cancelled = 0

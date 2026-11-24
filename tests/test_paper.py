@@ -60,6 +60,36 @@ def test_el_perfil_aporta_su_capital(tmp_path):
     assert capital == 100_000.0
 
 
+def test_el_informe_usa_el_contract_size_explicito(tmp_path):
+    profile = tmp_path / "perfil"
+    profile.mkdir()
+    (profile / "config.json").write_text(
+        json.dumps({
+            "instruments": {
+                "primary": "BTC",
+                "items": [{"symbol": "BTC", "tick_size": 0.01, "tick_value": 0.00002, "contract_size": 0.001}],
+            }
+        }),
+        encoding="utf-8",
+    )
+    assert paper._profile_contract_size(profile) == 0.001
+
+
+def test_el_informe_no_infiere_contract_size_si_falta(tmp_path):
+    profile = tmp_path / "perfil"
+    profile.mkdir()
+    (profile / "config.json").write_text(
+        json.dumps({
+            "instruments": {
+                "primary": "BTC",
+                "items": [{"symbol": "BTC", "tick_size": 0.01, "tick_value": 0.00002}],
+            }
+        }),
+        encoding="utf-8",
+    )
+    assert paper._profile_contract_size(profile) is None
+
+
 def test_una_base_sin_operaciones_se_lee_sin_romperse(tmp_path, capsys):
     import sqlite3
 

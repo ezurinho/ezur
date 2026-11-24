@@ -73,6 +73,51 @@ def test_size_below_one_is_rejected(settings, signal_long):
     assert decision.code == "size_below_minimum"
 
 
+def test_units_round_down_to_the_instrument_lot(settings, signal_long):
+    settings.instruments.by_symbol(settings.instruments.primary).lot_size = 2
+    decision = _evaluate(settings, signal_long, _portfolio(settings))
+    assert decision.approved is True
+    assert decision.units == 4
+
+
+def test_lot_larger_than_the_cap_is_rejected(settings, signal_long):
+    settings.risk.max_units_per_trade = 3
+    settings.instruments.by_symbol(settings.instruments.primary).lot_size = 5
+    decision = _evaluate(settings, signal_long, _portfolio(settings))
+    assert decision.approved is False
+    assert decision.code == "size_below_minimum"
+
+
+def test_min_notional_uses_the_rounded_lot_size(settings, signal_long):
+    instrument = settings.instruments.by_symbol(settings.instruments.primary)
+    instrument.lot_size = 2
+    instrument.contract_size = 2
+    instrument.min_notional = 900
+    decision = _evaluate(settings, signal_long, _portfolio(settings))
+    assert decision.approved is False
+    assert decision.code == "below_min_notional"
+
+    instrument.min_notional = 800
+    decision = _evaluate(settings, signal_long, _portfolio(settings))
+    assert decision.approved is True
+    assert decision.units == 4
+
+
+def test_size_factor_reports_the_realized_size_after_lot_rounding(settings, signal_long):
+    settings.risk.soft_brakes = True
+    settings.risk.no_trade_after_consecutive_losses = 3
+    settings.instruments.by_symbol(settings.instruments.primary).lot_size = 2
+    decision = _evaluate(
+        settings,
+        signal_long,
+        _portfolio(settings, consecutive_losses=3),
+    )
+    assert decision.approved is True
+    assert decision.units == 2
+    assert decision.size_factor == pytest.approx(0.4)
+    assert "40" in decision.message
+
+
 def test_stop_too_wide_is_rejected(settings, signal_long):
     settings.risk.max_stop_ticks = 1
     decision = _evaluate(settings, signal_long, _portfolio(settings))

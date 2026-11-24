@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -338,6 +339,27 @@ class _AlwaysSignalStrategy:
         )
 
 
+class _OneSignalStrategy(_AlwaysSignalStrategy):
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def evaluate(self, md):
+        self.calls += 1
+        if self.calls > 1:
+            return StrategyOutput(state="active", state_label="Activo")
+        return super().evaluate(md)
+
+
+class _SignalExpiryStrategy(_AlwaysSignalStrategy):
+    def __init__(self, valid_until: datetime) -> None:
+        self.valid_until = valid_until
+
+    def evaluate(self, md):
+        output = super().evaluate(md)
+        output.signal = output.signal.model_copy(update={"valid_until": self.valid_until})
+        return output
+
+
 def _risk_events(store):
     return [e for e in store.list_events(limit=500) if e["category"] == "risk"]
 
@@ -383,6 +405,77 @@ def test_cooldown_block_expires_with_the_clock(engine):
     engine.state.block_reason = "cooldown_active"
     engine._process(_tick(DAY_ONE + timedelta(minutes=6)))
     assert engine.state.block_reason is None
+
+
+def test_expired_signal_is_vetoed_before_arming(settings, store):
+    engine = TradingEngine(
+        settings,
+        store,
+        feed=None,
+        strategy=_SignalExpiryStrategy(DAY_ONE - timedelta(seconds=1)),
+    )
+    engine.start()
+    engine._process(_tick(DAY_ONE))
+    assert engine.execution.pending_orders() == []
+    assert engine.state.block_reason == "stale_signal"
+    assert engine.rejection_totals().get("stale_signal") == 1
+
+
+def test_unexpired_signal_can_arm(settings, store):
+    engine = TradingEngine(
+        settings,
+        store,
+        feed=None,
+        strategy=_SignalExpiryStrategy(DAY_ONE + timedelta(minutes=1)),
+    )
+    engine.start()
+    engine._process(_tick(DAY_ONE))
+    assert len(engine.execution.pending_orders()) == 1
+    assert engine.state.block_reason is None
+
+
+def test_signal_is_valid_at_the_exact_expiry_boundary(settings, store):
+    engine = TradingEngine(
+        settings,
+        store,
+        feed=None,
+        strategy=_SignalExpiryStrategy(DAY_ONE),
+    )
+    engine.start()
+    engine._process(_tick(DAY_ONE))
+    assert len(engine.execution.pending_orders()) == 1
+
+
+def test_expired_signal_does_not_mask_an_active_hard_risk_block(settings, store):
+    from server.timeutil import session_for
+
+    engine = TradingEngine(
+        settings,
+        store,
+        feed=None,
+        strategy=_SignalExpiryStrategy(DAY_ONE - timedelta(seconds=1)),
+    )
+    engine.state.session = session_for(DAY_ONE, settings.instruments.template_for(settings.instruments.primary))
+    engine.state.day_stats.pnl = -settings.risk.initial_capital * settings.risk.max_daily_loss_pct / 100
+    engine.start()
+    engine._process(_tick(DAY_ONE))
+    assert engine.execution.pending_orders() == []
+    assert engine.state.block_reason == "daily_loss_limit"
+
+
+def test_live_signal_expiry_uses_wall_clock(settings, store, monkeypatch):
+    engine = TradingEngine(
+        settings,
+        store,
+        feed=None,
+        strategy=_SignalExpiryStrategy(DAY_ONE + timedelta(seconds=30)),
+    )
+    engine.state.provider = "okx"
+    engine.start()
+    monkeypatch.setattr("server.engine.now_utc", lambda: DAY_ONE + timedelta(seconds=31))
+    engine._process(_tick(DAY_ONE))
+    assert engine.execution.pending_orders() == []
+    assert engine.state.block_reason == "stale_signal"
 
 
 def test_stale_feed_blocks_a_new_entry(settings, store, monkeypatch):
@@ -473,6 +566,78 @@ def test_live_watchdog_cancels_pending_during_silence(settings, store, monkeypat
     assert engine.execution.pending_orders() == []
     assert engine.execution.orders[-1].status == "cancelled"
     assert engine.state.block_reason == "stale_data"
+
+
+def test_live_order_expires_even_when_fresh_data_returns(settings, store, monkeypatch):
+    engine = TradingEngine(settings, store, feed=None, strategy=_AlwaysSignalStrategy())
+    engine.state.provider = "okx"
+    engine.start()
+    monkeypatch.setattr("server.engine.now_utc", lambda: DAY_ONE)
+    engine._process(_tick(DAY_ONE))
+    assert len(engine.execution.pending_orders()) == 1
+
+    monkeypatch.setattr("server.engine.now_utc", lambda: DAY_ONE + timedelta(minutes=3))
+    engine._process(_tick(DAY_ONE + timedelta(minutes=3)))
+
+    assert engine.state.quality == "ok"
+    assert engine.execution.position is None
+    assert engine.execution.pending_orders() == []
+    assert engine.execution.orders[-1].status == "cancelled"
+    assert any("señal antigua" in event["message"] for event in store.list_events(limit=20))
+    assert engine.state.block_reason == "stale_order"
+
+
+def test_watchdog_expires_an_old_order_before_data_becomes_stale(settings, store, monkeypatch):
+    engine = TradingEngine(settings, store, feed=None, strategy=_AlwaysSignalStrategy())
+    engine.state.provider = "okx"
+    engine.start()
+    monkeypatch.setattr("server.engine.now_utc", lambda: DAY_ONE)
+    engine._process(_tick(DAY_ONE))
+
+    monkeypatch.setattr("server.engine.now_utc", lambda: DAY_ONE + timedelta(seconds=121))
+    engine._check_live_freshness()
+
+    assert engine.state.quality == "ok"
+    assert engine.execution.pending_orders() == []
+    assert engine.state.block_reason == "stale_order"
+
+
+def test_order_ttl_starts_when_armed_not_at_candle_open(settings, store, monkeypatch):
+    engine = TradingEngine(settings, store, feed=None, strategy=_AlwaysSignalStrategy())
+    engine.state.provider = "okx"
+    engine.start()
+    monkeypatch.setattr("server.engine.now_utc", lambda: DAY_ONE)
+    engine._process(_tick(DAY_ONE - timedelta(seconds=60)))
+    assert len(engine.execution.pending_orders()) == 1
+
+    monkeypatch.setattr("server.engine.now_utc", lambda: DAY_ONE + timedelta(seconds=61))
+    engine._check_live_freshness()
+
+    assert len(engine.execution.pending_orders()) == 1
+    assert engine.state.block_reason != "stale_order"
+
+
+def test_fresh_unique_signal_clears_an_expired_order_block(settings, store, monkeypatch):
+    class UniqueSignalStrategy(_AlwaysSignalStrategy):
+        def evaluate(self, md):
+            output = super().evaluate(md)
+            output.signal = output.signal.model_copy(update={"key": f"unique-{md.clock.isoformat()}"})
+            return output
+
+    engine = TradingEngine(settings, store, feed=None, strategy=UniqueSignalStrategy())
+    engine.state.provider = "okx"
+    engine.start()
+    monkeypatch.setattr("server.engine.now_utc", lambda: DAY_ONE)
+    engine._process(_tick(DAY_ONE))
+
+    monkeypatch.setattr("server.engine.now_utc", lambda: DAY_ONE + timedelta(seconds=121))
+    engine._check_live_freshness()
+    assert engine.state.block_reason == "stale_order"
+
+    engine._process(_tick(DAY_ONE + timedelta(seconds=121)))
+
+    assert engine.state.block_reason is None
+    assert len(engine.execution.pending_orders()) == 1
 
 
 def test_watchdog_does_not_age_a_historical_replay(settings, store, monkeypatch):
@@ -651,6 +816,100 @@ def test_concurrent_refreshes_leave_only_one_feed_consumer(settings, store):
     asyncio.run(scenario())
 
 
+def test_gap_rejection_is_accounted_with_fill_diagnostics(settings, store):
+    settings.execution.slippage_ticks = 0
+    engine = TradingEngine(settings, store, feed=None, strategy=_AlwaysSignalStrategy())
+    engine.start()
+    engine._process(_tick(DAY_ONE))
+    assert len(engine.execution.pending_orders()) == 1
+
+    engine._process(_tick(DAY_ONE + timedelta(minutes=1), price=90.0))
+
+    assert engine.execution.position is None
+    assert engine.rejection_totals()["gap_through_stop"] == 1
+    assert engine.state.block_reason == "gap_through_stop"
+    assert engine.snapshot()["data"]["risk"]["block_reason"] == "gap_through_stop"
+    event = next(
+        row
+        for row in store.list_events(limit=50)
+        if row["category"] == "execution"
+        and json.loads(row["meta"]).get("reason") == "gap_through_stop"
+    )
+    diagnostics = json.loads(event["meta"])["diagnostics"]
+    assert diagnostics["candidate_fill"] == pytest.approx(90.0)
+    assert diagnostics["stop_price"] == pytest.approx(95.5)
+
+
+def test_notional_block_clears_when_the_signal_disappears(engine):
+    from server.timeutil import session_for
+
+    engine.start()
+    engine.state.session = session_for(DAY_ONE, engine.settings.instruments.template_for(engine.settings.instruments.primary))
+    engine.state.block_reason = "below_min_notional"
+    engine.state.block_count = 1
+    engine._process(_tick(DAY_ONE))
+    assert engine.state.block_reason is None
+    assert engine.state.block_count == 0
+
+
+def test_notional_block_clears_during_warmup(settings, store):
+    from server.strategy.base import Warmup
+
+    class WarmingStrategy(NullStrategy):
+        def warmup_requirements(self):
+            return Warmup(bars={"*": 100})
+
+    engine = TradingEngine(settings, store, feed=None, strategy=WarmingStrategy())
+    engine.start()
+    engine.state.block_reason = "below_min_notional"
+    engine.state.block_count = 1
+    engine._process(_tick(DAY_ONE))
+    assert engine.state.block_reason is None
+    assert engine.state.block_count == 0
+
+
+def test_fill_notional_rejection_is_persisted_with_its_cause(settings, store):
+    instrument = settings.instruments.by_symbol(settings.instruments.primary)
+    instrument.contract_size = 1
+    instrument.min_notional = 500
+    settings.execution.slippage_ticks = 0
+    engine = TradingEngine(settings, store, feed=None, strategy=_AlwaysSignalStrategy())
+    engine.start()
+    engine._process(_tick(DAY_ONE))
+    assert len(engine.execution.pending_orders()) == 1
+
+    engine._process(_tick(DAY_ONE + timedelta(minutes=1), price=99.25))
+
+    assert engine.execution.position is None
+    assert engine.execution.orders[-1].status == "rejected"
+    event = next(
+        row
+        for row in store.list_events(limit=50)
+        if row["category"] == "execution"
+        and json.loads(row["meta"]).get("reason") == "below_min_notional"
+    )
+    assert json.loads(event["meta"])["diagnostics"]["fill_price"] == pytest.approx(99.25)
+    assert engine.rejection_totals()["below_min_notional"] == 1
+
+
+def test_fill_rejection_survives_a_no_signal_tick_then_clears(settings, store):
+    instrument = settings.instruments.by_symbol(settings.instruments.primary)
+    instrument.contract_size = 1
+    instrument.min_notional = 500
+    settings.execution.slippage_ticks = 0
+    engine = TradingEngine(settings, store, feed=None, strategy=_OneSignalStrategy())
+    engine.start()
+    engine._process(_tick(DAY_ONE))
+    engine._process(_tick(DAY_ONE + timedelta(minutes=1), price=99.25))
+    assert engine.state.block_reason == "below_min_notional"
+    assert engine.state.block_count == 1
+    assert engine.snapshot()["data"]["risk"]["block_reason"] == "below_min_notional"
+
+    engine._process(_tick(DAY_ONE + timedelta(minutes=2), price=100.0))
+    assert engine.state.block_reason is None
+    assert engine.state.block_count == 0
+
+
 def test_stale_feed_still_manages_an_open_position(settings, store, monkeypatch):
     engine = TradingEngine(settings, store, feed=None, strategy=NullStrategy())
     engine.state.provider = "okx"
@@ -705,7 +964,13 @@ def test_watchdog_survives_a_failed_check(settings, store, monkeypatch):
         try:
             engine.start()
             await engine.start_task()
-            await asyncio.sleep(0.02)
+            # Esperar la condición, no un tiempo fijo: un ciclo lento de la
+            # máquina no convierte esta prueba en un flake.
+            deadline = asyncio.get_running_loop().time() + 2.0
+            while asyncio.get_running_loop().time() < deadline:
+                if calls >= 2 and engine.state.quality == "stale":
+                    break
+                await asyncio.sleep(0.002)
             assert calls >= 2
             assert engine.state.quality == "stale"
             assert engine._watchdog_task is not None and not engine._watchdog_task.done()

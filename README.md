@@ -213,10 +213,10 @@ por la misma vara que el estudio:
 | PBO de su ciclo de selección | <= 0,2 |
 
 ```bash
-python -m server.promotion --evidence bt.json --stress bt-2x.json --cycle CYCLE-BOT-1D.json
+python -m server.promotion --config profiles/okx/config.json --evidence bt.json --stress bt-2x.json --cycle CYCLE-BOT-1D.json
 ```
 
-Sale con 1 si no está promovida. En el perfil, `"promotion": {"required": true,
+El coste se mide con la comisión y el `tick_value` del perfil que va a operar: `--config` es obligatorio, y una evidencia que no declara su modelo de ejecución no supera ese criterio. Sale con 1 si no está promovida. En el perfil, `"promotion": {"required": true,
 "evidence": "...", "stress_evidence": "...", "cycle": "..."}` impide el
 `auto_start`; con `"mode": "reduce"` arranca, pero multiplica el riesgo efectivo
 por `size_factor` y deja un evento con el criterio que falló. La reducción no se

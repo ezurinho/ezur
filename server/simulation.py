@@ -195,7 +195,7 @@ def main() -> None:
     parser.add_argument("--max-ticks", type=int, default=None)
     parser.add_argument(
         "--fill-model",
-        choices=("next_open", "signal_price", "intrabar"),
+        choices=("next_open", "signal_price"),
         default=None,
         help="Modelo de fill; por defecto el de la configuración",
     )

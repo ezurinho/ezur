@@ -6,6 +6,8 @@ from itertools import islice
 
 import pytest
 
+from server.config import InstrumentConfig, InstrumentsConfig, Settings
+from server.main import build_feed
 from server.market import synthetic
 from server.market.feed import CSVFeed, LiveFeed, SimulatedFeed
 
@@ -43,6 +45,55 @@ def test_simulated_feed_uses_reference_price_per_symbol():
     )
     assert tick.bars["AAA"].o == pytest.approx(60_000, abs=0.02)
     assert tick.bars["BBB"].o == pytest.approx(0.01, abs=0.0001)
+
+
+def test_simulated_feed_uses_tick_size_per_symbol():
+    tick = next(
+        SimulatedFeed(
+            "2026-01-15",
+            ["AAA", "BBB"],
+            tick_size=0.25,
+            tick_sizes={"AAA": 0.01, "BBB": 0.5},
+            reference_prices={"AAA": 100.03, "BBB": 100.03},
+        ).iter_ticks()
+    )
+    assert tick.bars["AAA"].o == pytest.approx(100.03)
+    assert tick.bars["BBB"].o == pytest.approx(100.0)
+
+
+def test_build_feed_propagates_each_instrument_tick_size():
+    settings = Settings()
+    settings.feed.provider = "simulated"
+    settings.instruments = InstrumentsConfig(
+        items=[
+            InstrumentConfig(symbol="AAA", role="primary", tick_size=0.01, reference_price=100.03),
+            InstrumentConfig(symbol="BBB", tick_size=0.5, reference_price=100.03),
+        ],
+        primary="AAA",
+    )
+    tick = next(build_feed(settings).iter_ticks())
+    assert tick.bars["AAA"].o == pytest.approx(100.03)
+    assert tick.bars["BBB"].o == pytest.approx(100.0)
+
+
+def test_simulated_feed_tick_map_falls_back_to_the_global_tick():
+    tick = next(
+        SimulatedFeed(
+            "2026-01-15",
+            ["AAA", "BBB"],
+            tick_size=0.5,
+            tick_sizes={"AAA": 0.01},
+            reference_prices={"AAA": 100.03, "BBB": 100.03},
+        ).iter_ticks()
+    )
+    assert tick.bars["AAA"].o == pytest.approx(100.03)
+    assert tick.bars["BBB"].o == pytest.approx(100.0)
+
+
+@pytest.mark.parametrize("value", [0, -1, float("nan"), float("inf"), None, "0.01"])
+def test_simulated_feed_rejects_invalid_tick_metadata_at_construction(value):
+    with pytest.raises(ValueError, match="tick_size"):
+        SimulatedFeed("2026-01-15", ["AAA"], tick_sizes={"AAA": value})
 
 
 def test_tick_timestamps_are_monotonic():
@@ -117,6 +168,18 @@ def test_tiny_tick_sizes_survive_price_rounding():
     assert bars[0].h >= bars[0].o
     assert bars[0].l > 0
     assert bars[0].c >= 1e-7
+
+
+def test_unrepresentable_tick_size_is_rejected():
+    with pytest.raises(ValueError, match="tick_size"):
+        synthetic.generate_session(
+            "2026-01-15",
+            "TINY",
+            start=datetime(2026, 1, 15, tzinfo=timezone.utc),
+            bars=1,
+            tick_size=1e-16,
+            reference_price=1e-16,
+        )
 
 
 def test_live_feed_without_adapter_raises():

@@ -290,6 +290,23 @@ def _report_run(args, settings, result, stats, report) -> None:
     closed = stats["closed"]
     trades = closed.get("trades", 0)
     budget = settings.risk.initial_capital * settings.risk.risk_per_trade_pct / 100
+    primary = next(
+        (
+            item
+            for item in settings.instruments.items
+            if item.symbol == settings.instruments.primary
+        ),
+        None,
+    )
+    execution = (
+        {
+            "commission_per_unit_side": settings.execution.commission_per_unit_side,
+            "tick_size": primary.tick_size,
+            "tick_value": primary.tick_value,
+        }
+        if primary is not None
+        else None
+    )
     cost_r = (closed.get("fees", 0.0) / trades / budget) if trades and budget else None
 
     rejections = result.diagnostics.get("rejections") or {}
@@ -315,6 +332,8 @@ def _report_run(args, settings, result, stats, report) -> None:
         "strategy": {"id": result.strategy_id, "version": result.strategy_version},
         "diagnostics": result.diagnostics,
         "metrics": closed,
+        "execution": execution,
+        "risk_budget": budget,
         "cost_per_trade_r": cost_r,
         "gates": (
             {"verdict": report.verdict, "failed": report.failed} if report else None

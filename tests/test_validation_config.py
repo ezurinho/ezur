@@ -31,3 +31,14 @@ def test_la_config_de_validacion_solo_cambia_el_freno():
     valid_risk = valid.risk.model_dump()
     changed = {key for key, value in live_risk.items() if valid_risk.get(key) != value}
     assert changed == {"max_drawdown_pct", "soft_brakes"}
+
+
+def test_el_perfil_vivo_no_infiere_un_contract_size_ambiguo():
+    from server.paper import _profile_contract_size
+
+    live = load_settings(ROOT / "profiles/okx/config.json")
+    instrument = live.instruments.by_symbol(live.instruments.primary)
+    assert instrument.lot_size == 1
+    assert instrument.min_notional is None
+    assert instrument.contract_size is None
+    assert _profile_contract_size(ROOT / "profiles/okx") is None

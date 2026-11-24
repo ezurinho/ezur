@@ -128,10 +128,10 @@ def test_pnl_totals_match_to_the_cent(tmp_path: Path):
     assert round(total - live_total, 6) == 0
 
 
-def test_parity_holds_with_the_intrabar_fill_model(tmp_path: Path):
+def test_parity_holds_with_the_signal_price_fill_model(tmp_path: Path):
     """El modelo de fill también tiene que ser el mismo en los dos caminos."""
     settings = _settings()
-    settings.execution.fill_model = "intrabar"
+    settings.execution.fill_model = "signal_price"
     path = _dataset(tmp_path / "bars.csv", settings, ["PRIMARY", "CTX_A"], bars=180)
 
     backtest = run_backtest(settings, path)

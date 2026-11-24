@@ -158,24 +158,44 @@ class RiskManager:
         budget = portfolio.equity * cfg.risk_per_trade_pct / 100
         units = int(budget // risk_per_unit) if risk_per_unit > 0 else 0
         units = min(units, cfg.max_units_per_trade)
+        base_units = units
         if factor < 1.0:
             units = int(units * factor)
+        lot = instrument.lot_size
+        if lot < 1:
+            raise ValueError("lot_size must be at least 1")
+        units = (units // lot) * lot
+        realized_factor = units / base_units if base_units > 0 else 0.0
         if units < 1:
             return reject(
                 "size_below_minimum",
-                "el dimensionado resulta en menos de una unidad"
+                "el dimensionado resulta en menos de un lote"
                 + (f" con el freno a {factor:.0%}" if factor < 1.0 else ""),
             )
+        if instrument.min_notional is not None:
+            if instrument.contract_size is None:
+                raise ValueError("min_notional requires contract_size")
+            notional = entry * instrument.contract_size * units
+            if notional < instrument.min_notional:
+                return reject(
+                    "below_min_notional",
+                    f"notional {notional:.2f} por debajo del mínimo {instrument.min_notional:.2f}",
+                )
 
+        details = list(brakes)
+        if units < int(base_units * factor):
+            details.append("redondeo de lote")
         return RiskDecision(
             approved=True,
             code="approved",
             message=(
-                f"tamaño al {factor:.0%} ({', '.join(brakes)})" if brakes else ""
+                f"tamaño al {realized_factor:.0%} ({', '.join(details)})"
+                if realized_factor < 1.0 and details
+                else ""
             ),
             units=units,
             risk_per_unit=risk_per_unit,
-            size_factor=round(factor, 4),
+            size_factor=round(realized_factor, 4),
         )
 
     def _outside_window(self, clock: datetime, timezone_name: str) -> tuple[str, str] | None:

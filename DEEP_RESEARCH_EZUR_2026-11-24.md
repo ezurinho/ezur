@@ -1,6 +1,6 @@
 # Deep Research: Ezur — revisión, calificación y comparación
 
-> Generado 2026-11-24 | Profundidad: deep | Fuentes: 61 | Corte: 19:15 UTC
+> Generado 2026-11-24 | Profundidad: deep | Fuentes: 73 | Corte: 19:15 UTC
 
 ## TL;DR
 
@@ -44,8 +44,8 @@ No se evaluó una estrategia como inversión, no se operó dinero real y no se m
 
 ### 1.2 Evidencia ejecutada
 
-- Backend: **689 tests passed**.
-- Frontend: TypeScript limpio, **214 tests passed**, build Vite correcto.
+- Backend: **746 tests passed**.
+- Frontend: TypeScript limpio, **220 tests passed**, build Vite correcto.
 - Motor de investigación: **79 unittests passed**.
 - API viva: `health` OK, motor `running`, modo `paper`, feed OKX, WebSocket abierto.
 - Equity viva reconciliada con el ledger paper del corte: **24.280,12**.
@@ -67,7 +67,7 @@ La nota de ingeniería pondera: integridad y contabilidad 20; riesgo y ejecució
 | Fiabilidad y recuperación | 13/15 | 8,7 | WAL, serialización, backups online, restore drill y tareas cancelables. Falta retención/verificación automática de backups. |
 | UI y verdad | 10/10 | 10,0 | Loading/stale/empty separados; `—` para ausencias; truncamiento, UTC y exposición final declarados. |
 | Seguridad | 7/10 | 7,0 | Loopback, Host/Origin, body cap y redacción. Falta token de sesión y allowlist de raíces de dataset. |
-| Pruebas y mantenibilidad | 4/5 | 8,0 | 982 tests verdes y contratos amplios. CI y dependencias no reflejan Python 3.14. |
+| Pruebas y mantenibilidad | 4/5 | 8,0 | 1045 tests verdes y contratos amplios. CI y dependencias no reflejan Python 3.14. |
 | **Total ingeniería** | **84/100** | **8,4/10** | Sólido para paper supervisado; no es un certificado de producción. |
 | Aptitud live desatendida | 25/100 | 2,5/10 | Paper-only, sin venue, sin reconciliación y sin piloto. |
 | Ventaja demostrada | 30/100 | 3,0/10 | Muestra corta, P&L negativo y validación rechazada. |
@@ -107,6 +107,63 @@ La revisión final confirmó el cierre de los hallazgos importantes y mantuvo la
 La validación más importante que falta es un **validador independiente**. Hoy backtest y paper comparten el mismo motor; esa paridad detecta divergencia de configuración, pero no un error común de semántica. La literatura de implement risk compara motores y recomienda diversidad de validadores precisamente porque motores populares pueden divergir en costes, orden de fills y escalado [21]. Ezur necesita fixtures pequeños con resultados esperados calculados a mano o por un motor distinto: gap de entrada, stop y objetivo en la misma vela, target gap, slippage, comisiones, cierre manual, session close y varios modos contables.
 
 Tampoco existe un trial ledger completo que registre automáticamente cada parámetro, dataset, semilla y configuración abandonada. El ledger de experimentos actual es una buena base, pero no demuestra que la búsqueda completa esté contabilizada. TimeSeriesSplit ofrece una base cronológica con `gap`, pero no purga información solapada ni sustituye un protocolo financiero [22][25].
+
+### 3.5 Watchdog de frescura y ciclo de vida
+
+La última revisión detectó que un feed completamente silencioso dejaba órdenes pendientes y calidad `ok` hasta el siguiente tick. La documentación de exchanges distingue tres controles que no deben confundirse: liveness de transporte, frescura de datos y continuidad de secuencia. OKX exige ping si no hay mensajes durante 30 segundos y reconexión si no hay pong [62]; Binance envía ping cada 20 segundos y desconecta tras un minuto sin pong [63]. Esas reglas no definen la antigüedad máxima de una vela. NautilusTrader documenta timers independientes de `on_quote()`/`on_bar()` y distingue `CONNECTED` de adapter listo [64]. Freqtrade separa `/pause`/`stopentry`, cancelación de órdenes y `/forceexit` [65].
+
+Ezur implementa ahora un watchdog cada 30 segundos que corre fuera del callback de velas. Su umbral de `stale` sigue siendo el ya configurado por el motor —15 minutos desde la última vela, con degradado desde 3— y se considera una decisión de diseño, no una regla universal del exchange. El watchdog:
+
+- Actualiza `quality` y `staleness_ms` con el reloj de pared.
+- Cancela órdenes pendientes de entrada sin inventar un precio de salida.
+- Mantiene stops y objetivos de posiciones abiertas.
+- Publica el snapshot aunque no lleguen ticks.
+- Contiene excepciones para no morir silenciosamente.
+- No afecta backtests ni replays históricos.
+
+El ciclo de vida se serializó con `_lifecycle_lock`. `start_task`, `refresh_task` y `stop_task` comprueban el estado antes y después del teardown, siempre bajo el lock. Un reinicio directo limpia las velas para no duplicar historia. La regresión forzada inyecta `stop()` durante el teardown y exige que el contador de consumidores no aumente. La revisión focalizada calificó esta capa en **9,5/10**, sin hallazgos críticos o importantes en su alcance; la nota global se mantiene en **8,4/10** por las deudas de auditoría, autenticación y live que siguen fuera de esta capa.
+
+Pendiente para una siguiente iteración: incorporar heartbeat de transporte y continuidad de secuencia cuando el adapter OKX exponga esos eventos. El watchdog actual protege frescura de velas, no integridad de order book.
+
+### 3.6 Expiración de órdenes y señales antiguas
+
+El watchdog de frescura no bastaba: si el feed volvía con una vela actual, una orden armada hacía 16 minutos podía rellenarse porque los datos nuevos ya eran frescos. La literatura operativa separa **vigencia de la señal**, **validez de la orden** y **reconciliación**. Freqtrade expone `ignore_buying_expired_candle_after` y `unfilledtimeout.entry` [33]; Binance documenta IOC/FOK como reglas de ejecución, no como garantía de señal fresca [66]; NautilusTrader distingue `SUBMITTED`, `PENDING_CANCEL` y outcomes desconocidos [67][7].
+
+Ezur añadió un TTL de **120 segundos** para órdenes pendientes live. `ExecutionEngine.expire_pending` cancela antes de `on_bar`; el watchdog también lo comprueba durante el silencio. El reloj usa un `armed_at` runtime separado de `created_ts`, porque la vela OKX ya tiene aproximadamente un minuto al procesarse. Así el TTL empieza al armar, no al abrir la vela. Los backtests y replays quedan fuera de esta política.
+
+`stale_data` tiene prioridad: si el feed está obsoleto, la orden se cancela por datos, no por edad. Si los datos están frescos pero la orden es vieja, el bloqueo es `stale_order`, presentado como retención neutral y no como alarma de riesgo. Una señal duplicada conserva el aviso; una señal única y aprobada lo limpia y arma una orden nueva. La revisión focalizada calificó esta capa en **9,3/10**, sin hallazgos críticos o importantes.
+
+Queda como deuda menor que el TTL se comprueba por polling —cada tick y cada 30 segundos—, no por un deadline exacto. Es seguro para fills porque toda vela vuelve a comprobar antes de ejecutar. La persistencia de eventos ya registra la cancelación, pero el detalle de IDs de orden y el journal immutable siguen pendientes.
+
+### 3.7 Caducidad declarada de la señal
+
+`Signal.valid_until` existía en el contrato, pero el motor lo ignoraba. Freqtrade separa `ignore_buying_expired_candle_after` de `unfilledtimeout.entry` y del time-in-force de la orden [33]; NautilusTrader define TIF como validez de la orden, no de la señal [67]; Jesse documenta correcciones para evitar operar con velas no terminadas o actualizaciones de fill tardías [68].
+
+Ezur evalúa ahora el estado duro de riesgo y después aplica `valid_until` antes de `execution.arm`. Así una señal vencida no crea una orden, pero tampoco sustituye un bloqueo activo de emergencia, pérdida diaria o drawdown. El reloj es `tick.ts` en backtest/replay y `now_utc()` en paper/live con OKX. La comparación es inclusiva: en el instante exacto de expiración la señal sigue siendo válida; un microsegundo después se rechaza como `stale_signal`. Los timestamps naïve se interpretan como UTC.
+
+`stale_signal` se presenta como retención neutral, no como alarma de riesgo. La política es deliberadamente **pre-arm**: una orden ya armada conserva su propio TTL de 120 segundos; `valid_until` no se reinterpreta como deadline absoluto del fill. La revisión verificó además prioridad con emergencia, pérdida diaria y drawdown, y no encontró hallazgos críticos o importantes en este alcance. La nota global permanece en **8,4/10**.
+
+### 3.8 Precisión por instrumento en el feed simulado
+
+El feed simulado usaba el `tick_size` del instrumento primario para todos los símbolos. Eso viola el contrato agnóstico y puede generar precios fuera de la rejilla de un contexto. OKX publica `tickSz`, `lotSz` y `minSz` por instrumento [69]; Binance separa `PRICE_FILTER.tickSize` de `LOT_SIZE.stepSize` y `MARKET_LOT_SIZE` [70]; NautilusTrader separa precisión decimal de incrementos ejecutables [71]; Lean guarda tick, lote y mínimo por `SymbolProperties` [72].
+
+`SimulatedFeed` acepta ahora `tick_sizes` por símbolo y `build_feed` propaga el mapa completo desde configuración. El `tick_size` global queda como fallback para callers que no declaran mapa. La validación ocurre en el constructor: rechaza booleanos, strings, NaN, infinitos, negativos y valores menores de `1e-12`. Ese mínimo documentado evita precios sintéticos que redondean a cero; el caso límite inclusivo pasa.
+
+Las pruebas cubren propagación desde `build_feed`, fallback, dos referencias distintas, alineación de opens, timestamps, determinismo y paridad exacta de la serie legacy. Una sonda independiente comprobó 11.700 velas en el límite y 36 sesiones completas de 390 velas sin cambios respecto al comportamiento anterior. La revisión focalizada calificó esta capa en **9,5/10**, sin hallazgos críticos o importantes. La nota global sigue en **8,4/10**.
+
+Queda fuera de esta pasada la validación de incrementos de cantidad y mínimos de notional. Ezur ya dimensiona unidades enteras, pero no declara `lot_size` ni `min_notional`; esos campos deben añadirse antes de cualquier adapter live.
+
+### 3.9 Lotes, notional mínimo y limpieza de modelos de fill
+
+La investigación de lotes confirma que el orden correcto es **redondear a la baja y después validar**. OKX exige múltiplos de `lotSz` y `sz ≥ minSz` [69]; Binance exige `quantity % stepSize == 0` y `price × quantity ≥ minNotional` [70]; Nautilus separa incremento de tamaño, lote y notional [71]; Lean usa `AdjustByLotSize` y validación de mínimo por brokerage [72][73].
+
+Ezur añadió `lot_size` entero —las unidades internas del motor son enteras— y `min_notional` opcional. El riesgo aplica presupuesto, tope, freno suave, redondeo por lote y finalmente notional. Nunca redondea hacia arriba para rescatar una orden. `contract_size` es explícito y obligatorio cuando se declara `min_notional`; el motor ya no infiere un multiplicador BTC desde `tick_value / tick_size`. El perfil operativo no declara esos metadatos porque su semántica de unidad sigue pendiente: el informe de exposición muestra desconocido en vez de inventar una escala.
+
+El notional se valida dos veces: con el último precio en riesgo y con el **fill real** antes de abrir exposición. Esto cubre `next_open` y `signal_price`, largo y corto, incluidos los fallbacks. Los rechazos por notional o gaps quedan contabilizados una sola vez por tick y se persisten con modelo de fill, precio candidato, stop, objetivo, notional, umbral, `contract_size`, orden y señal. El bloqueo de ejecución permanece visible durante ese tick y se limpia en el siguiente tick limpio, incluso durante warmup o sin señal.
+
+También se eliminó `intrabar`: tras universalizar el rechazo de gaps, el modelo había quedado como alias exacto de `next_open`. Los perfiles enviados usan ahora `next_open` y `load_settings` normaliza perfiles legacy con `intrabar` sin desactivar el arranque. La validación directa sigue estricta.
+
+La revisión final de esta capa no encontró hallazgos críticos. La nota global se mantiene en **8,4/10**; la deuda principal sigue siendo autenticación, journal immutable y preparación live.
 
 ## 4. Riesgo, ejecución y promoción
 
@@ -273,7 +330,7 @@ La complejidad tiene coste. Cada opción de configuración que no cambia comport
 
 ## 12. Metodología
 
-Investigación deep con dos revisores de código independientes, cuatro agentes de recuperación en la primera ola, tres agentes de ampliación de huecos, un agente de verificación de citas, tres revisiones focalizadas posteriores a las correcciones y cinco agentes adicionales para comparar 27 plataformas. Se priorizaron documentación oficial, papers y guías primarias; los preprints se marcan como tales. Las fuentes se accedieron el 2026-11-24. Los hallazgos de código se verificaron contra el working tree y cada corrección se probó antes de dar el veredicto. Ocho claims de alto impacto de la comparación ampliada se comprobaron de nuevo contra fuentes oficiales y todos resultaron soportados, con matices de alcance registrados en los extractos.
+Investigación deep con dos revisores de código independientes, cuatro agentes de recuperación en la primera ola, tres agentes de ampliación de huecos, un agente de verificación de citas, tres revisiones focalizadas posteriores a las correcciones, cinco agentes adicionales para comparar 27 plataformas, un agente de investigación de watchdog/frescura, un agente de investigación de TTL/validez de órdenes y un agente de investigación de caducidad de señales y un agente de investigación de precisión por instrumento. Se priorizaron documentación oficial, papers y guías primarias; los preprints se marcan como tales. Las fuentes se accedieron el 2026-11-24. Los hallazgos de código se verificaron contra el working tree y cada corrección se probó antes de dar el veredicto. Ocho claims de alto impacto de la comparación ampliada se comprobaron de nuevo contra fuentes oficiales y todos resultaron soportados, con matices de alcance registrados en los extractos.
 
 La calificación no es una nota de estrategia ni una recomendación de inversión. Es una medida de madureza técnica después de la pasada de corrección, separada explícitamente de readiness live y de evidencia de ventaja. Ningún resultado paper garantiza rentabilidad futura, y ninguna calificación de software sustituye una decisión de riesgo del operador.
 
@@ -392,6 +449,18 @@ La recomendación sigue siendo no imitar el recuento de features. La próxima br
 59. Capitalise.ai. *Explore Trading Features* and *Get Started*. https://capitalise.ai/explore-trading-features/ ; https://capitalise.ai/getstarted/ — Tier 1, accessed 2026-11-24.
 60. Alertatron. *Automate trading from TradingView alerts*. https://alertatron.com/ — Tier 1, accessed 2026-11-24.
 61. TradingView. *How to configure webhook alerts*. https://www.tradingview.com/support/solutions/43000529348-how-to-configure-webhook-alerts/ — Tier 1, accessed 2026-11-24.
+62. OKX. *API Guide v5 — WebSocket / Connect*. https://www.okx.com/docs-v5/en/#overview-websocket-connect — Tier 1, accessed 2026-11-24.
+63. Binance. *Spot API — WebSocket Streams*. https://raw.githubusercontent.com/binance/binance-spot-api-docs/master/web-socket-streams.md — Tier 1, accessed 2026-11-24.
+64. NautilusTrader. *Actors*. https://nautilustrader.io/docs/latest/concepts/actors/ — Tier 1, accessed 2026-11-24.
+65. Freqtrade. *Telegram Usage — pause, stopentry, cancel and forceexit*. https://www.freqtrade.io/en/stable/telegram-usage/ — Tier 1, accessed 2026-11-24.
+66. Binance. *Spot API — ENUM Definitions*, source commit 2026-11-11. https://developers.binance.com/en/docs/products/spot/enums — Tier 1.
+67. NautilusTrader. *Orders*, source commit 2026-10-16. https://nautilustrader.io/docs/latest/concepts/orders/ — Tier 1.
+68. Jesse. *Changelog*, releases 2026-11-03 and 2026-11-23. https://docs.jesse.trade/docs/changelog — Tier 2, official changelog.
+69. OKX. *API Guide v5 — Get Instruments*. https://www.okx.com/docs-v5/en/#public-data-rest-api-get-instruments — Tier 1, accessed 2026-11-24.
+70. Binance. *Spot API — Filters*. https://developers.binance.com/en/docs/products/spot/filters — Tier 1, accessed 2026-11-24.
+71. NautilusTrader. *Instruments*. https://nautilustrader.io/docs/latest/concepts/instruments/ — Tier 1, accessed 2026-11-24.
+72. QuantConnect Lean. *SymbolProperties.cs* and *BinanceBrokerageModel.cs*. https://raw.githubusercontent.com/QuantConnect/Lean/master/Common/Securities/SymbolProperties.cs ; https://raw.githubusercontent.com/QuantConnect/Lean/master/Common/Brokerages/BinanceBrokerageModel.cs — Tier 1, official source.
+73. QuantConnect Lean. *Key Concepts* and *OrderSizing.cs*. https://www.quantconnect.com/docs/v2/writing-algorithms/trading-and-orders/key-concepts ; https://raw.githubusercontent.com/QuantConnect/Lean/master/Common/Orders/OrderSizing.cs — Tier 1, official docs/source.
 
 ## Extractos de fuentes
 
@@ -456,3 +525,14 @@ La recomendación sigue siendo no imitar el recuento de features. La próxima br
 59. **Capitalise.** Escenarios en lenguaje natural con backtest, simulación, sizing y stops. La ejecución depende del broker; Fidelity es solo señales.
 60. **Alertatron.** Ejecuta alertas en muchos exchanges con Testnet, stops, sizing y logs. El historial de trading queda limitado a 7/30/45 días por plan; alertas y charts tienen retención distinta. Latencia es claim del vendor.
 61. **TradingView webhooks.** Transporte POST de alertas con status de entrega. No ejecuta órdenes ni hace backtest; timeout de 3 s y fallos posibles.
+62. **OKX WebSocket.** Si no hay datos durante 30 segundos, enviar ping; si no hay pong, error o reconexión. Es liveness de transporte, no un umbral de frescura de vela.
+63. **Binance WebSocket.** Ping cada 20 segundos, desconexión tras un minuto sin pong; ticker/kline tienen cadencias documentadas. Un salto `U` exige descartar el libro local y resincronizar.
+64. **Nautilus actors.** Timers y alertas independientes de callbacks de mercado. `CONNECTED` indica transporte, no autenticación, replay de suscripciones ni adapter listo.
+65. **Freqtrade Telegram.** `/pause`/`stopentry` bloquea entradas nuevas mientras gestiona operaciones abiertas; cancelar y `forceexit` son acciones separadas. La pausa no persiste tras reinicio.
+66. **Binance enums.** IOC intenta llenar antes de expirar; FOK expira si no puede llenarse completo. Son reglas de ejecución, no vigencia de señal.
+67. **Nautilus orders.** `PENDING_UPDATE`/`PENDING_CANCEL` siguen abiertos e in-flight; fills posteriores a expiración aún actualizan orden y posición. Time-in-force depende del venue.
+68. **Jesse changelog.** Corrige estrategias live/paper que operaban con velas no terminadas y mejora la detección de fills de mercado cuando las actualizaciones del exchange llegan tarde.
+69. **OKX instruments.** `tickSz` es el incremento mínimo de precio; `lotSz` el incremento de cantidad y `minSz` el tamaño mínimo. Opciones/eventos pueden usar bandas de tick.
+70. **Binance filters.** `PRICE_FILTER` exige múltiplos de `tickSize`; `LOT_SIZE` exige múltiplos de `stepSize`; `MARKET_LOT_SIZE` define reglas separadas para mercado.
+71. **Nautilus instruments.** `price_precision`/`size_precision` son decimales máximos; `price_increment`/`size_increment` son pasos mínimos. El RiskEngine no redondea ni valida incrementos automáticamente.
+72. **Lean SymbolProperties.** Tick, lote y mínimo de orden viven por símbolo/mercado/tipo; el brokerage model valida mínimo de notional.

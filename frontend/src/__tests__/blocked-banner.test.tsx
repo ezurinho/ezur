@@ -40,6 +40,24 @@ describe("aviso de por qué no opera", () => {
     expect(document.querySelector('[data-why="blocked"]')).not.toBeNull();
   });
 
+  it("una orden antigua cancelada no se pinta como alarma de riesgo", () => {
+    render(<BlockedBanner snapshot={snapshot(true, "stale_order")} />);
+    expect(screen.getByText("Sin entradas nuevas por ahora")).toBeInTheDocument();
+    expect(document.querySelector('[data-why="hold"]')).not.toBeNull();
+  });
+
+  it("una señal vencida tampoco se pinta como alarma de riesgo", () => {
+    render(<BlockedBanner snapshot={snapshot(true, "stale_signal")} />);
+    expect(screen.getByText("Sin entradas nuevas por ahora")).toBeInTheDocument();
+    expect(document.querySelector('[data-why="hold"]')).not.toBeNull();
+  });
+
+  it("un rechazo por notional mínimo es una retención, no una alarma", () => {
+    render(<BlockedBanner snapshot={snapshot(true, "below_min_notional")} />);
+    expect(screen.getByText("Sin entradas nuevas por ahora")).toBeInTheDocument();
+    expect(document.querySelector('[data-why="hold"]')).not.toBeNull();
+  });
+
   it("sin bloqueo dice que puede operar", () => {
     render(<BlockedBanner snapshot={snapshot(false, null)} />);
     expect(screen.getByText("Puede operar.")).toBeInTheDocument();

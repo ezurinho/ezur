@@ -8,14 +8,42 @@ from server import promotion
 EVIDENCE = {
     "dataset": "data/BTC_1h_binance.csv",
     "split": {"out_of_sample": {"trades": 169, "profit_factor": 1.12}},
+    "metrics": {"trades": 169, "fees": 3802.5},
+    "risk_budget": 250.0,
+    "execution": {
+        "commission_per_unit_side": 0.62,
+        "tick_size": 0.25,
+        "tick_value": 0.5,
+    },
     "cost_per_trade_r": 0.09,
 }
 STRESS = {"split": {"out_of_sample": {"trades": 169, "profit_factor": 1.03}}}
 CYCLE = {"pbo": {"pbo": 0.11}, "universe": [{"timeframe": "1h"}]}
 
+EXECUTION = {
+    "commission_per_unit_side": 0.62,
+    "tick_size": 0.25,
+    "tick_value": 0.5,
+}
+
+
+def _evaluate(*args, **kwargs):
+    """La puerta exige el modelo del perfil: sin él, el coste no es verificable."""
+    kwargs.setdefault("execution", EXECUTION)
+    return promotion.evaluate(*args, **kwargs)
+
+
+def _profile(tmp_path) -> str:
+    path = tmp_path / "config.json"
+    path.write_text(
+        json.dumps({"execution": {"commission_per_unit_side": 0.62}}),
+        encoding="utf-8",
+    )
+    return str(path)
+
 
 def test_una_configuracion_que_cumple_todo_se_promueve():
-    verdict = promotion.evaluate(EVIDENCE, STRESS, CYCLE)
+    verdict = _evaluate(EVIDENCE, STRESS, CYCLE)
 
     assert verdict["passed"] is True
     assert verdict["reason"] == ""
@@ -23,7 +51,7 @@ def test_una_configuracion_que_cumple_todo_se_promueve():
 
 
 def test_un_pf_fuera_de_muestra_bajo_la_tumba():
-    verdict = promotion.evaluate(
+    verdict = _evaluate(
         {**EVIDENCE, "split": {"out_of_sample": {"trades": 169, "profit_factor": 0.93}}},
         STRESS,
         CYCLE,
@@ -34,7 +62,7 @@ def test_un_pf_fuera_de_muestra_bajo_la_tumba():
 
 
 def test_pocas_operaciones_no_demuestran_nada():
-    verdict = promotion.evaluate(
+    verdict = _evaluate(
         {**EVIDENCE, "split": {"out_of_sample": {"trades": 40, "profit_factor": 1.4}}},
         STRESS,
         CYCLE,
@@ -44,14 +72,14 @@ def test_pocas_operaciones_no_demuestran_nada():
 
 
 def test_sin_corrida_con_coste_duplicado_no_hay_promocion():
-    verdict = promotion.evaluate(EVIDENCE, None, CYCLE)
+    verdict = _evaluate(EVIDENCE, None, CYCLE)
 
     assert verdict["passed"] is False
     assert "pf_con_coste_duplicado" in verdict["failed"]
 
 
 def test_un_universo_que_es_ruido_no_se_promueve():
-    verdict = promotion.evaluate(
+    verdict = _evaluate(
         EVIDENCE, STRESS, {"pbo": {"pbo": 0.976}, "universe": [{"timeframe": "1h"}]}
     )
 
@@ -59,7 +87,7 @@ def test_un_universo_que_es_ruido_no_se_promueve():
 
 
 def test_la_evidencia_tiene_que_ser_de_la_estrategia_configurada():
-    verdict = promotion.evaluate(
+    verdict = _evaluate(
         {**EVIDENCE, "strategy": {"id": "donchian", "version": "0.1.0"}},
         STRESS,
         CYCLE,
@@ -73,7 +101,7 @@ def test_la_evidencia_tiene_que_ser_de_la_estrategia_configurada():
 
 
 def test_la_evidencia_de_la_estrategia_correcta_pasa():
-    verdict = promotion.evaluate(
+    verdict = _evaluate(
         {**EVIDENCE, "strategy": {"id": "reference", "version": "0.1.0"}},
         STRESS,
         CYCLE,
@@ -94,7 +122,16 @@ def test_el_informe_dice_de_que_corrida_sale_el_veredicto(tmp_path, capsys):
     path = tmp_path / "bt.json"
     path.write_text(json.dumps(evidencia), encoding="utf-8")
 
-    code = promotion.main(["--evidence", str(path), "--cycle", str(tmp_path / "no.json")])
+    code = promotion.main(
+        [
+            "--config",
+            _profile(tmp_path),
+            "--evidence",
+            str(path),
+            "--cycle",
+            str(tmp_path / "no.json"),
+        ]
+    )
 
     assert code == 1
     out = capsys.readouterr().out
@@ -107,7 +144,16 @@ def test_el_cli_sale_con_uno_si_no_esta_promovida(tmp_path, capsys):
     evidencia = tmp_path / "bt.json"
     evidencia.write_text(json.dumps(EVIDENCE), encoding="utf-8")
 
-    code = promotion.main(["--evidence", str(evidencia), "--cycle", str(tmp_path / "no.json")])
+    code = promotion.main(
+        [
+            "--config",
+            _profile(tmp_path),
+            "--evidence",
+            str(evidencia),
+            "--cycle",
+            str(tmp_path / "no.json"),
+        ]
+    )
 
     assert code == 1
     assert "no promovida" in capsys.readouterr().out
@@ -121,7 +167,16 @@ def test_el_cli_promueve_con_las_tres_piezas(tmp_path, capsys):
         paths[name] = path
 
     code = promotion.main(
-        ["--evidence", str(paths["bt"]), "--stress", str(paths["bt2x"]), "--cycle", str(paths["ciclo"])]
+        [
+            "--config",
+            _profile(tmp_path),
+            "--evidence",
+            str(paths["bt"]),
+            "--stress",
+            str(paths["bt2x"]),
+            "--cycle",
+            str(paths["ciclo"]),
+        ]
     )
 
     assert code == 0
@@ -131,7 +186,7 @@ def test_el_cli_promueve_con_las_tres_piezas(tmp_path, capsys):
 def test_una_evidencia_con_texto_no_tumba_la_puerta():
     from server import promotion
 
-    verdict = promotion.evaluate(
+    verdict = _evaluate(
         {
             "strategy": {"id": "reference", "version": "1.0.0"},
             "split": {"out_of_sample": {"profit_factor": "n/a", "trades": "muchas"}},
@@ -155,7 +210,7 @@ def test_una_evidencia_con_texto_no_tumba_la_puerta():
 def test_la_puerta_avisa_si_la_corrida_termino_antes_del_corte():
     from server import promotion
 
-    verdict = promotion.evaluate(
+    verdict = _evaluate(
         {
             "strategy": {"id": "reference", "version": "0.1.0"},
             "split": {"at": "2026-01-01T00:00:00+00:00", "out_of_sample": {"trades": 0}},
@@ -174,7 +229,7 @@ def test_la_puerta_avisa_si_la_corrida_termino_antes_del_corte():
 def test_la_puerta_prioriza_la_muestra_cuando_es_numerica():
     from server import promotion
 
-    verdict = promotion.evaluate(
+    verdict = _evaluate(
         {
             "strategy": {"id": "reference", "version": "0.1.0"},
             "split": {
@@ -196,7 +251,7 @@ def test_la_puerta_prioriza_la_muestra_cuando_es_numerica():
 def test_la_puerta_no_usa_un_pbo_de_otro_marco():
     from server import promotion
 
-    verdict = promotion.evaluate(
+    verdict = _evaluate(
         {
             "strategy": {"id": "reference", "version": "0.1.0"},
             "dataset": "data/BTC_1h_binance.csv",
@@ -207,7 +262,13 @@ def test_la_puerta_no_usa_un_pbo_de_otro_marco():
                     "profit_factor": 1.5,
                 },
             },
-            "metrics": {"last_ts": "2026-02-01T00:00:00+00:00"},
+            "metrics": {
+                "trades": 200,
+                "fees": 4500.0,
+                "last_ts": "2026-02-01T00:00:00+00:00",
+            },
+            "risk_budget": 250.0,
+            "execution": EXECUTION,
             "cost_per_trade_r": 0.05,
         },
         {"split": {"out_of_sample": {"profit_factor": 1.2}}},
@@ -232,7 +293,7 @@ def test_el_marco_del_dataset_se_lee_con_punto_o_guion_bajo():
 def test_la_puerta_no_acepta_un_ciclo_sin_marco():
     from server import promotion
 
-    verdict = promotion.evaluate(EVIDENCE, STRESS, {"pbo": {"pbo": 0.01}})
+    verdict = _evaluate(EVIDENCE, STRESS, {"pbo": {"pbo": 0.01}})
 
     assert "pbo_del_ciclo" in verdict["failed"]
     assert verdict["reason"] == "el ciclo no declara marco: no se puede verificar el PBO"
@@ -242,7 +303,7 @@ def test_la_puerta_no_acepta_una_evidencia_sin_dataset():
     from server import promotion
 
     evidence = {key: value for key, value in EVIDENCE.items() if key != "dataset"}
-    verdict = promotion.evaluate(evidence, STRESS, CYCLE)
+    verdict = _evaluate(evidence, STRESS, CYCLE)
 
     assert "pbo_del_ciclo" in verdict["failed"]
     assert "no declara dataset" in verdict["reason"]
@@ -251,7 +312,7 @@ def test_la_puerta_no_acepta_una_evidencia_sin_dataset():
 def test_un_pf_con_coste_duplicado_bajo_lo_dice():
     from server import promotion
 
-    verdict = promotion.evaluate(
+    verdict = _evaluate(
         EVIDENCE, {"split": {"out_of_sample": {"profit_factor": 0.9}}}, CYCLE
     )
 
@@ -262,7 +323,7 @@ def test_un_pf_con_coste_duplicado_bajo_lo_dice():
 def test_un_pbo_no_comparable_se_muestra_como_guion():
     from server import promotion
 
-    verdict = promotion.evaluate(
+    verdict = _evaluate(
         {
             "strategy": {"id": "reference", "version": "0.1.0"},
             "dataset": "data/BTC_1h_binance.csv",
@@ -270,7 +331,13 @@ def test_un_pbo_no_comparable_se_muestra_como_guion():
                 "at": "2026-01-01T00:00:00+00:00",
                 "out_of_sample": {"trades": 200, "profit_factor": 1.5},
             },
-            "metrics": {"last_ts": "2026-02-01T00:00:00+00:00"},
+            "metrics": {
+                "trades": 200,
+                "fees": 4500.0,
+                "last_ts": "2026-02-01T00:00:00+00:00",
+            },
+            "risk_budget": 250.0,
+            "execution": EXECUTION,
             "cost_per_trade_r": 0.05,
         },
         {"split": {"out_of_sample": {"profit_factor": 1.2}}},

@@ -14,6 +14,13 @@ EVIDENCE = {
     "strategy": {"id": "null", "version": "0.0.0"},
     "dataset": "data/BTC_1h_binance.csv",
     "split": {"out_of_sample": {"trades": 169, "profit_factor": 1.12}},
+    "metrics": {"trades": 169, "fees": 3802.5},
+    "risk_budget": 250.0,
+    "execution": {
+        "commission_per_unit_side": 0.62,
+        "tick_size": 0.25,
+        "tick_value": 0.5,
+    },
     "cost_per_trade_r": 0.09,
 }
 STRESS = {"split": {"out_of_sample": {"trades": 169, "profit_factor": 1.03}}}
