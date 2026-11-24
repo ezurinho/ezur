@@ -83,6 +83,9 @@ class TradeRecord(_Model):
     closed_ts: datetime
     pnl_gross: float = 0.0
     fees: float = 0.0
+    # Positivo = funding cobrado; negativo = funding pagado. El neto debe
+    # cumplir pnl_gross - fees + funding.
+    funding: float = 0.0
     pnl_net: float = 0.0
     r_multiple: float = 0.0
     exit_reason: str = ""
