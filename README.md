@@ -245,9 +245,18 @@ python -m server.datasets vision --start 2020-01 --end 2026-10 \
 python -m server.datasets resample --in data/BTC_1m_binance.csv \
     --out data/BTC_1d_binance.csv --rule 1D
 python -m server.backtest --dataset data/BTC_1d_binance.csv \
-    --config profiles/okx/config.json --strategy donchian \
+    --config config/okx-daily.json --strategy donchian \
     --params '{"channel":40,"atr_period":14,"stop_atr":1.5,"rr":2.0}' --gates
 ```
+
+`config/okx-daily.json` es el perfil de **validación**, no el que opera: mismo
+instrumento, capital 1 M para que el 1 % de riesgo dé unidades reales,
+`tick_value` 0,01 (el precio de un tick; 1e-05 deja el tamaño en el tope de 300
+unidades y no cierra nada), `max_stop_ticks` sin tope y el freno por drawdown
+desactivado. Con `profiles/okx/config.json` el mismo comando devuelve **1
+operación**: el tope de 40.000 ticks rechaza 180 de las 181 señales diarias y el
+freno del 5 % corta la serie tras la primera pérdida. El perfil que opera no se
+toca; cambiarlo cambiaría el sizing en vivo.
 
 Medido el 2026-11-24: **3.591.915 velas de 1 m** (2020-01-01 → 2026-10-31) y
 **2.496 velas diarias**, sin un solo día ausente. Donchian sobre ese histórico,
