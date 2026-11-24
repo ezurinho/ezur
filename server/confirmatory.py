@@ -50,7 +50,15 @@ def seal_holdout(
     }
     payload["seal_sha256"] = canonical_hash(payload)
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+    try:
+        # Crear en modo exclusivo: `exists()` + `write_text` deja una ventana en
+        # la que dos corridas sellan a la vez y la segunda pisa la primera.
+        with target.open("x", encoding="utf-8") as handle:
+            handle.write(json.dumps(payload, indent=2, sort_keys=True))
+    except FileExistsError as error:
+        raise HoldoutAlreadySealed(
+            f"holdout already sealed at {target}; a new protocol is required"
+        ) from error
     return payload
 
 
@@ -66,14 +74,42 @@ def verify_seal(
     strategy: dict[str, Any],
 ) -> dict[str, Any]:
     """Check that the inputs still match the sealed hashes."""
-    seal = read_seal(lock_path)
+    try:
+        seal = read_seal(lock_path)
+    except (OSError, json.JSONDecodeError) as error:
+        return {
+            "ok": False,
+            "reasons": [f"seal unreadable: {error}"],
+            "sealed_ts": None,
+        }
     expected = {key: value for key, value in seal.items() if key != "seal_sha256"}
     if canonical_hash(expected) != seal.get("seal_sha256"):
-        return {"ok": False, "reasons": ["seal hash mismatch: file was edited"]}
+        return {
+            "ok": False,
+            "reasons": ["seal hash mismatch: file was edited"],
+            "sealed_ts": seal.get("sealed_ts"),
+        }
+
+    missing = [
+        key
+        for key in ("sealed_ts", "dataset_sha256", "config_sha256", "strategy_sha256")
+        if key not in seal
+    ]
+    if missing:
+        return {
+            "ok": False,
+            "reasons": [f"seal incomplete: missing {', '.join(missing)}"],
+            "sealed_ts": seal.get("sealed_ts"),
+        }
 
     reasons: list[str] = []
-    if file_hash(dataset_path) != seal["dataset_sha256"]:
-        reasons.append("dataset changed since sealing")
+    try:
+        dataset_digest = file_hash(dataset_path)
+    except OSError as error:
+        reasons.append(f"dataset unreadable: {error}")
+    else:
+        if dataset_digest != seal["dataset_sha256"]:
+            reasons.append("dataset changed since sealing")
     if canonical_hash(config) != seal["config_sha256"]:
         reasons.append("configuration changed since sealing")
     if canonical_hash(strategy) != seal["strategy_sha256"]:

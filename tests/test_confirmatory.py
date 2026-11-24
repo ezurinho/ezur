@@ -106,3 +106,48 @@ def test_verify_detects_edited_seal_file(tmp_path):
 
 def test_canonical_hash_is_order_independent():
     assert canonical_hash({"a": 1, "b": 2}) == canonical_hash({"b": 2, "a": 1})
+
+
+def test_verify_no_revienta_con_un_sello_ilegible(tmp_path):
+    lock = tmp_path / "lock.json"
+    lock.write_text("{roto", encoding="utf-8")
+
+    result = verify_seal(lock, dataset_path=tmp_path / "x", config={}, strategy={})
+
+    assert result["ok"] is False
+    assert any("unreadable" in reason for reason in result["reasons"])
+
+
+def test_verify_no_revienta_con_un_sello_incompleto(tmp_path):
+    payload = {
+        "sealed_ts": "2026-01-01T00:00:00+00:00",
+        "dataset_sha256": "d",
+        "config_sha256": "c",
+    }
+    payload["seal_sha256"] = canonical_hash(payload)
+    lock = tmp_path / "lock.json"
+    lock.write_text(json.dumps(payload), encoding="utf-8")
+    dataset = tmp_path / "bars.csv"
+    dataset.write_text("data", encoding="utf-8")
+
+    result = verify_seal(lock, dataset_path=dataset, config={}, strategy={})
+
+    assert result["ok"] is False
+    assert any("incomplete" in reason for reason in result["reasons"])
+
+
+def test_verify_no_revienta_si_falta_el_dataset(tmp_path):
+    dataset = tmp_path / "bars.csv"
+    dataset.write_text("data", encoding="utf-8")
+    _seal(tmp_path, dataset)
+    dataset.unlink()
+
+    result = verify_seal(
+        tmp_path / "lock.json",
+        dataset_path=dataset,
+        config={"risk": {"risk_per_trade_pct": 1.0}},
+        strategy={"id": "reference", "version": "0.1.0"},
+    )
+
+    assert result["ok"] is False
+    assert any("unreadable" in reason for reason in result["reasons"])
