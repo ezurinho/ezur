@@ -23,6 +23,7 @@ EMPTY_STATS: dict[str, Any] = {
     "profit_factor": 0.0,
     "expectancy_r": 0.0,
     "pnl_net": 0.0,
+    "pnl_gross": 0.0,
     "fees": 0.0,
     "r_total": 0.0,
     "max_drawdown": 0.0,
@@ -35,6 +36,10 @@ EMPTY_STATS: dict[str, Any] = {
     "pnl_without_top5": 0.0,
     "top5_share": 0.0,
     "ambiguous_trades": 0,
+    # Operaciones cuyo cierre es anterior a su apertura: fechas imposibles que
+    # el histórico conserva tal cual. Se cuentan para que la UI pueda avisar de
+    # que la duración media y el orden de la curva incluyen datos inválidos.
+    "impossible_durations": 0,
     "expectancy_ci80_low": 0.0,
     "r_median": 0.0,
     "r_distribution": {},
@@ -113,6 +118,7 @@ def compute_stats(
     gross_win = sum(trade.pnl_net for trade in wins)
     gross_loss = abs(sum(trade.pnl_net for trade in losses))
     pnl_net = sum(trade.pnl_net for trade in records)
+    fees = sum(trade.fees for trade in records)
     durations = [
         (trade.closed_ts - trade.opened_ts).total_seconds() / 60 for trade in records
     ]
@@ -141,7 +147,8 @@ def compute_stats(
         else float(gross_win > 0),
         "expectancy_r": sum(trade.r_multiple for trade in records) / len(records),
         "pnl_net": pnl_net,
-        "fees": sum(trade.fees for trade in records),
+        "pnl_gross": pnl_net + fees,
+        "fees": fees,
         "r_total": sum(trade.r_multiple for trade in records),
         "max_drawdown": max_drawdown,
         "avg_win": (gross_win / len(wins)) if wins else 0.0,
@@ -155,6 +162,9 @@ def compute_stats(
         "ambiguous_trades": sum(
             1 for trade in records if trade.diagnostics.get("ambiguous_bar")
         ),
+        # Se informa, no se corrige: el histórico es la fuente y borrarlo o
+        # recortarlo sería reescribir lo que pasó (aunque haya sido imposible).
+        "impossible_durations": sum(1 for minutes in durations if minutes < 0),
         "expectancy_ci80_low": _bootstrap_low(
             [trade.r_multiple for trade in records]
         ),
@@ -218,6 +228,9 @@ def aggregate(
     ]
     return {
         "closed": compute_stats(records, initial_equity),
+        # Los tramos salen del reloj de la sesión, no del del navegador; sin
+        # decir cuál es, «08:00» puede leerse como la hora de quien mira.
+        "timezone": timezone_name,
         "by_hour": by_dimension(records, "hour", timezone_name),
         "by_weekday": by_dimension(records, "weekday", timezone_name),
         "by_month": by_dimension(records, "month", timezone_name),
