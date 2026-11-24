@@ -18,6 +18,7 @@ import hashlib
 import itertools
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -93,6 +94,11 @@ def _slug(value: float | int) -> str:
     return str(value).replace(".", "-")
 
 
+_TOKENS = {"N": "N", "z": "Z", "atr_k": "K", "tp_r": "TP"}
+ID_PATTERN = re.compile(r"^BTC-[A-Z0-9]+(-[A-Z0-9]+)*$")
+LABEL_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_.-]{1,48}$")
+
+
 def variants(spec: dict[str, Any]) -> list[dict[str, Any]]:
     """Producto cartesiano de los parámetros que la spec declara.
 
@@ -108,12 +114,17 @@ def variants(spec: dict[str, Any]) -> list[dict[str, Any]]:
     for combo in itertools.product(*(GRIDS[key] for key in keys)):
         if all(params[key] == value for key, value in zip(keys, combo)):
             continue
-        suffix = "-".join(f"{key}{_slug(value)}" for key, value in zip(keys, combo))
+        suffix = "-".join(
+            f"{_TOKENS.get(key, key)}{_slug(value)}" for key, value in zip(keys, combo)
+        ).upper()
         document = json.loads(json.dumps(spec))
         document["params"] = {**params, **dict(zip(keys, combo))}
-        document["id"] = f"{base_id}-{suffix}-{tag}"
-        document["label"] = f"{spec.get('label', base_id)}-{suffix}"
-        document["derived_from"] = base_id
+        document["id"] = f"{base_id}-{suffix}-{tag.upper()}"
+        document["label"] = f"{spec.get('label', base_id)}-{suffix}".lower()[:49]
+        # `parent_version` es el único campo de linaje que admite el esquema;
+        # un campo inventado hace que el motor rechace la spec entera.
+        version = str(spec.get("version") or "1.0.0")
+        document["parent_version"] = version if re.fullmatch(r"\d+\.\d+\.\d+", version) else "1.0.0"
         out.append(document)
     return out
 
@@ -128,10 +139,16 @@ def write_variants(
     for spec in specs:
         name = f"{str(spec['id']).lower()}.json"
         path = target / name
+        document = json.dumps(spec, indent=2, ensure_ascii=False)
         if path.exists():
-            skipped += 1
+            if path.read_text(encoding="utf-8") == document:
+                skipped += 1
+                continue
+            # Una spec vieja con un campo que el esquema ya no admite se corrige.
+            path.write_text(document, encoding="utf-8")
+            written += 1
             continue
-        path.write_text(json.dumps(spec, indent=2, ensure_ascii=False), encoding="utf-8")
+        path.write_text(document, encoding="utf-8")
         written += 1
     return written, skipped
 
