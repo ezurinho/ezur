@@ -42,7 +42,13 @@ function snap(patch: Record<string, unknown> = {}): SnapshotData {
       blocked: false,
       block_reason: null,
       block_count: 0,
-      limits: { max_trades_per_day: 3, max_daily_loss_pct: 3, loss_streak_cooldown_min: 0 },
+      limits: {
+        max_trades_per_day: 3,
+        max_daily_loss_pct: 3,
+        loss_streak_cooldown_min: 0,
+        initial_capital: 25000,
+        daily_loss_limit: 750,
+      },
     },
     stats: {},
     day_stats: {},
@@ -83,12 +89,30 @@ describe("buildReasoning", () => {
     );
     expect(result.headline).toBe("Bloqueado");
     expect(result.tone).toBe("warn");
-    expect(result.verdict).toBe("Hoy ya perdió el máximo permitido. El bot se protege y para.");
+    expect(result.verdict).toBe(
+      "Hoy ya perdió el máximo permitido. Deja de abrir operaciones hasta la próxima sesión.",
+    );
     expect(result.steps.find((step) => step.key === "risk")?.status).toBe("fail");
     // El recuento de rechazos lo da el aviso fechado: repetirlo aquí era ruido.
     expect(result.veto).toBeNull();
     // El motivo vive en el veredicto, no también en la fila del paso.
     expect(result.steps.find((step) => step.key === "risk")?.detail).not.toContain("máximo permitido");
+  });
+
+  it("si el veto nace de otra regla, la fila de riesgo lo avisa", () => {
+    const result = buildReasoning(
+      snap({ risk: { blocked: true, block_reason: "position_open" } }),
+    );
+    const detail = result.steps.find((step) => step.key === "risk")?.detail ?? "";
+    expect(detail).toContain("otra regla de riesgo");
+  });
+
+  it("si el veto es una de las cifras de la fila, no añade el aviso", () => {
+    const result = buildReasoning(
+      snap({ risk: { blocked: true, block_reason: "max_trades_reached" } }),
+    );
+    const detail = result.steps.find((step) => step.key === "risk")?.detail ?? "";
+    expect(detail).not.toContain("otra regla de riesgo");
   });
 
   it("sin bloqueo activo sí nombra los rechazos del día", () => {
@@ -229,18 +253,49 @@ describe("buildReasoning", () => {
     expect(buildReasoning(snap()).veto).toBeNull();
   });
 
-  it("el presupuesto de pérdida usa el capital del día, no la equidad actual", () => {
+  it("el presupuesto de pérdida es el del servidor, no uno recalculado sobre la equidad", () => {
     const result = buildReasoning(snap({ risk: { equity: 26000, daily_pnl: 1000 } }));
     const detail = result.steps.find((step) => step.key === "risk")?.detail ?? "";
-    // capital = 26.000 − 1.000 = 25.000 · 3 % = 750, no 26.000 · 3 % = 780
+    // 750 sale del capital inicial (25.000 · 3 %), no de la equidad de hoy (780)
     expect(detail).toContain("750.00");
     expect(detail).not.toContain("780.00");
   });
 
-  it("sin límite de pérdida configurado dice «sin límite», no «de 0.00»", () => {
+  it("si el servidor manda un muro distinto, gana ese número", () => {
+    const result = buildReasoning(
+      snap({
+        risk: {
+          limits: {
+            max_trades_per_day: 3,
+            max_daily_loss_pct: 3,
+            initial_capital: 25000,
+            daily_loss_limit: 900,
+          },
+        },
+      }),
+    );
+    const detail = result.steps.find((step) => step.key === "risk")?.detail ?? "";
+    expect(detail).toContain("900.00");
+    expect(detail).not.toContain("750.00");
+  });
+
+  it("sin el muro del servidor lo deduce del capital inicial", () => {
+    const result = buildReasoning(
+      snap({
+        risk: { limits: { max_trades_per_day: 3, max_daily_loss_pct: 3, initial_capital: 25000 } },
+      }),
+    );
+    const detail = result.steps.find((step) => step.key === "risk")?.detail ?? "";
+    expect(detail).toContain("750.00");
+  });
+
+  it("sin dato del muro de pérdida lo dice, y no inventa «de 0.00»", () => {
     const result = buildReasoning(snap({ risk: { limits: { max_trades_per_day: 3 } } }));
     const detail = result.steps.find((step) => step.key === "risk")?.detail ?? "";
-    expect(detail).toContain("sin límite");
+    // «sin límite» afirmaba que el motor no tiene tope cuando lo que falta es
+    // el dato en el snapshot; el texto tiene que distinguir las dos cosas.
+    expect(detail).toContain("límite sin dato");
+    expect(detail).not.toContain("sin límite");
     expect(detail).not.toContain("de 0.00");
   });
 });
