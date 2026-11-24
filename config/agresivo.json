@@ -1,0 +1,113 @@
+{
+  "alerts": {
+    "dedupe_window_s": 60.0,
+    "enabled": false,
+    "max_retries": 3,
+    "min_level": "warn",
+    "timeout_s": 5.0,
+    "webhook_url": ""
+  },
+  "auto_start": true,
+  "execution": {
+    "commission_per_unit_side": 25.2279,
+    "fill_model": "intrabar",
+    "max_slippage_ticks": 5,
+    "partial_fill_ratio": 0.6,
+    "simulate_partial_fills": false,
+    "slippage_ticks": 1
+  },
+  "feed": {
+    "backfill_bars": 240,
+    "csv_path": "data/bars.csv",
+    "latency_ms": 0,
+    "loop_sessions": false,
+    "poll_interval_s": 5.0,
+    "provider": "okx",
+    "replay_speed": 1.0,
+    "start_date": null
+  },
+  "instruments": {
+    "items": [
+      {
+        "currency": "USDT",
+        "decimals": 2,
+        "enabled": true,
+        "point_value": null,
+        "role": "primary",
+        "session_template": "CRYPTO24",
+        "symbol": "BTC",
+        "tick_size": 0.01,
+        "tick_value": 0.01,
+        "venue_symbol": "BTC-USDT"
+      }
+    ],
+    "primary": "BTC",
+    "templates": [
+      {
+        "close": "23:59",
+        "name": "CRYPTO24",
+        "open": "00:00",
+        "timezone": "UTC",
+        "weekdays": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      }
+    ]
+  },
+  "live": {
+    "account_ref": null,
+    "adapter_implemented": false,
+    "broker": "none",
+    "data_feed": null,
+    "environment": "demo",
+    "live_confirmation": null,
+    "live_enabled": false
+  },
+  "risk": {
+    "close_at_session_end": false,
+    "cooldown_minutes": 2,
+    "entry_exclusion_end": null,
+    "entry_exclusion_start": null,
+    "initial_capital": 1000000.0,
+    "loss_streak_cooldown_min": 0,
+    "max_concurrent_positions": 1,
+    "max_daily_loss_pct": 100.0,
+    "max_daily_profit_pct": 0.0,
+    "max_drawdown_pct": 100.0,
+    "max_stop_ticks": 1000000,
+    "max_trades_per_day": 50,
+    "max_units_per_trade": 1000,
+    "no_trade_after_consecutive_losses": 0,
+    "risk_per_trade_pct": 5.0,
+    "session_close_time": "23:59",
+    "trade_window_end": "23:59",
+    "trade_window_start": "00:00"
+  },
+  "strategy": {
+    "id": "donchian",
+    "version": "0.1.0",
+    "enabled": true,
+    "params": {
+      "channel": 20,
+      "atr_period": 14,
+      "stop_atr": 3.0,
+      "rr": 2.0
+    }
+  },
+  "ui": {
+    "locale": "es",
+    "panels": [
+      "strategy_state",
+      "quotes",
+      "position"
+    ],
+    "theme": "dark"
+  },
+  "version": 1
+}
