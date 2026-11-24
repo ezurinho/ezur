@@ -100,83 +100,17 @@ ID_PATTERN = re.compile(r"^BTC-[A-Z0-9]+(-[A-Z0-9]+)*$")
 LABEL_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_.-]{1,48}$")
 
 
-# Familias que el motor ya implementa y que este bot nunca ha medido. El lado
-# de tendencia lleva seis semillas y noventa y seis variantes sin pasar el
-# filtro; probar el contrario y otro patrón de sesión es lo que falta.
-# `orb_session` cierra la sesión a 96 barras fijas, así que su marco natural es
-# 15m; pero el esquema del motor solo acepta "15m"/"30m" y pandas 3 rechaza esos
-# alias ("'m' is no longer supported"), así que todo marco de minutos salvo el
-# 5m nativo revienta al resamplear. Se mide en 5m: rango de la primera hora y
-# ventana de 8 h, que es la sesión que `_orb` sabe cerrar en ese marco.
-SEED_BLUEPRINTS: list[dict[str, Any]] = [
-    {
-        "id": "BTC-ZREV-1H",
-        "label": "zrev_1h_96",
-        "name": "Reversion z-score 1h",
-        "family": "mean_reversion",
-        "timeframe_signal": "1h",
-        "rule": "zscore_fade",
-        "hypothesis": (
-            "Las seis semillas del motor prueban tendencia y todas fueron rechazadas. "
-            "El lado contrario no está medido: una desviacion grande respecto a la "
-            "media de 96 barras de hora revierte antes de que el stop de 2 ATR se "
-            "toque. A 96 barras la media cubre cuatro dias, que es el horizonte donde "
-            "la reversión de BTC ya no la come el coste de 5 pb por lado."
-        ),
-        "long": "z[t] <= -z (cierre muy por debajo de la media)",
-        "short": "z[t] >= z (cierre muy por encima de la media)",
-        "params": {"N": 96, "z": 2.0, "atr_k": 2.0, "tp_r": 2.0},
-        "exit": {"stop": "2.0 * ATR(14)[t]", "target": "2.0 * R", "time_stop_bars": 48, "trailing": None},
-        "failure_modes": [
-            "tendencia sostenida: el precio no vuelve a la media y el stop corta",
-            "el z-score se dispara con el hueco, sin entrada posible al precio teorico",
-        ],
-    },
-    {
-        "id": "BTC-ZREV-4H",
-        "label": "zrev_4h_60",
-        "name": "Reversion z-score 4h",
-        "family": "mean_reversion",
-        "timeframe_signal": "4h",
-        "rule": "zscore_fade",
-        "hypothesis": (
-            "La misma reversión que en 1h, medida en barras de 4h: 60 barras son diez "
-            "días de media y el coste por operación baja a la mitad. Si la reversión "
-            "existe en BTC, debería verse mejor cuanto menos se paga por operar."
-        ),
-        "long": "z[t] <= -z (cierre muy por debajo de la media)",
-        "short": "z[t] >= z (cierre muy por encima de la media)",
-        "params": {"N": 60, "z": 2.0, "atr_k": 2.0, "tp_r": 2.0},
-        "exit": {"stop": "2.0 * ATR(14)[t]", "target": "2.0 * R", "time_stop_bars": 30, "trailing": None},
-        "failure_modes": [
-            "tendencia sostenida: el precio no vuelve a la media y el stop corta",
-            "con 60 barras la media reacciona tarde y el z-score llega agotado",
-        ],
-    },
-    {
-        "id": "BTC-ORB-5M",
-        "label": "orb_5m_12",
-        "name": "Opening range breakout 5m",
-        "family": "orb",  # el esquema solo admite trend/breakout/orb/mean_reversion/regime/momentum
-        "timeframe_signal": "5m",
-        "rule": "orb_session",
-        "hypothesis": (
-            "La primera hora del dia UTC define un rango y el primer cierre fuera de "
-            "el suele continuar durante las horas siguientes. En futuros con campana "
-            "de apertura el patron esta documentado; en BTC el dia UTC no tiene "
-            "campana, asi que la hipotesis es debil y por eso importa medirla en vez "
-            "de citarla. Doce barras de 5m son esa primera hora."
-        ),
-        "long": "close[t] > max(high[apertura .. apertura+range_bars])",
-        "short": "close[t] < min(low[apertura .. apertura+range_bars])",
-        "params": {"range_bars": 12, "atr_k": 2.0, "tp_r": 2.0},
-        "exit": {"stop": "2.0 * ATR(14)[t]", "target": "2.0 * R", "time_stop_bars": 96, "trailing": None},
-        "failure_modes": [
-            "falsas rupturas en un rango estrecho: el primer cierre fuera vuelve dentro",
-            "el rango de la primera hora es tan ancho que el stop queda lejos",
-        ],
-    },
-]
+SEEDS_FILE = Path("config") / "research_seeds.json"
+
+
+def seed_blueprints(path: Path | str = SEEDS_FILE) -> list[dict[str, Any]]:
+    """Las semillas candidatas son datos: `server/` no conoce ninguna estrategia.
+
+    Van en un fichero de configuración por la misma razón que los umbrales: la
+    infraestructura no debe nombrar conceptos de estrategia.
+    """
+    document = json.loads(Path(path).read_text(encoding="utf-8"))
+    return list(document["seeds"])
 
 
 def _base_template(home: Path) -> dict[str, Any]:
@@ -188,10 +122,12 @@ def _base_template(home: Path) -> dict[str, Any]:
     return json.loads(candidates[0].read_text(encoding="utf-8"))
 
 
-def seed_documents(template: dict[str, Any]) -> list[dict[str, Any]]:
+def seed_documents(
+    template: dict[str, Any], blueprints: list[dict[str, Any]] | None = None
+) -> list[dict[str, Any]]:
     """Semillas nuevas a partir de una spec real: nada de inventar campos."""
     documents: list[dict[str, Any]] = []
-    for blueprint in SEED_BLUEPRINTS:
+    for blueprint in (seed_blueprints() if blueprints is None else blueprints):
         document = json.loads(json.dumps(template))
         document.update(
             id=blueprint["id"],

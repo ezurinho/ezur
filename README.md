@@ -368,7 +368,8 @@ python -m server.research --report    # qué ha encontrado, por familia y marco
 ```
 
 `--seeds` escribe tres semillas nuevas heredando riesgo, costes y validación de
-una spec real del motor: reversión z-score en 1 h y 4 h, y opening range
+una spec real del motor, a partir de `config/research_seeds.json` — en `server/`
+no se nombra ninguna estrategia, igual que con los umbrales: reversión z-score en 1 h y 4 h, y opening range
 breakout en 5 m. La tendencia lleva seis semillas y noventa y seis variantes sin
 pasar el filtro; probar el lado contrario y otro patrón no es más de lo mismo.
 

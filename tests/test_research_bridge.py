@@ -73,23 +73,22 @@ def test_las_semillas_nuevas_cumplen_el_esquema():
         "validation": {"trials_declared": 8}, "expected": {"turnover_per_year": 1.0},
     }
 
-    docs = research.seed_documents(template)
+    blueprints = research.seed_blueprints()
+    docs = research.seed_documents(template, blueprints)
 
-    assert len(docs) == len(research.SEED_BLUEPRINTS)
+    assert len(docs) == len(blueprints)
     assert len({doc["id"] for doc in docs}) == len(docs)
     for doc in docs:
         assert research.ID_PATTERN.fullmatch(doc["id"])
         assert research.LABEL_PATTERN.fullmatch(doc["label"])
         assert doc["validation"]["trials_declared"] == 1
-        assert doc["params"] == research.SEED_BLUEPRINTS[
-            [b["id"] for b in research.SEED_BLUEPRINTS].index(doc["id"])
-        ]["params"]
+        assert doc["params"] == blueprints[[b["id"] for b in blueprints].index(doc["id"])]["params"]
     # Sin cifras de rendimiento inventadas para una familia que nunca se midió.
     assert all("expected" not in doc for doc in docs)
 
 
 def test_orb_solo_se_siembra_en_el_marco_que_el_motor_cierra():
-    orb = [b for b in research.SEED_BLUEPRINTS if b["rule"] == "orb_session"]
+    orb = [b for b in research.seed_blueprints() if b["rule"] == "orb_session"]
 
     assert orb
     # `_orb` cierra la sesión a 96 barras fijas: en 1h serían cuatro días. Y el
