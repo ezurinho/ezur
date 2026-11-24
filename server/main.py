@@ -123,11 +123,24 @@ def create_app(
             )
             promoted = bool(verdict["passed"])
             if not promoted:
-                store.insert_event(
-                    "warn",
-                    "promotion",
-                    f"auto_start bloqueado: {verdict['reason']}",
-                )
+                if settings.promotion.mode == "reduce":
+                    before = settings.risk.risk_per_trade_pct
+                    settings.risk.risk_per_trade_pct = round(
+                        before * settings.promotion.size_factor, 4
+                    )
+                    store.insert_event(
+                        "warn",
+                        "promotion",
+                        f"sin promoción: riesgo {before:.2f} % -> "
+                        f"{settings.risk.risk_per_trade_pct:.2f} % ({verdict['reason']})",
+                    )
+                    promoted = True  # arranca, pero a menor tamaño
+                else:
+                    store.insert_event(
+                        "warn",
+                        "promotion",
+                        f"auto_start bloqueado: {verdict['reason']}",
+                    )
         if settings.auto_start and promoted and engine.state.status in {"idle", "stopped"}:
             try:
                 engine.start()
