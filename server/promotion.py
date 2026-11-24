@@ -176,11 +176,23 @@ def evaluate(
         )
 
     failed = [check for check in checks if not check["pass"]]
+    reason = failed[0]["reason"] if failed else ""
+    if (
+        failed
+        and failed[0]["name"] == "pf_fuera_de_muestra"
+        and any(check["name"] == "operaciones_fuera_de_muestra" for check in failed)
+    ):
+        trades_value = _number(trades)
+        if trades_value is not None:
+            reason = (
+                "muestra fuera de muestra insuficiente: "
+                f"{trades_value:g} < {MIN_OOS_TRADES}"
+            )
     found = (evidence or {}).get("strategy") or {}
     return {
         "passed": not failed,
         "checks": checks,
-        "reason": failed[0]["reason"] if failed else "",
+        "reason": reason,
         "failed": [check["name"] for check in failed],
         # De qué corrida sale el veredicto: sin esto, una tabla de criterios no
         # dice si se midió la estrategia, el marco temporal o la muestra buenos.
