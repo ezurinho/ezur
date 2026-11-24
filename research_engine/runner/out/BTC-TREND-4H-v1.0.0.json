@@ -1,0 +1,451 @@
+{
+ "spec_id": "BTC-TREND-4H",
+ "version": "1.0.0",
+ "name": "Donchian breakout 4h",
+ "family": "trend",
+ "cycle_id": "CYCLE-2026-11-selection",
+ "generated_at": "2026-11-23T04:09:43Z",
+ "engine": "4.0.0",
+ "artifacts": {
+  "spec_hash": "sha256:29dc03baec5faac4b0287035dbad2cf9ee064296461170f95aca4c4cf1665129",
+  "data_hash": "sha256:80d6a6014eb92b23eaa5a4b456e74388e3cebb8b664cf1c17b4088e1f392b8da",
+  "code_sha": "sha256:a854ad2a0ee592fc3a5d93e469b591832da8e83341f5452c2891b0ef639b3519",
+  "seed": 7,
+  "env": "python 3.14.6 / pandas 3.1.1 / numpy 2.5.5",
+  "spec_path": "runner\\specs\\btc-trend-4h-donchian-24.json"
+ },
+ "data": {
+  "instrument": "BTCUSDT_PERP",
+  "source": "data.binance.vision · futures/um/monthly/klines",
+  "bars": 718848,
+  "start": "2020-01-01 00:00:00+00:00",
+  "end": "2026-10-31 23:55:00+00:00",
+  "timezone": "UTC",
+  "sha256": "80d6a6014eb92b23eaa5a4b456e74388e3cebb8b664cf1c17b4088e1f392b8da",
+  "integrity": {
+   "gaps": 0,
+   "duplicates": 0,
+   "monotonic": true,
+   "unexplained_gaps": 0
+  },
+  "timeframe_signal": "4h",
+  "bars_signal": 14976,
+  "basis": "resampled from 5m"
+ },
+ "execution": {
+  "signal_bar": "closed",
+  "fill": "next_bar_open",
+  "intrabar_priority": "stop_first",
+  "gap_fill": "bar_open"
+ },
+ "costs": {
+  "fee_taker_bps": 5.0,
+  "half_spread_bps": 0.07,
+  "rt_bps": 10.14,
+  "assumed_fill": "taker",
+  "impact_model": "none",
+  "funding": "real_timestamps",
+  "cost_r_mean": 0.0611,
+  "fee_r_mean": 0.0501,
+  "funding_r_mean": 0.011
+ },
+ "metrics": {
+  "all": {
+   "n": 524,
+   "win": 0.323,
+   "pf_gross": 1.155,
+   "pf_net": 1.055,
+   "pf_stress": 0.982,
+   "exp_gross_r": 0.0983,
+   "exp_net_r": 0.0373,
+   "exp_stress_r": -0.0128,
+   "sharpe": 0.15,
+   "mdd": -0.153,
+   "t_stat": 0.4,
+   "years": 6.82,
+   "stop_frac_median": 0.02249,
+   "fee_r": 0.0501,
+   "funding_r": 0.011,
+   "pf_ci95": [
+    0.843,
+    1.276
+   ],
+   "pf_se": 0.112
+  },
+  "is": {
+   "n": 293,
+   "win": 0.334,
+   "pf_gross": 1.287,
+   "pf_net": 1.177,
+   "pf_stress": 1.104,
+   "exp_gross_r": 0.1786,
+   "exp_net_r": 0.1169,
+   "exp_stress_r": 0.0722,
+   "sharpe": 0.5,
+   "mdd": -0.089,
+   "t_stat": 1.01,
+   "years": 4.07,
+   "stop_frac_median": 0.02622,
+   "fee_r": 0.0447,
+   "funding_r": 0.0169,
+   "pf_ci95": [
+    0.882,
+    1.5
+   ],
+   "pf_se": 0.16
+  },
+  "oos": {
+   "n": 110,
+   "win": 0.336,
+   "pf_gross": 1.236,
+   "pf_net": 1.134,
+   "pf_stress": 1.054,
+   "exp_gross_r": 0.1473,
+   "exp_net_r": 0.0886,
+   "exp_stress_r": 0.0377,
+   "sharpe": 0.28,
+   "mdd": -0.072,
+   "t_stat": 0.32,
+   "years": 1.35,
+   "stop_frac_median": 0.02064,
+   "fee_r": 0.051,
+   "funding_r": 0.0077,
+   "pf_ci95": [
+    0.654,
+    1.623
+   ],
+   "pf_se": 0.246
+  },
+  "reserve": {
+   "n": 120,
+   "win": 0.275,
+   "pf_gross": 0.788,
+   "pf_net": 0.715,
+   "pf_stress": 0.651,
+   "exp_gross_r": -0.144,
+   "exp_net_r": -0.206,
+   "exp_stress_r": -0.2684,
+   "sharpe": -1.21,
+   "mdd": -0.127,
+   "t_stat": -1.41,
+   "years": 1.35,
+   "stop_frac_median": 0.01702,
+   "fee_r": 0.0624,
+   "funding_r": -0.0004,
+   "pf_ci95": [
+    0.396,
+    1.178
+   ],
+   "pf_se": 0.201
+  }
+ },
+ "stress": {
+  "cost_2x": {
+   "rt_bps": 20.28,
+   "pf": 0.982
+  },
+  "breakeven_rt_bps": 17.68,
+  "applied_rt_bps": 10.14
+ },
+ "robustness": {
+  "perturbation": {
+   "points": [
+    {
+     "param": "N",
+     "change": -0.2,
+     "value": 19,
+     "n": 594,
+     "pf_net": 1.045,
+     "exp_net_r": 0.03
+    },
+    {
+     "param": "N",
+     "change": -0.1,
+     "value": 22,
+     "n": 555,
+     "pf_net": 1.053,
+     "exp_net_r": 0.0355
+    },
+    {
+     "param": "N",
+     "change": 0.1,
+     "value": 26,
+     "n": 499,
+     "pf_net": 1.064,
+     "exp_net_r": 0.0433
+    },
+    {
+     "param": "N",
+     "change": 0.2,
+     "value": 29,
+     "n": 464,
+     "pf_net": 1.124,
+     "exp_net_r": 0.0829
+    }
+   ],
+   "pass": true,
+   "rule": "PF neto > 1,00 en todo el vecindario ±10% / ±20%"
+  },
+  "regimes": {
+   "volatility": {
+    "axis": "volatilidad ATR/close",
+    "cuts": [
+     0.012593,
+     0.018013
+    ],
+    "buckets": {
+     "baja": {
+      "n": 175,
+      "pf": 1.0711,
+      "exp_r": 0.0535,
+      "win": 0.2857
+     },
+     "media": {
+      "n": 174,
+      "pf": 1.0883,
+      "exp_r": 0.0556,
+      "win": 0.3391
+     },
+     "alta": {
+      "n": 175,
+      "pf": 1.0043,
+      "exp_r": 0.0028,
+      "win": 0.3429
+     }
+    }
+   },
+   "trend": {
+    "axis": "retorno absoluto 20 barras",
+    "cuts": [
+     0.029896,
+     0.053955
+    ],
+    "buckets": {
+     "quieto": {
+      "n": 175,
+      "pf": 0.7348,
+      "exp_r": -0.2028,
+      "win": 0.2514
+     },
+     "deriva": {
+      "n": 174,
+      "pf": 0.8113,
+      "exp_r": -0.1359,
+      "win": 0.2816
+     },
+     "tendencia": {
+      "n": 175,
+      "pf": 1.8326,
+      "exp_r": 0.4494,
+      "win": 0.4343
+     }
+    }
+   },
+   "pf_spread": 1.0978,
+   "concentrated": true,
+   "losing_buckets": {
+    "trend": [
+     "quieto",
+     "deriva"
+    ]
+   }
+  }
+ },
+ "benchmark": {
+  "alpha_annual": -0.7676,
+  "ci95": [
+   -1.5513,
+   0.0826
+  ],
+  "method": "mean daily excess return vs vol-unmatched buy & hold, stationary block bootstrap block=5 reps=4000 seed=7",
+  "bh_cagr": 0.9322,
+  "strategy_cagr": 0.0187
+ },
+ "validation": {
+  "split": "0.60/0.20/0.20",
+  "trials_declared": 8,
+  "pbo": 0.2381,
+  "dsr": 0.7917,
+  "minbtl_years": 14.55,
+  "wfa_min_trades": 6,
+  "cpcv": 0.1556,
+  "cpcv_paths": 45,
+  "psr": 0.9681,
+  "source": "runner\\validation\\CYCLE-2026-11-selection.json",
+  "cycle_id": "CYCLE-2026-11-selection",
+  "method_version": "1.0.0",
+  "specs_hash": "sha256:87eea8aa8f82cf5eee5dd54b81cbe77063f521583672ff6ba6baaebc622e309a",
+  "universe_size": 15,
+  "note": "PBO, DSR, CPCV y WFA provienen del ciclo de selección y describen el procedimiento, no esta configuración suelta. El PSR se reporta contra cero y sin deflactar: mide si hay habilidad, no si sobrevive al número de pruebas."
+ },
+ "gates": {
+  "data_integrity": {
+   "value": 0,
+   "threshold": 0,
+   "op": "==",
+   "pass": true
+  },
+  "pbo": {
+   "value": 0.2381,
+   "threshold": 0.2,
+   "op": "≤",
+   "pass": false
+  },
+  "dsr": {
+   "value": 0.7917,
+   "threshold": 0.95,
+   "op": "≥",
+   "pass": false
+  },
+  "oos_t_stat": {
+   "value": 0.32,
+   "threshold": 3.0,
+   "op": "≥",
+   "pass": false
+  },
+  "oos_pf_ci_low": {
+   "value": 0.654,
+   "threshold": 1.0,
+   "op": ">",
+   "pass": false
+  },
+  "trades": {
+   "value": 524,
+   "threshold": 300,
+   "op": "≥",
+   "pass": true
+  },
+  "wfa_min_trades": {
+   "value": 6,
+   "threshold": 30,
+   "op": "≥",
+   "pass": false
+  },
+  "cost_stress_2x": {
+   "value": 0.982,
+   "threshold": 1.0,
+   "op": ">",
+   "pass": false
+  },
+  "funding_included": {
+   "value": "included",
+   "threshold": "required",
+   "op": "=",
+   "pass": true
+  },
+  "plateau": {
+   "value": true,
+   "threshold": true,
+   "op": "=",
+   "pass": true
+  },
+  "benchmark_alpha": {
+   "value": -0.7676,
+   "threshold": 0.0,
+   "op": ">",
+   "pass": false
+  },
+  "mdd_budget": {
+   "value": -0.153,
+   "threshold": -0.25,
+   "op": "≥",
+   "pass": true
+  }
+ },
+ "verdict": "REJECTED",
+ "reasoning": [
+  "PBO 0,24 > 0,20 → selección indistinguible del ruido",
+  "DSR 0,79 < 0,95 → el Sharpe no sobrevive al ajuste por múltiples pruebas",
+  "t OOS 0,32 < 3,00 → sin significancia tras el haircut HLZ",
+  "IC95% inferior del PF OOS 0,65 ≤ 1,00 → el intervalo contiene 1,00: no concluyente",
+  "PF con coste 2× 0,98 ≤ 1,00 → el edge es de coste, no de mercado",
+  "alpha −76,8% anual con IC95% [−155,1%; +8,3%] contiene 0: indistinguible del benchmark",
+  "6 trades por fold OOS en el ciclo < 30 → sin potencia estadística por fold (el WFA mide el procedimiento de selección, no esta spec)"
+ ],
+ "missing_artifacts": [],
+ "equity": [
+  1.0,
+  1.0294,
+  1.0504,
+  1.0699,
+  1.0637,
+  1.0525,
+  1.018,
+  1.04,
+  1.0067,
+  0.9964,
+  1.0067,
+  1.0245,
+  1.0734,
+  1.078,
+  1.0971,
+  1.0748,
+  1.0459,
+  1.0474,
+  1.0477,
+  1.0357,
+  1.0227,
+  1.0465,
+  1.058,
+  1.0743,
+  1.0977,
+  1.1192,
+  1.119,
+  1.1244,
+  1.116,
+  1.1091,
+  1.1231,
+  1.1117,
+  1.115,
+  1.119,
+  1.1147,
+  1.0854,
+  1.1083,
+  1.1298,
+  1.1472,
+  1.1728,
+  1.1989,
+  1.1753,
+  1.1843,
+  1.1656,
+  1.1612,
+  1.1278,
+  1.1873,
+  1.1664,
+  1.163,
+  1.1732,
+  1.2338,
+  1.2144,
+  1.1931,
+  1.1739,
+  1.1782,
+  1.1883,
+  1.194,
+  1.1749,
+  1.1981,
+  1.2447,
+  1.2266,
+  1.2262,
+  1.2615,
+  1.2305,
+  1.2475,
+  1.2264,
+  1.213,
+  1.2037,
+  1.1823,
+  1.1675,
+  1.1935,
+  1.1811,
+  1.1317,
+  1.1733,
+  1.1536,
+  1.1162,
+  1.0857,
+  1.0722,
+  1.0953,
+  1.0708,
+  1.1073,
+  1.1111,
+  1.0814
+ ]
+}
