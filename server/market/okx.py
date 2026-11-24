@@ -155,8 +155,13 @@ class OKXFeed(MarketFeed):
 
         while True:
             await asyncio.sleep(self.poll_interval_s)
+            # Tras un fallo puede haber un hueco mayor que la ventana de 5
+            # velas: se pide el backfill entero para no perder minutos.
+            recovering = self.last_error is not None
             try:
-                batch = await asyncio.to_thread(self.fetch, 5)
+                batch = await asyncio.to_thread(
+                    self.fetch, self.bars if recovering else 5
+                )
                 self.polls += 1
                 self.last_error = None
             except Exception as error:  # noqa: BLE001 - a dead venue must degrade, not crash

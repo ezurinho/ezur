@@ -210,3 +210,28 @@ def test_parse_discards_the_candle_in_progress():
     bars = parse_candles(_payload(in_progress, confirmed))
 
     assert [bar.c for bar in bars] == [101.0]
+
+def test_tras_un_fallo_recupera_la_ventana_completa(monkeypatch):
+    limits: list[int] = []
+    t1 = bar_row("1795404000000", "100")
+    t2 = bar_row("1795404060000", "101")
+
+    def fake_fetch(self, limit, after=None):
+        limits.append(limit)
+        if len(limits) == 1:
+            return {"BTC": parse_candles(_payload(t1))}
+        if len(limits) == 2:
+            raise OSError("venue caída")
+        return {"BTC": parse_candles(_payload(t1, t2))}
+
+    monkeypatch.setattr(OKXFeed, "fetch", fake_fetch)
+    feed = OKXFeed({"BTC": "BTC-USDT"}, bars=3, poll_interval_s=0, max_ticks=2)
+
+    async def collect():
+        return [tick async for tick in feed.iter_ticks_async()]
+
+    ticks = asyncio.run(collect())
+
+    assert len(ticks) == 2
+    # backfill 3, primer poll 5, y tras el fallo la ventana entera otra vez.
+    assert limits == [3, 5, 3]
