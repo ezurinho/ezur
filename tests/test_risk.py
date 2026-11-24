@@ -298,3 +298,39 @@ def test_a_correct_short_is_approved(settings):
 def test_a_signal_without_target_is_still_approved(settings):
     decision = _evaluate(settings, _sided("long", 99.5, None), _portfolio(settings))
     assert decision.approved is True
+
+def test_el_cooldown_admite_un_cierre_sin_zona(settings, signal_long):
+    settings.risk.cooldown_minutes = 5
+    naive = (NOW - timedelta(minutes=1)).replace(tzinfo=None)
+
+    decision = _evaluate(
+        settings, signal_long, _portfolio(settings, last_exit_ts=naive)
+    )
+
+    assert decision.approved is False
+    assert decision.code == "cooldown_active"
+
+
+def test_el_cooldown_sin_zona_caduca(settings, signal_long):
+    settings.risk.cooldown_minutes = 5
+    naive = (NOW - timedelta(minutes=10)).replace(tzinfo=None)
+
+    decision = _evaluate(
+        settings, signal_long, _portfolio(settings, last_exit_ts=naive)
+    )
+
+    assert decision.approved is True
+
+
+def test_la_pausa_por_racha_admite_un_cierre_sin_zona(settings, signal_long):
+    settings.risk.no_trade_after_consecutive_losses = 3
+    settings.risk.loss_streak_cooldown_min = 45
+    naive = (NOW - timedelta(minutes=50)).replace(tzinfo=None)
+
+    decision = _evaluate(
+        settings,
+        signal_long,
+        _portfolio(settings, consecutive_losses=3, last_exit_ts=naive),
+    )
+
+    assert decision.approved is True
