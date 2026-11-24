@@ -363,6 +363,7 @@ python -m server.research --generate  # variantes de las specs semilla
 python -m server.research --list      # specs y estado
 python -m server.research --once      # la siguiente pendiente
 python -m server.research --loop      # sigue buscando mientras el bot corre
+python -m server.research --report    # qué ha encontrado, por familia y marco
 ```
 
 `--generate` barre los parámetros que cada spec declara —`N` 20/40/60, `atr_k`
@@ -379,6 +380,10 @@ paran el bucle para no quemar tiempo. La ruta del motor se toma de
 
 Los tres contratos compartidos: el fichero de umbrales, los datos de
 `data/*.csv` que ambos leen y el ledger de veredictos.
+
+`--report` lee ese ledger y responde a la única pregunta que importa cuando el
+bucle lleva horas: cuántas specs se midieron por familia y marco, cuántas
+pasaron y cuáles. Sin él, cien corridas son cien líneas.
 
 ## Alertas
 
