@@ -69,6 +69,11 @@ def test_compare_endpoint_returns_one_row_per_strategy(app_client):
     for row in payload["rows"]:
         assert row["verdict"] in {"APROBADA", "RECHAZADA", "INCONCLUSA"}
         assert "outcomes" in row["gates"]
+        # La tabla no puede enseñar PF sin el IC80 ni el coste: sin ellos una
+        # esperanza de +0.02 R parece ventaja y no paga ni la comisión.
+        assert row["metrics"]["expectancy_ci80_low"] is not None
+        assert row["metrics"]["fees"] is not None
+        assert row["metrics"]["pnl_net"] is not None
 
 
 def test_compare_sorts_by_expectancy(app_client):
