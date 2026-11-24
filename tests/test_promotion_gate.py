@@ -94,3 +94,29 @@ def test_la_puerta_apagada_no_bloquea_nada(tmp_path, monkeypatch):
 
     assert status == "running"
     assert started == [True]
+
+
+def test_sin_promocion_en_modo_reduce_arranca_a_menor_tamano(tmp_path, monkeypatch):
+    started: list[bool] = []
+    monkeypatch.setattr(TradingEngine, "start_task", lambda self: started.append(True))
+
+    config, _ = _boot(
+        tmp_path,
+        {
+            "required": True,
+            "mode": "reduce",
+            "size_factor": 0.25,
+            "evidence": str(tmp_path / "no-existe.json"),
+        },
+    )
+    app = server_main.create_app(
+        config_path=config,
+        db_path=tmp_path / "reduced.db",
+        experiment_ledger=tmp_path / "ledger.jsonl",
+    )
+    with TestClient(app) as client:
+        status = client.get("/api/status").json()["data"]["status"]
+
+    assert status == "running"
+    assert started == [True]
+    assert app.state.settings.risk.risk_per_trade_pct == 0.25
