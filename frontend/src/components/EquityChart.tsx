@@ -8,13 +8,35 @@ interface Point {
 }
 
 /**
- * Equity curve with the theme's accent and a baseline at the starting capital.
+ * Equity curve with the theme's accent and a reference line.
  *
  * The baseline is the honest reference: without it a rising line says nothing
- * about whether the account is above or below where it started. `fitContent`
- * runs only on the first paint so a live update does not move the view.
+ * about whether the account is above or below where it started. The true
+ * reference is the starting capital, not the first loaded point — the first
+ * point already includes the first trade's result. Without the capital, the
+ * line says so: «primer cierre cargado». `fitContent` runs only on the first
+ * paint so a live update does not move the view.
  */
-export function EquityChart({ points, height = 220 }: { points: Point[]; height?: number }) {
+export function baselineLine(
+  points: { equity: number }[],
+  baseline?: number | null,
+): { price: number; title: string } | null {
+  if (baseline !== null && baseline !== undefined && Number.isFinite(baseline)) {
+    return { price: baseline, title: "capital inicial" };
+  }
+  const first = points[0]?.equity;
+  return first === undefined ? null : { price: first, title: "primer cierre cargado" };
+}
+
+export function EquityChart({
+  points,
+  baseline,
+  height = 220,
+}: {
+  points: Point[];
+  baseline?: number | null;
+  height?: number;
+}) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const { theme } = useTheme();
@@ -63,15 +85,15 @@ export function EquityChart({ points, height = 220 }: { points: Point[]; height?
       })),
     );
 
-    const start = points[0]?.equity;
-    if (start !== undefined) {
+    const reference = baselineLine(points, baseline);
+    if (reference) {
       series.createPriceLine({
-        price: start,
+        price: reference.price,
         color: `${good}88`,
         lineWidth: 1,
         lineStyle: 2,
         axisLabelVisible: true,
-        title: "inicio",
+        title: reference.title,
       });
     }
 
@@ -81,7 +103,7 @@ export function EquityChart({ points, height = 220 }: { points: Point[]; height?
       chart.remove();
       chartRef.current = null;
     };
-  }, [points, height, theme]);
+  }, [points, baseline, height, theme]);
 
   if (points.length === 0) {
     return <p className="empty">Sin puntos de equidad</p>;
