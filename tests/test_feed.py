@@ -6,6 +6,7 @@ from itertools import islice
 
 import pytest
 
+from server.market import synthetic
 from server.market.feed import CSVFeed, LiveFeed, SimulatedFeed
 
 
@@ -31,10 +32,91 @@ def test_feed_emits_tick_keyed_by_configured_symbols():
     assert tick.bars["AAA"].h >= tick.bars["AAA"].l
 
 
+def test_simulated_feed_uses_reference_price_per_symbol():
+    tick = next(
+        SimulatedFeed(
+            "2026-01-15",
+            ["AAA", "BBB"],
+            tick_size=0.01,
+            reference_prices={"AAA": 60_000, "BBB": 0.01},
+        ).iter_ticks()
+    )
+    assert tick.bars["AAA"].o == pytest.approx(60_000, abs=0.02)
+    assert tick.bars["BBB"].o == pytest.approx(0.01, abs=0.0001)
+
+
 def test_tick_timestamps_are_monotonic():
     ticks = list(islice(SimulatedFeed("2026-01-15", ["PRIMARY"]).iter_ticks(), 20))
     stamps = [tick.ts for tick in ticks]
     assert stamps == sorted(stamps)
+
+
+def test_synthetic_bars_can_use_the_instrument_reference_price():
+    bars = synthetic.generate_session(
+        "2026-01-15",
+        "BTC",
+        start=datetime(2026, 1, 15, tzinfo=timezone.utc),
+        bars=3,
+        tick_size=0.01,
+        reference_price=60_000,
+    )
+    assert bars[0].o == pytest.approx(60_000, abs=0.02)
+    assert bars[0].h >= bars[0].o
+    assert bars[0].l <= bars[0].o
+
+
+def test_synthetic_volatility_scales_with_the_reference_price():
+    bars = synthetic.generate_session(
+        "2026-01-15",
+        "BTC",
+        start=datetime(2026, 1, 15, tzinfo=timezone.utc),
+        bars=20,
+        tick_size=0.01,
+        reference_price=60_000,
+    )
+    assert max(bar.h - bar.l for bar in bars) > 1.0
+
+
+def test_default_synthetic_series_keeps_its_legacy_scale():
+    bars = synthetic.generate_session(
+        "2026-01-15",
+        "PRIMARY",
+        start=datetime(2026, 1, 15, tzinfo=timezone.utc),
+        bars=1,
+    )
+    bar = bars[0]
+    assert (bar.o, bar.h, bar.l, bar.c) == pytest.approx(
+        (79.5, 79.594175, 79.282097, 79.425157), abs=1e-6
+    )
+    assert bar.v == 124
+
+
+def test_reference_price_below_one_tick_never_generates_a_zero_open():
+    bars = synthetic.generate_session(
+        "2026-01-15",
+        "CHEAP",
+        start=datetime(2026, 1, 15, tzinfo=timezone.utc),
+        bars=1,
+        tick_size=0.25,
+        reference_price=0.001,
+    )
+    assert bars[0].o == pytest.approx(0.25)
+    assert bars[0].c >= 0.25
+
+
+def test_tiny_tick_sizes_survive_price_rounding():
+    bars = synthetic.generate_session(
+        "2026-01-15",
+        "TINY",
+        start=datetime(2026, 1, 15, tzinfo=timezone.utc),
+        bars=1,
+        tick_size=1e-7,
+        reference_price=1e-9,
+    )
+    assert bars[0].o >= 1e-7
+    assert bars[0].h >= bars[0].o
+    assert bars[0].l > 0
+    assert bars[0].c >= 1e-7
 
 
 def test_live_feed_without_adapter_raises():
