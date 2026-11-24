@@ -120,6 +120,7 @@ def create_app(
                 settings.promotion.evidence,
                 settings.promotion.stress_evidence,
                 settings.promotion.cycle,
+                {"id": settings.strategy.id, "version": settings.strategy.version},
             )
             promoted = bool(verdict["passed"])
             if not promoted:

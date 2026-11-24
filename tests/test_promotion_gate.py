@@ -10,6 +10,7 @@ from server import main as server_main
 from server.engine import TradingEngine
 
 EVIDENCE = {
+    "strategy": {"id": "null", "version": "0.0.0"},
     "split": {"out_of_sample": {"trades": 169, "profit_factor": 1.12}},
     "cost_per_trade_r": 0.09,
 }
@@ -77,6 +78,32 @@ def test_con_la_evidencia_completa_arranca(tmp_path, monkeypatch):
 
     assert status == "running"
     assert started == [True]
+
+
+def test_la_evidencia_de_otra_estrategia_no_promueve(tmp_path, monkeypatch):
+    started: list[bool] = []
+    monkeypatch.setattr(TradingEngine, "start_task", lambda self: started.append(True))
+
+    otra = {**EVIDENCE, "strategy": {"id": "donchian", "version": "0.1.0"}}
+    config, _ = _boot(
+        tmp_path,
+        {
+            "required": True,
+            "evidence": _write(tmp_path / "bt-otra.json", otra),
+            "stress_evidence": _write(tmp_path / "bt2x.json", STRESS),
+            "cycle": _write(tmp_path / "ciclo.json", CYCLE),
+        },
+    )
+    app = server_main.create_app(
+        config_path=config,
+        db_path=tmp_path / "ajena.db",
+        experiment_ledger=tmp_path / "ledger.jsonl",
+    )
+    with TestClient(app) as client:
+        status = client.get("/api/status").json()["data"]["status"]
+
+    assert status in {"idle", "stopped"}
+    assert started == []
 
 
 def test_la_puerta_apagada_no_bloquea_nada(tmp_path, monkeypatch):

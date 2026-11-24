@@ -9,6 +9,9 @@ configuración que quiera operar:
 - PF fuera de muestra > 1 con el coste duplicado;
 - PBO del ciclo de selección de su universo <= 0,2.
 
+Y la evidencia tiene que ser de la estrategia que se va a operar: un backtest
+de otra estrategia no dice nada de esta, por bien que puntúe.
+
     python -m server.promotion --evidence bt.json --stress bt-2x.json --cycle ciclo.json
 
 Sale con 1 si la configuración no está promovida. Es una decisión, no un aviso.
@@ -45,6 +48,7 @@ def evaluate(
     evidence: dict[str, Any] | None,
     stress: dict[str, Any] | None = None,
     cycle: dict[str, Any] | None = None,
+    strategy: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     checks: list[dict[str, Any]] = []
 
@@ -104,6 +108,30 @@ def evaluate(
         )
     )
 
+    expected_id = str((strategy or {}).get("id") or "")
+    expected_version = str((strategy or {}).get("version") or "")
+    if expected_id:
+        found = (evidence or {}).get("strategy") or {}
+        found_id = str(found.get("id") or "")
+        found_version = str(found.get("version") or "")
+        matches = found_id == expected_id and (
+            not expected_version or found_version == expected_version
+        )
+        expected = f"{expected_id}@{expected_version or '?'}"
+        # Primero la procedencia: si la evidencia es de otra estrategia, los
+        # demás criterios no dicen nada de esta configuración.
+        checks.insert(
+            0,
+            _check(
+                "evidencia_de_la_estrategia",
+                f"{found_id or '?'}@{found_version or '?'}",
+                expected,
+                matches,
+                f"la evidencia es de {found_id or '?'}@{found_version or '?'}, "
+                f"no de {expected}",
+            )
+        )
+
     failed = [check for check in checks if not check["pass"]]
     return {
         "passed": not failed,
@@ -126,8 +154,13 @@ def load(path: str | Path | None) -> dict[str, Any] | None:
     return document if isinstance(document, dict) else None
 
 
-def evaluate_paths(evidence_path: str | None, stress_path: str | None, cycle_path: str | None) -> dict[str, Any]:
-    return evaluate(load(evidence_path), load(stress_path), load(cycle_path))
+def evaluate_paths(
+    evidence_path: str | None,
+    stress_path: str | None,
+    cycle_path: str | None,
+    strategy: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return evaluate(load(evidence_path), load(stress_path), load(cycle_path), strategy)
 
 
 def _shown(value: Any) -> str:
@@ -155,6 +188,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--evidence", required=True, help="backtest con split IS/OOS")
     parser.add_argument("--stress", default=None, help="el mismo backtest con coste duplicado")
     parser.add_argument("--cycle", default=None, help="ciclo de selección (PBO)")
+    parser.add_argument(
+        "--strategy",
+        default=None,
+        help="id@version que debe haber producido la evidencia; sin esto no se comprueba la procedencia",
+    )
     parser.add_argument("--json", action="store_true", help="salida en JSON")
     args = parser.parse_args(argv)
     if hasattr(sys.stdout, "reconfigure"):
@@ -164,7 +202,11 @@ def main(argv: list[str] | None = None) -> int:
         print(f"no hay evidencia en {args.evidence}", flush=True)
         return 1
 
-    verdict = evaluate_paths(args.evidence, args.stress, args.cycle)
+    expected = None
+    if args.strategy:
+        identifier, _, version = args.strategy.partition("@")
+        expected = {"id": identifier, "version": version or None}
+    verdict = evaluate_paths(args.evidence, args.stress, args.cycle, expected)
     if args.json:
         print(json.dumps(verdict, indent=2, ensure_ascii=False))
     else:

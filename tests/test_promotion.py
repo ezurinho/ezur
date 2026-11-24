@@ -55,6 +55,32 @@ def test_un_universo_que_es_ruido_no_se_promueve():
     assert "pbo_del_ciclo" in verdict["failed"]
 
 
+def test_la_evidencia_tiene_que_ser_de_la_estrategia_configurada():
+    verdict = promotion.evaluate(
+        {**EVIDENCE, "strategy": {"id": "donchian", "version": "0.1.0"}},
+        STRESS,
+        CYCLE,
+        {"id": "reference", "version": "0.1.0"},
+    )
+
+    assert verdict["passed"] is False
+    assert verdict["failed"] == ["evidencia_de_la_estrategia"]
+    assert "donchian@0.1.0" in verdict["reason"]
+    assert "reference@0.1.0" in verdict["reason"]
+
+
+def test_la_evidencia_de_la_estrategia_correcta_pasa():
+    verdict = promotion.evaluate(
+        {**EVIDENCE, "strategy": {"id": "reference", "version": "0.1.0"}},
+        STRESS,
+        CYCLE,
+        {"id": "reference", "version": "0.1.0"},
+    )
+
+    assert verdict["passed"] is True
+    assert len(verdict["checks"]) == 6
+
+
 def test_el_cli_sale_con_uno_si_no_esta_promovida(tmp_path, capsys):
     evidencia = tmp_path / "bt.json"
     evidencia.write_text(json.dumps(EVIDENCE), encoding="utf-8")
