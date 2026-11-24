@@ -69,6 +69,14 @@
     "live_confirmation": null,
     "live_enabled": false
   },
+  "promotion": {
+    "required": true,
+    "mode": "reduce",
+    "size_factor": 0.25,
+    "evidence": "data/research/promotion/live-1x.json",
+    "stress_evidence": "data/research/promotion/live-2x.json",
+    "cycle": "data/research/cycles/CYCLE-BOT-1D.json"
+  },
   "risk": {
     "close_at_session_end": false,
     "cooldown_minutes": 2,
