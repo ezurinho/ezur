@@ -119,6 +119,8 @@ class RiskDecision(_Model):
     message: str = ""
     units: int = 0
     risk_per_unit: float = 0.0
+    # 1.0 = tamaño completo; por debajo, el freno está operando a media máquina.
+    size_factor: float = 1.0
 
 
 class EngineState(_Model):
