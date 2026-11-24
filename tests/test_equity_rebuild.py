@@ -325,3 +325,122 @@ def test_load_trades_ordena_por_instante_no_por_texto(tmp_path):
 
     # 13:00Z ocurre antes que 09:00-05:00 (14:00Z), aunque como texto vaya después.
     assert [trade["pnl_net"] for trade in loaded] == [50.0, 100.0]
+
+
+def _funded_db(tmp_path: Path, stored_net: float = 85.0) -> Path:
+    db = tmp_path / "funded.db"
+    conn = sqlite3.connect(db)
+    try:
+        apply_migrations(conn)
+        conn.execute(
+            "INSERT INTO trades "
+            "(symbol, side, units, entry_price, exit_price, opened_ts, closed_ts, "
+            " signal_key, pnl_gross, fees, funding, pnl_net) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+            (
+                "BTC",
+                "long",
+                1,
+                100.0,
+                101.0,
+                "2026-11-23T01:00:00+00:00",
+                "2026-11-23T01:03:00+00:00",
+                "funding",
+                100.0,
+                10.0,
+                -5.0,
+                stored_net,
+            ),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+    return db
+
+
+def test_la_equity_usa_gross_fees_y_funding(tmp_path):
+    planned = equity.plan(_funded_db(tmp_path), 25_000.0)
+
+    assert planned["gross"] == pytest.approx(100.0)
+    assert planned["fees"] == pytest.approx(10.0)
+    assert planned["funding"] == pytest.approx(-5.0)
+    assert planned["net"] == pytest.approx(85.0)
+    assert planned["last_equity"] == pytest.approx(25_085.0)
+
+
+def test_apply_corrige_el_pnl_net_derivado(tmp_path):
+    db = _funded_db(tmp_path, stored_net=999.0)
+
+    equity.apply(db, 25_000.0, backup_dir=tmp_path / "copias")
+
+    conn = sqlite3.connect(db)
+    try:
+        assert conn.execute("SELECT pnl_net FROM trades").fetchone()[0] == pytest.approx(85.0)
+    finally:
+        conn.close()
+    assert equity.audit(db, 25_000.0)["ok"] is True
+    assert equity.current(db)["last_equity"] == pytest.approx(25_085.0)
+
+
+def test_audit_detecta_una_curva_con_filas_de_mas(tmp_path):
+    db = _db(tmp_path)
+    equity.apply(db, 25_000.0, backup_dir=tmp_path / "copias")
+    conn = sqlite3.connect(db)
+    try:
+        conn.execute(
+            "INSERT INTO equity (ts, equity) VALUES (?, ?)",
+            ("2026-11-23T09:00:00+00:00", 24_825.77),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    result = equity.audit(db, 25_000.0)
+
+    assert result["ok"] is False
+    assert "curve_rows" in result["issues"]
+    assert result["differences"]["curve_rows"] == 1
+
+
+def test_audit_exige_que_la_curva_empiece_en_la_primera_operacion(tmp_path):
+    db = _db(tmp_path)
+
+    result = equity.audit(db, 25_000.0)
+
+    assert result["ok"] is False
+    assert "curve_timestamp" in result["issues"]
+    assert any(key.startswith("curve_ts_") for key in result["differences"])
+
+
+def test_el_arranque_se_bloquea_si_la_curva_no_cuadra(tmp_path):
+    from server.config import Settings
+    from server.db import Store
+    from server.engine import TradingEngine
+
+    db = _db(tmp_path)
+    store = Store(db)
+    try:
+        engine = TradingEngine(Settings(), store, feed=None)
+        with pytest.raises(RuntimeError, match="equity no cuadra"):
+            engine.start()
+        assert engine.state.block_reason == "equity_mismatch"
+        assert engine.state.status == "error"
+    finally:
+        store.close()
+
+
+def test_el_arranque_pasa_despues_de_reconstruir(tmp_path):
+    from server.config import Settings
+    from server.db import Store
+    from server.engine import TradingEngine
+
+    db = _db(tmp_path)
+    equity.apply(db, 25_000.0, backup_dir=tmp_path / "copias")
+    store = Store(db)
+    try:
+        engine = TradingEngine(Settings(), store, feed=None)
+        engine.start()
+        assert engine.state.status == "running"
+        assert engine.state.block_reason is None
+    finally:
+        store.close()
