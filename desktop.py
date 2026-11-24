@@ -20,6 +20,7 @@ Uso:
     python desktop.py --self-test     # arranca, comprueba la API y sale
     python desktop.py --no-window     # servidor sin ventana (para depurar)
     python desktop.py --port 8790     # puerto fijo
+    python desktop.py --check-update  # ¿hay versión nueva publicada?
 """
 
 from __future__ import annotations
@@ -145,6 +146,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--port", type=int, default=0, help="puerto fijo (0 = libre)")
     parser.add_argument("--self-test", action="store_true", help="arranca, comprueba y sale")
     parser.add_argument("--no-window", action="store_true", help="servidor sin ventana")
+    parser.add_argument("--check-update", action="store_true", help="comprueba si hay versión nueva y sale")
     parser.add_argument("--auto-close", type=float, default=0.0, help=argparse.SUPPRESS)
     parser.add_argument("--debug", action="store_true")
     args = parser.parse_args(argv)
@@ -154,6 +156,15 @@ def main(argv: list[str] | None = None) -> int:
     os.chdir(root)
     log_file = setup_logging(args.debug)
     LOGGER.info("arranque dir=%s frozen=%s log=%s", root, is_frozen(), log_file)
+
+    if args.check_update:
+        from server import __version__
+        from server.update import DEFAULT_URL, current_status
+
+        url = os.getenv("EZUR_UPDATE_URL") or DEFAULT_URL
+        status = current_status(url, __version__)
+        print(json.dumps(status, ensure_ascii=False, indent=2))
+        return 0
 
     if not (root / "frontend" / "dist" / "index.html").is_file():
         LOGGER.error("falta frontend/dist/index.html en %s", root)

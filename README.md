@@ -83,6 +83,34 @@ Deja `dist_installer\ezur-setup-0.1.0.exe`. No se firma: un instalador sin
 firma dispara SmartScreen y algunos antivirus marcan el bootloader de
 PyInstaller; para distribuirlo fuera de tu máquina hace falta un certificado.
 
+## Aviso de versión nueva
+
+`GET /api/update` compara la versión instalada con un manifiesto JSON y la UI lo
+enseña en un chip junto al selector de tema. Comprueba y avisa; **no descarga ni
+ejecuta nada**. Sin firma, reemplazar el `.exe` en caliente es justo lo que un
+antivirus marca con razón, así que instalar sigue siendo cosa tuya.
+
+Sin canal configurado no se sale a la red: el chip solo dice la versión. Para
+activarlo, publica este JSON donde la app pueda leerlo (un release de GitHub, tu
+servidor, una carpeta compartida) y apunta la variable de entorno:
+
+```json
+{"version": "0.2.0", "url": "https://.../ezur-setup-0.2.0.exe", "notes": "arregla X"}
+```
+
+```bat
+set EZUR_UPDATE_URL=https://mi-servidor/ezur/update.json
+ezur.exe
+```
+
+`EZUR_UPDATE_CHECK=0` lo apaga. La respuesta se cachea seis horas y los fallos
+dos minutos, para no golpear la red en cada recarga. También se puede consultar
+sin abrir la ventana:
+
+```bat
+ezur.exe --check-update
+```
+
 ## Simulación multi-sesión
 
 ```bash
