@@ -53,7 +53,7 @@ volver a empezar.
 ## Diagnóstico
 
 ```powershell
-python -m server.diagnostics --db profiles/demo/terminal.db   # solo lectura
+python -m server.diagnostics --profile profiles/demo             # solo lectura; usa su terminal.db
 python -m server.funnel                                        # embudo de evaluación
 python -m server.experiments                                     # ledger de experimentos
 curl http://127.0.0.1:8765/api/stats                              # estadísticas vivas
