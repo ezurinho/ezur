@@ -242,12 +242,24 @@ class PromotionConfig(_Model):
     """La puerta de promoción del estudio, aplicada antes de arrancar.
 
     Apagada por defecto: activarla es una decisión del perfil, no del código.
+    Con `mode="block"` una configuración sin promoción no arranca; con
+    `mode="reduce"` arranca con el riesgo por operación multiplicado por
+    `size_factor`, para seguir midiendo sin sangrar a tamaño completo.
     """
 
     required: bool = False
+    mode: Literal["block", "reduce"] = "block"
+    size_factor: float = 0.25
     evidence: str | None = None
     stress_evidence: str | None = None
     cycle: str | None = None
+
+    @field_validator("size_factor")
+    @classmethod
+    def _factor_range(cls, value: float) -> float:
+        if not 0 < value <= 1:
+            raise ValueError("size_factor debe estar en (0, 1]")
+        return value
 
 
 class Settings(_Model):
