@@ -13,6 +13,7 @@ from collections.abc import Callable
 from datetime import time
 from pathlib import Path
 from typing import Any, Literal
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -20,7 +21,7 @@ DEFAULT_CONFIG_PATH = Path("data/config.json")
 
 
 class _Model(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
 
 def _parse_hhmm(value: str) -> time:
@@ -41,6 +42,24 @@ class SessionTemplate(_Model):
         _parse_hhmm(value)
         return value
 
+    @field_validator("timezone")
+    @classmethod
+    def _valid_timezone(cls, value: str) -> str:
+        try:
+            ZoneInfo(value)
+        except ZoneInfoNotFoundError as error:
+            raise ValueError(f"unknown timezone {value!r}") from error
+        return value
+
+    @field_validator("weekdays")
+    @classmethod
+    def _valid_weekdays(cls, value: list[int]) -> list[int]:
+        if not value or any(day < 0 or day > 6 for day in value):
+            raise ValueError("weekdays must contain ISO days 0..6")
+        if len(value) != len(set(value)):
+            raise ValueError("duplicate weekday")
+        return value
+
     @property
     def open_time(self) -> time:
         return _parse_hhmm(self.open)
@@ -59,9 +78,24 @@ class InstrumentConfig(_Model):
     tick_size: float = 0.25
     tick_value: float = 0.5
     point_value: float | None = None
+    reference_price: float | None = None
     currency: str = "USD"
     decimals: int = 2
     session_template: str = "RTH"
+
+    @field_validator("tick_size", "tick_value", "point_value", "reference_price")
+    @classmethod
+    def _positive_tick(cls, value: float | None) -> float | None:
+        if value is not None and value <= 0:
+            raise ValueError("tick and point values must be positive")
+        return value
+
+    @field_validator("decimals")
+    @classmethod
+    def _decimals_range(cls, value: int) -> int:
+        if not 0 <= value <= 12:
+            raise ValueError("decimals must be in [0, 12]")
+        return value
 
 
 class InstrumentsConfig(_Model):
@@ -86,6 +120,12 @@ class InstrumentsConfig(_Model):
         enabled_primary = [i for i in self.items if i.role == "primary" and i.enabled]
         if len(enabled_primary) != 1:
             raise ValueError("exactly one enabled primary instrument is required")
+        template_names = [template.name for template in self.templates]
+        if len(template_names) != len(set(template_names)):
+            raise ValueError("duplicate session template names")
+        missing = sorted({item.session_template for item in self.items} - set(template_names))
+        if missing:
+            raise ValueError(f"unknown session templates: {', '.join(missing)}")
         return self
 
     def by_symbol(self, symbol: str) -> InstrumentConfig:
@@ -181,6 +221,40 @@ class RiskConfig(_Model):
             raise ValueError("risk_per_trade_pct must be in (0, 100]")
         return value
 
+    @field_validator(
+        "initial_capital",
+        "max_daily_loss_pct",
+        "max_trades_per_day",
+        "max_concurrent_positions",
+        "max_units_per_trade",
+        "max_stop_ticks",
+    )
+    @classmethod
+    def _positive_limit(cls, value: float | int) -> float | int:
+        if value <= 0:
+            raise ValueError("risk limits must be positive")
+        return value
+
+    @field_validator("max_daily_profit_pct", "cooldown_minutes", "no_trade_after_consecutive_losses")
+    @classmethod
+    def _nonnegative_limit(cls, value: float | int) -> float | int:
+        if value < 0:
+            raise ValueError("risk limits cannot be negative")
+        return value
+
+    @field_validator(
+        "trade_window_start",
+        "trade_window_end",
+        "session_close_time",
+        "entry_exclusion_start",
+        "entry_exclusion_end",
+    )
+    @classmethod
+    def _valid_clock(cls, value: str | None) -> str | None:
+        if value is not None:
+            _parse_hhmm(value)
+        return value
+
 
 class ExecutionConfig(_Model):
     commission_per_unit_side: float = 0.62
@@ -189,6 +263,33 @@ class ExecutionConfig(_Model):
     fill_model: Literal["next_open", "signal_price", "intrabar"] = "next_open"
     simulate_partial_fills: bool = False
     partial_fill_ratio: float = 0.6
+
+    @field_validator("commission_per_unit_side")
+    @classmethod
+    def _nonnegative_fee(cls, value: float) -> float:
+        if value < 0:
+            raise ValueError("commission cannot be negative")
+        return value
+
+    @field_validator("slippage_ticks", "max_slippage_ticks")
+    @classmethod
+    def _nonnegative_slippage(cls, value: int) -> int:
+        if value < 0:
+            raise ValueError("slippage cannot be negative")
+        return value
+
+    @field_validator("partial_fill_ratio")
+    @classmethod
+    def _fill_ratio(cls, value: float) -> float:
+        if not 0 < value <= 1:
+            raise ValueError("partial_fill_ratio must be in (0, 1]")
+        return value
+
+    @model_validator(mode="after")
+    def _partial_fills_are_not_silently_ignored(self) -> "ExecutionConfig":
+        if self.simulate_partial_fills:
+            raise ValueError("los fills parciales aún no están implementados")
+        return self
 
 
 class FeedConfig(_Model):
@@ -264,7 +365,7 @@ class PromotionConfig(_Model):
 
 
 class Settings(_Model):
-    version: int = 1
+    version: Literal[1] = 1
     instruments: InstrumentsConfig = Field(default_factory=InstrumentsConfig)
     strategy: StrategyConfig = Field(default_factory=StrategyConfig)
     risk: RiskConfig = Field(default_factory=RiskConfig)
@@ -284,15 +385,17 @@ def load_settings(
     *,
     on_error: Callable[[str], None] | None = None,
 ) -> Settings:
-    """Load settings, archiving a corrupt file and falling back to defaults.
+    """Load settings, archiving a corrupt file and falling back to a stopped profile.
 
     El respaldo mantiene la interfaz en pie, pero es un perfil distinto: quien
     llame puede pasarse ``on_error`` para dejar constancia en vez de que el
-    arranque parezca normal.
+    arranque parezca normal. Sin configuración válida el motor no arranca solo.
     """
     target = Path(path) if path is not None else DEFAULT_CONFIG_PATH
     if not target.exists():
-        return Settings()
+        # Primer arranque sin perfil: la UI puede funcionar, pero el motor no
+        # arranca con límites que nadie ha confirmado.
+        return Settings(auto_start=False)
     try:
         raw = json.loads(target.read_text(encoding="utf-8"))
         return Settings.model_validate(raw)
@@ -300,7 +403,7 @@ def load_settings(
         shutil.copy2(target, target.with_suffix(target.suffix + ".broken"))
         if on_error is not None:
             on_error(f"config inválida en {target}: {error}")
-        return Settings()
+        return Settings(auto_start=False)
 
 
 def save_settings(settings: Settings, path: str | Path | None = None) -> None:
