@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import asyncio
+import logging
 import os
+import shutil
 from contextlib import asynccontextmanager
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import AsyncIterator
+from urllib.parse import urlsplit
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
@@ -25,6 +29,58 @@ from .timeutil import session_open_utc
 
 DEFAULT_CONFIG = Path("data/config.json")
 DEFAULT_DB = Path("data/terminal.db")
+
+LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1"}
+logger = logging.getLogger(__name__)
+
+
+class LocalOriginMiddleware:
+    """Loopback no evita CSRF/CSWSH: una web puede llamar a localhost.
+
+    Se acepta cualquier petición sin Origin (curl, health checks), pero una web
+    solo puede hablar con el mismo Host que sirvió la aplicación. El Host
+    `testserver` se admite únicamente desde el cliente sintético de TestClient.
+    """
+
+    def __init__(self, app) -> None:
+        self.app = app
+
+    async def __call__(self, scope, receive, send) -> None:
+        if scope["type"] not in {"http", "websocket"}:
+            await self.app(scope, receive, send)
+            return
+        headers = {key.decode("latin-1").lower(): value.decode("latin-1") for key, value in scope["headers"]}
+        host = headers.get("host", "")
+        hostname = urlsplit(f"//{host}").hostname
+        client_host = (scope.get("client") or ("", 0))[0]
+        host_allowed = hostname in LOCAL_HOSTS or (
+            hostname == "testserver" and client_host == "testclient"
+        )
+        origin = headers.get("origin")
+        fetch_site = headers.get("sec-fetch-site", "")
+        allowed = host_allowed and fetch_site != "cross-site"
+        if allowed and origin:
+            parsed = urlsplit(origin)
+            allowed = parsed.scheme in {"http", "https"} and parsed.netloc.lower() == host.lower()
+        if allowed and scope["type"] == "http":
+            try:
+                allowed = int(headers.get("content-length") or 0) <= 1_048_576
+            except ValueError:
+                allowed = False
+        if allowed:
+            await self.app(scope, receive, send)
+            return
+        if scope["type"] == "websocket":
+            await send({"type": "websocket.close", "code": 1008, "reason": "origin not allowed"})
+        else:
+            await send(
+                {
+                    "type": "http.response.start",
+                    "status": 403,
+                    "headers": [(b"content-type", b"text/plain; charset=utf-8")],
+                }
+            )
+            await send({"type": "http.response.body", "body": b"origin not allowed"})
 
 
 def resolve_paths() -> tuple[Path, Path]:
@@ -70,7 +126,17 @@ def build_feed(settings) -> MarketFeed:
     seed = settings.feed.start_date or default_session_date(settings)
     template = settings.instruments.template_for(settings.instruments.primary)
     start = session_open_utc(template, date.fromisoformat(seed))
-    return SimulatedFeed(seed, symbols, start=start)
+    return SimulatedFeed(
+        seed,
+        symbols,
+        start=start,
+        tick_size=settings.instruments.by_symbol(settings.instruments.primary).tick_size,
+        reference_prices={
+            item.symbol: item.reference_price
+            for item in settings.instruments.items
+            if item.reference_price is not None
+        },
+    )
 
 
 def create_app(
@@ -84,11 +150,35 @@ def create_app(
     ledger_path = Path(
         experiment_ledger or env("EXPERIMENT_LEDGER", "reports/experiments.jsonl")
     )
+    db_existed = db_path.exists() and db_path.stat().st_size > 0
     hub = EventHub()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         store = Store(db_path)
+        backup_dir = db_path.parent / "backups"
+
+        def make_backup() -> Path:
+            stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+            target = store.backup(backup_dir / f"terminal-{stamp}.db")
+            if config_path.is_file():
+                shutil.copy2(config_path, backup_dir / f"config-{stamp}.json")
+            return target
+
+        async def backup_loop() -> None:
+            while True:
+                await asyncio.sleep(86_400)
+                try:
+                    make_backup()
+                except Exception:
+                    logger.exception("no se pudo crear el respaldo programado")
+
+        if db_existed:
+            try:
+                make_backup()
+            except Exception:
+                logger.exception("no se pudo crear el respaldo de arranque")
+        backup_task = asyncio.create_task(backup_loop())
         config_failed = False
 
         def _config_error(message: str) -> None:
@@ -101,6 +191,14 @@ def create_app(
             # Un perfil ilegible no puede acabar operando con los valores por
             # defecto sobre el libro vivo: se queda esperando a que lo arreglen.
             settings.auto_start = False
+        # La reducción por promoción se aplica antes de construir el motor, a
+        # una copia efectiva. La configuración guardada conserva el porcentaje
+        # que eligió el operador; así un guardado posterior no lo reduce otra
+        # vez y el RiskManager nace ya con el tamaño correcto.
+        configured_settings = settings.model_copy(deep=True)
+        from .promotion import effective_settings_and_verdict
+
+        settings, promotion_verdict = effective_settings_and_verdict(configured_settings)
         notifier = build_notifier(
             settings.alerts,
             url_override=env("ALERT_WEBHOOK_URL"),
@@ -116,7 +214,22 @@ def create_app(
             notifier=notifier,
         )
         engine.subscribe(hub.broadcast)
+        if not engine.equity_audit["ok"]:
+            # El motor también se niega a arrancar; dejar constancia aquí evita
+            # que un auto_start silencioso oculte el motivo en el panel.
+            store.insert_event(
+                "error",
+                "accounting",
+                "arranque bloqueado: la equity no cuadra con el libro",
+                {
+                    "issues": engine.equity_audit["issues"],
+                    "differences": engine.equity_audit["differences"],
+                },
+            )
+            settings.auto_start = False
+            configured_settings.auto_start = False
         app.state.settings = settings
+        app.state.configured_settings = configured_settings
         app.state.store = store
         app.state.engine = engine
         app.state.hub = hub
@@ -124,50 +237,45 @@ def create_app(
         app.state.experiment_ledger = ledger_path
         app.state.notifier = notifier
         promoted = True
-        if settings.promotion.required:
-            from .promotion import evaluate_paths
-
-            verdict = evaluate_paths(
-                settings.promotion.evidence,
-                settings.promotion.stress_evidence,
-                settings.promotion.cycle,
-                {"id": settings.strategy.id, "version": settings.strategy.version},
-            )
-            promoted = bool(verdict["passed"])
-            if not promoted:
-                if settings.promotion.mode == "reduce":
-                    before = settings.risk.risk_per_trade_pct
-                    settings.risk.risk_per_trade_pct = round(
-                        before * settings.promotion.size_factor, 4
-                    )
-                    store.insert_event(
-                        "warn",
-                        "promotion",
-                        f"sin promoción: riesgo {before:.2f} % -> "
-                        f"{settings.risk.risk_per_trade_pct:.2f} % ({verdict['reason']})",
-                    )
-                    promoted = True  # arranca, pero a menor tamaño
-                else:
-                    store.insert_event(
-                        "warn",
-                        "promotion",
-                        f"auto_start bloqueado: {verdict['reason']}",
-                    )
+        if promotion_verdict is not None and not promotion_verdict["passed"]:
+            if settings.promotion.mode == "reduce":
+                before = configured_settings.risk.risk_per_trade_pct
+                store.insert_event(
+                    "warn",
+                    "promotion",
+                    f"sin promoción: riesgo {before:.2f} % -> "
+                    f"{settings.risk.risk_per_trade_pct:.2f} % "
+                    f"({promotion_verdict['reason']})",
+                )
+            else:
+                store.insert_event(
+                    "warn",
+                    "promotion",
+                    f"auto_start bloqueado: {promotion_verdict['reason']}",
+                )
+                promoted = False
         if settings.auto_start and promoted and engine.state.status in {"idle", "stopped"}:
             try:
                 engine.start()
-                engine.start_task()
+                await engine.start_task()
             except RuntimeError as error:  # a bad profile must not block the UI
                 store.insert_event("warn", "engine", f"auto_start falló: {error}")
         try:
             yield
         finally:
+            backup_task.cancel()
+            try:
+                await backup_task
+            except asyncio.CancelledError:
+                pass
             await engine.stop_task()
             if notifier is not None:
                 notifier.close()
             store.close()
 
     app = FastAPI(title="ezur", version=__version__, lifespan=lifespan)
+    app.state.backtest_lock = asyncio.Lock()
+    app.add_middleware(LocalOriginMiddleware)
     app.include_router(router)
 
     dist = Path("frontend/dist")
