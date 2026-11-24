@@ -83,10 +83,21 @@ def impossible(trades: list[TradeRecord], capital: float) -> dict[str, Any]:
     ]
     pnl = sum(float(trade.pnl_net or 0.0) for trade in broken)
     total = sum(float(trade.pnl_net or 0.0) for trade in trades)
+    valid = [
+        trade for trade in trades if _instant(trade.closed_ts) >= _instant(trade.opened_ts)
+    ]
+    wins = sum(
+        float(trade.pnl_net or 0.0) for trade in valid if float(trade.pnl_net or 0.0) > 0
+    )
+    losses = sum(
+        float(trade.pnl_net or 0.0) for trade in valid if float(trade.pnl_net or 0.0) < 0
+    )
     return {
         "trades": len(broken),
         "pnl_net": round(pnl, 8),
         "equity_without": round(float(capital) + total - pnl, 8),
+        "trades_without": len(valid),
+        "pf_without": round(wins / abs(losses), 4) if losses else None,
     }
 
 
@@ -305,10 +316,13 @@ def render(
             f"mediana {_times(exposure_info.get('median_multiple') or 0)}×"
         )
     if anomalies and int(anomalies.get("trades") or 0):
+        pf_without = anomalies.get("pf_without")
+        pf_text = "—" if pf_without is None else f"{float(pf_without):.3f}"
         lines.append(
             f"libro: {int(anomalies['trades'])} cierres anteriores a la apertura · "
             f"P&L {_money(anomalies.get('pnl_net'))} incluido · "
-            f"equity sin ellas {_money(anomalies.get('equity_without'))}"
+            f"equity sin ellas {_money(anomalies.get('equity_without'))} · "
+            f"PF sin ellas {pf_text}"
         )
     if promotion is not None:
         if promotion.get("passed"):

@@ -143,6 +143,22 @@ def test_marca_los_cierres_anteriores_a_la_apertura():
     assert info["trades"] == 1
     assert info["pnl_net"] == -27.9
     assert info["equity_without"] == 24_900.0
+    assert info["trades_without"] == 1
+
+
+def test_el_pf_sin_las_imposibles_no_hereda_sus_ganancias():
+    broken = _trade(
+        opened="2026-11-24T04:00:00+00:00",
+        closed="2026-11-24T01:00:00+00:00",
+        pnl_net=-27.9,
+    )
+
+    info = paper.impossible(
+        [_trade(pnl_net=150.0), _trade(pnl_net=-100.0), broken], 25_000.0
+    )
+
+    assert info["trades_without"] == 2
+    assert info["pf_without"] == 1.5
 
 
 def test_el_informe_enseña_exposicion_libro_roto_y_puerta():
@@ -155,7 +171,12 @@ def test_el_informe_enseña_exposicion_libro_roto_y_puerta():
             "median_multiple": 700.0,
             "max_notional": 18_000_000.0,
         },
-        anomalies={"trades": 2, "pnl_net": -27.91, "equity_without": 24_515.67},
+        anomalies={
+            "trades": 2,
+            "pnl_net": -27.91,
+            "equity_without": 24_515.67,
+            "pf_without": 0.245,
+        },
         promotion={
             "passed": False,
             "reason": "pf con coste duplicado",
@@ -169,6 +190,7 @@ def test_el_informe_enseña_exposicion_libro_roto_y_puerta():
     assert "2 cierres anteriores a la apertura" in text
     assert "P&L -27.91 incluido" in text
     assert "equity sin ellas 24 515.67" in text
+    assert "PF sin ellas 0.245" in text
     assert "puerta: no promovida (pf con coste duplicado) · modo reduce al 25 %" in text
 
 
