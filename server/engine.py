@@ -615,6 +615,9 @@ class TradingEngine:
                 self.peak_equity = max(float(saved_peak), self.state.equity)
             except (TypeError, ValueError):
                 logger.warning("discarded unreadable peak equity")
+        # Sin copia (o ilegible), el capital inicial no es el pico de una cuenta
+        # que ya ganó: el pico nunca puede quedar por debajo de la equity.
+        self.peak_equity = max(self.peak_equity, self.state.equity)
         # La pausa tras una racha se cuenta desde la última salida: sin esto, un
         # reinicio del proceso dejaría el bloqueo sin fecha y sin final.
         last_exit = self.store.kv_get("last_exit_ts")
