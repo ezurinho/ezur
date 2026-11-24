@@ -1,4 +1,5 @@
 import type { StrategyBlock } from "../types";
+import { sideLabel } from "../utils";
 import { KvPanel } from "./KvPanel";
 import { PhaseTimeline } from "./PhaseTimeline";
 
@@ -22,7 +23,7 @@ export function StrategyPanel({ strategy }: Props) {
       <KvPanel entries={strategy.metrics} emptyLabel="Sin métricas" />
       {strategy.signal ? (
         <p className="signal" data-signal>
-          {strategy.signal.side} · {strategy.signal.reason ?? ""}
+          {sideLabel(strategy.signal.side)} · {strategy.signal.reason ?? ""}
         </p>
       ) : null}
       {strategy.rejection ? (
