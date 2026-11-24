@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Sidebar, SIMPLE_VIEWS, VIEWS } from "./components/Sidebar";
 import { TopBar } from "./components/TopBar";
+import { LinkBanner } from "./components/LinkBanner";
 import { StoreProvider, useStore } from "./store";
 import { DashboardPage } from "./pages/Dashboard";
 import { ChartPage } from "./pages/Chart";
@@ -18,6 +19,8 @@ import { ToastProvider, useToast } from "./toast";
 import { CommandPalette, type PaletteItem } from "./components/CommandPalette";
 import { Shortcuts } from "./components/Shortcuts";
 import { api } from "./api";
+import { useClock } from "./components/Sparkline";
+import { marketFreshness, connectionNotice, stallNotice, linkBanner, type Freshness } from "./utils";
 
 const PAGES: Record<string, () => JSX.Element> = {
   home: DashboardPage,
@@ -33,13 +36,53 @@ const PAGES: Record<string, () => JSX.Element> = {
 };
 
 function Shell() {
-  const { snapshot, connection } = useStore();
+  const { snapshot, connection, lastUpdate, refresh } = useStore();
   const { isSimple, setMode } = useUiMode();
   const { setTheme } = useTheme();
   const { push } = useToast();
   const [view, setView] = useState("home");
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+
+  // El reloj importa aunque no lleguen snapshots: es lo que convierte «la
+  // última vela es de hace 40 min» en un aviso sin esperar al siguiente tick.
+  const now = useClock(15_000);
+  const linkTick = useClock(5_000);
+  const link = linkBanner(connection, lastUpdate, linkTick.getTime());
+  const fresh = marketFreshness(snapshot?.data.last_bar_ts ?? null, now.getTime());
+  const feedTone = useRef<Freshness["tone"] | undefined>(undefined);
+
+  useEffect(() => {
+    const notice = stallNotice(feedTone.current, fresh.tone, fresh.label);
+    feedTone.current = fresh.tone;
+    if (notice) push({ ...notice, ttl: 8000 });
+  }, [fresh.tone, fresh.label, push]);
+
+  const linkDown = useRef(false);
+  useEffect(() => {
+    const { notice, down } = connectionNotice(linkDown.current, connection);
+    linkDown.current = down;
+    if (notice) push({ ...notice, ttl: 8000 });
+  }, [connection, push]);
+
+  // Un aviso al cerrar operación: el motor gana o pierde sin que nadie mire.
+  // Sin importe, porque el resultado aún no está en el snapshot en ese tick y
+  // un «+0,00» de relleno sería una cifra inventada.
+  const tradesSeen = useRef<number | null>(null);
+  const tradesToday = snapshot?.risk.daily_trades ?? null;
+  useEffect(() => {
+    if (tradesToday === null) return;
+    const previous = tradesSeen.current;
+    tradesSeen.current = tradesToday;
+    if (previous === null || tradesToday <= previous) return;
+    const closed = tradesToday - previous;
+    push({
+      title: closed === 1 ? "Se cerró una operación" : `Se cerraron ${closed} operaciones`,
+      detail: "El resultado está en Inicio e Historial.",
+      tone: "info",
+      ttl: 8000,
+    });
+  }, [tradesToday, push]);
 
   // A view that only exists in one mode must not survive a mode change.
   const available = isSimple ? SIMPLE_VIEWS : VIEWS;
@@ -115,7 +158,7 @@ function Shell() {
               const ok = window.confirm(
                 `¿Borrar ${preview.trades} operación(es) y el historial de pruebas?
 ` +
-                  "Esto no se puede deshacer. El motor sigue corriendo.",
+                  "Esto no se puede deshacer. El motor debe estar detenido y sin posición.",
               );
               if (!ok) return;
               return api
@@ -166,7 +209,7 @@ function Shell() {
         return;
       }
       if (typing || paletteOpen || shortcutsOpen || event.metaKey || event.ctrlKey || event.altKey) return;
-      // 1..7 jump between the views the current mode shows.
+      // 1..N jump between the views the current mode shows.
       const index = Number(event.key) - 1;
       if (Number.isInteger(index) && index >= 0 && index < available.length) {
         setView(available[index].id);
@@ -176,13 +219,25 @@ function Shell() {
     return () => window.removeEventListener("keydown", onKey);
   }, [available, paletteOpen, shortcutsOpen]);
 
+  // The room changes temperature with the day's result: the same screen reads
+  // green or red from across the room, before any number is legible.
+  const mood = snapshot
+    ? snapshot.risk.daily_pnl > 0
+      ? "gain"
+      : snapshot.risk.daily_pnl < 0
+        ? "loss"
+        : "flat"
+    : "flat";
+
   return (
-    <div className={`app-shell ${isSimple ? "mode-simple" : "mode-advanced"}`}>
+    <div className={`app-shell ${isSimple ? "mode-simple" : "mode-advanced"}`} data-mood={mood}>
+      <div className="ambient" aria-hidden="true" />
       <TopBar snapshot={snapshot} connection={connection} onOpenPalette={() => setPaletteOpen(true)} />
+      {link ? <LinkBanner info={link} onRetry={refresh} /> : null}
       <div className="app-body">
         <Sidebar active={current} onSelect={setView} simple={isSimple} />
         <main className="app-main">
-          <div className="page-swap" key={current}>
+          <div className="page-swap" key={`${isSimple ? "simple" : "advanced"}-${current}`}>
             <Page />
           </div>
         </main>
