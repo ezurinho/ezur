@@ -12,6 +12,7 @@ import hashlib
 import uuid
 import json
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -111,7 +112,11 @@ def run_backtest(
         trades=trades,
         equity=equity,
         metrics=metrics,
-        diagnostics={"dataset_sessions": report.sessions, "rows": report.rows},
+        diagnostics={
+            "dataset_sessions": report.sessions,
+            "rows": report.rows,
+            "rejections": engine.rejection_totals(),
+        },
     )
 
 
@@ -159,6 +164,13 @@ def main() -> None:
         help="comisión por unidad y lado (moneda de cotización); pisa la del perfil",
     )
     parser.add_argument("--gates", action="store_true", help="evalúa las puertas G4-G13")
+    parser.add_argument(
+        "--split",
+        default=None,
+        help="fecha ISO (AAAA-MM-DD): lo cerrado antes es in-sample, lo demás out-of-sample",
+    )
+    parser.add_argument("--json", action="store_true", help="imprime el resultado como JSON")
+    parser.add_argument("--out", default=None, help="escribe ese JSON en una ruta")
     args = parser.parse_args()
 
     settings = load_settings(args.config).model_copy(deep=True)
@@ -191,12 +203,103 @@ def main() -> None:
             fees=closed.get("fees", 0.0),
         )
     )
+    report = None
     if args.gates:
         report = evaluate_gates(stats, initial_capital=settings.risk.initial_capital)
         print(f"veredicto {report.verdict} · falla {', '.join(report.failed) or '—'}")
         for outcome in report.outcomes:
             if outcome.status == "fail":
                 print(f"  {outcome.id}: {outcome.detail}")
+
+    _report_run(args, settings, result, stats, report)
+
+
+def partition_by_split(trades, cut):
+    """Parte por fecha de cierre: antes del corte es in-sample, el resto OOS."""
+    inside = [trade for trade in trades if trade.closed_ts < cut]
+    outside = [trade for trade in trades if trade.closed_ts >= cut]
+    return inside, outside
+
+
+def _report_run(args, settings, result, stats, report) -> None:
+    """Lo que hace falta para juzgar una corrida: rechazos, coste real y IS/OOS.
+
+    Sin esto, una corrida con un stop que rechaza 180 de 181 señales se lee como
+    "el bot da una operación" y el número de operaciones no explica nada.
+    """
+    from .gates import evaluate_gates
+    from .stats import aggregate
+
+    closed = stats["closed"]
+    trades = closed.get("trades", 0)
+    budget = settings.risk.initial_capital * settings.risk.risk_per_trade_pct / 100
+    cost_r = (closed.get("fees", 0.0) / trades / budget) if trades and budget else None
+
+    rejections = result.diagnostics.get("rejections") or {}
+    if rejections:
+        detail = ", ".join(f"{code} {count}" for code, count in sorted(rejections.items()))
+        print(f"rechazos  {sum(rejections.values())} · {detail}")
+        blockers = sum(
+            count for code, count in rejections.items()
+            if code in {"stop_too_wide", "max_drawdown_reached"}
+        )
+        if blockers:
+            print(
+                "  aviso: el perfil bloqueó " f"{blockers} señales antes de operar; "
+                "un backtest de validación necesita config/okx-daily.json"
+            )
+    if cost_r is not None:
+        print(f"coste     {cost_r:.3f} R por operación (fees / ops / riesgo por trade)")
+
+    payload = {
+        "dataset": str(args.dataset),
+        "dataset_id": result.dataset_id,
+        "config_hash": result.config_hash,
+        "strategy": {"id": result.strategy_id, "version": result.strategy_version},
+        "diagnostics": result.diagnostics,
+        "metrics": closed,
+        "cost_per_trade_r": cost_r,
+        "gates": (
+            {"verdict": report.verdict, "failed": report.failed} if report else None
+        ),
+    }
+
+    if args.split:
+        cut = datetime.fromisoformat(args.split)
+        if cut.tzinfo is None:
+            cut = cut.replace(tzinfo=timezone.utc)
+        inside, outside = partition_by_split(result.trades, cut)
+        zone = settings.instruments.template_for(settings.instruments.primary).timezone
+        blocks = {}
+        for name, subset in (("in_sample", inside), ("out_of_sample", outside)):
+            subset_stats = aggregate(
+                subset, settings.risk.initial_capital, timezone_name=zone
+            )
+            block = dict(subset_stats["closed"])
+            if name == "out_of_sample" and args.gates and subset:
+                oos_report = evaluate_gates(
+                    subset_stats, initial_capital=settings.risk.initial_capital
+                )
+                block["verdict"] = oos_report.verdict
+                block["failed"] = oos_report.failed
+            blocks[name] = block
+            print(
+                f"{name:<14} {block['trades']:>4} ops · PF {block['profit_factor']:.3f}"
+                f" · esperanza {block['expectancy_r']:+.3f} R"
+                f" · P&L {block['pnl_net']:+.0f}"
+                + (f" · {block['verdict']}" if "verdict" in block else "")
+            )
+        if blocks["in_sample"]["trades"] and blocks["out_of_sample"]["trades"]:
+            base = blocks["in_sample"]["profit_factor"]
+            ratio = blocks["out_of_sample"]["profit_factor"] / base if base else 0.0
+            print(f"degradación   PF fuera / dentro {ratio:.2f}×")
+        payload["split"] = {"at": cut.isoformat(), **blocks}
+
+    document = json.dumps(payload, ensure_ascii=False, indent=2, default=str)
+    if args.json:
+        print(document)
+    if args.out:
+        Path(args.out).write_text(document, encoding="utf-8")
 
 
 def fingerprint(result: BacktestResult) -> str:
