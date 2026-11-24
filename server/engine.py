@@ -535,6 +535,17 @@ class TradingEngine:
         if session.is_open:
             self._event("info", "session", f"nueva sesión {session.id}", {"session": session.id})
             self.store.kv_set("session_id", session.id)
+        else:
+            # Una orden pendiente no puede cruzar el cierre: se ejecutaría en la
+            # primera vela de la sesión siguiente con una señal ya vieja.
+            pending = [order for order in self.execution.orders if order.status == "pending"]
+            if pending:
+                self.execution.cancel_all()
+                self._event(
+                    "info",
+                    "execution",
+                    f"{len(pending)} orden(es) pendiente(s) cancelada(s) al cerrar la sesión",
+                )
 
     def _on_trade_closed(self, trade: TradeRecord) -> None:
         try:
