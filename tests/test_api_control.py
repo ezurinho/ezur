@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -13,8 +15,12 @@ from server.main import create_app
 def pair(tmp_path):
     settings = Settings()
     settings.feed.replay_speed = 1000.0
+    # Sin arranque automático el feed no rellena las órdenes entre el armado
+    # de un test y la llamada al endpoint que se quiere medir.
+    payload = settings.model_dump()
+    payload["auto_start"] = False
     config_path = tmp_path / "config.json"
-    config_path.write_text(settings.model_dump_json(), encoding="utf-8")
+    config_path.write_text(json.dumps(payload), encoding="utf-8")
     app = create_app(
         config_path=config_path,
         db_path=tmp_path / "control.db",
@@ -55,9 +61,35 @@ def test_close_position_without_a_position_is_a_no_op(pair):
 
 def test_cancel_orders_leaves_no_pending_orders(pair):
     client, engine = pair
-    assert client.post("/api/orders/cancel").json() == {"cancelled": True}
+    assert client.post("/api/orders/cancel").json() == {"cancelled": False, "count": 0}
     assert engine.execution.pending_orders() == []
     assert client.get("/api/orders").json() == []
+
+
+def test_cancel_orders_reports_the_real_count(pair):
+    from server.models import RiskDecision
+    from server.strategy.base import Signal
+    from tests.conftest import NOW
+
+    client, engine = pair
+    signal = Signal(
+        key="2026-01-15:long:1500",
+        side="long",
+        reason="test",
+        ts=NOW,
+        stop_price=99.5,
+        target_price=102.25,
+    )
+    engine.execution.arm(
+        RiskDecision(approved=True, code="approved", units=1, risk_per_unit=1.0),
+        signal,
+        "PRIMARY",
+        100.0,
+        NOW,
+    )
+    body = client.post("/api/orders/cancel").json()
+    assert body == {"cancelled": True, "count": 1}
+    assert engine.execution.pending_orders() == []
 
 
 def test_config_reset_restores_defaults(pair):
