@@ -12,7 +12,8 @@ configuración que quiera operar:
 Y la evidencia tiene que ser de la estrategia que se va a operar: un backtest
 de otra estrategia no dice nada de esta, por bien que puntúe.
 
-    python -m server.promotion --evidence bt.json --stress bt-2x.json --cycle ciclo.json
+    python -m server.promotion --config profiles/okx/config.json \
+        --evidence bt.json --stress bt-2x.json --cycle ciclo.json
 
 Sale con 1 si la configuración no está promovida. Es una decisión, no un aviso.
 """
@@ -78,11 +79,64 @@ def _oos(evidence: dict[str, Any]) -> dict[str, Any]:
     return (evidence.get("split") or {}).get("out_of_sample") or {}
 
 
+def _execution_model(block: Any) -> dict[str, float] | None:
+    """Comisión y tick_value de un modelo de ejecución, si están completos."""
+    if not isinstance(block, dict):
+        return None
+    commission = _number(block.get("commission_per_unit_side"))
+    tick_value = _number(block.get("tick_value"))
+    if commission is None or tick_value is None:
+        return None
+    if commission <= 0 or tick_value <= 0:
+        return None
+    return {"commission": commission, "tick_value": tick_value}
+
+
+def cost_per_trade_r(
+    evidence: dict[str, Any], execution: dict[str, Any] | None
+) -> tuple[float | None, str]:
+    """Coste por operación en R medido con la ejecución que se va a usar.
+
+    El coste en R de una operación es 2·comisión/(stop·tick_value). El número
+    que trae la evidencia se midió con la comisión y el tick_value de aquella
+    corrida; si el perfil opera con otro modelo, ese número no vale. De la
+    corrida se recupera el stop medio implícito (comisiones, operaciones y
+    presupuesto de riesgo) y se recalcula con el modelo del perfil. Sin modelo
+    declarado no hay número: una evidencia que no dice con qué costes se midió
+    no puede aprobar el criterio, y sin el modelo del perfil tampoco se acepta
+    el número heredado.
+    """
+    if execution is None:
+        return None, "falta el perfil que va a operar: coste no verificable"
+    model = _execution_model(execution)
+    if model is None:
+        return None, "el perfil no declara comisión y tick_value: coste no verificable"
+    declared = _execution_model(evidence.get("execution"))
+    if declared is None:
+        return None, "la evidencia no declara su modelo de ejecución: coste no verificable"
+    metrics = evidence.get("metrics") or {}
+    trades = _number(metrics.get("trades"))
+    fees = _number(metrics.get("fees"))
+    budget = _number(evidence.get("risk_budget"))
+    if not trades or not fees or not budget or trades <= 0 or fees <= 0 or budget <= 0:
+        return None, (
+            "la evidencia no declara operaciones, comisiones y presupuesto: "
+            "coste no verificable"
+        )
+    stop_ticks = (
+        2 * declared["commission"] * trades * budget / (fees * declared["tick_value"])
+    )
+    if stop_ticks <= 0:
+        return None, "el stop implícito de la corrida no es válido: coste no verificable"
+    return 2 * model["commission"] / (stop_ticks * model["tick_value"]), ""
+
+
 def evaluate(
     evidence: dict[str, Any] | None,
     stress: dict[str, Any] | None = None,
     cycle: dict[str, Any] | None = None,
     strategy: dict[str, Any] | None = None,
+    execution: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     checks: list[dict[str, Any]] = []
 
@@ -127,14 +181,14 @@ def evaluate(
         )
     )
 
-    cost = (evidence or {}).get("cost_per_trade_r")
+    cost, cost_reason = cost_per_trade_r(evidence or {}, execution)
     checks.append(
         _check(
             "coste_por_operacion",
             cost,
             f"< {MAX_COST_R} R",
             (cost_value := _number(cost)) is not None and cost_value < MAX_COST_R,
-            "sin coste medido, o demasiado alto para dejar margen",
+            cost_reason or "sin coste medido, o demasiado alto para dejar margen",
         )
     )
 
@@ -263,8 +317,30 @@ def evaluate_paths(
     stress_path: str | None,
     cycle_path: str | None,
     strategy: dict[str, Any] | None = None,
+    execution: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    return evaluate(load(evidence_path), load(stress_path), load(cycle_path), strategy)
+    return evaluate(
+        load(evidence_path), load(stress_path), load(cycle_path), strategy, execution
+    )
+
+
+def execution_model(settings: Settings) -> dict[str, float] | None:
+    """Modelo de ejecución del instrumento primario del perfil."""
+    primary = next(
+        (
+            item
+            for item in settings.instruments.items
+            if item.symbol == settings.instruments.primary
+        ),
+        None,
+    )
+    if primary is None:
+        return None
+    return {
+        "commission_per_unit_side": settings.execution.commission_per_unit_side,
+        "tick_size": primary.tick_size,
+        "tick_value": primary.tick_value,
+    }
 
 
 def effective_settings_and_verdict(
@@ -283,11 +359,13 @@ def effective_settings_and_verdict(
     """
     if not settings.promotion.required:
         return settings, None
+    execution = execution_model(settings)
     verdict = evaluate_paths(
         settings.promotion.evidence,
         settings.promotion.stress_evidence,
         settings.promotion.cycle,
         {"id": settings.strategy.id, "version": settings.strategy.version},
+        execution,
     )
     if verdict["passed"] or settings.promotion.mode != "reduce":
         return settings, verdict
@@ -356,6 +434,11 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="id@version que debe haber producido la evidencia; sin esto no se comprueba la procedencia",
     )
+    parser.add_argument(
+        "--config",
+        required=True,
+        help="perfil con el que se va a operar; el coste se recalcula con su ejecución",
+    )
     parser.add_argument("--json", action="store_true", help="salida en JSON")
     args = parser.parse_args(argv)
     if hasattr(sys.stdout, "reconfigure"):
@@ -369,7 +452,21 @@ def main(argv: list[str] | None = None) -> int:
     if args.strategy:
         identifier, _, version = args.strategy.partition("@")
         expected = {"id": identifier, "version": version or None}
-    verdict = evaluate_paths(args.evidence, args.stress, args.cycle, expected)
+    profile_path = Path(args.config)
+    if not profile_path.is_file():
+        print(f"no hay perfil en {args.config}", flush=True)
+        return 1
+    try:
+        profile = Settings.model_validate(
+            json.loads(profile_path.read_text(encoding="utf-8"))
+        )
+    except (OSError, json.JSONDecodeError, ValueError) as error:
+        print(f"perfil inválido en {args.config}: {error}", flush=True)
+        return 1
+    execution = execution_model(profile)
+    verdict = evaluate_paths(
+        args.evidence, args.stress, args.cycle, expected, execution
+    )
     if args.json:
         print(json.dumps(verdict, indent=2, ensure_ascii=False))
     else:
