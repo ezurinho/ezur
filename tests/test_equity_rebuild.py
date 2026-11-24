@@ -279,3 +279,49 @@ def test_el_reporte_avisa_si_conserva_un_pico_mas_alto(tmp_path, capsys):
     out = capsys.readouterr().out
     assert "pico conservado en 30000.0" in out
     assert "--reset-peak" in out
+
+def test_load_trades_ordena_por_instante_no_por_texto(tmp_path):
+    db = tmp_path / "desfases.db"
+    conn = sqlite3.connect(db)
+    try:
+        apply_migrations(conn)
+        conn.execute(
+            "INSERT INTO trades "
+            "(symbol, side, units, entry_price, exit_price, opened_ts, closed_ts, signal_key, pnl_net) "
+            "VALUES (?,?,?,?,?,?,?,?,?)",
+            (
+                "BTC",
+                "long",
+                1,
+                100.0,
+                101.0,
+                "2026-11-24T08:00:00-05:00",
+                "2026-11-24T09:00:00-05:00",
+                "tarde",
+                100.0,
+            ),
+        )
+        conn.execute(
+            "INSERT INTO trades "
+            "(symbol, side, units, entry_price, exit_price, opened_ts, closed_ts, signal_key, pnl_net) "
+            "VALUES (?,?,?,?,?,?,?,?,?)",
+            (
+                "BTC",
+                "long",
+                1,
+                100.0,
+                100.5,
+                "2026-11-24T12:00:00+00:00",
+                "2026-11-24T13:00:00+00:00",
+                "temprana",
+                50.0,
+            ),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    loaded = equity.load_trades(db)
+
+    # 13:00Z ocurre antes que 09:00-05:00 (14:00Z), aunque como texto vaya después.
+    assert [trade["pnl_net"] for trade in loaded] == [50.0, 100.0]
