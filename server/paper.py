@@ -102,8 +102,14 @@ def promotion_state(profile: Path) -> dict[str, Any] | None:
     block = document.get("promotion")
     if not isinstance(block, dict) or not block.get("required"):
         return None
+    strategy = document.get("strategy") or {}
     verdict = evaluate_paths(
-        block.get("evidence"), block.get("stress_evidence"), block.get("cycle")
+        block.get("evidence"),
+        block.get("stress_evidence"),
+        block.get("cycle"),
+        {"id": strategy.get("id"), "version": strategy.get("version")}
+        if strategy.get("id")
+        else None,
     )
     return {
         "passed": bool(verdict["passed"]),
