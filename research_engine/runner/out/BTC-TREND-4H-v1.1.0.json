@@ -1,0 +1,474 @@
+{
+ "spec_id": "BTC-TREND-4H",
+ "version": "1.1.0",
+ "name": "Donchian ensemble 4h + vol target",
+ "family": "trend",
+ "cycle_id": "CYCLE-2026-11-selection",
+ "generated_at": "2026-11-23T04:52:29Z",
+ "engine": "4.0.0",
+ "artifacts": {
+  "spec_hash": "sha256:9ef352de4474cef21b9cd7b170a9a1175e56259eb4e00984b4c8d10e412baae4",
+  "data_hash": "sha256:80d6a6014eb92b23eaa5a4b456e74388e3cebb8b664cf1c17b4088e1f392b8da",
+  "code_sha": "sha256:c50ca974fe6d1c15359e83ab4c4950d3b827c1827865dddb0a529a6cc4d1c12e",
+  "seed": 7,
+  "env": "python 3.14.6 / pandas 3.1.1 / numpy 2.5.5",
+  "spec_path": "runner\\specs\\btc-trend-4h-ensemble-vt.json"
+ },
+ "data": {
+  "instrument": "BTCUSDT_PERP",
+  "source": "data.binance.vision · futures/um/monthly/klines",
+  "bars": 718848,
+  "start": "2020-01-01 00:00:00+00:00",
+  "end": "2026-10-31 23:55:00+00:00",
+  "timezone": "UTC",
+  "sha256": "80d6a6014eb92b23eaa5a4b456e74388e3cebb8b664cf1c17b4088e1f392b8da",
+  "integrity": {
+   "gaps": 0,
+   "duplicates": 0,
+   "monotonic": true,
+   "unexplained_gaps": 0
+  },
+  "timeframe_signal": "4h",
+  "bars_signal": 14976,
+  "basis": "resampled from 5m"
+ },
+ "execution": {
+  "signal_bar": "closed",
+  "fill": "next_bar_open",
+  "intrabar_priority": "stop_first",
+  "gap_fill": "bar_open"
+ },
+ "costs": {
+  "fee_taker_bps": 5.0,
+  "half_spread_bps": 0.07,
+  "rt_bps": 10.14,
+  "assumed_fill": "taker",
+  "impact_model": "none",
+  "funding": "real_timestamps",
+  "cost_r_mean": 0.0614,
+  "fee_r_mean": 0.0505,
+  "funding_r_mean": 0.0109
+ },
+ "metrics": {
+  "all": {
+   "n": 1608,
+   "win": 0.321,
+   "pf_gross": 1.112,
+   "pf_net": 1.02,
+   "pf_stress": 0.946,
+   "exp_gross_r": 0.0718,
+   "exp_net_r": 0.0082,
+   "exp_stress_r": -0.024,
+   "sharpe": 0.11,
+   "mdd": -0.283,
+   "t_stat": 0.28,
+   "years": 6.82,
+   "stop_frac_median": 0.02239,
+   "fee_r": 0.0505,
+   "funding_r": 0.0109,
+   "pf_ci95": [
+    0.851,
+    1.217
+   ],
+   "pf_se": 0.093
+  },
+  "is": {
+   "n": 913,
+   "win": 0.333,
+   "pf_gross": 1.214,
+   "pf_net": 1.119,
+   "pf_stress": 1.045,
+   "exp_gross_r": 0.1342,
+   "exp_net_r": 0.0465,
+   "exp_stress_r": 0.0184,
+   "sharpe": 0.46,
+   "mdd": -0.137,
+   "t_stat": 0.93,
+   "years": 4.09,
+   "stop_frac_median": 0.0263,
+   "fee_r": 0.0453,
+   "funding_r": 0.0163,
+   "pf_ci95": [
+    0.877,
+    1.391
+   ],
+   "pf_se": 0.132
+  },
+  "oos": {
+   "n": 335,
+   "win": 0.349,
+   "pf_gross": 1.242,
+   "pf_net": 1.172,
+   "pf_stress": 1.089,
+   "exp_gross_r": 0.1498,
+   "exp_net_r": 0.0717,
+   "exp_stress_r": 0.0389,
+   "sharpe": 0.5,
+   "mdd": -0.103,
+   "t_stat": 0.58,
+   "years": 1.36,
+   "stop_frac_median": 0.02098,
+   "fee_r": 0.0507,
+   "funding_r": 0.0078,
+   "pf_ci95": [
+    0.773,
+    1.593
+   ],
+   "pf_se": 0.212
+  },
+  "reserve": {
+   "n": 357,
+   "win": 0.258,
+   "pf_gross": 0.768,
+   "pf_net": 0.695,
+   "pf_stress": 0.632,
+   "exp_gross_r": -0.1626,
+   "exp_net_r": -0.1505,
+   "exp_stress_r": -0.1927,
+   "sharpe": -1.5,
+   "mdd": -0.237,
+   "t_stat": -1.75,
+   "years": 1.36,
+   "stop_frac_median": 0.01697,
+   "fee_r": 0.0636,
+   "funding_r": 0.0003,
+   "pf_ci95": [
+    0.418,
+    1.064
+   ],
+   "pf_se": 0.163
+  }
+ },
+ "stress": {
+  "cost_2x": {
+   "rt_bps": 20.28,
+   "pf": 0.946
+  },
+  "breakeven_rt_bps": 12.23,
+  "applied_rt_bps": 10.14
+ },
+ "robustness": {
+  "perturbation": {
+   "points": [
+    {
+     "param": "N",
+     "change": -0.2,
+     "value": 19,
+     "n": 594,
+     "pf_net": 1.045,
+     "exp_net_r": 0.03
+    },
+    {
+     "param": "N",
+     "change": -0.1,
+     "value": 22,
+     "n": 555,
+     "pf_net": 1.053,
+     "exp_net_r": 0.0355
+    },
+    {
+     "param": "N",
+     "change": 0.1,
+     "value": 26,
+     "n": 499,
+     "pf_net": 1.064,
+     "exp_net_r": 0.0433
+    },
+    {
+     "param": "N",
+     "change": 0.2,
+     "value": 29,
+     "n": 464,
+     "pf_net": 1.124,
+     "exp_net_r": 0.0829
+    }
+   ],
+   "pass": true,
+   "rule": "PF neto > 1,00 en todo el vecindario ±10% / ±20%"
+  },
+  "regimes": {
+   "volatility": {
+    "axis": "volatilidad ATR/close",
+    "cuts": [
+     0.012494,
+     0.018149
+    ],
+    "buckets": {
+     "baja": {
+      "n": 536,
+      "pf": 1.0044,
+      "exp_r": 0.0022,
+      "win": 0.2743
+     },
+     "media": {
+      "n": 535,
+      "pf": 1.0773,
+      "exp_r": 0.032,
+      "win": 0.3458
+     },
+     "alta": {
+      "n": 537,
+      "pf": 0.971,
+      "exp_r": -0.0095,
+      "win": 0.3426
+     }
+    }
+   },
+   "trend": {
+    "axis": "retorno absoluto 20 barras",
+    "cuts": [
+     0.026559,
+     0.051679
+    ],
+    "buckets": {
+     "quieto": {
+      "n": 536,
+      "pf": 0.6418,
+      "exp_r": -0.177,
+      "win": 0.2575
+     },
+     "deriva": {
+      "n": 534,
+      "pf": 0.8815,
+      "exp_r": -0.0546,
+      "win": 0.2828
+     },
+     "tendencia": {
+      "n": 538,
+      "pf": 1.8457,
+      "exp_r": 0.2551,
+      "win": 0.4219
+     }
+    }
+   },
+   "pf_spread": 1.2039,
+   "concentrated": true,
+   "losing_buckets": {
+    "volatility": [
+     "alta"
+    ],
+    "trend": [
+     "quieto",
+     "deriva"
+    ]
+   }
+  },
+  "carry": {
+   "cobra funding": {
+    "n": 621,
+    "pf": 1.013,
+    "exp_r": 0.0051,
+    "win": 0.346,
+    "funding_r_mean": -0.0181,
+    "share": 0.386
+   },
+   "paga funding": {
+    "n": 987,
+    "pf": 1.023,
+    "exp_r": 0.0102,
+    "win": 0.305,
+    "funding_r_mean": 0.0291,
+    "share": 0.614
+   },
+   "spread_pf": -0.01
+  }
+ },
+ "benchmark": {
+  "alpha_annual": -0.7242,
+  "ci95": [
+   -1.5132,
+   0.1487
+  ],
+  "method": "mean daily excess return vs vol-unmatched buy & hold, stationary block bootstrap block=5 reps=4000 seed=7",
+  "bh_cagr": 0.9322,
+  "strategy_cagr": 0.0574
+ },
+ "validation": {
+  "split": "0.60/0.20/0.20",
+  "trials_declared": 8,
+  "pbo": 0.2381,
+  "dsr": 0.7917,
+  "minbtl_years": 14.55,
+  "wfa_min_trades": 6,
+  "cpcv": 0.1556,
+  "cpcv_paths": 45,
+  "psr": 0.9681,
+  "source": "runner\\validation\\CYCLE-2026-11-selection.json",
+  "cycle_id": "CYCLE-2026-11-selection",
+  "method_version": "1.0.0",
+  "specs_hash": "sha256:87eea8aa8f82cf5eee5dd54b81cbe77063f521583672ff6ba6baaebc622e309a",
+  "universe_size": 15,
+  "note": "PBO, DSR, CPCV y WFA provienen del ciclo de selección y describen el procedimiento, no esta configuración suelta. El PSR se reporta contra cero y sin deflactar: mide si hay habilidad, no si sobrevive al número de pruebas."
+ },
+ "gates": {
+  "data_integrity": {
+   "value": 0,
+   "threshold": 0,
+   "op": "==",
+   "pass": true
+  },
+  "pbo": {
+   "value": 0.2381,
+   "threshold": 0.2,
+   "op": "≤",
+   "pass": false
+  },
+  "dsr": {
+   "value": 0.7917,
+   "threshold": 0.95,
+   "op": "≥",
+   "pass": false
+  },
+  "oos_t_stat": {
+   "value": 0.58,
+   "threshold": 3.0,
+   "op": "≥",
+   "pass": false
+  },
+  "oos_pf_ci_low": {
+   "value": 0.773,
+   "threshold": 1.0,
+   "op": ">",
+   "pass": false
+  },
+  "trades": {
+   "value": 1608,
+   "threshold": 300,
+   "op": "≥",
+   "pass": true
+  },
+  "wfa_min_trades": {
+   "value": 6,
+   "threshold": 30,
+   "op": "≥",
+   "pass": false
+  },
+  "cost_stress_2x": {
+   "value": 0.946,
+   "threshold": 1.0,
+   "op": ">",
+   "pass": false
+  },
+  "funding_included": {
+   "value": "included",
+   "threshold": "required",
+   "op": "=",
+   "pass": true
+  },
+  "plateau": {
+   "value": true,
+   "threshold": true,
+   "op": "=",
+   "pass": true
+  },
+  "benchmark_alpha": {
+   "value": -0.7242,
+   "threshold": 0.0,
+   "op": ">",
+   "pass": false
+  },
+  "mdd_budget": {
+   "value": -0.283,
+   "threshold": -0.25,
+   "op": "≥",
+   "pass": false
+  }
+ },
+ "verdict": "REJECTED",
+ "reasoning": [
+  "PBO 0,24 > 0,20 → selección indistinguible del ruido",
+  "DSR 0,79 < 0,95 → el Sharpe no sobrevive al ajuste por múltiples pruebas",
+  "t OOS 0,58 < 3,00 → sin significancia tras el haircut HLZ",
+  "IC95% inferior del PF OOS 0,77 ≤ 1,00 → el intervalo contiene 1,00: no concluyente",
+  "PF con coste 2× 0,95 ≤ 1,00 → el edge es de coste, no de mercado",
+  "alpha −72,4% anual con IC95% [−151,3%; +14,9%] contiene 0: indistinguible del benchmark",
+  "MDD −28,3% < presupuesto −25% → excede el riesgo declarado en la spec",
+  "6 trades por fold OOS en el ciclo < 30 → sin potencia estadística por fold (el WFA mide el procedimiento de selección, no esta spec)"
+ ],
+ "missing_artifacts": [],
+ "equity": [
+  1.0,
+  1.0653,
+  1.0994,
+  1.1847,
+  1.185,
+  1.1308,
+  1.0478,
+  1.097,
+  1.0023,
+  0.973,
+  1.041,
+  1.0814,
+  1.2444,
+  1.2657,
+  1.3069,
+  1.2424,
+  1.1747,
+  1.1754,
+  1.1449,
+  1.1277,
+  1.0876,
+  1.1051,
+  1.1316,
+  1.1325,
+  1.1226,
+  1.1718,
+  1.168,
+  1.1885,
+  1.1622,
+  1.1772,
+  1.2369,
+  1.1867,
+  1.2163,
+  1.2296,
+  1.2477,
+  1.1746,
+  1.2364,
+  1.3527,
+  1.3804,
+  1.4723,
+  1.564,
+  1.449,
+  1.4978,
+  1.3971,
+  1.3506,
+  1.2683,
+  1.4316,
+  1.3379,
+  1.3541,
+  1.3608,
+  1.5606,
+  1.5333,
+  1.4718,
+  1.3963,
+  1.4298,
+  1.4682,
+  1.5277,
+  1.4392,
+  1.5269,
+  1.7035,
+  1.594,
+  1.5801,
+  1.6789,
+  1.5841,
+  1.6321,
+  1.5419,
+  1.4901,
+  1.4394,
+  1.3636,
+  1.2915,
+  1.366,
+  1.3685,
+  1.2484,
+  1.3477,
+  1.2944,
+  1.2116,
+  1.1093,
+  1.0605,
+  1.1449,
+  1.0371,
+  1.1319,
+  1.1243,
+  1.0264
+ ]
+}
