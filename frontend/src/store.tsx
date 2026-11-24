@@ -13,6 +13,8 @@ interface StoreValue {
   snapshot: SnapshotData | null;
   connection: ConnectionState;
   error: string | null;
+  /** Date.now() del último snapshot recibido; null si aún no llegó ninguno. */
+  lastUpdate: number | null;
   refresh: () => void;
 }
 
@@ -20,6 +22,7 @@ const StoreContext = createContext<StoreValue>({
   snapshot: null,
   connection: "connecting",
   error: null,
+  lastUpdate: null,
   refresh: () => undefined,
 });
 
@@ -27,26 +30,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [snapshot, setSnapshot] = useState<SnapshotData | null>(null);
   const [connection, setConnection] = useState<ConnectionState>("connecting");
   const [error, setError] = useState<string | null>(null);
+  const [lastUpdate, setLastUpdate] = useState<number | null>(null);
   const [nonce, setNonce] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
+    const apply = (data: SnapshotData) => {
+      setSnapshot(data);
+      setLastUpdate(Date.now());
+      setError(null);
+    };
+
     api
       .status()
       .then((message) => {
-        if (!cancelled) setSnapshot(message.data);
+        if (!cancelled) apply(message.data);
       })
       .catch((cause: Error) => {
         if (!cancelled) setError(cause.message);
       });
 
-    const disconnect = connectSnapshotStream(
-      (data) => {
-        setSnapshot(data);
-        setError(null);
-      },
-      (state) => setConnection(state),
-    );
+    const disconnect = connectSnapshotStream(apply, (state) => setConnection(state));
 
     return () => {
       cancelled = true;
@@ -55,8 +59,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [nonce]);
 
   const value = useMemo<StoreValue>(
-    () => ({ snapshot, connection, error, refresh: () => setNonce((n) => n + 1) }),
-    [snapshot, connection, error],
+    () => ({ snapshot, connection, error, lastUpdate, refresh: () => setNonce((n) => n + 1) }),
+    [snapshot, connection, error, lastUpdate],
   );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
