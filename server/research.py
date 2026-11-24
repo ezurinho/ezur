@@ -26,6 +26,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from server.vault import lint_vault, write_vault
+
 DEFAULT_HOME = (
     Path.home()
     / ".deepai-code"
@@ -348,6 +350,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--seeds", action="store_true", help="crea semillas de familias sin medir")
     parser.add_argument("--generate", action="store_true", help="crea variantes de las specs semilla")
     parser.add_argument("--report", action="store_true", help="resume el ledger por familia y marco")
+    parser.add_argument("--vault", action="store_true", help="escribe el vault de Markdown con la memoria")
+    parser.add_argument("--vault-lint", action="store_true", help="revisa enlaces rotos y notas huérfanas")
+    parser.add_argument("--vault-dir", default=None, help="dónde escribir el vault")
     parser.add_argument("--list", action="store_true", help="specs y estado, sin ejecutar")
     parser.add_argument("--once", action="store_true", help="ejecuta la siguiente pendiente")
     parser.add_argument("--loop", action="store_true", help="sigue buscando hasta --max-runs")
@@ -388,6 +393,29 @@ def main(argv: list[str] | None = None) -> int:
         print(
             f"variantes: {written} nuevas, {skipped} ya existían "
             f"({len(created)} calculadas de {len(seeds)} semillas)"
+        )
+        return 0
+
+    if args.vault_lint:
+        from server.vault import VAULT
+
+        problems = lint_vault(Path(args.vault_dir or VAULT))
+        for problem in problems:
+            print(problem, flush=True)
+        state = "ok" if not problems else "revisar"
+        print(f"vault {state}: {len(problems)} problemas", flush=True)
+        return 1 if problems else 0
+
+    if args.vault:
+        from server.vault import VAULT
+
+        target = Path(args.vault_dir or VAULT)
+        summary = write_vault(out_dir=target)
+        print(
+            f"vault: {summary['notes']} notas, {summary['specs']} specs, "
+            f"{summary['families']} familias, {summary['frames']} marcos, "
+            f"{summary['links']} enlaces -> {target}",
+            flush=True,
         )
         return 0
 

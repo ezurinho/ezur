@@ -365,6 +365,8 @@ python -m server.research --list      # specs y estado
 python -m server.research --once      # la siguiente pendiente
 python -m server.research --loop      # sigue buscando mientras el bot corre
 python -m server.research --report    # qué ha encontrado, por familia y marco
+python -m server.research --vault     # memoria navegable en Markdown
+python -m server.research --vault-lint  # enlaces rotos y notas huérfanas
 ```
 
 `--seeds` escribe tres semillas nuevas heredando riesgo, costes y validación de
@@ -397,6 +399,15 @@ Los tres contratos compartidos: el fichero de umbrales, los datos de
 `--report` lee ese ledger y responde a la única pregunta que importa cuando el
 bucle lleva horas: cuántas specs se midieron por familia y marco, cuántas
 pasaron y cuáles. Sin él, cien corridas son cien líneas.
+
+`--vault` lleva eso un paso más allá: cada artefacto del motor se convierte en
+una nota de Markdown enlazada —cifras, puertas que fallaron con su valor y su
+umbral, y procedencia— agrupada por familia, por marco y por día. La idea es la
+de un segundo cerebro tipo Obsidian (el patrón de [claude-obsidian](https://github.com/AgriciDaniel/claude-obsidian):
+Markdown que tú posees, enlaces entre notas y un chequeo de salud), aplicada a
+lo que este bot ya mide. El vault se genera desde los JSON del motor, así que no
+inventa ni una cifra, y `--vault-lint` avisa de enlaces rotos y notas huérfanas
+antes de que el wiki se desordene.
 
 ## Alertas
 
