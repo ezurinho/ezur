@@ -46,23 +46,42 @@ class RiskManager:
             return reject("position_open", "ya hay una posición abierta")
         if portfolio.daily_trades >= cfg.max_trades_per_day:
             return reject("max_trades_reached", "límite de operaciones diarias")
+        # Multiplicador que acumulan los frenos suaves. Con `soft_brakes`
+        # apagado se queda en 1 y todo se comporta como antes: rechazo.
+        factor = 1.0
+        brakes: list[str] = []
         if cfg.no_trade_after_consecutive_losses and (
             portfolio.consecutive_losses >= cfg.no_trade_after_consecutive_losses
         ) and not _cooldown_elapsed(cfg, portfolio, clock):
-            if cfg.loss_streak_cooldown_min:
+            if cfg.soft_brakes:
+                factor *= max(cfg.soft_brake_floor, 0.5)
+                brakes.append(f"racha de {portfolio.consecutive_losses}")
+            elif cfg.loss_streak_cooldown_min:
                 return reject(
                     "consecutive_losses",
                     f"racha de pérdidas: {cfg.loss_streak_cooldown_min} min desde la última salida",
                 )
-            return reject("consecutive_losses", "racha de pérdidas alcanzada")
+            else:
+                return reject("consecutive_losses", "racha de pérdidas alcanzada")
         if cfg.max_drawdown_pct and portfolio.peak_equity > 0:
             # Peak-to-trough on realised equity, not on the sum of trade ratios:
             # a ratios-based guard is not a drawdown guard (freqtrade learned it).
             drawdown = (portfolio.peak_equity - portfolio.equity) / portfolio.peak_equity
-            if drawdown * 100 >= cfg.max_drawdown_pct:
+            drawdown_pct = drawdown * 100
+            if cfg.soft_brakes:
+                if drawdown_pct >= cfg.max_drawdown_pct * cfg.soft_brake_halt_multiple:
+                    return reject(
+                        "max_drawdown_reached",
+                        f"drawdown {drawdown_pct:.2f}% supera el tope duro del freno",
+                    )
+                step = _drawdown_size(drawdown_pct, cfg.max_drawdown_pct, cfg.soft_brake_floor)
+                if step < 1.0:
+                    factor *= step
+                    brakes.append(f"drawdown {drawdown_pct:.2f}%")
+            elif drawdown_pct >= cfg.max_drawdown_pct:
                 return reject(
                     "max_drawdown_reached",
-                    f"drawdown {drawdown * 100:.2f}% desde el pico",
+                    f"drawdown {drawdown_pct:.2f}% desde el pico",
                 )
 
         entry = portfolio.last_price if portfolio.last_price is not None else None
@@ -106,6 +125,11 @@ class RiskManager:
                 return reject(window_code[0], window_code[1])
 
         daily_loss_limit = -abs(cfg.initial_capital * cfg.max_daily_loss_pct / 100)
+        if cfg.soft_brakes and daily_loss_limit and portfolio.daily_pnl <= daily_loss_limit * 0.8:
+            # Antes del muro, media máquina: el día sigue vivo y el límite duro
+            # sigue siendo duro.
+            factor *= 0.5
+            brakes.append("pérdida diaria al 80%")
         if portfolio.daily_pnl <= daily_loss_limit:
             return reject("daily_loss_limit", "límite de pérdida diaria alcanzado")
 
@@ -123,15 +147,24 @@ class RiskManager:
         budget = portfolio.equity * cfg.risk_per_trade_pct / 100
         units = int(budget // risk_per_unit) if risk_per_unit > 0 else 0
         units = min(units, cfg.max_units_per_trade)
+        if factor < 1.0:
+            units = int(units * factor)
         if units < 1:
-            return reject("size_below_minimum", "el dimensionado resulta en menos de una unidad")
+            return reject(
+                "size_below_minimum",
+                "el dimensionado resulta en menos de una unidad"
+                + (f" con el freno a {factor:.0%}" if factor < 1.0 else ""),
+            )
 
         return RiskDecision(
             approved=True,
             code="approved",
-            message="",
+            message=(
+                f"tamaño al {factor:.0%} ({', '.join(brakes)})" if brakes else ""
+            ),
             units=units,
             risk_per_unit=risk_per_unit,
+            size_factor=round(factor, 4),
         )
 
     def _outside_window(self, clock: datetime, timezone_name: str) -> tuple[str, str] | None:
@@ -149,6 +182,21 @@ class RiskManager:
             if minutes(cfg.entry_exclusion_start) <= minute_of_day < minutes(cfg.entry_exclusion_end):
                 return ("excluded_window", "ventana de exclusión activa")
         return None
+
+
+def _drawdown_size(drawdown_pct: float, limit: float, floor: float) -> float:
+    """Tamaño según el drawdown: completo hasta medio límite, `floor` al límite.
+
+    Lineal entre los dos puntos. Pasado el límite se mantiene el suelo: el tope
+    duro lo pone el llamante con `soft_brake_halt_multiple`.
+    """
+    half = limit / 2
+    if drawdown_pct <= half or limit <= 0:
+        return 1.0
+    if drawdown_pct >= limit:
+        return floor
+    progress = (drawdown_pct - half) / (limit - half)
+    return 1.0 - progress * (1.0 - floor)
 
 
 def _cooldown_elapsed(
