@@ -20,6 +20,15 @@ def _hhmm(value: str) -> tuple[int, int]:
     return int(hours), int(minutes)
 
 
+def _aware(value: datetime) -> datetime:
+    """Una fecha sin zona se interpreta en UTC.
+
+    Restar una fecha ingenua de otra con zona lanza TypeError y tumba el motor
+    en el camino del cooldown; el resto del riesgo ya normaliza así.
+    """
+    return value if value.tzinfo is not None else value.replace(tzinfo=timezone.utc)
+
+
 class RiskManager:
     def __init__(self, config: RiskConfig) -> None:
         self.config = config
@@ -139,7 +148,9 @@ class RiskManager:
                 return reject("daily_profit_limit", "límite de beneficio diario alcanzado")
 
         if cfg.cooldown_minutes and portfolio.last_exit_ts is not None and clock is not None:
-            elapsed = (clock - portfolio.last_exit_ts).total_seconds() / 60
+            elapsed = (
+                _aware(clock) - _aware(portfolio.last_exit_ts)
+            ).total_seconds() / 60
             if 0 <= elapsed < cfg.cooldown_minutes:
                 return reject("cooldown_active", "cooldown tras la última salida")
 
@@ -211,10 +222,7 @@ def _cooldown_elapsed(
         return False
     if portfolio.last_exit_ts is None:
         return False
-    now = clock or datetime.now(timezone.utc)
-    if now.tzinfo is None:
-        now = now.replace(tzinfo=timezone.utc)
-    last = portfolio.last_exit_ts
-    if last.tzinfo is None:
-        last = last.replace(tzinfo=timezone.utc)
-    return (now - last).total_seconds() >= cfg.loss_streak_cooldown_min * 60
+    now = _aware(clock or datetime.now(timezone.utc))
+    return (now - _aware(portfolio.last_exit_ts)).total_seconds() >= (
+        cfg.loss_streak_cooldown_min * 60
+    )
