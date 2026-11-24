@@ -191,6 +191,35 @@ def health_state(
     }
 
 
+# Un latido más viejo que esto ya no es una pausa normal del mercado.
+STALE_SECONDS = 600.0
+
+
+def alarms(
+    health: dict[str, Any] | None,
+    promotion: dict[str, Any] | None,
+    stored: dict[str, Any],
+) -> list[str]:
+    """Lo que un operador debe mirar sin leer el informe entero."""
+    problems: list[str] = []
+    if health:
+        if health.get("halted"):
+            problems.append("parada dura")
+        if health.get("emergency"):
+            problems.append("emergencia")
+        age = health.get("heartbeat_s")
+    else:
+        age = _heartbeat_age(stored.get("heartbeat"))
+    if age is None:
+        problems.append("sin latido")
+    elif float(age) > STALE_SECONDS:
+        problems.append("latido viejo")
+    if promotion is not None and not promotion.get("passed"):
+        if (promotion.get("mode") or "block") == "block":
+            problems.append("sin promoción")
+    return problems
+
+
 def books(db_path: Path) -> dict[str, Any]:
     """Lo guardado aparte del libro: última fila de la curva y equity del estado.
 
@@ -364,6 +393,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--profile", default=None, help="carpeta del perfil")
     parser.add_argument("--capital", type=float, default=None, help="capital inicial")
     parser.add_argument("--json", action="store_true", help="salida en JSON")
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="sale 1 si hay parada, emergencia, latido viejo o puerta bloqueada",
+    )
     args = parser.parse_args(argv)
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
@@ -393,6 +427,7 @@ def main(argv: list[str] | None = None) -> int:
         if profile
         else None
     )
+    problems = alarms(health, gate, stored) if args.strict else []
     if args.json:
         print(
             json.dumps(
@@ -404,12 +439,16 @@ def main(argv: list[str] | None = None) -> int:
                     "exposure": leaked,
                     "anomalies": broken,
                     "promotion": gate,
+                    "alarms": problems,
                 },
                 indent=2,
             )
         )
     else:
         print(render(result, capital, str(db), stored, leaked, broken, gate, health))
+    if problems:
+        print("revisar: " + ", ".join(problems), file=sys.stderr)
+        return 1
     return 0
 
 

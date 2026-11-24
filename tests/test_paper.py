@@ -347,3 +347,25 @@ def test_el_dia_ensena_los_topes_del_perfil():
     )
 
     assert "día: 3/3 ops · P&L 153.90 de -750.00 · racha 0" in text
+
+
+def test_strict_marca_parada_y_latido_viejo():
+    assert paper.alarms(
+        {"halted": True, "emergency": False, "heartbeat_s": 3.0}, None, {}
+    ) == ["parada dura"]
+    assert paper.alarms(
+        {"halted": False, "emergency": False, "heartbeat_s": 3_600.0}, None, {}
+    ) == ["latido viejo"]
+
+
+def test_strict_no_marca_una_puerta_que_solo_frena():
+    assert paper.alarms(
+        {"halted": False, "emergency": False, "heartbeat_s": 30.0},
+        {"passed": False, "mode": "reduce"},
+        {},
+    ) == []
+    assert paper.alarms(
+        {"halted": False, "emergency": False, "heartbeat_s": 30.0},
+        {"passed": False, "mode": "block"},
+        {},
+    ) == ["sin promoción"]
