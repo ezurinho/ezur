@@ -166,3 +166,25 @@ def test_la_puerta_avisa_si_la_corrida_termino_antes_del_corte():
 
     assert "corrida_completa_hasta_el_corte" in verdict["failed"]
     assert "antes del corte" in verdict["reason"]
+
+
+def test_la_puerta_prioriza_la_muestra_cuando_es_numerica():
+    from server import promotion
+
+    verdict = promotion.evaluate(
+        {
+            "strategy": {"id": "reference", "version": "0.1.0"},
+            "split": {
+                "at": "2026-01-01T00:00:00+00:00",
+                "out_of_sample": {"trades": 4, "profit_factor": 0.0},
+            },
+            "metrics": {"last_ts": "2026-01-11T08:00:00+00:00"},
+            "cost_per_trade_r": 0.05,
+        },
+        None,
+        None,
+        {"id": "reference", "version": "0.1.0"},
+    )
+
+    assert "operaciones_fuera_de_muestra" in verdict["failed"]
+    assert verdict["reason"] == "muestra fuera de muestra insuficiente: 4 < 100"
