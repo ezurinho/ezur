@@ -150,7 +150,7 @@ sintéticos no validan rentabilidad.
 | `python -m server.reset --dry-run` | Previsualiza el reinicio operativo |
 | `python -m server.reset --yes` | Archiva estado y deja todo limpio |
 | `python -m server.promotion --evidence bt.json --stress bt2x.json --cycle ciclo.json` | Decide si una configuración puede operar (sale con 1 si no) |
-| `python -m server.equity --profile profiles/okx` | Compara la curva guardada con el libro; `--apply` la reconstruye con copia previa |
+| `python -m server.equity --profile profiles/okx` | Compara la curva guardada con el libro; `--apply` la reconstruye con copia previa; `--reset-peak` reanuda tras una parada dura, con copia y evento |
 
 ## Estructura
 

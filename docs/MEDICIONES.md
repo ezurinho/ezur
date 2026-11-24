@@ -80,5 +80,6 @@ precio) rechaza 3.108 señales y deja 1 operación fuera de muestra.
 
 Conclusión: la reducción al 25 % está respaldada por la medición de su propio
 marco temporal — pierde 0,404 R por operación — y el freno duro necesita una
-decisión: o se reinicia a mano tras el 10 %, o el bot se queda parado para
-siempre en cuanto lo toca.
+decisión: o se reinicia a mano con
+`python -m server.equity --profile profiles/okx --reset-peak` (con copia y
+evento), o el bot se queda parado para siempre en cuanto lo toca.

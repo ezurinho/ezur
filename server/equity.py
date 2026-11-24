@@ -175,6 +175,51 @@ def apply(db_path: Path, initial: float, backup_dir: Path | None = None) -> Path
     return backup
 
 
+def reset_peak(db_path: Path, initial: float, backup_dir: Path | None = None) -> dict[str, Any]:
+    """Pone el pico en la equity del libro: la salida de una parada dura.
+
+    El freno duro bloquea para siempre porque, sin operar, la equity no puede
+    volver al pico. Esto no cambia el riesgo: deja constancia —evento y copia—
+    de que alguien aceptó la pérdida y vuelve a medir el drawdown desde aquí.
+    """
+    planned = plan(db_path, initial)
+    before = current(db_path)
+    backup_dir = backup_dir or Path(".build") / "books-backup"
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    backup = backup_dir / f"{db_path.stem}-{stamp}.db"
+    shutil.copy2(db_path, backup)
+    now = datetime.now(timezone.utc).isoformat()
+    conn = sqlite3.connect(db_path)
+    try:
+        with conn:
+            conn.execute(
+                "INSERT INTO kv (key, value) VALUES ('peak_equity', ?) "
+                "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                (json.dumps(planned["last_equity"]),),
+            )
+            conn.execute(
+                "INSERT INTO events (ts, level, category, message, meta) VALUES (?,?,?,?,?)",
+                (
+                    now,
+                    "warn",
+                    "risk",
+                    "pico reiniciado a la equity del libro: "
+                    f"{before['kv_peak']} -> {planned['last_equity']}",
+                    json.dumps(
+                        {
+                            "before": before["kv_peak"],
+                            "after": planned["last_equity"],
+                            "reason": "manual",
+                        }
+                    ),
+                ),
+            )
+    finally:
+        conn.close()
+    return {"backup": str(backup), "before": before["kv_peak"], "after": planned["last_equity"]}
+
+
 def _resolve(args: argparse.Namespace) -> Path:
     if args.db:
         return Path(args.db)
@@ -190,7 +235,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--force",
         action="store_true",
-        help="reescribe aunque el motor siga vivo (se deshará en la próxima vela)",
+        help="reescribe aunque el motor siga vivo (se deshace en la próxima vela)",
+    )
+    parser.add_argument(
+        "--reset-peak",
+        action="store_true",
+        help="pone el pico en la equity del libro (salida explícita de una parada dura)",
     )
     parser.add_argument("--json", action="store_true", help="salida en JSON")
     args = parser.parse_args(argv)
@@ -202,13 +252,19 @@ def main(argv: list[str] | None = None) -> int:
         print(f"no existe {db_path}", flush=True)
         return 1
 
-    if args.apply and not args.force and engine_alive(db_path):
+    if (args.apply or args.reset_peak) and not args.force and engine_alive(db_path):
         print(
             "el motor está vivo en esta base: páralo o usa --force "
             "(la próxima vela desharía el cambio)",
             flush=True,
         )
         return 2
+
+    if args.reset_peak:
+        result = reset_peak(db_path, args.capital)
+        print(f"pico reiniciado: {result['before']} -> {result['after']}", flush=True)
+        print(f"copia: {result['backup']}", flush=True)
+        return 0
 
     planned = plan(db_path, args.capital)
     before = current(db_path)

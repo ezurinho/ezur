@@ -192,3 +192,53 @@ def test_el_pico_reconstruido_recoge_la_curva(tmp_path):
 
     # 25.000 - 133,09 + 105,18 - 146,32 + 300 = 25.125,77
     assert equity.current(db)["kv_peak"] == pytest.approx(25_125.77)
+
+def test_reset_peak_pone_el_pico_en_la_equity_del_libro(tmp_path):
+    db = _db(tmp_path)
+    conn = sqlite3.connect(db)
+    try:
+        conn.execute(
+            "INSERT INTO kv (key, value) VALUES ('peak_equity', ?) "
+            "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            (json.dumps(30_000.0),),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    result = equity.reset_peak(db, 25_000.0, backup_dir=tmp_path / "copias")
+
+    assert result["before"] == pytest.approx(30_000.0)
+    assert result["after"] == pytest.approx(24_825.77)
+    assert Path(result["backup"]).is_file()
+    assert equity.current(db)["kv_peak"] == pytest.approx(24_825.77)
+
+    conn = sqlite3.connect(db)
+    try:
+        message = conn.execute(
+            "SELECT message FROM events WHERE category = 'risk' ORDER BY id DESC LIMIT 1"
+        ).fetchone()[0]
+    finally:
+        conn.close()
+    assert "pico reiniciado" in message
+
+
+def test_reset_peak_se_niega_con_el_motor_vivo(tmp_path, capsys):
+    from datetime import datetime, timezone
+
+    db = _db(tmp_path)
+    _latido(db, datetime.now(timezone.utc))
+
+    assert equity.main(["--db", str(db), "--reset-peak"]) == 2
+    assert "motor está vivo" in capsys.readouterr().out
+
+
+def test_reset_peak_por_cli_deja_el_pico_y_la_copia(tmp_path, capsys):
+    db = _db(tmp_path)
+
+    assert equity.main(["--db", str(db), "--reset-peak", "--capital", "25000"]) == 0
+
+    out = capsys.readouterr().out
+    assert "pico reiniciado" in out
+    assert "copia:" in out
+    assert equity.current(db)["kv_peak"] == pytest.approx(24_825.77)
