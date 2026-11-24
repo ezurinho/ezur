@@ -34,6 +34,50 @@ Con datos sintéticos y la estrategia de referencia:
 EZUR_PROFILE_DIR=profiles/demo python run.py          # Windows: $env:EZUR_PROFILE_DIR="profiles/demo"
 ```
 
+## Aplicación de escritorio (.exe)
+
+Ventana nativa (WebView2) sobre el mismo servidor local. El motor, el riesgo y
+las estrategias no cambian: `desktop.py` arranca el mismo `server.main:app`.
+
+```bat
+python -m pip install -r requirements.txt pyinstaller pywebview
+cd frontend ; npm run build ; cd ..
+python installer\make_icon.py
+pyinstaller installer\ezur.spec --noconfirm --distpath dist_exe --workpath .build\pyi
+dist_exe\ezur\ezur.exe
+```
+
+`desktop.py` levanta `server.main:app` en `127.0.0.1` con un puerto libre, espera
+a que `/api/status` responda y abre la ventana. Se coloca en la carpeta del
+ejecutable **antes** de importar el servidor, porque `frontend/dist`, `data/` y
+`profiles/` se resuelven desde el directorio de trabajo.
+
+| Pieza | Qué hace |
+|---|---|
+| `desktop.py` | lanzador: servidor en un hilo + ventana; `--self-test`, `--no-window`, `--port` |
+| `installer/ezur.spec` | PyInstaller **onedir**; copia la UI, los perfiles y los CSV junto al `.exe` |
+| `installer/make_icon.py` | genera `ezur.ico` con la geometría del logo a 7 tamaños |
+| `installer/ezur.iss` | Inno Setup, instalación por usuario en `%LOCALAPPDATA%\ezur` |
+
+Logs en `%LOCALAPPDATA%\ezur\logs\desktop.log`. En modo ventana no hay consola,
+así que `sys.stdout` y `sys.stderr` se redirigen a ese fichero: un traceback no
+se pierde. Las preferencias de la UI (tema, acento, tipo de gráfico) persisten en
+`%LOCALAPPDATA%\ezur\webview` porque la ventana arranca con `private_mode=False`.
+
+La configuración que trae el ejecutable es el perfil `demo` (estrategia
+`reference`, datos simulados): recién instalado arranca solo y tiene algo que
+evaluar. Sin eso, `strategy.id = "null"` dejaría Reanudar sin efecto.
+
+Instalador (requiere Inno Setup 6):
+
+```bat
+"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\ezur.iss
+```
+
+Deja `dist_installer\ezur-setup-0.1.0.exe`. No se firma: un instalador sin
+firma dispara SmartScreen y algunos antivirus marcan el bootloader de
+PyInstaller; para distribuirlo fuera de tu máquina hace falta un certificado.
+
 ## Simulación multi-sesión
 
 ```bash
