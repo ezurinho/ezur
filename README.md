@@ -149,6 +149,8 @@ sintéticos no validan rentabilidad.
 | `python -m server.diagnostics` | Diagnóstico de SQLite en solo lectura |
 | `python -m server.reset --dry-run` | Previsualiza el reinicio operativo |
 | `python -m server.reset --yes` | Archiva estado y deja todo limpio |
+| `python -m server.promotion --evidence bt.json --stress bt2x.json --cycle ciclo.json` | Decide si una configuración puede operar (sale con 1 si no) |
+| `python -m server.equity --profile profiles/okx` | Compara la curva guardada con el libro; `--apply` la reconstruye con copia previa |
 
 ## Estructura
 
@@ -188,12 +190,47 @@ docs/              arquitectura, plugins, UI, protocolo, operación, competencia
   `frontend/src/`: lo verifica `tests/test_no_hardcoded_instruments.py`.
 - La estrategia no importa base de datos, motor, API ni ejecución.
 - Una señal se ejecuta una sola vez; no hay segunda entrada con posición abierta.
+- Una operación cerrada se guarda una sola vez: índice único parcial por señal.
+- La curva de equity se reconstruye desde el libro y coincide con la cuenta de papel.
 - El stop es obligatorio: sin `stop_price` no hay señal válida.
 - Ante una vela que toca stop y objetivo, gana el stop, con diagnóstico auditable.
 - LIVE exige adaptador implementado + `live_enabled` + confirmación explícita.
 - Un `kind` de zona o marcador desconocido se descarta y se registra.
 - Los desgloses por hora y por día usan la zona horaria de la sesión, no UTC.
 - Un replay terminado deja el motor en `stopped`; no finge seguir corriendo.
+
+## La puerta de promoción
+
+Ganar un backtest no demuestra nada. Antes de operar, una configuración pasa
+por la misma vara que el estudio:
+
+| criterio | umbral |
+|---|---|
+| PF fuera de muestra | > 1 |
+| operaciones fuera de muestra | >= 100 |
+| coste medio por operación | < 0,25 R |
+| PF con el coste duplicado | > 1 |
+| PBO de su ciclo de selección | <= 0,2 |
+
+```bash
+python -m server.promotion --evidence bt.json --stress bt-2x.json --cycle CYCLE-BOT-1D.json
+```
+
+Sale con 1 si no está promovida. En el perfil, `"promotion": {"required": true,
+"evidence": "...", "stress_evidence": "...", "cycle": "..."}` impide el
+`auto_start` y deja un evento con el criterio que falló. Apagada por defecto:
+encenderla es decisión del perfil.
+
+## Libros que cuadran
+
+- `python -m server.equity --profile profiles/okx` enseña la diferencia entre la
+  curva guardada y el libro; `--apply` la reescribe con copia previa. Es
+  idempotente: dos pasadas dejan lo mismo.
+- El contador del día se reconstruye al arrancar con las operaciones cerradas
+  dentro de la sesión actual: un reinicio no arrastra el límite de ayer.
+- Con `soft_brakes` los frenos recortan tamaño en vez de cerrar la puerta: 100 %
+  hasta medio límite de drawdown, 25 % al límite y parada dura al doble. La
+  racha de pérdidas baja a la mitad; el límite diario sigue siendo un muro.
 
 ## Qué está medido y qué no
 
