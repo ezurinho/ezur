@@ -1,0 +1,73 @@
+{
+  "id": "BTC-MOM-5M",
+  "name": "EMA state momentum 5m",
+  "version": "1.0.0",
+  "label": "ema_12_48",
+  "family": "momentum",
+  "hypothesis": "Short-horizon return persistence from metaorder execution and slow passive-flow reaction: when a fragmented institutional order is worked over minutes, price keeps drifting in the direction of the imbalance. The EMA state is the cheapest causal proxy for that drift. This spec exists to measure whether the drift is big enough to pay for a 5-minute turnover; if the gross edge is ~0 the family is dead at this frequency.",
+  "instrument": "BTCUSDT_PERP",
+  "timeframe_signal": "5m",
+  "timeframe_context": "15m",
+  "data_requirements": {
+    "datasets": ["klines_5m"],
+    "min_coverage": "2020-01-01/2026-10-31",
+    "integrity": { "gaps": 0, "duplicates": 0, "timezone": "UTC" }
+  },
+  "entry": {
+    "rule": "ema_state",
+    "long": "ema12[t] > ema48[t] and ema12[t-1] <= ema48[t-1]",
+    "short": "ema12[t] < ema48[t] and ema12[t-1] >= ema48[t-1]",
+    "cooldown_bars": 0
+  },
+  "exit": {
+    "stop": "1.5 * ATR(14)[t]",
+    "target": "2.0 * R",
+    "time_stop_bars": 288,
+    "trailing": null
+  },
+  "params": {
+    "fast": 12,
+    "slow": 48,
+    "atr_k": 1.5,
+    "tp_r": 2.0
+  },
+  "risk": {
+    "sizing": "fixed_fractional",
+    "risk_per_trade": 0.005,
+    "target_vol_annual": 0.2,
+    "kelly_fraction": 0.25,
+    "max_gross_leverage": 2.0,
+    "max_mdd_budget": 0.25
+  },
+  "costs": {
+    "fee_maker_bps": 2.0,
+    "fee_taker_bps": 5.0,
+    "assumed_fill": "taker",
+    "half_spread_bps": 0.07,
+    "impact_model": "none",
+    "funding": "none"
+  },
+  "execution": {
+    "signal_bar": "closed",
+    "fill": "next_bar_open",
+    "intrabar_priority": "stop_first",
+    "gap_fill": "bar_open"
+  },
+  "validation": {
+    "trials_declared": 8,
+    "is_oos_split": "0.60/0.20/0.20",
+    "seed": 7,
+    "bootstrap": { "block": 5, "reps": 4000 },
+    "wfa": { "train_years": 2, "test_months": 6, "min_trades_per_fold": 30 }
+  },
+  "expected": {
+    "turnover_per_year": 2208,
+    "cost_R_per_trade": 0.52,
+    "capacity_usd": 250000
+  },
+  "failure_modes": [
+    "el coste en R es 0,52 con un stop mediano de 0,25%: la rotación se come cualquier deriva",
+    "los cruces en 5m son en su mayoría bid-ask bounce, no flujo informado",
+    "sin funding en la especificación: con 2.208 trades/año el funding es material y quedaría fuera del cálculo"
+  ]
+}
