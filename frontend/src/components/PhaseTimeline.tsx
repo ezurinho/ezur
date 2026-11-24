@@ -5,6 +5,24 @@ interface Props {
   emptyLabel?: string;
 }
 
+// El color no puede ser el único portador del estado: quien no distingue el
+// verde del gris necesita una marca, y el lector de pantalla, la palabra.
+const MARK: Record<string, string> = {
+  done: "✓",
+  active: "▸",
+  failed: "✕",
+  skipped: "–",
+  pending: "·",
+};
+
+const STATUS_WORD: Record<string, string> = {
+  done: "hecha",
+  active: "en curso",
+  failed: "fallida",
+  skipped: "saltada",
+  pending: "pendiente",
+};
+
 export function PhaseTimeline({ phases, emptyLabel = "Sin fases" }: Props) {
   if (phases.length === 0) {
     return <p className="empty" data-phases-empty>{emptyLabel}</p>;
@@ -19,7 +37,13 @@ export function PhaseTimeline({ phases, emptyLabel = "Sin fases" }: Props) {
           data-status={phase.status}
           data-key={phase.key}
         >
-          <span className="phase-label">{phase.label}</span>
+          <span className="phase-mark" aria-hidden="true">
+            {MARK[phase.status] ?? "·"}
+          </span>
+          <span className="phase-label">
+            {phase.label}
+            <span className="sr-only">: {STATUS_WORD[phase.status] ?? phase.status}</span>
+          </span>
           {phase.detail ? <small className="phase-detail">{phase.detail}</small> : null}
         </li>
       ))}
