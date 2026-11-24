@@ -45,6 +45,16 @@ def test_edge_gate_rejects_a_losing_strategy():
     assert report.verdict == "RECHAZADA"
 
 
+def test_edge_gate_treats_no_losses_as_unbounded_profit_factor():
+    report = evaluate_gates(
+        _payload(closed={"wins": 60, "losses": 0, "profit_factor": 1.0, "expectancy_r": 0.25}),
+        initial_capital=25_000.0,
+    )
+    gate = next(item for item in report.outcomes if item.id == "G5")
+    assert gate.status == "pass"
+    assert "∞" in gate.detail
+
+
 def test_drawdown_gate_uses_percentage_of_capital():
     report = evaluate_gates(
         _payload(closed={"max_drawdown": 700.0}), initial_capital=25_000.0
