@@ -249,14 +249,15 @@ class Store:
                 "INSERT INTO events (ts, level, category, message, meta) VALUES (?,?,?,?,?)",
                 (stamp, level, category, message, json.dumps(meta or {})),
             )
-            self.conn.execute(
-                """
-                DELETE FROM events WHERE id NOT IN (
-                    SELECT id FROM events ORDER BY id DESC LIMIT ?
-                )
-                """,
-                (EVENTS_RETENTION,),
-            )
+            # La retención se corta por id, no con un NOT IN sobre toda la
+            # tabla: esa subconsulta se recorre entera en cada evento y en un
+            # backtest son miles de eventos (16 s de 35 s de una corrida).
+            cutoff = self.conn.execute(
+                "SELECT id FROM events ORDER BY id DESC LIMIT 1 OFFSET ?",
+                (EVENTS_RETENTION - 1,),
+            ).fetchone()
+            if cutoff is not None:
+                self.conn.execute("DELETE FROM events WHERE id < ?", (cutoff[0],))
         return int(cur.lastrowid or 0)
 
     def list_events(self, limit: int = 200, level: str | None = None) -> list[dict[str, Any]]:
