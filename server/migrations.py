@@ -10,7 +10,7 @@ from __future__ import annotations
 import sqlite3
 from datetime import datetime, timezone
 
-CURRENT_VERSION = 2
+CURRENT_VERSION = 3
 
 MIGRATIONS: dict[int, list[str]] = {
     1: [
@@ -116,12 +116,42 @@ MIGRATIONS[2] = [
                    entry_price, exit_price, units)""",
 ]
 
+# v3: una señal se ejecuta una sola vez, aunque la posición se cierre dos veces
+# (reinicio con posición restaurada, backfill fuera de orden). El índice por
+# precios y horas no lo veía porque el segundo cierre cambia hora y precio; el
+# signal_key sí es el mismo. Los cierres antiguos lo llevan vacío y quedan fuera
+# del índice parcial.
+MIGRATIONS[3] = [
+    """
+    DELETE FROM trades
+     WHERE signal_key <> ''
+       AND id NOT IN (
+        SELECT MIN(id) FROM trades
+         WHERE signal_key <> ''
+         GROUP BY mode, signal_key
+     )
+    """,
+    """CREATE UNIQUE INDEX IF NOT EXISTS idx_trades_signal
+         ON trades(mode, signal_key)
+      WHERE signal_key <> ''""",
+]
+
 DUPLICATE_QUERY = """
     SELECT COUNT(*) FROM trades
      WHERE id NOT IN (
         SELECT MIN(id) FROM trades
          GROUP BY mode, symbol, side, opened_ts, closed_ts,
                   entry_price, exit_price, units
+     )
+"""
+
+DUPLICATE_SIGNAL_QUERY = """
+    SELECT COUNT(*) FROM trades
+     WHERE signal_key <> ''
+       AND id NOT IN (
+        SELECT MIN(id) FROM trades
+         WHERE signal_key <> ''
+         GROUP BY mode, signal_key
      )
 """
 
@@ -153,6 +183,8 @@ def apply_migrations(conn: sqlite3.Connection) -> int:
         removed = 0
         if version == 2:
             removed = int(conn.execute(DUPLICATE_QUERY).fetchone()[0] or 0)
+        elif version == 3:
+            removed = int(conn.execute(DUPLICATE_SIGNAL_QUERY).fetchone()[0] or 0)
         # SAVEPOINT y no BEGIN: funciona igual si el llamante ya tenía una
         # transacción abierta, y en este driver el DDL sólo entra en la transacción
         # cuando se abre una de forma explícita.
