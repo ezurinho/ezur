@@ -174,8 +174,14 @@ def health_state(
             risk.get("soft_brake_halt_multiple") or 1.0
         )
     age = _heartbeat_age(books_state.get("heartbeat"))
+    loss_pct = _number(risk.get("max_daily_loss_pct"))
+    max_trades = _number(risk.get("max_trades_per_day"))
     return {
         "drawdown_pct": drawdown,
+        "daily_loss_limit": (
+            -abs(float(capital) * loss_pct / 100) if loss_pct else None
+        ),
+        "max_daily_trades": int(max_trades) if max_trades else None,
         "halt_at_pct": halt_at,
         "halted": bool(
             halt_at is not None and drawdown is not None and drawdown >= halt_at
@@ -301,9 +307,15 @@ def render(
     day = (books_state or {}).get("day")
     if isinstance(day, dict) and day.get("trades") is not None:
         session = (books_state or {}).get("session")
+        limit = health.get("daily_loss_limit") if health else None
+        max_trades = health.get("max_daily_trades") if health else None
+        trades = int(day.get("trades") or 0)
+        ops = f"{trades}/{max_trades} ops" if max_trades else f"{trades} ops"
+        pnl_text = f"P&L {_money(day.get('pnl'))}"
+        if limit is not None:
+            pnl_text += f" de {_money(limit)}"
         detail = (
-            f"día: {int(day.get('trades') or 0)} ops · "
-            f"P&L {_money(day.get('pnl'))} · "
+            f"día: {ops} · {pnl_text} · "
             f"racha {int(day.get('consecutive_losses') or 0)}"
         )
         if session:

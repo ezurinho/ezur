@@ -277,6 +277,8 @@ def test_health_state_lee_el_perfil_y_el_libro(tmp_path):
                     "soft_brakes": True,
                     "max_drawdown_pct": 5.0,
                     "soft_brake_halt_multiple": 2.0,
+                    "max_daily_loss_pct": 3.0,
+                    "max_trades_per_day": 3,
                 }
             }
         ),
@@ -294,6 +296,8 @@ def test_health_state_lee_el_perfil_y_el_libro(tmp_path):
     assert state["halt_at_pct"] == 10.0
     assert state["halted"] is True
     assert state["heartbeat_s"] is not None
+    assert state["daily_loss_limit"] == -750.0
+    assert state["max_daily_trades"] == 3
 
 
 def test_books_lee_pico_latido_y_emergencia(tmp_path):
@@ -329,3 +333,17 @@ def test_el_informe_muestra_el_dia_de_la_sesion():
     )
 
     assert "día: 3 ops · P&L 153.90 · racha 0 · sesión 2026-11-24:CRYPTO24" in text
+
+def test_el_dia_ensena_los_topes_del_perfil():
+    text = paper.render(
+        SUMMARY,
+        25_000.0,
+        "db",
+        books_state={
+            "day": {"trades": 3, "pnl": 153.8954522, "consecutive_losses": 0},
+            "session": "2026-11-24:CRYPTO24",
+        },
+        health={"drawdown_pct": 1.96, "daily_loss_limit": -750.0, "max_daily_trades": 3},
+    )
+
+    assert "día: 3/3 ops · P&L 153.90 de -750.00 · racha 0" in text
