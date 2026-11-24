@@ -16,6 +16,7 @@ from typing import Any, Awaitable, Callable
 
 from .config import Settings
 from .db import Store
+from .equity import audit as equity_audit
 from .execution import ExecutionEngine
 from .market.feed import MarketFeed
 from .models import (
@@ -48,6 +49,7 @@ SNAPSHOT_MIN_INTERVAL_S = 0.1
 RESTART_PAUSE_S = 0.5
 
 MAX_BARS = 500
+WATCHDOG_INTERVAL_S = 30
 
 SnapshotHook = Callable[[dict[str, Any]], Awaitable[None] | None]
 
@@ -103,6 +105,8 @@ class TradingEngine:
         self._output: StrategyOutput | None = None
         self._subscribers: list[SnapshotHook] = []
         self._task: asyncio.Task[None] | None = None
+        self._watchdog_task: asyncio.Task[None] | None = None
+        self._lifecycle_lock = asyncio.Lock()
         self.last_exit_ts: datetime | None = None
         self._previous_tick_ts: datetime | None = None
         # Barrera del backfill: velas anteriores a la posición restaurada no se
@@ -121,12 +125,67 @@ class TradingEngine:
                 now_utc(), settings.instruments.template_for(primary)
             )
         self._restore_day_stats()
+        self.equity_audit = self._equity_snapshot()
+        if not self.equity_audit["ok"]:
+            self.state.block_reason = "equity_mismatch"
+            logger.error(
+                "equity no cuadra con el libro: %s",
+                ", ".join(self.equity_audit["issues"]),
+            )
 
     # --- lifecycle --------------------------------------------------------
+    def _equity_snapshot(self) -> dict[str, Any]:
+        """El guard solo aplica a motores con una base persistente.
+
+        Backtest, simulaciones y walk-forward usan `:memory:`: ahí no hay una
+        curva guardada que pueda contradecir al libro, y abrir el path como
+        fichero fallaría. El paper real sí se audita.
+        """
+        if self.mode not in {"paper", "live"} or str(self.store.path) == ":memory:":
+            return {
+                "ok": True,
+                "uninitialized": True,
+                "issues": [],
+                "differences": {},
+            }
+        return equity_audit(
+            self.store.path, self.settings.risk.initial_capital, self.mode
+        )
+
+    def _require_reconciled_equity(self) -> None:
+        """El arranque no puede operar sobre una curva o un estado desviados.
+
+        Se recalcula en cada intento: si alguien corrigió la base con
+        `python -m server.equity --apply` mientras el proceso estaba parado,
+        el siguiente arranque debe poder continuar sin reiniciar el proceso.
+        """
+        self.equity_audit = self._equity_snapshot()
+        if self.equity_audit["ok"]:
+            return
+        self.state.status = "error"
+        self.state.block_reason = "equity_mismatch"
+        detail = ", ".join(self.equity_audit["issues"]) or "desconocido"
+        self._event(
+            "error",
+            "accounting",
+            "arranque bloqueado: la equity no cuadra con el libro",
+            {
+                "issues": self.equity_audit["issues"],
+                "differences": self.equity_audit["differences"],
+            },
+        )
+        raise RuntimeError(
+            "equity no cuadra con el libro ("
+            f"{detail}); ejecuta python -m server.equity --apply y vuelve a arrancar"
+        )
+
     def start(self) -> None:
         self.invalidate_publish()
         if self.state.emergency:
             raise RuntimeError("emergency stop is active; disable it first")
+        self._require_reconciled_equity()
+        if self.state.block_reason == "equity_mismatch":
+            self.state.block_reason = None
         self.state.status = "running"
         self._event("info", "engine", "motor iniciado", {"mode": self.mode})
         self._persist()
@@ -166,7 +225,32 @@ class TradingEngine:
 
     def update_settings(self, settings: Settings) -> None:
         """Apply validated settings at runtime without restarting the process."""
+        exposed = {
+            order.symbol for order in self.execution.orders if order.status == "pending"
+        }
+        if self.execution.position is not None:
+            exposed.add(self.execution.position.symbol)
+        if exposed:
+            new_symbols = set(settings.instruments.symbols)
+            missing = exposed - new_symbols
+            old_primary = self.settings.instruments.primary
+            if missing or settings.instruments.primary != old_primary:
+                raise ValueError(
+                    "no se puede cambiar el instrumento principal ni retirar uno con exposición"
+                )
+
+        # Construir antes de tocar estado: si el feed o el plugin rechazan la
+        # configuración, el motor sigue con la última que sí era válida.
+        next_strategy_key = _strategy_key(settings)
+        next_strategy = (
+            self.strategy_factory(settings)
+            if self.strategy_factory is not None and next_strategy_key != self._strategy_key
+            else None
+        )
+        next_feed = self.feed_factory(settings) if self.feed_factory is not None else None
+
         self.settings = settings
+        self.state.provider = settings.feed.provider
         self.risk = RiskManager(settings.risk)
         self.execution.config = settings.execution
         self.execution.instruments = {
@@ -174,35 +258,32 @@ class TradingEngine:
         }
         self.builder.settings = settings
         self.invalidate_stats()
-        self._sync_strategy_meta()
-        if self.strategy_factory is not None and _strategy_key(settings) != self._strategy_key:
-            # Swapping the plugin or its parameters keeps the engine honest: the
-            # old instance would validate the new parameters against its own model.
-            self.strategy = self.strategy_factory(settings)
-            self._strategy_key = _strategy_key(settings)
-            self._sync_strategy_meta()
+        if next_strategy is not None:
+            self.strategy = next_strategy
+            self._strategy_key = next_strategy_key
             self._output = None
             self._rejections.clear()
             self.state.block_reason = None
             self.state.block_count = 0
+        self._sync_strategy_meta()
         for symbol in settings.instruments.symbols:
             self._bars.setdefault(symbol, [])
-        if self.feed_factory is not None and self.feed is not None:
-            # A new instrument needs data: rebuild the feed and drop stale bars
-            # rather than mixing two sessions of the same timestamps.
-            self.feed = self.feed_factory(settings)
+        if next_feed is not None and self.feed is not None:
+            self.feed = next_feed
             self._bars = {symbol: [] for symbol in settings.instruments.symbols}
             self._previous_tick_ts = None
             self.state.bars_available = 0
             self.state.last_bar_ts = None
             if self.state.status == "running":
-                # Restart even when the previous replay had already finished:
-                # otherwise the operator changes instruments and watches an
-                # empty chart forever, with the engine still claiming "running".
                 try:
                     asyncio.get_running_loop().create_task(self.refresh_task())
                 except RuntimeError:
                     pass
+        if self.state.status == "running":
+            try:
+                self._start_watchdog()
+            except RuntimeError:
+                pass
 
     def _sync_strategy_meta(self) -> None:
         self.builder.strategy_meta = {
@@ -212,8 +293,11 @@ class TradingEngine:
         }
 
     async def refresh_task(self) -> None:
-        await self.stop_task()
-        self.start_task()
+        async with self._lifecycle_lock:
+            if self.state.status in {"stopped", "error"}:
+                return
+            await self._stop_tasks_unlocked()
+            self._start_task_unlocked()
 
     async def run(self) -> None:
         if self.feed is None:
@@ -268,14 +352,66 @@ class TradingEngine:
             self._persist()
             await self._publish()
 
-    def start_task(self) -> None:
-        if self._task is None or self._task.done():
-            # Cada tarea consume su propio flujo: la guarda de orden no puede
-            # comparar el primer tick de un replay con el último del anterior.
-            self._previous_tick_ts = None
-            self._task = asyncio.create_task(self.run())
+    def _start_watchdog(self) -> None:
+        if self.mode not in {"paper", "live"} or self.state.provider not in {"okx", "live"}:
+            return
+        if self._watchdog_task is None or self._watchdog_task.done():
+            self._watchdog_task = asyncio.create_task(self._watchdog())
 
-    async def stop_task(self) -> None:
+    async def _watchdog(self) -> None:
+        while True:
+            await asyncio.sleep(WATCHDOG_INTERVAL_S)
+            if self._task is None or self._task.done():
+                return
+            try:
+                if self._check_live_freshness():
+                    await self._publish()
+            except Exception:
+                logger.exception("watchdog de frescura falló; continúa vigilando")
+
+    def _cancel_stale_pending(self) -> None:
+        if self.state.block_reason != "stale_data":
+            self.state.block_reason = "stale_data"
+            self.state.block_count = 0
+        if not self.execution.has_pending():
+            return
+        cancelled = self.execution.cancel_all()
+        self.state.orders = list(self.execution.orders)
+        self._event(
+            "warn",
+            "risk",
+            "orden pendiente cancelada por datos obsoletos",
+            {"cancelled": cancelled},
+        )
+
+    def _check_live_freshness(self, tick_ts: datetime | None = None) -> bool:
+        """Envejece datos live y cancela entradas pendientes incluso sin ticks."""
+        if self.mode not in {"paper", "live"} or self.state.provider not in {"okx", "live"}:
+            return False
+        stamp = tick_ts or self.state.last_bar_ts
+        if stamp is None:
+            return False
+        before = (self.state.quality, self.state.staleness_ms, self.state.block_reason)
+        age_ms = max(0.0, (now_utc() - _aware(stamp)).total_seconds() * 1000)
+        self.state.staleness_ms = max(self.state.staleness_ms, int(age_ms))
+        if age_ms > 900_000:
+            self.state.quality = "stale"
+        elif age_ms > 180_000:
+            self.state.quality = "degraded"
+        else:
+            self.state.quality = "ok"
+        if self.state.quality == "stale":
+            self._cancel_stale_pending()
+        return before != (self.state.quality, self.state.staleness_ms, self.state.block_reason)
+
+    async def _stop_tasks_unlocked(self) -> None:
+        if self._watchdog_task is not None and not self._watchdog_task.done():
+            self._watchdog_task.cancel()
+            try:
+                await self._watchdog_task
+            except asyncio.CancelledError:
+                pass
+        self._watchdog_task = None
         if self._task is not None and not self._task.done():
             self._task.cancel()
             try:
@@ -283,6 +419,30 @@ class TradingEngine:
             except asyncio.CancelledError:
                 pass
         self._task = None
+
+    def _start_task_unlocked(self) -> None:
+        self._require_reconciled_equity()
+        # Cada consumidor empieza con historia vacía: un replay o backfill no
+        # duplica velas que ya estaban en el chart.
+        self._bars = {symbol: [] for symbol in self.settings.instruments.symbols}
+        self._previous_tick_ts = None
+        if self.execution.position is not None:
+            self._replay_barrier = self.execution.position.opened_ts
+        self._task = asyncio.create_task(self.run())
+        self._start_watchdog()
+
+    async def start_task(self) -> None:
+        async with self._lifecycle_lock:
+            if self.state.status in {"stopped", "error"}:
+                return
+            await self._stop_tasks_unlocked()
+            if self.state.status in {"stopped", "error"}:
+                return
+            self._start_task_unlocked()
+
+    async def stop_task(self) -> None:
+        async with self._lifecycle_lock:
+            await self._stop_tasks_unlocked()
 
     # --- cycle ------------------------------------------------------------
     def _process(self, tick: Tick) -> None:
@@ -316,11 +476,15 @@ class TradingEngine:
         if not same_session(self.state.session, session):
             self._on_new_session(session)
 
+        needed = max(self.strategy.warmup_requirements().bars.values(), default=0)
+        bar_limit = max(MAX_BARS, needed + 1)
         for symbol, bar in tick.bars.items():
             if symbol not in self._bars:
                 continue
             self._bars[symbol].append(bar)
-            del self._bars[symbol][:-MAX_BARS]
+            # Una estrategia con warmup mayor que el tope general nunca podría
+            # salir de calentamiento. El límite crece solo lo que ella declara.
+            del self._bars[symbol][:-bar_limit]
 
         self.state.session = session
         self.state.last_bar_ts = tick.ts
@@ -340,6 +504,7 @@ class TradingEngine:
         else:
             self.state.quality = "stale"
         self._previous_tick_ts = tick.ts
+        self._check_live_freshness(tick.ts)
 
         for event in self.execution.on_bar(tick.bars):
             if event.type == "exit" and event.trade is not None:
@@ -357,6 +522,7 @@ class TradingEngine:
         self.state.position = self.execution.position
         self.state.orders = list(self.execution.orders)
 
+        self._expire_blocks(tick.ts)
         if self.state.status == "running":
             self._evaluate(tick, session)
 
@@ -401,10 +567,37 @@ class TradingEngine:
             primary=primary,
             bars=bars,
             params=self.strategy.params,
+            context={"tick_size": self.settings.instruments.by_symbol(primary).tick_size},
         )
         output = self.strategy.evaluate(md)
         self._output = output
         if output.signal is None:
+            # Un veto de geometría/tamaño pertenece a la señal anterior; sin
+            # señal nueva no puede seguir presentándose como bloqueo actual.
+            if self.state.block_reason in {
+                "risk_per_trade",
+                "stop_too_wide",
+                "invalid_stop",
+                "invalid_stop_side",
+                "invalid_target_side",
+                "size_below_minimum",
+                "no_price",
+            }:
+                self.state.block_reason = None
+            return
+        if not session.is_open:
+            self.state.block_reason = "outside_window"
+            self._note_rejection("outside_window", "la sesión está cerrada", tick.ts)
+            return
+        if (
+            self.mode in {"paper", "live"}
+            and self.state.provider in {"okx", "live"}
+            and self.state.quality == "stale"
+        ):
+            # Una conexión viva no basta: sin velas frescas no se autoriza una
+            # entrada nueva. El feed puede seguir gestionando la posición.
+            self.state.block_reason = "stale_data"
+            self._note_rejection("stale_data", "el feed está obsoleto", tick.ts)
             return
 
         spec = self.settings.instruments.by_symbol(primary)
@@ -449,6 +642,44 @@ class TradingEngine:
                 {"symbol": primary, "units": decision.units, "side": output.signal.side},
             )
 
+    def _expire_blocks(self, clock: datetime) -> None:
+        """Un bloqueo caduca cuando su condición deja de cumplirse, no solo al reevaluar."""
+        reason = self.state.block_reason
+        if reason is None:
+            return
+        cfg = self.settings.risk
+        expired = False
+        if reason == "consecutive_losses":
+            if not cfg.no_trade_after_consecutive_losses:
+                expired = True
+            elif self.state.day_stats.consecutive_losses < cfg.no_trade_after_consecutive_losses:
+                expired = True
+            elif cfg.loss_streak_cooldown_min and self.last_exit_ts is not None:
+                elapsed = (_aware(clock) - _aware(self.last_exit_ts)).total_seconds()
+                expired = elapsed >= cfg.loss_streak_cooldown_min * 60
+        elif reason == "cooldown_active":
+            expired = (
+                self.last_exit_ts is None
+                or (_aware(clock) - _aware(self.last_exit_ts)).total_seconds()
+                >= cfg.cooldown_minutes * 60
+            )
+        elif reason == "outside_window":
+            template = self.settings.instruments.template_for(self.settings.instruments.primary)
+            expired = bool(self.state.session and self.state.session.is_open) and self.risk._outside_window(
+                clock, template.timezone
+            ) is None
+        elif reason == "max_drawdown_reached" and self.peak_equity > 0:
+            drawdown_pct = (self.peak_equity - self.state.equity) / self.peak_equity * 100
+            threshold = cfg.max_drawdown_pct * (
+                cfg.soft_brake_halt_multiple if cfg.soft_brakes else 1.0
+            )
+            expired = drawdown_pct < threshold
+        elif reason == "stale_data":
+            expired = self.state.quality != "stale"
+        if expired:
+            self.state.block_reason = None
+            self.state.block_count = 0
+
     def rejection_totals(self) -> dict[str, int]:
         """Señales rechazadas en toda la corrida, por código de riesgo."""
         return dict(self._rejection_totals)
@@ -489,33 +720,23 @@ class TradingEngine:
             self._on_trade_closed(trade)
 
     def _restore_day_stats(self) -> None:
-        """El día se cuenta desde el libro, no desde lo último que quedó en `kv`.
+        """Reconstruye el día desde el libro, nunca desde una caché que puede quedar a medias.
 
-        Al arrancar, la sesión se fija en la de ahora, así que el cambio de
-        sesión nunca salta en el primer tick y el contador de ayer sobrevivía al
-        reinicio: el límite diario llegaba agotado y el bot no abría nada. Solo
-        se respeta lo guardado si pertenece a la sesión actual; si no, se
-        reconstruye con las operaciones cerradas hoy.
+        El cierre de una operación y su `kv` no son una sola transacción: si el
+        proceso muere entre ambos, confiar en `day_stats` haría que el límite
+        diario contara menos de lo que realmente ocurrió.
         """
         current = self.state.session
-        saved = self.store.kv_get("day_stats")
-        stored_session = self.store.kv_get("session_id")
-        if saved and current is not None and stored_session == current.id:
-            try:
-                self.state.day_stats = DayStats.model_validate(saved)
-                return
-            except ValueError:
-                logger.warning("discarded unreadable day stats")
         self.state.day_stats = DayStats()
         if current is None:
             return
         start, end = _aware(current.open_ts), _aware(current.close_ts)
         closed = [
             trade
-            for trade in self.store.all_trades()
+            for trade in self.store.all_trades(mode=self.mode)
             if start <= _aware(trade.closed_ts) < end
         ]
-        closed.sort(key=lambda trade: trade.closed_ts)
+        closed.sort(key=lambda trade: _aware(trade.closed_ts))
         for trade in closed:
             self.state.day_stats.trades += 1
             self.state.day_stats.pnl += trade.pnl_net
@@ -526,6 +747,7 @@ class TradingEngine:
                 self.state.day_stats.losses += 1
                 self.state.day_stats.consecutive_losses += 1
         self.store.kv_set("session_id", current.id)
+        self.store.kv_set("day_stats", self.state.day_stats.model_dump(mode="json"))
 
     def _on_new_session(self, session: SessionInfo) -> None:
         self.state.session = session
@@ -609,7 +831,7 @@ class TradingEngine:
         # un cierre contado dos veces (pasó: 24.210,09 guardados frente a
         # 24.356,41 reales) y entonces el panel miente hasta que alguien
         # reconstruya a mano.
-        computed = self.settings.risk.initial_capital + self.store.realized_pnl()
+        computed = self.settings.risk.initial_capital + self.store.realized_pnl(mode=self.mode)
         saved = self.store.kv_get("equity")
         if saved is not None and abs(float(saved) - computed) > 0.01:
             logger.warning(
@@ -753,7 +975,7 @@ class TradingEngine:
         """
         if self._stats_cache is None:
             self._stats_cache = aggregate(
-                self.store.all_trades(),
+                self.store.all_trades(mode=self.mode),
                 self.settings.risk.initial_capital,
                 timezone_name=self.settings.instruments.template_for(
                     self.settings.instruments.primary
