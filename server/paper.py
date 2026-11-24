@@ -119,6 +119,72 @@ def promotion_state(profile: Path) -> dict[str, Any] | None:
     }
 
 
+def _kv(connection: sqlite3.Connection, key: str) -> Any:
+    try:
+        row = connection.execute("SELECT value FROM kv WHERE key = ?", (key,)).fetchone()
+    except sqlite3.OperationalError:
+        return None
+    if row is None:
+        return None
+    try:
+        return json.loads(row["value"])
+    except (TypeError, ValueError):
+        return None
+
+
+def _number(value: Any) -> float | None:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _profile_risk(profile: Path) -> dict[str, Any]:
+    config = profile / "config.json"
+    try:
+        document = json.loads(config.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return document.get("risk") or {}
+
+
+def _heartbeat_age(value: Any) -> float | None:
+    if not isinstance(value, str):
+        return None
+    try:
+        stamp = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if stamp.tzinfo is None:
+        stamp = stamp.replace(tzinfo=timezone.utc)
+    return (datetime.now(timezone.utc) - stamp).total_seconds()
+
+
+def health_state(
+    profile: Path, capital: float, pnl: float, books_state: dict[str, Any]
+) -> dict[str, Any]:
+    """Salud operativa: drawdown, parada dura, latido y emergencia."""
+    risk = _profile_risk(profile)
+    peak = _number(books_state.get("peak"))
+    equity = float(capital) + float(pnl)
+    drawdown = (peak - equity) / peak * 100 if peak and peak > 0 else None
+    halt_at = None
+    if risk.get("soft_brakes") and risk.get("max_drawdown_pct"):
+        halt_at = float(risk["max_drawdown_pct"]) * float(
+            risk.get("soft_brake_halt_multiple") or 1.0
+        )
+    age = _heartbeat_age(books_state.get("heartbeat"))
+    return {
+        "drawdown_pct": drawdown,
+        "halt_at_pct": halt_at,
+        "halted": bool(
+            halt_at is not None and drawdown is not None and drawdown >= halt_at
+        ),
+        "heartbeat_s": age,
+        "emergency": bool(books_state.get("emergency") or False),
+    }
+
+
 def books(db_path: Path) -> dict[str, Any]:
     """Lo guardado aparte del libro: última fila de la curva y equity del estado.
 
@@ -134,15 +200,18 @@ def books(db_path: Path) -> dict[str, Any]:
             row = conn.execute("SELECT equity FROM equity ORDER BY ts DESC LIMIT 1").fetchone()
         except sqlite3.OperationalError:
             row = None
-        try:
-            kv = conn.execute("SELECT value FROM kv WHERE key = 'equity'").fetchone()
-        except sqlite3.OperationalError:
-            kv = None
+        state = _kv(conn, "equity")
+        peak = _kv(conn, "peak_equity")
+        heartbeat = _kv(conn, "heartbeat")
+        emergency = _kv(conn, "emergency")
     finally:
         conn.close()
     return {
         "curve": float(row["equity"]) if row else None,
-        "state": float(json.loads(kv["value"])) if kv else None,
+        "state": _number(state),
+        "peak": _number(peak),
+        "heartbeat": heartbeat,
+        "emergency": bool(emergency) if emergency is not None else None,
     }
 
 
@@ -163,6 +232,7 @@ def render(
     exposure_info: dict[str, Any] | None = None,
     anomalies: dict[str, Any] | None = None,
     promotion: dict[str, Any] | None = None,
+    health: dict[str, Any] | None = None,
 ) -> str:
     closed = summary.get("closed") or {}
     trades = int(closed.get("trades") or 0)
@@ -212,6 +282,18 @@ def render(
                 else f" · modo {promotion.get('mode')}"
             )
             lines.append(f"puerta: no promovida ({promotion.get('reason')}){brake}")
+    if health is not None and health.get("drawdown_pct") is not None:
+        parts = [f"drawdown {float(health['drawdown_pct']):.2f} %"]
+        if health.get("halt_at_pct") is not None:
+            parts.append(
+                f"parada dura al {float(health['halt_at_pct']):.2f} %"
+                + (" ACTIVA" if health.get("halted") else "")
+            )
+        age = health.get("heartbeat_s")
+        parts.append(f"latido hace {_ago(age)}" if age is not None else "sin latido")
+        if health.get("emergency"):
+            parts.append("emergencia activa")
+        lines.append("estado: " + " · ".join(parts))
     if books_state:
         expected = capital + pnl
         curve = books_state.get("curve")
@@ -226,6 +308,14 @@ def render(
             + ("cuadra con el libro" if agree else "NO cuadra con el libro")
         )
     return "\n".join(lines)
+
+
+def _ago(seconds: float) -> str:
+    if seconds < 90:
+        return f"{seconds:.0f} s"
+    if seconds < 5400:
+        return f"{seconds / 60:.0f} min"
+    return f"{seconds / 3600:.1f} h"
 
 
 def _profile_defaults(profile: Path) -> tuple[Path, float]:
@@ -269,6 +359,13 @@ def main(argv: list[str] | None = None) -> int:
     leaked = exposure(trades, capital)
     broken = impossible(trades, capital)
     gate = promotion_state(profile) if profile else None
+    health = (
+        health_state(
+            profile, capital, float(result["closed"].get("pnl_net") or 0.0), stored
+        )
+        if profile
+        else None
+    )
     if args.json:
         print(
             json.dumps(
@@ -285,7 +382,7 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
     else:
-        print(render(result, capital, str(db), stored, leaked, broken, gate))
+        print(render(result, capital, str(db), stored, leaked, broken, gate, health))
     return 0
 
 

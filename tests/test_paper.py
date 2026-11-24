@@ -213,3 +213,101 @@ def test_la_puerta_del_perfil_se_evalua(tmp_path):
     assert state["passed"] is False
     assert state["mode"] == "reduce"
     assert state["size_factor"] == 0.25
+
+
+def test_el_informe_dice_el_estado_del_bot():
+    text = paper.render(
+        SUMMARY,
+        25_000.0,
+        "db",
+        health={
+            "drawdown_pct": 1.96,
+            "halt_at_pct": 10.0,
+            "halted": False,
+            "heartbeat_s": 4.0,
+            "emergency": False,
+        },
+    )
+
+    assert "estado: drawdown 1.96 % · parada dura al 10.00 % · latido hace 4 s" in text
+
+
+def test_el_informe_avisa_de_parada_dura_y_emergencia():
+    text = paper.render(
+        SUMMARY,
+        25_000.0,
+        "db",
+        health={
+            "drawdown_pct": 12.0,
+            "halt_at_pct": 10.0,
+            "halted": True,
+            "heartbeat_s": 400.0,
+            "emergency": True,
+        },
+    )
+
+    assert "parada dura al 10.00 % ACTIVA" in text
+    assert "emergencia activa" in text
+
+
+def test_sin_latido_lo_dice():
+    text = paper.render(
+        SUMMARY,
+        25_000.0,
+        "db",
+        health={
+            "drawdown_pct": 1.0,
+            "halt_at_pct": None,
+            "halted": False,
+            "heartbeat_s": None,
+            "emergency": False,
+        },
+    )
+
+    assert "sin latido" in text
+
+
+def test_health_state_lee_el_perfil_y_el_libro(tmp_path):
+    profile = tmp_path / "perfil"
+    profile.mkdir()
+    (profile / "config.json").write_text(
+        json.dumps(
+            {
+                "risk": {
+                    "soft_brakes": True,
+                    "max_drawdown_pct": 5.0,
+                    "soft_brake_halt_multiple": 2.0,
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    state = paper.health_state(
+        profile,
+        25_000.0,
+        -3_000.0,
+        {"peak": 25_000.0, "heartbeat": "2026-11-24T00:00:00+00:00", "emergency": False},
+    )
+
+    assert state["drawdown_pct"] == 12.0
+    assert state["halt_at_pct"] == 10.0
+    assert state["halted"] is True
+    assert state["heartbeat_s"] is not None
+
+
+def test_books_lee_pico_latido_y_emergencia(tmp_path):
+    from server.db import Store
+
+    db = tmp_path / "terminal.db"
+    store = Store(db)
+    store.kv_set("peak_equity", 25_000.0)
+    store.kv_set("heartbeat", "2026-11-24T00:00:00+00:00")
+    store.kv_set("emergency", False)
+    store.close()
+
+    stored = paper.books(db)
+
+    assert stored["peak"] == 25_000.0
+    assert stored["heartbeat"] == "2026-11-24T00:00:00+00:00"
+    assert stored["emergency"] is False
