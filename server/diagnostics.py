@@ -259,7 +259,11 @@ def diagnose(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Diagnóstico de solo lectura")
-    parser.add_argument("--db", default="data/terminal.db")
+    parser.add_argument(
+        "--db",
+        default=None,
+        help="base SQLite; por defecto data/terminal.db, o <perfil>/terminal.db con --profile",
+    )
     parser.add_argument(
         "--capital", type=float, default=25_000.0, help="capital inicial del libro"
     )
@@ -278,7 +282,10 @@ def main(argv: list[str] | None = None) -> int:
     capital = args.capital
     limits = None
     if args.profile:
-        config = Path(args.profile) / "config.json"
+        profile = Path(args.profile)
+        if args.db is None:
+            args.db = str(profile / "terminal.db")
+        config = profile / "config.json"
         try:
             document = json.loads(config.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
@@ -290,7 +297,7 @@ def main(argv: list[str] | None = None) -> int:
             "halt_multiple": float(risk.get("soft_brake_halt_multiple") or 1.0),
             "soft_brakes": bool(risk.get("soft_brakes")),
         }
-    report = diagnose(args.db, capital, limits)
+    report = diagnose(args.db or "data/terminal.db", capital, limits)
     print(json.dumps(report, indent=2))
     if not args.strict:
         return 0
