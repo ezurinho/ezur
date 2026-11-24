@@ -202,3 +202,31 @@ def test_legacy_ledger_without_chain_still_loads(tmp_path):
     path.write_text(json.dumps(legacy) + "\n", encoding="utf-8")
     assert experiments.verify_chain(path)["ok"] is True
     assert experiments.summary(path)["experiments"] == 1
+
+
+def test_verify_chain_detecta_una_linea_corrupta(tmp_path):
+    from server.experiments import verify_chain
+
+    _record(tmp_path)
+    ledger = tmp_path / "ledger.jsonl"
+    ledger.write_text(
+        ledger.read_text(encoding="utf-8") + '{"cortada":\n', encoding="utf-8"
+    )
+
+    result = verify_chain(ledger)
+
+    assert result["ok"] is False
+    assert "no es JSON" in result["reason"]
+    assert result["broken_at"] == 1
+
+
+def test_record_no_escribe_despues_de_una_linea_corrupta(tmp_path):
+    import pytest
+
+    ledger = tmp_path / "ledger.jsonl"
+    ledger.write_text('{"cortada":\n', encoding="utf-8")
+
+    with pytest.raises(ValueError):
+        _record(tmp_path)
+
+    assert ledger.read_text(encoding="utf-8") == '{"cortada":\n'

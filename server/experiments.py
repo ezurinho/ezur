@@ -75,8 +75,12 @@ def _last_hash(path: Path) -> str:
             continue
         try:
             return str(json.loads(line).get("chain_hash", ""))
-        except json.JSONDecodeError:
-            continue
+        except json.JSONDecodeError as error:
+            # Añadir después de una línea cortada dejaría la corrupción dentro
+            # del ledger y la cadena la daría por buena más adelante.
+            raise ValueError(
+                f"el ledger {path} termina en una línea que no es JSON válido: {error}"
+            ) from error
     return ""
 
 
@@ -114,7 +118,24 @@ def verify_chain(path: str | Path = DEFAULT_LEDGER) -> dict[str, Any]:
     "broken" without saying where is not useful for forensics.
     """
     target = Path(path)
-    entries = load(target)
+    if not target.exists():
+        return {"ok": True, "entries": 0, "broken_at": None, "reason": ""}
+    entries: list[dict[str, Any]] = []
+    for index, raw in enumerate(target.read_text(encoding="utf-8").splitlines()):
+        line = raw.strip()
+        if not line:
+            continue
+        try:
+            entries.append(json.loads(line))
+        except json.JSONDecodeError:
+            # `load` las salta para mostrar lo legible; verificar es otra cosa:
+            # una línea rota es exactamente lo que la cadena debe delatar.
+            return {
+                "ok": False,
+                "entries": len(entries),
+                "broken_at": index,
+                "reason": f"línea {index + 1}: no es JSON válido",
+            }
     previous = ""
     for index, entry in enumerate(entries):
         expected_prev = entry.get("prev_hash", "")
