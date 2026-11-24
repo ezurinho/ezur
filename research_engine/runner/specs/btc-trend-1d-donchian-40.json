@@ -1,0 +1,72 @@
+{
+  "id": "BTC-TREND-1D",
+  "name": "Donchian breakout 1d",
+  "version": "1.0.0",
+  "label": "1d_40",
+  "family": "trend",
+  "hypothesis": "Time-series momentum in crypto is documented at day-to-week horizons (Liu & Tsyvinski, RFS 2021): institutional metaorders execute with participation, creating return persistence that survives a wide stop and low turnover. A Donchian channel captures that persistence with causal rules, and at one bar per day the round-trip cost drops to ~0.018 R, so the edge does not have to be large to survive.",
+  "instrument": "BTCUSDT_PERP",
+  "timeframe_signal": "1d",
+  "timeframe_context": null,
+  "data_requirements": {
+    "datasets": ["klines_5m", "funding_rate"],
+    "min_coverage": "2020-01-01/2026-10-31",
+    "integrity": { "gaps": 0, "duplicates": 0, "timezone": "UTC" }
+  },
+  "entry": {
+    "rule": "donchian_breakout",
+    "long": "close[t] > max(high[t-N .. t-1])",
+    "short": "close[t] < min(low[t-N .. t-1])",
+    "cooldown_bars": 0
+  },
+  "exit": {
+    "stop": "1.5 * ATR(14)[t]",
+    "target": "4.0 * R",
+    "time_stop_bars": 90,
+    "trailing": null
+  },
+  "params": {
+    "N": 40,
+    "atr_k": 1.5,
+    "tp_r": 4.0
+  },
+  "risk": {
+    "sizing": "fixed_fractional",
+    "risk_per_trade": 0.005,
+    "target_vol_annual": 0.2,
+    "kelly_fraction": 0.25,
+    "max_gross_leverage": 2.0,
+    "max_mdd_budget": 0.25
+  },
+  "costs": {
+    "fee_maker_bps": 2.0,
+    "fee_taker_bps": 5.0,
+    "assumed_fill": "taker",
+    "half_spread_bps": 0.07,
+    "impact_model": "none",
+    "funding": "real_timestamps"
+  },
+  "execution": {
+    "signal_bar": "closed",
+    "fill": "next_bar_open",
+    "intrabar_priority": "stop_first",
+    "gap_fill": "bar_open"
+  },
+  "validation": {
+    "trials_declared": 8,
+    "is_oos_split": "0.60/0.20/0.20",
+    "seed": 7,
+    "bootstrap": { "block": 5, "reps": 4000 },
+    "wfa": { "train_years": 2, "test_months": 6, "min_trades_per_fold": 30 }
+  },
+  "expected": {
+    "turnover_per_year": 8.6,
+    "cost_R_per_trade": 0.018,
+    "capacity_usd": 250000
+  },
+  "failure_modes": [
+    "régimen de baja volatilidad prolongado: el canal no se rompe y el sistema no opera",
+    "gap de liquidación (2025-10-10): el stop se ejecuta muy por debajo del nivel",
+    "funding persistentemente positivo: sesgo contra los cortos, 3-5x las fees"
+  ]
+}
