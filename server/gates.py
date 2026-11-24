@@ -145,14 +145,15 @@ def _gate_sample(ctx: _Context) -> GateOutcome:
 def _gate_edge(ctx: _Context) -> GateOutcome:
     pf = float(ctx.closed.get("profit_factor", 0.0))
     expectancy = float(ctx.closed.get("expectancy_r", 0.0))
-    ok = pf >= ctx.thresholds.min_profit_factor and expectancy >= ctx.thresholds.min_expectancy_r
+    no_losses = ctx.closed.get("losses") == 0 and (ctx.closed.get("wins") or 0) > 0
+    ok = (no_losses or pf >= ctx.thresholds.min_profit_factor) and expectancy >= ctx.thresholds.min_expectancy_r
     return GateOutcome(
         id="G5",
         description="Profit Factor y expectativa",
         status="pass" if ok else "fail",
         measured=round(expectancy, 4),
         threshold=f"PF >= {ctx.thresholds.min_profit_factor} y expectativa >= {ctx.thresholds.min_expectancy_r} R",
-        detail=f"PF {pf:.3f}, expectativa {expectancy:+.3f} R",
+        detail=f"PF {'∞' if no_losses else f'{pf:.3f}'}, expectativa {expectancy:+.3f} R",
     )
 
 
