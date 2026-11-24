@@ -63,15 +63,23 @@ def test_un_fallo_no_marca_la_spec_como_medida(tmp_path, monkeypatch):
 
 
 def test_las_variantes_no_repiten_la_semilla():
-    spec = {"id": "X", "params": {"N": 40, "atr_k": 1.5, "tp_r": 4.0}}
+    spec = {"id": "BTC-X", "version": "1.4.0", "label": "1d_ens5_vt",
+            "params": {"N": 40, "atr_k": 1.5, "tp_r": 4.0}}
 
     out = research.variants(spec)
 
     assert out
     assert not any(variant["params"] == spec["params"] for variant in out)
     assert len({variant["id"] for variant in out}) == len(out)
-    assert all(variant["derived_from"] == "X" for variant in out)
+    assert all(research.ID_PATTERN.fullmatch(variant["id"]) for variant in out)
+    assert all(research.LABEL_PATTERN.fullmatch(variant["label"]) for variant in out)
+    assert all(variant["parent_version"] == "1.4.0" for variant in out)
     assert all(set(variant["params"]) == set(spec["params"]) for variant in out)
+    # El esquema del motor prohíbe campos extra: solo estos pueden aparecer.
+    assert all(
+        set(variant) - set(spec) <= {"params", "id", "label", "parent_version"}
+        for variant in out
+    )
 
 
 def test_una_spec_sin_parametros_barribles_no_genera_nada():
