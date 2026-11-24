@@ -57,26 +57,28 @@ de muestra en diario harían falta más de diez años.
 
 La siguiente idea tendría que ser otra fuente de señal, no otra rejilla.
 
-## La configuración que opera no tiene evidencia propia
+## La configuración que opera, medida
 
 `profiles/okx/config.json` opera `reference v0.1.0` sobre velas de **1 minuto**
-(el feed de OKX pide `bar=1m`). Toda la tabla anterior es de **1 hora**, y las
-filas con estrategia son de `donchian`. Medida con su propia config sobre el
-dataset de 1 h:
+(el feed de OKX pide `bar=1m`). Medida con su propia config:
+
+| dataset | IS ops | IS PF | OOS ops | OOS PF | coste |
+|---|---|---|---|---|---|
+| BTC 1 m 2025-01..2026-10, corte 2026-01-01 | 234 | 0.447 | 0 | — | 0.038 R |
+| el mismo con coste ×2 | 139 | 0.219 | 0 | — | 0.073 R |
 
 ```
-python -m server.backtest --dataset data/BTC_1h_binance.csv   --config profiles/okx/config.json --split 2024-01-01   --out data/research/promotion/reference-1x.json
+python -m server.backtest --dataset data/BTC_1m_2025.csv   --config profiles/okx/config.json --split 2026-01-01   --out data/research/promotion/reference-1m-1x.json
 ```
 
-| config | IS ops | IS PF | OOS ops | OOS PF | OOS esp. | coste |
-|---|---|---|---|---|---|---|
-| reference · fast7 · slow21 · sa6.0 · rr1.2 (1 h) | 84 | 0.660 | 1 | 0.000 | −1.320 R | 0.078 R |
+No hay operaciones fuera de muestra porque **no llega**: el freno duro de
+drawdown (5 % × 2 = 10 %) se dispara dentro de la muestra y, al no abrir más
+operaciones, la equity no puede recuperarse. Quedan 51.858 rechazos por
+`max_drawdown_reached` y la corrida termina ahí. En 1 h la config tampoco es
+evaluable: el tope `max_stop_ticks 40000` (400 USD fijos, no escala con el
+precio) rechaza 3.108 señales y deja 1 operación fuera de muestra.
 
-Con el coste duplicado: 84 dentro, PF 0.364, 1 fuera, coste 0.102 R.
-
-El tope de stop del perfil (`max_stop_ticks 40000`, 400 USD con tick 0,01) no
-escala con el precio y rechaza **3108** señales en la corrida; fuera de muestra
-solo queda una. La reducción al 25 % no está respaldada por ninguna evidencia
-de la config que opera: es una precaución, no una decisión medida. La puerta lo
-dice desde ahora en su primera línea (`evidencia: donchian@0.1.0 ·
-data/BTC_1h_binance.csv · …`) y en el criterio de procedencia.
+Conclusión: la reducción al 25 % está respaldada por la medición de su propio
+marco temporal — pierde 0,404 R por operación — y el freno duro necesita una
+decisión: o se reinicia a mano tras el 10 %, o el bot se queda parado para
+siempre en cuanto lo toca.

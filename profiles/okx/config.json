@@ -73,8 +73,8 @@
     "required": true,
     "mode": "reduce",
     "size_factor": 0.25,
-    "evidence": "data/research/promotion/live-1x.json",
-    "stress_evidence": "data/research/promotion/live-2x.json",
+    "evidence": "data/research/promotion/reference-1m-1x.json",
+    "stress_evidence": "data/research/promotion/reference-1m-2x.json",
     "cycle": "data/research/cycles/CYCLE-BOT-1D.json"
   },
   "risk": {
