@@ -1,0 +1,581 @@
+{
+  "data_hash": "80d6a6014eb92b23",
+  "checked": 23,
+  "failures": 0,
+  "runs": [
+    {
+      "id": "BTC-MOM-5M-v1.0.0-ema_12_48",
+      "family": "ema_state",
+      "timeframe": "5m",
+      "atr_k_executed": 1.5,
+      "registry_pf_net": 0.49,
+      "engine_pf_net": 0.49,
+      "trades": 15102,
+      "alpha_annual": -5.5836,
+      "alpha_ci95": [
+        -6.714,
+        -4.4659
+      ],
+      "alpha_verdict": "pierde",
+      "vol_matched": {
+        "alpha_annual": -6.5243,
+        "ci95": [
+          -7.7469,
+          -5.2918
+        ],
+        "leverage": 1.194,
+        "verdict": "pierde",
+        "method": "strategy daily returns scaled by sigma_bh/sigma_strategy, then excess vs buy & hold; stationary block bootstrap, constant scaling, no compounding of the leverage itself"
+      },
+      "ok": true,
+      "diffs": []
+    },
+    {
+      "id": "BTC-MOM-5M-v1.0.0-ema_24_96",
+      "family": "ema_state",
+      "timeframe": "5m",
+      "atr_k_executed": 1.5,
+      "registry_pf_net": 0.498,
+      "engine_pf_net": 0.498,
+      "trades": 8702,
+      "alpha_annual": -3.226,
+      "alpha_ci95": [
+        -4.2528,
+        -2.2213
+      ],
+      "alpha_verdict": "pierde",
+      "vol_matched": {
+        "alpha_annual": -4.7374,
+        "ci95": [
+          -5.9997,
+          -3.5194
+        ],
+        "leverage": 1.607,
+        "verdict": "pierde",
+        "method": "strategy daily returns scaled by sigma_bh/sigma_strategy, then excess vs buy & hold; stationary block bootstrap, constant scaling, no compounding of the leverage itself"
+      },
+      "ok": true,
+      "diffs": []
+    },
+    {
+      "id": "BTC-MOM-5M-v1.0.0-ema_48_192",
+      "family": "ema_state",
+      "timeframe": "5m",
+      "atr_k_executed": 1.5,
+      "registry_pf_net": 0.53,
+      "engine_pf_net": 0.53,
+      "trades": 4495,
+      "alpha_annual": -1.9813,
+      "alpha_ci95": [
+        -2.8583,
+        -1.0766
+      ],
+      "alpha_verdict": "pierde",
+      "vol_matched": {
+        "alpha_annual": -3.9182,
+        "ci95": [
+          -5.0524,
+          -2.7392
+        ],
+        "leverage": 2.557,
+        "verdict": "pierde",
+        "method": "strategy daily returns scaled by sigma_bh/sigma_strategy, then excess vs buy & hold; stationary block bootstrap, constant scaling, no compounding of the leverage itself"
+      },
+      "ok": true,
+      "diffs": []
+    },
+    {
+      "id": "BTC-MR-5M-v1.0.0-z2_192",
+      "family": "zscore_fade",
+      "timeframe": "5m",
+      "atr_k_executed": 2.0,
+      "registry_pf_net": 0.537,
+      "engine_pf_net": 0.537,
+      "trades": 15862,
+      "alpha_annual": -4.0955,
+      "alpha_ci95": [
+        -5.0541,
+        -3.1462
+      ],
+      "alpha_verdict": "pierde",
+      "vol_matched": {
+        "alpha_annual": -6.6064,
+        "ci95": [
+          -7.7541,
+          -5.467
+        ],
+        "leverage": 1.748,
+        "verdict": "pierde",
+        "method": "strategy daily returns scaled by sigma_bh/sigma_strategy, then excess vs buy & hold; stationary block bootstrap, constant scaling, no compounding of the leverage itself"
+      },
+      "ok": true,
+      "diffs": []
+    },
+    {
+      "id": "BTC-MR-5M-v1.0.0-z2_48",
+      "family": "zscore_fade",
+      "timeframe": "5m",
+      "atr_k_executed": 2.0,
+      "registry_pf_net": 0.478,
+      "engine_pf_net": 0.478,
+      "trades": 27591,
+      "alpha_annual": -7.1772,
+      "alpha_ci95": [
+        -8.1832,
+        -6.2214
+      ],
+      "alpha_verdict": "pierde",
+      "vol_matched": {
+        "alpha_annual": -10.4996,
+        "ci95": [
+          -11.672,
+          -9.3635
+        ],
+        "leverage": 1.516,
+        "verdict": "pierde",
+        "method": "strategy daily returns scaled by sigma_bh/sigma_strategy, then excess vs buy & hold; stationary block bootstrap, constant scaling, no compounding of the leverage itself"
+      },
+      "ok": true,
+      "diffs": []
+    },
+    {
+      "id": "BTC-MR-5M-v1.0.0-z2_96",
+      "family": "zscore_fade",
+      "timeframe": "5m",
+      "atr_k_executed": 2.0,
+      "registry_pf_net": 0.494,
+      "engine_pf_net": 0.494,
+      "trades": 21045,
+      "alpha_annual": -5.3187,
+      "alpha_ci95": [
+        -6.2301,
+        -4.4262
+      ],
+      "alpha_verdict": "pierde",
+      "vol_matched": {
+        "alpha_annual": -8.3916,
+        "ci95": [
+          -9.4882,
+          -7.3071
+        ],
+        "leverage": 1.671,
+        "verdict": "pierde",
+        "method": "strategy daily returns scaled by sigma_bh/sigma_strategy, then excess vs buy & hold; stationary block bootstrap, constant scaling, no compounding of the leverage itself"
+      },
+      "ok": true,
+      "diffs": []
+    },
+    {
+      "id": "BTC-ORB-5M-v1.0.0-orb_15min",
+      "family": "orb_session",
+      "timeframe": "5m",
+      "atr_k_executed": 1.5,
+      "registry_pf_net": 0.624,
+      "engine_pf_net": 0.624,
+      "trades": 4724,
+      "alpha_annual": -1.8467,
+      "alpha_ci95": [
+        -2.7444,
+        -0.9349
+      ],
+      "alpha_verdict": "pierde",
+      "vol_matched": {
+        "alpha_annual": -3.9483,
+        "ci95": [
+          -5.2138,
+          -2.7167
+        ],
+        "leverage": 2.895,
+        "verdict": "pierde",
+        "method": "strategy daily returns scaled by sigma_bh/sigma_strategy, then excess vs buy & hold; stationary block bootstrap, constant scaling, no compounding of the leverage itself"
+      },
+      "ok": true,
+      "diffs": []
+    },
+    {
+      "id": "BTC-ORB-5M-v1.0.0-orb_30min",
+      "family": "orb_session",
+      "timeframe": "5m",
+      "atr_k_executed": 1.5,
+      "registry_pf_net": 0.71,
+      "engine_pf_net": 0.71,
+      "trades": 4461,
+      "alpha_annual": -1.4912,
+      "alpha_ci95": [
+        -2.3552,
+        -0.6379
+      ],
+      "alpha_verdict": "pierde",
+      "vol_matched": {
+        "alpha_annual": -3.0208,
+        "ci95": [
+          -4.1611,
+          -1.8585
+        ],
+        "leverage": 3.03,
+        "verdict": "pierde",
+        "method": "strategy daily returns scaled by sigma_bh/sigma_strategy, then excess vs buy & hold; stationary block bootstrap, constant scaling, no compounding of the leverage itself"
+      },
+      "ok": true,
+      "diffs": []
+    },
+    {
+      "id": "BTC-ORB-5M-v1.0.0-orb_60min",
+      "family": "orb_session",
+      "timeframe": "5m",
+      "atr_k_executed": 1.5,
+      "registry_pf_net": 0.746,
+      "engine_pf_net": 0.746,
+      "trades": 4105,
+      "alpha_annual": -1.2708,
+      "alpha_ci95": [
+        -2.1127,
+        -0.4287
+      ],
+      "alpha_verdict": "pierde",
+      "vol_matched": {
+        "alpha_annual": -2.5097,
+        "ci95": [
+          -3.6361,
+          -1.401
+        ],
+        "leverage": 3.323,
+        "verdict": "pierde",
+        "method": "strategy daily returns scaled by sigma_bh/sigma_strategy, then excess vs buy & hold; stationary block bootstrap, constant scaling, no compounding of the leverage itself"
+      },
+      "ok": true,
+      "diffs": []
+    },
+    {
+      "id": "BTC-TREND-1D-v1.0.0-1d_10",
+      "family": "donchian_breakout",
+      "timeframe": "1d",
+      "atr_k_executed": 1.5,
+      "registry_pf_net": 1.221,
+      "engine_pf_net": 1.221,
+      "trades": 89,
+      "alpha_annual": -0.8137,
+      "alpha_ci95": [
+        -1.5541,
+        -0.0197
+      ],
+      "alpha_verdict": "pierde",
+      "vol_matched": {
+        "alpha_annual": -0.4357,
+        "ci95": [
+          -1.3476,
+          0.6361
+        ],
+        "leverage": 14.979,
+        "verdict": "indistinguible",
+        "method": "strategy daily returns scaled by sigma_bh/sigma_strategy, then excess vs buy & hold; stationary block bootstrap, constant scaling, no compounding of the leverage itself"
+      },
+      "ok": true,
+      "diffs": []
+    },
+    {
+      "id": "BTC-TREND-1D-v1.0.0-1d_100",
+      "family": "donchian_breakout",
+      "timeframe": "1d",
+      "atr_k_executed": 1.5,
+      "registry_pf_net": 1.033,
+      "engine_pf_net": 1.033,
+      "trades": 39,
+      "alpha_annual": -0.9034,
+      "alpha_ci95": [
+        -1.5276,
+        -0.2078
+      ],
+      "alpha_verdict": "pierde",
+      "vol_matched": {
+        "alpha_annual": -1.0868,
+        "ci95": [
+          -1.9098,
+          -0.0982
+        ],
+        "leverage": 24.905,
+        "verdict": "pierde",
+        "method": "strategy daily returns scaled by sigma_bh/sigma_strategy, then excess vs buy & hold; stationary block bootstrap, constant scaling, no compounding of the leverage itself"
+      },
+      "ok": true,
+      "diffs": []
+    },
+    {
+      "id": "BTC-TREND-1D-v1.0.0-1d_20",
+      "family": "donchian_breakout",
+      "timeframe": "1d",
+      "atr_k_executed": 1.5,
+      "registry_pf_net": 1.49,
+      "engine_pf_net": 1.49,
+      "trades": 78,
+      "alpha_annual": -0.7112,
+      "alpha_ci95": [
+        -1.5205,
+        0.1665
+      ],
+      "alpha_verdict": "indistinguible",
+      "vol_matched": {
+        "alpha_annual": -0.457,
+        "ci95": [
+          -1.4864,
+          0.7189
+        ],
+        "leverage": 14.39,
+        "verdict": "indistinguible",
+        "method": "strategy daily returns scaled by sigma_bh/sigma_strategy, then excess vs buy & hold; stationary block bootstrap, constant scaling, no compounding of the leverage itself"
+      },
+      "ok": true,
+      "diffs": []
+    },
+    {
+      "id": "BTC-TREND-1D-v1.0.0-1d_40",
+      "family": "donchian_breakout",
+      "timeframe": "1d",
+      "atr_k_executed": 1.5,
+      "registry_pf_net": 1.683,
+      "engine_pf_net": 1.683,
+      "trades": 58,
+      "alpha_annual": -0.7284,
+      "alpha_ci95": [
+        -1.4765,
+        0.114
+      ],
+      "alpha_verdict": "indistinguible",
+      "vol_matched": {
+        "alpha_annual": -0.7098,
+        "ci95": [
+          -1.7663,
+          0.457
+        ],
+        "leverage": 20.713,
+        "verdict": "indistinguible",
+        "method": "strategy daily returns scaled by sigma_bh/sigma_strategy, then excess vs buy & hold; stationary block bootstrap, constant scaling, no compounding of the leverage itself"
+      },
+      "ok": true,
+      "diffs": []
+    },
+    {
+      "id": "BTC-TREND-1D-v1.0.0-1d_55",
+      "family": "donchian_breakout",
+      "timeframe": "1d",
+      "atr_k_executed": 1.5,
+      "registry_pf_net": 1.579,
+      "engine_pf_net": 1.579,
+      "trades": 47,
+      "alpha_annual": -0.6315,
+      "alpha_ci95": [
+        -1.3034,
+        0.1587
+      ],
+      "alpha_verdict": "indistinguible",
+      "vol_matched": {
+        "alpha_annual": -0.2859,
+        "ci95": [
+          -1.1882,
+          0.7951
+        ],
+        "leverage": 17.454,
+        "verdict": "indistinguible",
+        "method": "strategy daily returns scaled by sigma_bh/sigma_strategy, then excess vs buy & hold; stationary block bootstrap, constant scaling, no compounding of the leverage itself"
+      },
+      "ok": true,
+      "diffs": []
+    },
+    {
+      "id": "BTC-TREND-1D-v1.1.0-1d_ens5",
+      "ok": null,
+      "defective": "registro defectuoso: los params no guardaron la composición del portafolio ni el sizing, así que la corrida no es reconstruible (56 trades reproducidos frente a 311 registrados). No reconstruible desde el registro; la composición vive en runner/specs/btc-trend-1d-ensemble.json. Sustituida por la versión 1.3.0 con params ejecutables.",
+      "registry_pf_net": 1.396
+    },
+    {
+      "id": "BTC-TREND-1D-v1.2.0-1d_ens5_vt",
+      "ok": null,
+      "defective": "registro defectuoso: mismo fallo que v1.1.0 — params sin _portfolio ni _sizing, no reconstruible. Sustituida por la versión 1.3.0.",
+      "registry_pf_net": 1.496
+    },
+    {
+      "id": "BTC-TREND-1D-v1.3.0-1d_ens5_vt",
+      "ok": null,
+      "defective": "registro defectuoso: faltaba _max_hold en los params, así que la reconstrucción usó 288 barras de time-stop en lugar de 90 (299 trades reproducidos frente a 311). No reconstruible; sustituida por la versión 1.4.0.",
+      "registry_pf_net": 1.496
+    },
+    {
+      "id": "BTC-TREND-1D-v1.4.0-1d_ens5_vt",
+      "family": "donchian_breakout",
+      "timeframe": "1d",
+      "atr_k_executed": 1.5,
+      "registry_pf_net": 1.496,
+      "engine_pf_net": 1.496,
+      "trades": 311,
+      "alpha_annual": -0.8146,
+      "alpha_ci95": [
+        -1.5542,
+        0.0035
+      ],
+      "alpha_verdict": "indistinguible",
+      "vol_matched": {
+        "alpha_annual": -0.2366,
+        "ci95": [
+          -1.1473,
+          0.7874
+        ],
+        "leverage": 23.098,
+        "verdict": "indistinguible",
+        "method": "strategy daily returns scaled by sigma_bh/sigma_strategy, then excess vs buy & hold; stationary block bootstrap, constant scaling, no compounding of the leverage itself"
+      },
+      "ok": true,
+      "diffs": []
+    },
+    {
+      "id": "BTC-TREND-4H-v1.0.0-4h_12",
+      "family": "donchian_breakout",
+      "timeframe": "4h",
+      "atr_k_executed": 1.5,
+      "registry_pf_net": 0.933,
+      "engine_pf_net": 0.933,
+      "trades": 726,
+      "alpha_annual": -0.7736,
+      "alpha_ci95": [
+        -1.5663,
+        0.0922
+      ],
+      "alpha_verdict": "indistinguible",
+      "vol_matched": {
+        "alpha_annual": -0.7058,
+        "ci95": [
+          -1.7796,
+          0.4545
+        ],
+        "leverage": 5.966,
+        "verdict": "indistinguible",
+        "method": "strategy daily returns scaled by sigma_bh/sigma_strategy, then excess vs buy & hold; stationary block bootstrap, constant scaling, no compounding of the leverage itself"
+      },
+      "ok": true,
+      "diffs": []
+    },
+    {
+      "id": "BTC-TREND-4H-v1.0.0-4h_24",
+      "family": "donchian_breakout",
+      "timeframe": "4h",
+      "atr_k_executed": 1.5,
+      "registry_pf_net": 1.055,
+      "engine_pf_net": 1.055,
+      "trades": 524,
+      "alpha_annual": -0.7676,
+      "alpha_ci95": [
+        -1.5513,
+        0.0826
+      ],
+      "alpha_verdict": "indistinguible",
+      "vol_matched": {
+        "alpha_annual": -0.6468,
+        "ci95": [
+          -1.7125,
+          0.5239
+        ],
+        "leverage": 6.687,
+        "verdict": "indistinguible",
+        "method": "strategy daily returns scaled by sigma_bh/sigma_strategy, then excess vs buy & hold; stationary block bootstrap, constant scaling, no compounding of the leverage itself"
+      },
+      "ok": true,
+      "diffs": []
+    },
+    {
+      "id": "BTC-TREND-4H-v1.0.0-4h_48",
+      "family": "donchian_breakout",
+      "timeframe": "4h",
+      "atr_k_executed": 1.5,
+      "registry_pf_net": 1.128,
+      "engine_pf_net": 1.128,
+      "trades": 358,
+      "alpha_annual": -0.768,
+      "alpha_ci95": [
+        -1.5526,
+        0.0687
+      ],
+      "alpha_verdict": "indistinguible",
+      "vol_matched": {
+        "alpha_annual": -0.534,
+        "ci95": [
+          -1.5516,
+          0.5455
+        ],
+        "leverage": 7.983,
+        "verdict": "indistinguible",
+        "method": "strategy daily returns scaled by sigma_bh/sigma_strategy, then excess vs buy & hold; stationary block bootstrap, constant scaling, no compounding of the leverage itself"
+      },
+      "ok": true,
+      "diffs": []
+    },
+    {
+      "id": "BTC-TREND-5M-v1.0.0-donchian_288",
+      "family": "donchian_breakout",
+      "timeframe": "5m",
+      "atr_k_executed": 1.5,
+      "registry_pf_net": 0.643,
+      "engine_pf_net": 0.643,
+      "trades": 5449,
+      "alpha_annual": -2.749,
+      "alpha_ci95": [
+        -3.5802,
+        -1.8404
+      ],
+      "alpha_verdict": "pierde",
+      "vol_matched": {
+        "alpha_annual": -5.1853,
+        "ci95": [
+          -6.3498,
+          -4.0105
+        ],
+        "leverage": 2.243,
+        "verdict": "pierde",
+        "method": "strategy daily returns scaled by sigma_bh/sigma_strategy, then excess vs buy & hold; stationary block bootstrap, constant scaling, no compounding of the leverage itself"
+      },
+      "ok": true,
+      "diffs": []
+    },
+    {
+      "id": "BTC-TREND-5M-v1.0.0-donchian_576",
+      "family": "donchian_breakout",
+      "timeframe": "5m",
+      "atr_k_executed": 1.5,
+      "registry_pf_net": 0.686,
+      "engine_pf_net": 0.686,
+      "trades": 3507,
+      "alpha_annual": -1.8841,
+      "alpha_ci95": [
+        -2.6831,
+        -1.0105
+      ],
+      "alpha_verdict": "pierde",
+      "vol_matched": {
+        "alpha_annual": -3.6808,
+        "ci95": [
+          -4.8295,
+          -2.5166
+        ],
+        "leverage": 2.641,
+        "verdict": "pierde",
+        "method": "strategy daily returns scaled by sigma_bh/sigma_strategy, then excess vs buy & hold; stationary block bootstrap, constant scaling, no compounding of the leverage itself"
+      },
+      "ok": true,
+      "diffs": []
+    }
+  ],
+  "benchmark": {
+    "bate": 0,
+    "indistinguible": 7,
+    "pierde": 13,
+    "best": -0.6315,
+    "vol_matched": {
+      "bate": 0,
+      "indistinguible": 8,
+      "pierde": 12
+    }
+  },
+  "defective": [
+    "BTC-TREND-1D-v1.1.0-1d_ens5",
+    "BTC-TREND-1D-v1.2.0-1d_ens5_vt",
+    "BTC-TREND-1D-v1.3.0-1d_ens5_vt"
+  ]
+}
