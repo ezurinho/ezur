@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
+import pytest
+
 from server.models import TradeRecord
 from server.stats import aggregate, by_dimension, compute_stats, equity_curve
 
@@ -35,6 +37,15 @@ def test_empty_stats_are_zeroed():
     assert stats["trades"] == 0
     assert stats["profit_factor"] == 0.0
     assert stats["max_drawdown"] == 0.0
+    assert stats["pnl_gross"] == 0.0
+
+
+def test_gross_is_net_plus_fees():
+    """La comisión se ve aparte para que un bruto positivo no pase por ganancia."""
+    trades = [_trade(0, 20.0), _trade(1, -10.0)]
+    stats = compute_stats(trades)
+    assert stats["pnl_gross"] == stats["pnl_net"] + stats["fees"]
+    assert stats["pnl_gross"] == pytest.approx(10.0 + 2 * 1.24)
 
 
 def test_profit_factor_and_expectancy():
@@ -79,9 +90,24 @@ def test_equity_curve_is_chronological_and_cumulative():
 def test_aggregate_exposes_every_breakdown():
     trades = [_trade(0, 10.0), _trade(1, -4.0)]
     payload = aggregate(trades, 1000.0)
-    assert set(payload) == {"closed", "by_hour", "by_weekday", "by_month", "by_side", "by_day", "equity"}
+    assert set(payload) == {
+        "closed",
+        "timezone",
+        "by_hour",
+        "by_weekday",
+        "by_month",
+        "by_side",
+        "by_day",
+        "equity",
+    }
     assert payload["closed"]["trades"] == 2
     assert len(payload["equity"]) == 2
+
+
+def test_aggregate_says_which_clock_the_buckets_use():
+    trades = [_trade(0, 10.0)]
+    assert aggregate(trades, 0.0)["timezone"] == "UTC"
+    assert aggregate(trades, 0.0, timezone_name="America/New_York")["timezone"] == "America/New_York"
 
 
 def test_aggregate_can_filter_by_window():
@@ -115,6 +141,16 @@ def test_ambiguous_trades_are_counted():
     trade = _trade(0, -10.0)
     trade.diagnostics = {"ambiguous_bar": True}
     assert compute_stats([trade])["ambiguous_trades"] == 1
+
+
+def test_impossible_durations_are_counted_not_hidden():
+    good = _trade(0, -10.0)
+    bad = _trade(1, -10.0)
+    bad.closed_ts = bad.opened_ts - timedelta(minutes=45)
+    stats = compute_stats([good, bad])
+    assert stats["impossible_durations"] == 1
+    # El dato se conserva: la media sigue incluyendo la duración imposible.
+    assert stats["avg_duration_minutes"] == pytest.approx((30 - 45) / 2)
 
 
 def _timed_trade(closed_ts, pnl: float = 10.0):
