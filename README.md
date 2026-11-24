@@ -139,6 +139,7 @@ sintéticos no validan rentabilidad.
 |---|---|
 | `python -m pytest` | Suite del backend |
 | `python -m server.paper --profile profiles/okx` | Cuenta de papel: gana o pierde, sin arrancar el servidor |
+| `docs/ESTUDIO-2026-11-24.md` | Qué dice la evidencia sobre bots de trading con LLM, medida propia y calificación |
 | `cd frontend && npm run test` | Suite de componentes |
 | `cd frontend && npm run build` | `tsc --noEmit` + build de Vite |
 | `python -m server.simulation --days 20` | Simulación multi-sesión |
