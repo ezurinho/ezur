@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 
 export function useClock(intervalMs = 1000): Date {
   const [now, setNow] = useState(() => new Date());
@@ -25,6 +25,10 @@ export function Sparkline({
   fill = true,
   label,
 }: SparklineProps) {
+  // Un id por instancia: dos sparklines con la misma dirección compartían
+  // `spark-up`, y el `url(#…)` de la segunda apuntaba al gradiente de la
+  // primera, con el `currentColor` de otro contenedor.
+  const uid = useId();
   const geometry = useMemo(() => {
     const points = values.filter((value) => Number.isFinite(value));
     if (points.length < 2) return null;
@@ -41,21 +45,34 @@ export function Sparkline({
     return {
       line: `M${coords.join(" L")}`,
       area: `M0,${height} L${coords.join(" L")} L${width},${height} Z`,
-      rising: points[points.length - 1] >= points[0],
+      // Plana no es alcista: sin cambio, sin color de victoria.
+      direction:
+        points[points.length - 1] > points[0]
+          ? "up"
+          : points[points.length - 1] < points[0]
+            ? "down"
+            : "flat",
     };
   }, [values, height]);
 
   if (!geometry) return <div className="kpi-spark" />;
 
-  const gradientId = `spark-${geometry.rising ? "up" : "down"}`;
+  const gradientId = `spark-${geometry.direction}-${uid}`;
 
   return (
     <svg
-      className={`sparkline ${geometry.rising ? "up" : "down"}`}
+      className={`sparkline ${geometry.direction}`}
       viewBox={`0 0 100 ${height}`}
       preserveAspectRatio="none"
       role="img"
-      aria-label={label ?? (geometry.rising ? "tendencia alcista" : "tendencia bajista")}
+      aria-label={
+        label ??
+        (geometry.direction === "up"
+          ? "tendencia alcista"
+          : geometry.direction === "down"
+            ? "tendencia bajista"
+            : "sin cambio en el periodo")
+      }
     >
       <defs>
         <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
