@@ -135,6 +135,10 @@ def plan(db_path: Path, initial: float) -> dict[str, Any]:
 def apply(db_path: Path, initial: float, backup_dir: Path | None = None) -> Path:
     """Reescribe `equity` y el estado de `kv` desde el libro. Devuelve la copia."""
     planned = plan(db_path, initial)
+    stored_peak = current(db_path)["kv_peak"]
+    # El pico guardado puede ser más alto que la curva (se escribe por vela):
+    # bajarlo sin más debilitaría el freno duro. Para bajarlo está --reset-peak.
+    peak = max(planned["peak_equity"], float(stored_peak or 0.0))
     backup_dir = backup_dir or Path(".build") / "books-backup"
     backup_dir.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
@@ -157,7 +161,7 @@ def apply(db_path: Path, initial: float, backup_dir: Path | None = None) -> Path
             conn.execute(
                 "INSERT INTO kv (key, value) VALUES ('peak_equity', ?) "
                 "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
-                (json.dumps(planned["peak_equity"]),),
+                (json.dumps(peak),),
             )
             conn.execute(
                 "INSERT INTO kv (key, value) VALUES ('day_stats', ?) "
@@ -268,6 +272,7 @@ def main(argv: list[str] | None = None) -> int:
 
     planned = plan(db_path, args.capital)
     before = current(db_path)
+    effective_peak = max(planned["peak_equity"], float(before["kv_peak"] or 0.0))
     report = {
         "db": str(db_path),
         "trades": planned["trades"],
@@ -275,7 +280,8 @@ def main(argv: list[str] | None = None) -> int:
         "after": {
             "rows": len(planned["curve"]),
             "last_equity": planned["last_equity"],
-            "peak_equity": planned["peak_equity"],
+            "peak_equity": effective_peak,
+            "peak_kept": effective_peak > planned["peak_equity"],
             "day_stats": planned["day_stats"],
         },
         "apply": bool(args.apply),
@@ -295,9 +301,14 @@ def main(argv: list[str] | None = None) -> int:
         )
         print(
             f"después: curva {len(planned['curve'])} filas, última {planned['last_equity']}, "
-            f"estado {planned['last_equity']}, pico {planned['peak_equity']}, "
+            f"estado {planned['last_equity']}, pico {effective_peak}, "
             f"día {planned['day_stats']}"
         )
+        if report["after"]["peak_kept"]:
+            print(
+                f"pico conservado en {effective_peak}: la curva no lo supera "
+                "(para bajarlo, --reset-peak)"
+            )
         if args.apply:
             print(f"copia: {report['backup']}")
         else:

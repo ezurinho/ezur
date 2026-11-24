@@ -242,3 +242,40 @@ def test_reset_peak_por_cli_deja_el_pico_y_la_copia(tmp_path, capsys):
     assert "pico reiniciado" in out
     assert "copia:" in out
     assert equity.current(db)["kv_peak"] == pytest.approx(24_825.77)
+
+def test_apply_no_baja_un_pico_mas_alto_que_la_curva(tmp_path):
+    db = _db(tmp_path)
+    conn = sqlite3.connect(db)
+    try:
+        conn.execute(
+            "INSERT INTO kv (key, value) VALUES ('peak_equity', ?) "
+            "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            (json.dumps(30_000.0),),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    equity.apply(db, 25_000.0, backup_dir=tmp_path / "copias")
+
+    assert equity.current(db)["kv_peak"] == pytest.approx(30_000.0)
+
+
+def test_el_reporte_avisa_si_conserva_un_pico_mas_alto(tmp_path, capsys):
+    db = _db(tmp_path)
+    conn = sqlite3.connect(db)
+    try:
+        conn.execute(
+            "INSERT INTO kv (key, value) VALUES ('peak_equity', ?) "
+            "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            (json.dumps(30_000.0),),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    assert equity.main(["--db", str(db)]) == 0
+
+    out = capsys.readouterr().out
+    assert "pico conservado en 30000.0" in out
+    assert "--reset-peak" in out
