@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BTC Quant — Research registry</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="app">
+  <aside class="rail">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 26 26" width="26" height="26" fill="none">
+          <rect x="6" y="14" width="3.2" height="6" rx="1.1" fill="#fff" opacity=".5"/>
+          <rect x="11.4" y="10" width="3.2" height="10" rx="1.1" fill="#fff" opacity=".8"/>
+          <rect x="16.8" y="6.5" width="3.2" height="13.5" rx="1.1" fill="#7d9cff"/>
+        </svg>
+      </span>
+      <div class="brand-text">
+        <div class="name">BTC Quant</div>
+        <div class="kind">Research registry</div>
+      </div>
+    </div>
+
+    <nav class="nav" id="nav" aria-label="Secciones">
+      <div class="navgroup">
+        <div class="navgroup-label">Registro</div>
+        <a href="#/resumen" data-view="resumen">Resumen</a>
+        <a href="#/estrategias" data-view="estrategias">Estrategias <span class="count" id="nav-strategies"></span></a>
+        <a href="#/corridas" data-view="corridas">Corridas <span class="count" id="nav-runs"></span></a>
+      </div>
+      <div class="navgroup">
+        <div class="navgroup-label">Auditoría</div>
+        <a href="#/runner" data-view="runner">Runner <span class="count" id="nav-specs"></span></a>
+        <a href="#/log" data-view="log">Eventos</a>
+        <a href="#/proyecto" data-view="proyecto">Proyecto</a>
+      </div>
+    </nav>
+
+    <div class="rail-foot">
+      <div class="status-line"><span class="dot" id="health-dot"></span><span id="health-text">conectando…</span></div>
+      <div class="row"><span class="k">Motor</span><span class="v" id="engine">v4.0.0</span></div>
+      <div class="row"><span class="k">Almacén</span><span class="v">SQLite · append-only</span></div>
+      <button class="theme-btn" id="theme-btn" type="button" aria-pressed="false"
+              title="Alternar tema oscuro"><span class="ti">◐</span><span class="tl">Oscuro</span></button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="wrap">
+      <div class="page-head">
+        <div>
+          <h1 id="page-title">Resumen</h1>
+          <p class="sub" id="page-sub"></p>
+        </div>
+        <div class="page-actions">
+          <button class="btn ghost" id="btn-note">Registrar nota</button>
+          <button class="btn primary" id="btn-new">Nueva corrida</button>
+          <a class="btn ghost" href="/api/export">Exportar</a>
+        </div>
+      </div>
+
+      <div class="context" id="context"></div>
+      <div id="banner"></div>
+      <div id="view"></div>
+      <footer class="pagefoot" id="pagefoot"></footer>
+    </div>
+  </main>
+</div>
+<div id="modal-root"></div>
+<script src="/app.js"></script>
+</body>
+</html>
