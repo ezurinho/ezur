@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from server.migrations import apply_migrations
+from server.migrations import CURRENT_VERSION, apply_migrations
 from server.models import TradeRecord
 
 
@@ -59,7 +59,7 @@ def test_events_capped_at_5000(store):
 def test_migrations_are_idempotent(store):
     apply_migrations(store.conn)
     apply_migrations(store.conn)
-    assert store.schema_version() == 2
+    assert store.schema_version() == CURRENT_VERSION
 
 
 def test_kv_roundtrip(store):
