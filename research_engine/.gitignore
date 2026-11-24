@@ -1,0 +1,18 @@
+# Cachés binarios: 602 MB, se regeneran con research/load_data.py y research/load_multi.py
+*.pkl
+*.parquet
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# SQLite volátil (la BD se siembra desde research/cache/registry_seed.json)
+app/registry.db-shm
+app/registry.db-wal
+app/registry.db.bak-*
+app/serve.log
+
+# Secretos y entorno local
+.env
