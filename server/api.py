@@ -10,15 +10,17 @@ import asyncio
 import csv
 import io
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
 from .config import Settings, apply_settings, save_settings
+from .promotion import effective_settings
 from .market.csv_data import validate_dataset
-from .models import TradeRecord
+from .models import DayStats, TradeRecord
 from .gates import evaluate_gates
 from .stats import aggregate
 from .strategy.registry import available, resolve_strategy, strategy_schema
@@ -54,6 +56,29 @@ def _engine(request: Request):
 
 def _store(request: Request):
     return request.app.state.store
+
+
+def _rebuild_notifier(request: Request, engine, alerts) -> None:
+    from .alerts import build_notifier
+    from .env import env
+
+    previous = getattr(request.app.state, "notifier", None)
+    if previous is not None:
+        previous.close()
+    notifier = build_notifier(
+        alerts,
+        url_override=env("ALERT_WEBHOOK_URL"),
+        on_failure=lambda reason: _store(request).insert_event("warn", "alerts", reason),
+    )
+    request.app.state.notifier = notifier
+    engine.notifier = notifier
+
+
+async def _backtest_slot(request: Request):
+    """Una sola corrida CPU pesada a la vez; las demás esperan su turno."""
+    lock = request.app.state.backtest_lock
+    async with lock:
+        yield
 
 
 class ConfigPatch(BaseModel):
@@ -171,49 +196,69 @@ def status(request: Request) -> dict[str, Any]:
 
 @router.get("/config")
 def get_config(request: Request) -> dict[str, Any]:
-    return _engine(request).settings.model_dump(mode="json")
+    # El resto de la configuración es la viva (alertas, feed, etc.); solo el
+    # riesgo configurado se conserva aparte para que la reducción efectiva por
+    # promoción no se convierta en el nuevo valor guardado.
+    engine = _engine(request)
+    payload = engine.settings.model_dump(mode="json")
+    configured = getattr(request.app.state, "configured_settings", None)
+    if configured is not None:
+        payload["risk"]["risk_per_trade_pct"] = configured.risk.risk_per_trade_pct
+    return payload
 
 
 @router.put("/config")
 async def put_config(request: Request, body: ConfigPatch) -> dict[str, Any]:
     engine = _engine(request)
+    previous_alerts = engine.settings.alerts
+    configured = getattr(request.app.state, "configured_settings", None) or engine.settings
     try:
-        updated = apply_settings(engine.settings, body.patch)
+        updated = apply_settings(configured, body.patch)
+        risk_patch = body.patch.get("risk")
+        if isinstance(risk_patch, dict) and "initial_capital" in risk_patch:
+            if (
+                float(risk_patch["initial_capital"]) != engine.settings.risk.initial_capital
+                and (
+                    _store(request).count_trades()
+                    or engine.execution.position is not None
+                    or engine.execution.has_pending()
+                )
+            ):
+                raise ValueError("no se puede cambiar el capital inicial con operaciones registradas")
         # Validate the plugin parameters before they reach the running engine:
         # a bad payload must be a 422, not a dead replay loop.
         resolve_strategy(updated.strategy.id, updated.strategy.params)
-    except (ValueError, KeyError) as error:
+        effective = effective_settings(updated)
+        engine.update_settings(effective)
+    except (ValueError, KeyError, OSError) as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
-    previous_alerts = engine.settings.alerts
-    engine.update_settings(updated)
     save_settings(updated, request.app.state.config_path)
+    request.app.state.settings = effective
+    request.app.state.configured_settings = updated
 
     # Activar alertas desde la interfaz tiene que activarlas de verdad: el
     # notifier se construye al arrancar, así que un cambio en `alerts` se
     # reconstruye aquí. Si no, la UI diría «guardado» y no llegaría nada.
     if updated.alerts != previous_alerts:
-        from .alerts import build_notifier
-        from .env import env
-
-        previous = getattr(request.app.state, "notifier", None)
-        if previous is not None:
-            previous.close()
-        notifier = build_notifier(
-            updated.alerts,
-            url_override=env("ALERT_WEBHOOK_URL"),
-            on_failure=lambda reason: _store(request).insert_event("warn", "alerts", reason),
-        )
-        request.app.state.notifier = notifier
-        engine.notifier = notifier
+        _rebuild_notifier(request, engine, updated.alerts)
     return updated.model_dump(mode="json")
 
 
 @router.post("/config/reset")
 async def reset_config(request: Request) -> dict[str, Any]:
     engine = _engine(request)
+    if _store(request).count_trades() or engine.execution.position is not None or engine.execution.has_pending():
+        raise HTTPException(
+            status_code=409,
+            detail="no se puede restablecer el capital con operaciones o exposición registradas",
+        )
     fresh = Settings()
-    engine.update_settings(fresh)
+    effective = effective_settings(fresh)
+    engine.update_settings(effective)
     save_settings(fresh, request.app.state.config_path)
+    request.app.state.settings = effective
+    request.app.state.configured_settings = fresh
+    _rebuild_notifier(request, engine, fresh.alerts)
     return fresh.model_dump(mode="json")
 
 
@@ -239,13 +284,14 @@ async def bot_action(request: Request, action: str) -> dict[str, Any]:
     if action == "start":
         try:
             engine.start()
-            engine.start_task()
+            await engine.start_task()
         except RuntimeError as error:
             raise HTTPException(status_code=409, detail=str(error)) from error
     elif action == "pause":
         engine.pause()
     elif action == "stop":
         engine.stop()
+        await engine.stop_task()
     else:
         raise HTTPException(status_code=404, detail=f"unknown action {action}")
     # Captura el estado antes de publicar: `publish_now` cede el turno y un
@@ -256,7 +302,7 @@ async def bot_action(request: Request, action: str) -> dict[str, Any]:
 
 
 @router.post("/position/close")
-def close_position(request: Request) -> dict[str, Any]:
+async def close_position(request: Request) -> dict[str, Any]:
     engine = _engine(request)
     trade = engine.execution.close("manual")
     if trade is not None:
@@ -266,11 +312,13 @@ def close_position(request: Request) -> dict[str, Any]:
 
 
 @router.post("/orders/cancel")
-def cancel_orders(request: Request) -> dict[str, Any]:
+async def cancel_orders(request: Request) -> dict[str, Any]:
     engine = _engine(request)
-    engine.execution.cancel_all()
+    # El número real de órdenes canceladas: responder «true» con cero
+    # pendientes hacía que la terminal anunciara una acción inexistente.
+    cancelled = engine.execution.cancel_all()
     engine.state.orders = list(engine.execution.orders)
-    return {"cancelled": True}
+    return {"cancelled": cancelled > 0, "count": cancelled}
 
 
 @router.get("/orders")
@@ -280,14 +328,14 @@ def list_orders(request: Request) -> list[dict[str, Any]]:
 
 
 @router.post("/emergency")
-def emergency_on(request: Request) -> dict[str, Any]:
+async def emergency_on(request: Request) -> dict[str, Any]:
     engine = _engine(request)
     engine.emergency_on()
     return {"emergency": True}
 
 
 @router.delete("/emergency")
-def emergency_off(request: Request) -> dict[str, Any]:
+async def emergency_off(request: Request) -> dict[str, Any]:
     engine = _engine(request)
     engine.emergency_off()
     return {"emergency": False}
@@ -296,8 +344,8 @@ def emergency_off(request: Request) -> dict[str, Any]:
 @router.get("/trades")
 def list_trades(
     request: Request,
-    limit: int = 100,
-    offset: int = 0,
+    limit: int = Query(100, ge=1, le=5000),
+    offset: int = Query(0, ge=0),
     mode: str | None = None,
     side: str | None = None,
     start: str | None = None,
@@ -311,7 +359,7 @@ def list_trades(
 @router.get("/trades/export.csv", response_class=PlainTextResponse)
 def export_trades(
     request: Request,
-    limit: int = 5000,
+    limit: int = Query(5000, ge=1, le=5000),
     mode: str | None = None,
     side: str | None = None,
     start: str | None = None,
@@ -330,7 +378,7 @@ def export_trades(
 
 
 @router.get("/events")
-def list_events(request: Request, limit: int = 200, level: str | None = None):
+def list_events(request: Request, limit: int = Query(200, ge=1, le=5000), level: str | None = None):
     return _store(request).list_events(limit=limit, level=level)
 
 
@@ -339,7 +387,7 @@ def get_stats(request: Request) -> dict[str, Any]:
     store = _store(request)
     engine = _engine(request)
     return aggregate(
-        store.all_trades(),
+        store.all_trades(mode=engine.mode),
         engine.settings.risk.initial_capital,
         timezone_name=engine.settings.instruments.template_for(
             engine.settings.instruments.primary
@@ -353,9 +401,28 @@ def preview_stats_reset(request: Request) -> dict[str, Any]:
 
 
 @router.post("/stats/reset")
-def reset_stats(request: Request, body: ResetStatsRequest | None = None) -> dict[str, Any]:
+async def reset_stats(request: Request, body: ResetStatsRequest | None = None) -> dict[str, Any]:
+    engine = _engine(request)
+    if engine.state.status != "stopped" or engine.execution.position is not None or engine.execution.has_pending():
+        raise HTTPException(
+            status_code=409,
+            detail="detén el motor y cierra la posición antes de borrar el historial",
+        )
     payload = body or ResetStatsRequest()
-    return {"deleted": _store(request).reset_stats(include_backtests=payload.include_backtests)}
+    deleted = _store(request).reset_stats(include_backtests=payload.include_backtests, mode=engine.mode)
+    engine.execution.orders = []
+    engine.state.orders = []
+    engine.state.position = None
+    engine.state.day_stats = DayStats()
+    engine.state.equity = engine.settings.risk.initial_capital
+    engine.peak_equity = engine.settings.risk.initial_capital
+    engine.state.block_reason = None
+    engine.state.block_count = 0
+    engine._rejections.clear()
+    engine._rejection_totals.clear()
+    engine.invalidate_stats()
+    engine._persist()
+    return {"deleted": deleted}
 
 
 @router.get("/validation")
@@ -363,7 +430,7 @@ def get_validation(request: Request) -> dict[str, Any]:
     store = _store(request)
     engine = _engine(request)
     payload = aggregate(
-        store.all_trades(),
+        store.all_trades(mode=engine.mode),
         engine.settings.risk.initial_capital,
         timezone_name=engine.settings.instruments.template_for(
             engine.settings.instruments.primary
@@ -374,7 +441,7 @@ def get_validation(request: Request) -> dict[str, Any]:
 
 
 @router.get("/chart/history")
-def chart_history(request: Request, tf: str = "1m", limit: int = 500) -> dict[str, Any]:
+def chart_history(request: Request, tf: str = "1m", limit: int = Query(500, ge=1, le=500)) -> dict[str, Any]:
     engine = _engine(request)
     try:
         candles = engine.history(tf, limit)
@@ -397,12 +464,21 @@ def list_datasets_endpoint(request: Request) -> list[str]:
 @router.post("/data/validate")
 def post_validate(request: Request, body: ValidateRequest) -> dict[str, Any]:
     engine = _engine(request)
-    report = validate_dataset(body.path, engine.settings.instruments.symbols)
+    path = Path(body.path)
+    if path.suffix.lower() != ".csv":
+        raise HTTPException(status_code=422, detail="el dataset debe ser un CSV")
+    try:
+        size = path.stat().st_size
+    except OSError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    if size > 250 * 1024 * 1024:
+        raise HTTPException(status_code=422, detail="el dataset supera el límite de 250 MB")
+    report = validate_dataset(path, engine.settings.instruments.symbols)
     return report.as_dict()
 
 
 @router.get("/experiments")
-def list_experiments(request: Request, limit: int = 50) -> dict[str, Any]:
+def list_experiments(request: Request, limit: int = Query(50, ge=1, le=500)) -> dict[str, Any]:
     from .experiments import load, summary
 
     path = request.app.state.experiment_ledger
@@ -418,7 +494,7 @@ def get_funnel(request: Request) -> dict[str, Any]:
     return build_funnel(load(request.app.state.experiment_ledger))
 
 
-@router.post("/backtest/run")
+@router.post("/backtest/run", dependencies=[Depends(_backtest_slot)])
 def post_backtest(request: Request, body: BacktestRequest) -> dict[str, Any]:
     from .backtest import run_backtest
     from .experiments import record
@@ -472,6 +548,9 @@ def post_backtest(request: Request, body: BacktestRequest) -> dict[str, Any]:
         "run_group": result.run_group,
         "metrics": result.metrics,
         "trades": len(result.trades),
+        # Sin esto, una corrida de 0 operaciones parece una estrategia muda
+        # cuando en realidad puede haber descartado cien señales.
+        "diagnostics": result.diagnostics,
         "verdict": report.verdict,
         "validation": report.model_dump(mode="json"),
         "experiment_id": entry["experiment_id"],
@@ -500,7 +579,7 @@ def get_backtest_strategies(request: Request) -> dict[str, Any]:
     return {"active": engine.settings.strategy.id, "items": items}
 
 
-@router.post("/backtest/compare")
+@router.post("/backtest/compare", dependencies=[Depends(_backtest_slot)])
 def post_backtest_compare(request: Request, body: CompareRequest) -> dict[str, Any]:
     """Mismo dataset, varias estrategias, un veredicto por fila.
 
@@ -575,11 +654,17 @@ def post_backtest_compare(request: Request, body: CompareRequest) -> dict[str, A
                         "win_rate",
                         "profit_factor",
                         "expectancy_r",
+                        "expectancy_ci80_low",
                         "max_drawdown",
-                        "net_pnl",
+                        "pnl_net",
+                        "pnl_gross",
+                        "fees",
                         "top5_share",
                     )
                 },
+                "rejections": result.diagnostics.get("rejections", {}),
+                "open_position": result.diagnostics.get("open_position"),
+                "pending_orders": result.diagnostics.get("pending_orders", 0),
                 "experiment_id": entry["experiment_id"],
             }
         )
@@ -594,7 +679,7 @@ def post_backtest_compare(request: Request, body: CompareRequest) -> dict[str, A
 
 
 @router.get("/backtest/runs")
-def get_backtest_runs(request: Request, cursor: str | None = None, limit: int = 25):
+def get_backtest_runs(request: Request, cursor: str | None = None, limit: int = Query(25, ge=1, le=200)):
     return _store(request).list_backtest_runs(cursor=cursor, limit=limit)
 
 
