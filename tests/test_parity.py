@@ -164,7 +164,13 @@ def test_the_fill_model_actually_reaches_the_backtest():
     def btc_settings(fill: str) -> Settings:
         raw = Settings().model_dump(mode="python")
         raw["instruments"]["items"][0]["symbol"] = "BTC"
+        raw["instruments"]["items"][0]["session_template"] = "CRYPTO24"
         raw["instruments"]["primary"] = "BTC"
+        raw["instruments"]["templates"] = [
+            {"name": "CRYPTO24", "timezone": "UTC", "open": "00:00", "close": "23:59", "weekdays": [0, 1, 2, 3, 4, 5, 6]}
+        ]
+        raw["risk"]["trade_window_start"] = "00:00"
+        raw["risk"]["trade_window_end"] = "23:59"
         raw["execution"]["fill_model"] = fill
         return Settings.model_validate(raw)
 
