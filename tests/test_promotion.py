@@ -188,3 +188,30 @@ def test_la_puerta_prioriza_la_muestra_cuando_es_numerica():
 
     assert "operaciones_fuera_de_muestra" in verdict["failed"]
     assert verdict["reason"] == "muestra fuera de muestra insuficiente: 4 < 100"
+
+
+def test_la_puerta_no_usa_un_pbo_de_otro_marco():
+    from server import promotion
+
+    verdict = promotion.evaluate(
+        {
+            "strategy": {"id": "reference", "version": "0.1.0"},
+            "dataset": "data/BTC_1h_binance.csv",
+            "split": {
+                "at": "2026-01-01T00:00:00+00:00",
+                "out_of_sample": {
+                    "trades": 200,
+                    "profit_factor": 1.5,
+                },
+            },
+            "metrics": {"last_ts": "2026-02-01T00:00:00+00:00"},
+            "cost_per_trade_r": 0.05,
+        },
+        {"split": {"out_of_sample": {"profit_factor": 1.2}}},
+        {"pbo": {"pbo": 0.01}, "universe": [{"timeframe": "1d"}]},
+        {"id": "reference", "version": "0.1.0"},
+    )
+
+    assert verdict["passed"] is False
+    assert "pbo_del_ciclo" in verdict["failed"]
+    assert verdict["reason"] == "el ciclo mide 1d, no 1h: PBO no comparable"

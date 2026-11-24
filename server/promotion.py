@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -51,6 +52,14 @@ def _instant(value: Any) -> datetime | None:
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=timezone.utc)
     return parsed
+
+
+_TIMEFRAME = re.compile(r"_(1m|3m|5m|15m|30m|1h|2h|4h|6h|8h|12h|1d|1w)(?:_|\.|$)")
+
+
+def _timeframe(dataset: Any) -> str:
+    match = _TIMEFRAME.search(str(dataset or ""))
+    return match.group(1) if match else ""
 
 
 def _check(name: str, value: Any, threshold: str, passed: bool, reason: str) -> dict[str, Any]:
@@ -141,13 +150,30 @@ def evaluate(
     )
 
     pbo = ((cycle or {}).get("pbo") or {}).get("pbo")
+    evidence_tf = _timeframe((evidence or {}).get("dataset"))
+    cycle_tfs = {
+        str(item.get("timeframe"))
+        for item in ((cycle or {}).get("universe") or [])
+        if isinstance(item, dict) and item.get("timeframe")
+    }
+    if (cycle or {}).get("timeframe"):
+        cycle_tfs.add(str((cycle or {}).get("timeframe")))
+    comparable = not (evidence_tf and cycle_tfs) or evidence_tf in cycle_tfs
+    pbo_reason = "sin ciclo de selección, o el universo es indistinguible del ruido"
+    if not comparable:
+        pbo_reason = (
+            f"el ciclo mide {'/'.join(sorted(cycle_tfs))}, no {evidence_tf}: "
+            "PBO no comparable"
+        )
     checks.append(
         _check(
             "pbo_del_ciclo",
             pbo,
             f"<= {MAX_PBO}",
-            (pbo_value := _number(pbo)) is not None and pbo_value <= MAX_PBO,
-            "sin ciclo de selección, o el universo es indistinguible del ruido",
+            comparable
+            and (pbo_value := _number(pbo)) is not None
+            and pbo_value <= MAX_PBO,
+            pbo_reason,
         )
     )
 
