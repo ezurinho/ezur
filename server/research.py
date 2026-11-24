@@ -355,7 +355,8 @@ def main(argv: list[str] | None = None) -> int:
             failures = 0
             print(
                 f"{record['id']} {record['timeframe']} -> {record['verdict']}"
-                f" ({record['seconds']:.0f}s)"
+                f" ({record['seconds']:.0f}s)",
+                flush=True,
             )
         else:
             failures += 1
