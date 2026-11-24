@@ -22,6 +22,7 @@ profiles/*/
 !profiles/demo/config.json
 !profiles/okx/
 !profiles/okx/config.json
+profiles/*/run.log
 .superpowers/
 *.db
 *.db-wal
@@ -31,3 +32,8 @@ profiles/*/
 dist_exe/
 dist_installer/
 *.spec.bak
+
+# Investigación: datos de mercado y artefactos voluminosos no van al repo.
+research_engine/research/cache/*.pkl
+research_engine/research/cache/*.parquet
+research_engine/app/registry.db
