@@ -246,3 +246,39 @@ def test_la_puerta_no_acepta_una_evidencia_sin_dataset():
 
     assert "pbo_del_ciclo" in verdict["failed"]
     assert "no declara dataset" in verdict["reason"]
+
+
+def test_un_pf_con_coste_duplicado_bajo_lo_dice():
+    from server import promotion
+
+    verdict = promotion.evaluate(
+        EVIDENCE, {"split": {"out_of_sample": {"profit_factor": 0.9}}}, CYCLE
+    )
+
+    assert verdict["failed"] == ["pf_con_coste_duplicado"]
+    assert verdict["reason"] == "PF con coste duplicado 0.9 ≤ 1"
+
+
+def test_un_pbo_no_comparable_se_muestra_como_guion():
+    from server import promotion
+
+    verdict = promotion.evaluate(
+        {
+            "strategy": {"id": "reference", "version": "0.1.0"},
+            "dataset": "data/BTC_1h_binance.csv",
+            "split": {
+                "at": "2026-01-01T00:00:00+00:00",
+                "out_of_sample": {"trades": 200, "profit_factor": 1.5},
+            },
+            "metrics": {"last_ts": "2026-02-01T00:00:00+00:00"},
+            "cost_per_trade_r": 0.05,
+        },
+        {"split": {"out_of_sample": {"profit_factor": 1.2}}},
+        {"pbo": {"pbo": 0.01}, "universe": [{"timeframe": "1d"}]},
+        {"id": "reference", "version": "0.1.0"},
+    )
+    text = promotion.render(verdict)
+    row = next(line for line in text.splitlines() if line.startswith("pbo_del_ciclo"))
+
+    assert "—" in row
+    assert "0.01" not in row

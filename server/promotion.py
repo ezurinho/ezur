@@ -138,14 +138,17 @@ def evaluate(
 
     stressed_oos = _oos(stress or {})
     stressed_pf = stressed_oos.get("profit_factor")
+    stressed_value = _number(stressed_pf)
+    stress_reason = "falta la corrida con coste duplicado"
+    if stressed_value is not None:
+        stress_reason = f"PF con coste duplicado {stressed_value:g} ≤ 1"
     checks.append(
         _check(
             "pf_con_coste_duplicado",
             stressed_pf,
             f"> {MIN_OOS_PF}",
-            (stressed_value := _number(stressed_pf)) is not None
-            and stressed_value > MIN_OOS_PF,
-            "falta la corrida con coste duplicado, o su PF no llega a 1",
+            stressed_value is not None and stressed_value > MIN_OOS_PF,
+            stress_reason,
         )
     )
 
@@ -285,8 +288,14 @@ def render(verdict: dict[str, Any]) -> str:
     lines: list[str] = [f"evidencia: {' · '.join(parts)}", ""] if parts else []
     lines.append(f"{'criterio':<26} {'valor':>10} {'umbral':>14}  pasa")
     for check in verdict["checks"]:
+        shown = _shown(check["value"])
+        if check["name"] == "pbo_del_ciclo" and any(
+            marker in check["reason"]
+            for marker in ("no comparable", "no declara", "no se puede")
+        ):
+            shown = "—"
         lines.append(
-            f"{check['name']:<26} {_shown(check['value']):>10} "
+            f"{check['name']:<26} {shown:>10} "
             f"{check['threshold']:>14}  {'si' if check['pass'] else 'NO'}"
         )
     lines.append("")
