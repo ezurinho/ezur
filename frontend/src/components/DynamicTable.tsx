@@ -36,7 +36,11 @@ export function DynamicTable<T extends Record<string, unknown>>({
           <tr key={rowKey ? rowKey(row, index) : String(index)}>
             {columns.map((column) => (
               <td key={column.key}>
-                {column.render ? column.render(row) : String(row[column.key] ?? "")}
+                {column.render
+                  ? column.render(row)
+                  : row[column.key] === undefined || row[column.key] === null
+                    ? "—"
+                    : String(row[column.key])}
               </td>
             ))}
           </tr>
