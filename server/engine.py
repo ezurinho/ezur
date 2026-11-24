@@ -120,6 +120,7 @@ class TradingEngine:
             self.state.session = session_for(
                 now_utc(), settings.instruments.template_for(primary)
             )
+        self._restore_day_stats()
 
     # --- lifecycle --------------------------------------------------------
     def start(self) -> None:
@@ -269,6 +270,9 @@ class TradingEngine:
 
     def start_task(self) -> None:
         if self._task is None or self._task.done():
+            # Cada tarea consume su propio flujo: la guarda de orden no puede
+            # comparar el primer tick de un replay con el último del anterior.
+            self._previous_tick_ts = None
             self._task = asyncio.create_task(self.run())
 
     async def stop_task(self) -> None:
@@ -287,7 +291,6 @@ class TradingEngine:
         # anterior a la entrada: se espera a que el mercado alcance la posición.
         barrier = self._replay_barrier
         if barrier is not None and tick.ts < barrier:
-            self.state.last_bar_ts = tick.ts
             return
         if barrier is not None:
             self._replay_barrier = None
@@ -297,6 +300,14 @@ class TradingEngine:
                 "el mercado alcanzó la posición restaurada",
                 {"desde": barrier.isoformat()},
             )
+
+        # El feed puede repetir o entregar fuera de orden una vela ya procesada
+        # (backfill que solapa con el sondeo, reconexión). Ejecutarla cerraría
+        # una posición con una barra vieja y el libro acabaría con una salida
+        # anterior a la entrada, que es una fila imposible.
+        previous = self._previous_tick_ts
+        if previous is not None and tick.ts <= previous:
+            return
 
         primary = self.settings.instruments.primary
         template = self.settings.instruments.template_for(primary)
@@ -473,6 +484,45 @@ class TradingEngine:
         if trade is not None:
             self._on_trade_closed(trade)
 
+    def _restore_day_stats(self) -> None:
+        """El día se cuenta desde el libro, no desde lo último que quedó en `kv`.
+
+        Al arrancar, la sesión se fija en la de ahora, así que el cambio de
+        sesión nunca salta en el primer tick y el contador de ayer sobrevivía al
+        reinicio: el límite diario llegaba agotado y el bot no abría nada. Solo
+        se respeta lo guardado si pertenece a la sesión actual; si no, se
+        reconstruye con las operaciones cerradas hoy.
+        """
+        current = self.state.session
+        saved = self.store.kv_get("day_stats")
+        stored_session = self.store.kv_get("session_id")
+        if saved and current is not None and stored_session == current.id:
+            try:
+                self.state.day_stats = DayStats.model_validate(saved)
+                return
+            except ValueError:
+                logger.warning("discarded unreadable day stats")
+        self.state.day_stats = DayStats()
+        if current is None:
+            return
+        start, end = _aware(current.open_ts), _aware(current.close_ts)
+        closed = [
+            trade
+            for trade in self.store.all_trades()
+            if start <= _aware(trade.closed_ts) < end
+        ]
+        closed.sort(key=lambda trade: trade.closed_ts)
+        for trade in closed:
+            self.state.day_stats.trades += 1
+            self.state.day_stats.pnl += trade.pnl_net
+            if trade.pnl_net > 0:
+                self.state.day_stats.wins += 1
+                self.state.day_stats.consecutive_losses = 0
+            else:
+                self.state.day_stats.losses += 1
+                self.state.day_stats.consecutive_losses += 1
+        self.store.kv_set("session_id", current.id)
+
     def _on_new_session(self, session: SessionInfo) -> None:
         self.state.session = session
         self.state.day_stats = DayStats()
@@ -483,7 +533,21 @@ class TradingEngine:
             self.store.kv_set("session_id", session.id)
 
     def _on_trade_closed(self, trade: TradeRecord) -> None:
-        trade_id, is_new = self.store.insert_trade_once(trade)
+        try:
+            trade_id, is_new = self.store.insert_trade_once(trade)
+        except ValueError as error:
+            # Un cierre imposible (salida antes de la entrada) no se guarda ni
+            # se suma: no ocurrió. Queda el evento para poder reconstruir qué
+            # barra lo provocó.
+            logger.error("operación descartada: %s", error)
+            self._event(
+                "error",
+                "execution",
+                "operación descartada: cierre anterior a la apertura",
+                {"opened_ts": trade.opened_ts.isoformat(), "closed_ts": trade.closed_ts.isoformat()},
+            )
+            self.state.position = None
+            return
         if not is_new:
             # La fila ya estaba en el libro: sumarla otra vez contaría dos veces el
             # mismo P&L en la equity, el día y la curva (reinicio con backfill,
@@ -526,12 +590,6 @@ class TradingEngine:
         self.state.emergency = bool(self.store.kv_get("emergency") or False)
         if self.state.emergency:
             self.state.block_reason = "emergency_active"
-        day_raw = self.store.kv_get("day_stats")
-        if day_raw:
-            try:
-                self.state.day_stats = DayStats.model_validate(day_raw)
-            except ValueError:
-                logger.warning("discarded unreadable day stats")
         equity = self.store.kv_get("equity")
         if equity is not None:
             self.state.equity = float(equity)
@@ -716,6 +774,10 @@ class TradingEngine:
 
 
 TIMEFRAMES: tuple[str, ...] = ("1m", "5m", "15m", "30m")
+
+
+def _aware(value: datetime) -> datetime:
+    return value if value.tzinfo is not None else value.replace(tzinfo=timezone.utc)
 
 
 def _strategy_key(settings: Settings) -> tuple[str, str]:
