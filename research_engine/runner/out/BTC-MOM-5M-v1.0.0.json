@@ -1,0 +1,460 @@
+{
+ "spec_id": "BTC-MOM-5M",
+ "version": "1.0.0",
+ "name": "EMA state momentum 5m",
+ "family": "momentum",
+ "cycle_id": "CYCLE-2026-11-selection",
+ "generated_at": "2026-11-23T04:09:28Z",
+ "engine": "4.0.0",
+ "artifacts": {
+  "spec_hash": "sha256:d6c48f993c8587d783dc4158da84d70726a8f3f0273f619c63ae540d98b35cb4",
+  "data_hash": "sha256:80d6a6014eb92b23eaa5a4b456e74388e3cebb8b664cf1c17b4088e1f392b8da",
+  "code_sha": "sha256:a854ad2a0ee592fc3a5d93e469b591832da8e83341f5452c2891b0ef639b3519",
+  "seed": 7,
+  "env": "python 3.14.6 / pandas 3.1.1 / numpy 2.5.5",
+  "spec_path": "runner\\specs\\btc-mom-5m-ema-12-48.json"
+ },
+ "data": {
+  "instrument": "BTCUSDT_PERP",
+  "source": "data.binance.vision · futures/um/monthly/klines",
+  "bars": 718848,
+  "start": "2020-01-01 00:00:00+00:00",
+  "end": "2026-10-31 23:55:00+00:00",
+  "timezone": "UTC",
+  "sha256": "80d6a6014eb92b23eaa5a4b456e74388e3cebb8b664cf1c17b4088e1f392b8da",
+  "integrity": {
+   "gaps": 0,
+   "duplicates": 0,
+   "monotonic": true,
+   "unexplained_gaps": 0
+  },
+  "timeframe_signal": "5m",
+  "bars_signal": 718848,
+  "basis": "5m (native)"
+ },
+ "execution": {
+  "signal_bar": "closed",
+  "fill": "next_bar_open",
+  "intrabar_priority": "stop_first",
+  "gap_fill": "bar_open"
+ },
+ "costs": {
+  "fee_taker_bps": 5.0,
+  "half_spread_bps": 0.07,
+  "rt_bps": 10.14,
+  "assumed_fill": "taker",
+  "impact_model": "none",
+  "funding": "none",
+  "cost_r_mean": 0.5162,
+  "fee_r_mean": 0.5162,
+  "funding_r_mean": 0.0
+ },
+ "metrics": {
+  "all": {
+   "n": 15102,
+   "win": 0.327,
+   "pf_gross": 0.998,
+   "pf_net": 0.49,
+   "pf_stress": 0.256,
+   "exp_gross_r": -0.0016,
+   "exp_net_r": -0.5178,
+   "exp_stress_r": -1.034,
+   "sharpe": -12.73,
+   "mdd": -1.0,
+   "t_stat": -33.29,
+   "years": 6.84,
+   "stop_frac_median": 0.00251,
+   "fee_r": 0.5162,
+   "funding_r": 0.0,
+   "pf_ci95": [
+    0.472,
+    0.509
+   ],
+   "pf_se": 0.009
+  },
+  "is": {
+   "n": 9013,
+   "win": 0.324,
+   "pf_gross": 0.982,
+   "pf_net": 0.515,
+   "pf_stress": 0.287,
+   "exp_gross_r": -0.0117,
+   "exp_net_r": -0.4798,
+   "exp_stress_r": -0.9479,
+   "sharpe": -12.11,
+   "mdd": -1.0,
+   "t_stat": -24.53,
+   "years": 4.1,
+   "stop_frac_median": 0.00286,
+   "fee_r": 0.4681,
+   "funding_r": 0.0,
+   "pf_ci95": [
+    0.491,
+    0.538
+   ],
+   "pf_se": 0.012
+  },
+  "oos": {
+   "n": 2987,
+   "win": 0.345,
+   "pf_gross": 1.053,
+   "pf_net": 0.537,
+   "pf_stress": 0.282,
+   "exp_gross_r": 0.0347,
+   "exp_net_r": -0.4535,
+   "exp_stress_r": -0.9416,
+   "sharpe": -11.3,
+   "mdd": -0.999,
+   "t_stat": -13.22,
+   "years": 1.37,
+   "stop_frac_median": 0.00238,
+   "fee_r": 0.4882,
+   "funding_r": 0.0,
+   "pf_ci95": [
+    0.495,
+    0.582
+   ],
+   "pf_se": 0.022
+  },
+  "reserve": {
+   "n": 3094,
+   "win": 0.321,
+   "pf_gross": 0.991,
+   "pf_net": 0.391,
+   "pf_stress": 0.164,
+   "exp_gross_r": -0.0057,
+   "exp_net_r": -0.6879,
+   "exp_stress_r": -1.37,
+   "sharpe": -16.02,
+   "mdd": -1.0,
+   "t_stat": -18.73,
+   "years": 1.37,
+   "stop_frac_median": 0.00187,
+   "fee_r": 0.6822,
+   "funding_r": 0.0,
+   "pf_ci95": [
+    0.358,
+    0.425
+   ],
+   "pf_se": 0.017
+  }
+ },
+ "stress": {
+  "cost_2x": {
+   "rt_bps": 20.28,
+   "pf": 0.256
+  },
+  "breakeven_rt_bps": null,
+  "applied_rt_bps": 10.14
+ },
+ "robustness": {
+  "perturbation": {
+   "points": [
+    {
+     "param": "fast",
+     "change": -0.2,
+     "value": 10,
+     "n": 15581,
+     "pf_net": 0.491,
+     "exp_net_r": -0.5157
+    },
+    {
+     "param": "fast",
+     "change": -0.1,
+     "value": 11,
+     "n": 15361,
+     "pf_net": 0.486,
+     "exp_net_r": -0.5225
+    },
+    {
+     "param": "fast",
+     "change": 0.1,
+     "value": 13,
+     "n": 14867,
+     "pf_net": 0.49,
+     "exp_net_r": -0.5181
+    },
+    {
+     "param": "fast",
+     "change": 0.2,
+     "value": 14,
+     "n": 14516,
+     "pf_net": 0.495,
+     "exp_net_r": -0.5115
+    }
+   ],
+   "pass": false,
+   "rule": "PF neto > 1,00 en todo el vecindario ±10% / ±20%"
+  },
+  "regimes": {
+   "volatility": {
+    "axis": "volatilidad ATR/close",
+    "cuts": [
+     0.001293,
+     0.002228
+    ],
+    "buckets": {
+     "baja": {
+      "n": 5034,
+      "pf": 0.2704,
+      "exp_r": -0.9578,
+      "win": 0.3075
+     },
+     "media": {
+      "n": 5034,
+      "pf": 0.552,
+      "exp_r": -0.4233,
+      "win": 0.3284
+     },
+     "alta": {
+      "n": 5034,
+      "pf": 0.7817,
+      "exp_r": -0.1723,
+      "win": 0.3462
+     }
+    }
+   },
+   "trend": {
+    "axis": "retorno absoluto 20 barras",
+    "cuts": [
+     0.001798,
+     0.004413
+    ],
+    "buckets": {
+     "quieto": {
+      "n": 5034,
+      "pf": 0.2979,
+      "exp_r": -0.8758,
+      "win": 0.2799
+     },
+     "deriva": {
+      "n": 5034,
+      "pf": 0.4678,
+      "exp_r": -0.5383,
+      "win": 0.321
+     },
+     "tendencia": {
+      "n": 5034,
+      "pf": 0.8231,
+      "exp_r": -0.1394,
+      "win": 0.3812
+     }
+    }
+   },
+   "pf_spread": 0.5527,
+   "concentrated": false,
+   "losing_buckets": {
+    "volatility": [
+     "baja",
+     "media",
+     "alta"
+    ],
+    "trend": [
+     "quieto",
+     "deriva",
+     "tendencia"
+    ]
+   }
+  }
+ },
+ "benchmark": {
+  "alpha_annual": -5.5836,
+  "ci95": [
+   -6.714,
+   -4.4659
+  ],
+  "method": "mean daily excess return vs vol-unmatched buy & hold, stationary block bootstrap block=5 reps=4000 seed=7",
+  "bh_cagr": 0.8393,
+  "strategy_cagr": -0.9933
+ },
+ "validation": {
+  "split": "0.60/0.20/0.20",
+  "trials_declared": 8,
+  "pbo": 0.2381,
+  "dsr": 0.7917,
+  "minbtl_years": 14.55,
+  "wfa_min_trades": 6,
+  "cpcv": 0.1556,
+  "cpcv_paths": 45,
+  "psr": 0.9681,
+  "source": "runner\\validation\\CYCLE-2026-11-selection.json",
+  "cycle_id": "CYCLE-2026-11-selection",
+  "method_version": "1.0.0",
+  "specs_hash": "sha256:87eea8aa8f82cf5eee5dd54b81cbe77063f521583672ff6ba6baaebc622e309a",
+  "universe_size": 15,
+  "note": "PBO, DSR, CPCV y WFA provienen del ciclo de selección y describen el procedimiento, no esta configuración suelta. El PSR se reporta contra cero y sin deflactar: mide si hay habilidad, no si sobrevive al número de pruebas."
+ },
+ "gates": {
+  "data_integrity": {
+   "value": 0,
+   "threshold": 0,
+   "op": "==",
+   "pass": true
+  },
+  "pbo": {
+   "value": 0.2381,
+   "threshold": 0.2,
+   "op": "≤",
+   "pass": false
+  },
+  "dsr": {
+   "value": 0.7917,
+   "threshold": 0.95,
+   "op": "≥",
+   "pass": false
+  },
+  "oos_t_stat": {
+   "value": -13.22,
+   "threshold": 3.0,
+   "op": "≥",
+   "pass": false
+  },
+  "oos_pf_ci_low": {
+   "value": 0.495,
+   "threshold": 1.0,
+   "op": ">",
+   "pass": false
+  },
+  "trades": {
+   "value": 15102,
+   "threshold": 300,
+   "op": "≥",
+   "pass": true
+  },
+  "wfa_min_trades": {
+   "value": 6,
+   "threshold": 30,
+   "op": "≥",
+   "pass": false
+  },
+  "cost_stress_2x": {
+   "value": 0.256,
+   "threshold": 1.0,
+   "op": ">",
+   "pass": false
+  },
+  "funding_included": {
+   "value": "none",
+   "threshold": "required",
+   "op": "=",
+   "pass": false
+  },
+  "plateau": {
+   "value": false,
+   "threshold": true,
+   "op": "=",
+   "pass": false
+  },
+  "benchmark_alpha": {
+   "value": -5.5836,
+   "threshold": 0.0,
+   "op": ">",
+   "pass": false
+  },
+  "mdd_budget": {
+   "value": -1.0,
+   "threshold": -0.25,
+   "op": "≥",
+   "pass": false
+  }
+ },
+ "verdict": "REJECTED",
+ "reasoning": [
+  "PBO 0,24 > 0,20 → selección indistinguible del ruido",
+  "DSR 0,79 < 0,95 → el Sharpe no sobrevive al ajuste por múltiples pruebas",
+  "t OOS −13,22 < 3,00 → sin significancia tras el haircut HLZ",
+  "IC95% inferior del PF OOS 0,49 ≤ 1,00 → el intervalo contiene 1,00: no concluyente",
+  "PF con coste 2× 0,26 ≤ 1,00 → el edge es de coste, no de mercado",
+  "funding no aplicado con timestamps reales → coste real desconocido sin funding",
+  "el vecindario ±10% / ±20% no es plano → pico aislado: sobreajuste",
+  "alpha −558,4% anual con IC95% [−671,4%; −446,6%] negativo y significativo: el benchmark gana en todo el intervalo",
+  "MDD −100,0% < presupuesto −25% → excede el riesgo declarado en la spec",
+  "6 trades por fold OOS en el ciclo < 30 → sin potencia estadística por fold (el WFA mide el procedimiento de selección, no esta spec)"
+ ],
+ "missing_artifacts": [],
+ "equity": [
+  1.0,
+  0.7154,
+  0.4451,
+  0.3518,
+  0.2524,
+  0.1925,
+  0.0961,
+  0.0352,
+  0.0224,
+  0.0147,
+  0.0087,
+  0.0083,
+  0.0066,
+  0.0058,
+  0.0058,
+  0.005,
+  0.004,
+  0.004,
+  0.0035,
+  0.003,
+  0.0026,
+  0.0018,
+  0.0013,
+  0.0007,
+  0.0005,
+  0.0003,
+  0.0003,
+  0.0002,
+  0.0001,
+  0.0001,
+  0.0001,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0
+ ]
+}
