@@ -70,6 +70,32 @@ def day_stats(trades: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def engine_alive(db_path: Path, *, window_s: float = 120.0) -> bool:
+    """¿Hay un motor escribiendo en esta base ahora mismo?
+
+    Se apoya en el latido que deja `_persist` en cada vela. Reescribir la curva
+    con el motor vivo es una carrera perdida: la siguiente vela vuelve a
+    escribir desde su memoria y deshace el trabajo.
+    """
+    try:
+        conn = sqlite3.connect(f"file:{db_path.resolve().as_posix()}?mode=ro", uri=True)
+        try:
+            row = conn.execute("SELECT value FROM kv WHERE key = 'heartbeat'").fetchone()
+        finally:
+            conn.close()
+    except sqlite3.OperationalError:
+        return False
+    if not row:
+        return False
+    try:
+        stamp = datetime.fromisoformat(json.loads(row[0]))
+    except (TypeError, ValueError):
+        return False
+    if stamp.tzinfo is None:
+        stamp = stamp.replace(tzinfo=timezone.utc)
+    return (datetime.now(timezone.utc) - stamp).total_seconds() < window_s
+
+
 def current(db_path: Path) -> dict[str, Any]:
     """Lo que hay guardado ahora: última fila de la curva y equity del estado."""
     conn = sqlite3.connect(f"file:{db_path.resolve().as_posix()}?mode=ro", uri=True)
@@ -152,6 +178,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--profile", default=None, help="perfil, p. ej. profiles/okx")
     parser.add_argument("--capital", type=float, default=25000.0, help="capital inicial")
     parser.add_argument("--apply", action="store_true", help="reescribe la base (con copia)")
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="reescribe aunque el motor siga vivo (se deshará en la próxima vela)",
+    )
     parser.add_argument("--json", action="store_true", help="salida en JSON")
     args = parser.parse_args(argv)
     if hasattr(sys.stdout, "reconfigure"):
@@ -161,6 +192,14 @@ def main(argv: list[str] | None = None) -> int:
     if not db_path.is_file():
         print(f"no existe {db_path}", flush=True)
         return 1
+
+    if args.apply and not args.force and engine_alive(db_path):
+        print(
+            "el motor está vivo en esta base: páralo o usa --force "
+            "(la próxima vela desharía el cambio)",
+            flush=True,
+        )
+        return 2
 
     planned = plan(db_path, args.capital)
     before = current(db_path)
