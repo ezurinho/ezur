@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import json
 import sqlite3
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +26,25 @@ TABLES = (
 )
 
 
+def _instant(value: Any) -> datetime | None:
+    """Texto ISO a instante con zona.
+
+    Comparar las fechas como cadenas miente en cuanto se mezclan `Z` y
+    `+00:00`, o dos desfases distintos: `05:00+02:00` es anterior a
+    `04:05+00:00` y como texto parece posterior. Se comparan instantes.
+    """
+    if value is None:
+        return None
+    text = str(value).strip()
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        stamp = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    return stamp if stamp.tzinfo is not None else stamp.replace(tzinfo=timezone.utc)
+
+
 def _ledger_anomalies(connection: sqlite3.Connection, tables: set[str]) -> dict[str, Any]:
     """Filas que ningún veredicto debería haber producido.
 
@@ -34,12 +54,14 @@ def _ledger_anomalies(connection: sqlite3.Connection, tables: set[str]) -> dict[
     """
     if "trades" not in tables:
         return {"impossible": [], "duplicate_signals": [], "without_signal_key": 0}
-    impossible = [
-        dict(row)
-        for row in connection.execute(
-            "SELECT id, opened_ts, closed_ts FROM trades WHERE closed_ts < opened_ts ORDER BY id"
-        )
-    ]
+    impossible = []
+    for row in connection.execute(
+        "SELECT id, opened_ts, closed_ts FROM trades ORDER BY id"
+    ):
+        opened = _instant(row["opened_ts"])
+        closed = _instant(row["closed_ts"])
+        if opened is not None and closed is not None and closed < opened:
+            impossible.append(dict(row))
     duplicate_signals = [
         dict(row)
         for row in connection.execute(
@@ -60,7 +82,72 @@ def _ledger_anomalies(connection: sqlite3.Connection, tables: set[str]) -> dict[
     }
 
 
-def diagnose(db_path: str | Path) -> dict[str, Any]:
+EQUITY_TOLERANCE = 0.01
+
+
+def _kv_number(connection: sqlite3.Connection, key: str) -> float | None:
+    row = connection.execute("SELECT value FROM kv WHERE key = ?", (key,)).fetchone()
+    if row is None:
+        return None
+    try:
+        return float(json.loads(row["value"]))
+    except (TypeError, ValueError):
+        return None
+
+
+def _books(
+    connection: sqlite3.Connection, tables: set[str], capital: float
+) -> dict[str, Any]:
+    """Las tres copias de la verdad, comparadas: libro, curva y `kv`.
+
+    El libro manda. La curva y el estado se escriben desde memoria, y cuando esa
+    memoria sumó un cierre dos veces el panel enseñó 24.210,09 frente a
+    24.356,41 del libro. Este bloque dice cuál de las copias se desvió y por
+    cuánto, sin arreglar nada.
+    """
+    if not {"trades", "equity", "kv"} <= tables:
+        return {"checked": False, "reason": "faltan tablas", "differences": {}}
+    trades = int(connection.execute("SELECT COUNT(*) AS c FROM trades").fetchone()["c"])
+    total_row = connection.execute(
+        "SELECT COALESCE(SUM(pnl_net), 0) AS total FROM trades"
+    ).fetchone()
+    rows = int(connection.execute("SELECT COUNT(*) AS c FROM equity").fetchone()["c"])
+    last = connection.execute("SELECT ts, equity FROM equity ORDER BY ts DESC LIMIT 1").fetchone()
+    high_row = connection.execute("SELECT MAX(equity) AS high FROM equity").fetchone()
+    total = float(total_row["total"] or 0.0)
+    high = float(high_row["high"]) if high_row and high_row["high"] is not None else None
+    book = float(capital) + total
+    state = _kv_number(connection, "equity")
+    peak_state = _kv_number(connection, "peak_equity")
+    curve = float(last["equity"]) if last else None
+    peak_expected = max(float(capital), high) if high is not None else float(capital)
+
+    differences: dict[str, float | int] = {}
+    if state is not None and abs(state - book) > EQUITY_TOLERANCE:
+        differences["state_vs_book"] = round(state - book, 8)
+    if curve is not None and abs(curve - book) > EQUITY_TOLERANCE:
+        differences["curve_vs_book"] = round(curve - book, 8)
+    if peak_state is not None and abs(peak_state - peak_expected) > EQUITY_TOLERANCE:
+        differences["peak_vs_curve"] = round(peak_state - peak_expected, 8)
+    if rows != trades:
+        differences["rows_vs_trades"] = rows - trades
+
+    return {
+        "checked": True,
+        "capital": float(capital),
+        "trades": trades,
+        "curve_rows": rows,
+        "book_equity": round(book, 8),
+        "state_equity": state,
+        "curve_equity": curve,
+        "peak_equity": peak_state,
+        "peak_expected": round(peak_expected, 8),
+        "differences": differences,
+        "consistent": not differences,
+    }
+
+
+def diagnose(db_path: str | Path, capital: float = 25_000.0) -> dict[str, Any]:
     path = Path(db_path)
     if not path.exists():
         return {"path": str(path), "exists": False, "errors": ["database not found"]}
@@ -101,6 +188,7 @@ def diagnose(db_path: str | Path) -> dict[str, Any]:
             "tables": counts,
             "missing_tables": sorted(table for table, count in counts.items() if count < 0),
             "ledger": _ledger_anomalies(connection, tables),
+            "books": _books(connection, tables, capital),
             "size_bytes": path.stat().st_size,
             "wal_bytes": path.with_suffix(path.suffix + "-wal").stat().st_size
             if path.with_suffix(path.suffix + "-wal").exists()
@@ -110,12 +198,16 @@ def diagnose(db_path: str | Path) -> dict[str, Any]:
         connection.close()
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Diagnóstico de solo lectura")
     parser.add_argument("--db", default="data/terminal.db")
-    args = parser.parse_args()
-    print(json.dumps(diagnose(args.db), indent=2))
+    parser.add_argument(
+        "--capital", type=float, default=25_000.0, help="capital inicial del libro"
+    )
+    args = parser.parse_args(argv)
+    print(json.dumps(diagnose(args.db, args.capital), indent=2))
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
