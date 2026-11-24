@@ -1,0 +1,86 @@
+{
+  "id": "BTC-TREND-1D",
+  "name": "Donchian ensemble 1d",
+  "version": "1.1.0",
+  "parent_version": "1.0.0",
+  "change": "Replaces the single N=40 channel with all five channel lengths that were examined, run at once at equal risk. No parameter is chosen.",
+  "label": "1d_ens5",
+  "family": "trend",
+  "hypothesis": "Choosing N=40 out of five lengths examined is a selection, and with 58 trades that selection cannot be validated: MinBTL says a Sharpe of 0.6 needs ~15 years to be distinguishable from five trials, and only 6.8 exist. Running all five lengths simultaneously removes the choice instead of trying to justify it. The prediction is falsifiable: the ensemble must keep a net profit factor above 1.0 while showing a shallower drawdown than the single best channel, because the components do not exit on the same day. If the average of the five lengths carries an edge, the ensemble inherits it; if N=40 was the only one with an edge, averaging dilutes it and the ensemble underperforms. This spec exists to tell those two cases apart.",
+  "instrument": "BTCUSDT_PERP",
+  "timeframe_signal": "1d",
+  "timeframe_context": null,
+  "data_requirements": {
+    "datasets": ["klines_5m", "funding_rate"],
+    "min_coverage": "2020-01-01/2026-10-31",
+    "integrity": { "gaps": 0, "duplicates": 0, "timezone": "UTC" }
+  },
+  "entry": {
+    "rule": "donchian_breakout",
+    "long": "close[t] > max(high[t-N .. t-1])",
+    "short": "close[t] < min(low[t-N .. t-1])",
+    "cooldown_bars": 0
+  },
+  "exit": {
+    "stop": "1.5 * ATR(14)[t]",
+    "target": "4.0 * R",
+    "time_stop_bars": 90,
+    "trailing": null
+  },
+  "params": {
+    "N": 40,
+    "atr_k": 1.5,
+    "tp_r": 4.0
+  },
+  "portfolio": {
+    "weighting": "equal",
+    "rationale": "The five lengths are exactly those in the registry for BTC-TREND-1D (10, 20, 40, 55, 100). All five are included, including the ones that lost: picking the winners out of the set would turn the ensemble back into a selection. Equal weights were fixed before running, not fitted. Risk per trade stays at 0.5% of equity for the whole portfolio, so each component carries 0.1%.",
+    "components": [
+      { "label": "n10", "params": { "N": 10 } },
+      { "label": "n20", "params": { "N": 20 } },
+      { "label": "n40", "params": { "N": 40 } },
+      { "label": "n55", "params": { "N": 55 } },
+      { "label": "n100", "params": { "N": 100 } }
+    ]
+  },
+  "risk": {
+    "sizing": "fixed_fractional",
+    "risk_per_trade": 0.005,
+    "target_vol_annual": 0.2,
+    "kelly_fraction": 0.25,
+    "max_gross_leverage": 2.0,
+    "max_mdd_budget": 0.25
+  },
+  "costs": {
+    "fee_maker_bps": 2.0,
+    "fee_taker_bps": 5.0,
+    "assumed_fill": "taker",
+    "half_spread_bps": 0.07,
+    "impact_model": "none",
+    "funding": "real_timestamps"
+  },
+  "execution": {
+    "signal_bar": "closed",
+    "fill": "next_bar_open",
+    "intrabar_priority": "stop_first",
+    "gap_fill": "bar_open"
+  },
+  "validation": {
+    "trials_declared": 1,
+    "is_oos_split": "0.60/0.20/0.20",
+    "seed": 7,
+    "bootstrap": { "block": 5, "reps": 4000 },
+    "wfa": { "train_years": 2, "test_months": 6, "min_trades_per_fold": 30 }
+  },
+  "expected": {
+    "turnover_per_year": 8.6,
+    "cost_R_per_trade": 0.018,
+    "capacity_usd": 250000
+  },
+  "failure_modes": [
+    "si solo una longitud tenía edge, promediar cinco lo diluye y el ensemble rinde menos que el mejor componente",
+    "los cinco componentes abren en la misma ruptura en tendencias sostenidas: la diversificación es menor de lo que sugiere el número de componentes",
+    "el t-stat del flujo agregado sobreestima la potencia porque los trades de componentes distintos están correlacionados",
+    "gap de liquidación (2025-10-10): los cinco stops se ejecutan a la vez en el mismo hueco"
+  ]
+}
