@@ -594,9 +594,19 @@ class TradingEngine:
         self.state.emergency = bool(self.store.kv_get("emergency") or False)
         if self.state.emergency:
             self.state.block_reason = "emergency_active"
-        equity = self.store.kv_get("equity")
-        if equity is not None:
-            self.state.equity = float(equity)
+        # El equity se recalcula desde el libro. La copia en `kv` puede venir de
+        # un cierre contado dos veces (pasó: 24.210,09 guardados frente a
+        # 24.356,41 reales) y entonces el panel miente hasta que alguien
+        # reconstruya a mano.
+        computed = self.settings.risk.initial_capital + self.store.realized_pnl()
+        saved = self.store.kv_get("equity")
+        if saved is not None and abs(float(saved) - computed) > 0.01:
+            logger.warning(
+                "equity guardada %.2f != libro %.2f; manda el libro",
+                float(saved),
+                computed,
+            )
+        self.state.equity = computed
         # La pausa tras una racha se cuenta desde la última salida: sin esto, un
         # reinicio del proceso dejaría el bloqueo sin fecha y sin final.
         last_exit = self.store.kv_get("last_exit_ts")
@@ -737,6 +747,7 @@ class TradingEngine:
             candles=self._bars.get(primary, []),
             series=self.series(),
             stats=stats if stats is not None else self.stats(),
+            rejections=self.rejection_totals(),
         )
 
     async def publish_now(self) -> None:
