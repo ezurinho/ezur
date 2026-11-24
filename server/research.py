@@ -28,12 +28,9 @@ from typing import Any
 
 from server.vault import lint_vault, write_vault
 
-DEFAULT_HOME = (
-    Path.home()
-    / ".deepai-code"
-    / "scratch"
-    / "2026-11-22-motor-ia-para-estrategias-btc-a2100b36"
-)
+REPO_ROOT = Path(__file__).resolve().parent.parent
+# El motor vive dentro del repo; EZUR_RESEARCH_HOME sigue mandando si existe.
+DEFAULT_HOME = REPO_ROOT / "research_engine"
 LEDGER = Path("data/research/runs.jsonl")
 GENERATED = Path("data/research/specs")
 SPECS_DIR = Path("runner") / "specs"
@@ -295,6 +292,36 @@ def _parse_verdict(output: str) -> str | None:
     return None
 
 
+def _artifact_path(out_dir: Path, spec: dict[str, Any]) -> Path:
+    return Path(out_dir).resolve() / f"{spec.get('id')}-v{spec.get('version')}.json"
+
+
+def _verdict_from_artifact(
+    out_dir: Path, spec: dict[str, Any], started_at: float
+) -> str | None:
+    """El veredicto es un dato del resultado, no una línea de log.
+
+    Leerlo del JSON evita depender de que stdout llegue completo; el parseo de
+    la línea `VERDICT` queda solo como red de seguridad para artefactos viejos.
+    Un artefacto de otra spec o anterior a esta ejecución no vale como evidencia.
+    """
+    path = _artifact_path(out_dir, spec)
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    canonical = json.dumps(spec, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    expected = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    declared = str((document.get("artifacts") or {}).get("spec_hash") or "")
+    if declared:
+        if declared.removeprefix("sha256:") != expected:
+            return None
+    elif path.stat().st_mtime < started_at:
+        return None
+    verdict = document.get("verdict")
+    return verdict if isinstance(verdict, str) and verdict else None
+
+
 def run_spec(
     home: Path,
     python: str,
@@ -331,7 +358,9 @@ def run_spec(
         error = f"timeout tras {timeout:.0f}s"
         code = -9
 
-    verdict = _parse_verdict(output) if code == 0 else None
+    verdict = None
+    if code == 0:
+        verdict = _verdict_from_artifact(out_dir, spec_doc, started) or _parse_verdict(output)
     return {
         "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "spec": str(spec.relative_to(home)) if spec.is_relative_to(home) else str(spec),
