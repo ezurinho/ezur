@@ -120,7 +120,16 @@ class Store:
         fila idéntica y el P&L del día se contó dos veces. El segundo valor
         importa: quien lleva la equity en memoria necesita saber si esta
         operación ya se contabilizó antes de volver a sumarla.
+
+        Una salida anterior a la entrada no es una operación: es la huella de
+        una barra vieja ejecutándose sobre una posición viva. Se rechaza en voz
+        alta en vez de guardar un número que ninguna pantalla puede explicar.
         """
+        if trade.closed_ts < trade.opened_ts:
+            raise ValueError(
+                "operación imposible: cierra "
+                f"{_iso(trade.closed_ts)} antes de abrir {_iso(trade.opened_ts)}"
+            )
         with self.conn:
             cur = self.conn.execute(
                 """
@@ -158,7 +167,7 @@ class Store:
         return (int(existing["id"]) if existing else 0), False
 
     def _find_trade(self, trade: TradeRecord) -> sqlite3.Row | None:
-        return self.conn.execute(
+        row = self.conn.execute(
             """
             SELECT id FROM trades
              WHERE mode=? AND symbol=? AND side=? AND opened_ts=? AND closed_ts=?
@@ -174,6 +183,15 @@ class Store:
                 trade.exit_price,
                 trade.units,
             ),
+        ).fetchone()
+        if row is not None or not trade.signal_key:
+            return row
+        # La misma señal puede volver a cerrarse con otra barra (posición
+        # restaurada). No es la misma fila, pero sí la misma operación: se
+        # devuelve la que ya está para que el llamante no la sume otra vez.
+        return self.conn.execute(
+            "SELECT id FROM trades WHERE mode=? AND signal_key=? LIMIT 1",
+            (trade.mode, trade.signal_key),
         ).fetchone()
 
     def list_trades(
