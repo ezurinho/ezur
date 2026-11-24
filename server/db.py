@@ -327,14 +327,21 @@ class Store:
 
     def list_backtest_runs(self, cursor: str | None = None, limit: int = 25) -> dict[str, Any]:
         # `run_id` es aleatorio desde que identifica la ejecución, así que el
-        # orden cronológico va por `ts`. El payload se resume aquí: la lista no
-        # necesita el resultado entero, solo lo que se enseña.
-        query = "SELECT run_id, ts, payload FROM backtests"
+        # orden cronológico va por `rowid` (la fila se inserta al terminar la
+        # corrida). El cursor sigue siendo el run_id, que el cliente trata como
+        # opaco: se traduce a su rowid para no comparar identificadores
+        # aleatorios, que repetía o saltaba corridas entre páginas.
+        query = "SELECT rowid AS seq, run_id, ts, payload FROM backtests"
         params: list[Any] = []
         if cursor:
-            query += " WHERE run_id < ?"
-            params.append(cursor)
-        query += " ORDER BY ts DESC, rowid DESC LIMIT ?"
+            anchor = self.conn.execute(
+                "SELECT rowid FROM backtests WHERE run_id = ?", (cursor,)
+            ).fetchone()
+            if anchor is None:
+                return {"runs": [], "has_more": False, "next_cursor": None}
+            query += " WHERE rowid < ?"
+            params.append(anchor["rowid"])
+        query += " ORDER BY rowid DESC LIMIT ?"
         params.append(limit + 1)
         raw = [dict(row) for row in self.conn.execute(query, params)]
         has_more = len(raw) > limit
