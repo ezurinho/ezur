@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Auditoría del motor quant BTC — resumen</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: var(--font-sans, system-ui, sans-serif); color: var(--foreground); background: transparent; }
+  .wrap { width: 100%; display: flex; flex-direction: column; gap: 28px; }
+  h1 { font-size: 22px; line-height: 1.25; margin: 0 0 6px; font-weight: 650; letter-spacing: -.01em; }
+  .sub { color: var(--muted-foreground); font-size: 13px; line-height: 1.5; margin: 0; max-width: 70ch; }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .kpi { border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
+  .kpi .v { font-size: 22px; font-weight: 650; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .kpi .l { font-size: 11px; color: var(--muted-foreground); margin-top: 4px; line-height: 1.35; }
+  .bad { color: var(--destructive); }
+  .warn { color: var(--warning); }
+  .good { color: var(--success); }
+ .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  .panel h2 { font-size: 13px; font-weight: 600; margin: 0 0 2px; }
+  .panel .cap { font-size: 11px; color: var(--muted-foreground); margin: 0 0 8px; line-height: 1.45; }
+  svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 11px; color: var(--muted-foreground); margin-top: 6px; }
+  .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-weight: 600; color: var(--muted-foreground); font-size: 11px; text-transform: uppercase; letter-spacing: .03em; }
+  td.n { text-align: right; font-variant-numeric: tabular-nums; }
+  .pill { font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+  .foot { font-size: 11px; color: var(--muted-foreground); line-height: 1.6; border-top: 1px solid var(--border); padding-top: 14px; }
+  code { font-family: var(--font-mono, ui-monospace, monospace); font-size: 11px; }
+  @media (max-width: 620px) { .kpis { grid-template-columns: 1fr 1fr; } .grid2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Qué falla en el prompt «Elite Quant V3» (y con qué números)</h1>
+    <p class="sub">BTCUSDT perpetuo · 2020-01-01 → 2026-10-31 · 718.848 barras de 5m, 0 gaps, 0 duplicados · fuente data.binance.vision · motor propio: fill al open siguiente, stop primero, gap al open, una posición a la vez, 0,5% de riesgo por trade.</p>
+  </header>
+
+  <div class="kpis">
+    <div class="kpi"><div class="v bad">0,50</div><div class="l">PBO (CSCV) con 8 configuraciones. Umbral razonable ≤ 0,20. Elegir la mejor in-sample fue una moneda.</div></div>
+    <div class="kpi"><div class="v bad">0,58</div><div class="l">DSR del mejor sistema (Sharpe 0,61). Necesita ≥ 0,95: el «mejor de 8» no supera el ruido de la selección.</div></div>
+    <div class="kpi"><div class="v bad">0,49–0,75</div><div class="l">PF neto de las cuatro familias base en 5m con taker 10,14 bp round-trip. La expectativa bruta es ≈ 0.</div></div>
+    <div class="kpi"><div class="v warn">86%</div><div class="l">De los intervalos de funding fueron positivos (long paga). Media 0,0106% / 8h ≈ 11,6% anual sobre nocional.</div></div>
+  </div>
+
+  <div class="grid2">
+    <section class="panel">
+      <h2>5m: bruto vs. neto (Donchian 288)</h2>
+      <p class="cap">Misma señal, mismo motor. La curva bruta sube; la neta va a cero: el coste en R es 0,25 por trade y la rotación es de ~798 trades/año.</p>
+      <div id="c1"></div>
+      <div class="legend"><span><i style="background:var(--chart-2)"></i>Bruto (0 bp)</span><span><i style="background:var(--destructive)"></i>Neto (10,14 bp RT)</span></div>
+    </section>
+
+    <section class="panel">
+      <h2>1d: fees y funding sobre la misma curva</h2>
+      <p class="cap">Donchian 40 días, 58 trades en 6,8 años. El funding resta más que las fees: 0,077R vs 0,018R por trade.</p>
+      <div id="c2"></div>
+      <div class="legend"><span><i style="background:var(--chart-2)"></i>Bruto</span><span><i style="background:var(--chart-3)"></i>+ fees</span><span><i style="background:var(--chart-1)"></i>+ funding</span></div>
+    </section>
+  </div>
+
+  <div class="grid2">
+    <section class="panel">
+      <h2>PF por horizonte: el coste se diluye, la potencia no aparece</h2>
+      <p class="cap">El PF mejora al alejar el horizonte, pero el mejor caso tiene 58 trades: su IC95% del PF va de 0,91 a 2,67 e incluye 1,00.</p>
+      <div id="c3"></div>
+      <div class="legend"><span><i style="background:var(--muted-foreground)"></i>Bruto</span><span><i style="background:var(--chart-3)"></i>+ fees</span><span><i style="background:var(--chart-1)"></i>+ funding</span></div>
+    </section>
+
+    <section class="panel">
+      <h2>Funding: suma anual de tasas (nocional)</h2>
+      <p class="cap">Un long de perpetuos mantenido todo el año pagó esto solo en funding. 2021: +30,6%. 2026 parcial (ene–oct).</p>
+      <div id="c4"></div>
+      <div class="legend"><span><i style="background:var(--warning)"></i>Σ tasas 8h del año</span></div>
+    </section>
+  </div>
+
+  <section class="panel">
+    <h2>Puertas del mejor candidato (1d Donchian 40): 6 de 7 fallan</h2>
+    <table>
+      <thead><tr><th>Puerta</th><th class="n">Valor</th><th class="n">Umbral</th><th>Resultado</th></tr></thead>
+      <tbody>
+        <tr><td>PBO (selección)</td><td class="n">0,50</td><td class="n">≤ 0,20</td><td><span class="pill bad">falla</span></td></tr>
+        <tr><td>DSR (deflactado)</td><td class="n">0,58</td><td class="n">≥ 0,95</td><td><span class="pill bad">falla</span></td></tr>
+        <tr><td>t-stat OOS</td><td class="n">1,60</td><td class="n">≥ 3,0</td><td><span class="pill bad">falla</span></td></tr>
+        <tr><td>Trades</td><td class="n">58</td><td class="n">≥ 300</td><td><span class="pill bad">falla</span></td></tr>
+        <tr><td>Trades OOS en WFA</td><td class="n">11</td><td class="n">≥ 30/fold</td><td><span class="pill bad">falla</span></td></tr>
+        <tr><td>MinBTL vs. historia</td><td class="n">11,2 a / 6,8 a</td><td class="n">≤ 6,8 a</td><td><span class="pill bad">falla</span></td></tr>
+        <tr><td>PF con fees + funding</td><td class="n">1,68</td><td class="n">&gt; 1,00</td><td><span class="pill good">pasa</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <p class="foot">El PF 1,68 es real y aun así el sistema no es aprobable: la puerta que falla no es la rentabilidad, es la evidencia. Ese es el hueco central del prompt V3, que solo exige PF/MDD/Sharpe y «>100 trades». Datos y scripts en <code>research/</code>; cifras completas en <code>INFORME_AUDITORIA.md</code>.</p>
+</div>
+
+<script>
+const DATA = {
+  months: ["2020-01","2020-02","2020-03","2020-04","2020-05","2020-06","2020-07","2020-08","2020-09","2020-10","2020-11","2020-12","2021-01","2021-02","2021-03","2021-04","2021-05","2021-06","2021-07","2021-08","2021-09","2021-10","2021-11","2021-12","2022-01","2022-02","2022-03","2022-04","2022-05","2022-06","2022-07","2022-08","2022-09","2022-10","2022-11","2022-12","2023-01","2023-02","2023-03","2023-04","2023-05","2023-06","2023-07","2023-08","2023-09","2023-10","2023-11","2023-12","2024-01","2024-02","2024-03","2024-04","2024-05","2024-06","2024-07","2024-08","2024-09","2024-10","2024-11","2024-12","2025-01","2025-02","2025-03","2025-04","2025-05","2025-06","2025-07","2025-08","2025-09","2025-10","2025-11","2025-12","2026-01","2026-02","2026-03","2026-04","2026-05","2026-06","2026-07","2026-08","2026-09","2026-10","2026-11"],
+  g5: [1.0,0.983,1.058,1.056,1.098,1.135,1.123,1.176,1.079,1.105,1.166,1.175,1.215,1.274,1.216,1.301,1.280,1.233,1.294,1.331,1.290,1.219,1.280,1.290,1.396,1.394,1.515,1.468,1.327,1.312,1.303,1.219,1.187,1.122,1.066,1.049,1.042,1.133,1.178,1.294,1.267,1.284,1.403,1.437,1.449,1.514,1.550,1.533,1.593,1.714,2.018,1.869,1.884,1.961,1.957,1.905,2.050,1.861,1.857,1.628,1.485,1.334,1.152,1.110,1.054,0.986,0.950,0.939,0.865,0.822,0.853,0.839,0.868,0.957,0.965,0.944,0.910,0.873,0.854,0.874,0.912,0.933,0.904],
+  n5: [1.0,0.893,0.893,0.837,0.817,0.798,0.744,0.706,0.585,0.556,0.537,0.494,0.475,0.476,0.432,0.430,0.394,0.363,0.363,0.347,0.315,0.283,0.280,0.263,0.269,0.255,0.263,0.241,0.202,0.190,0.181,0.159,0.143,0.127,0.109,0.098,0.086,0.085,0.083,0.087,0.079,0.073,0.074,0.067,0.055,0.053,0.048,0.044,0.042,0.041,0.043,0.036,0.034,0.031,0.027,0.023,0.023,0.018,0.016,0.012,0.010,0.008,0.006,0.005,0.004,0.003,0.002,0.002,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.0005,0.0004,0.0004,0.0003,0.0003,0.0002,0.0002],
+  dg: [1.0,0.995,1.015,1.015,1.035,1.030,1.051,1.040,1.040,1.061,1.056,1.098,1.087,1.087,1.087,1.087,1.100,1.100,1.100,1.097,1.087,1.087,1.087,1.081,1.081,1.081,1.091,1.085,1.107,1.107,1.107,1.107,1.118,1.118,1.107,1.107,1.129,1.118,1.112,1.112,1.112,1.101,1.101,1.096,1.096,1.096,1.096,1.112,1.095,1.117,1.106,1.106,1.095,1.095,1.084,1.084,1.084,1.084,1.106,1.106,1.128,1.128,1.122,1.122,1.122,1.122,1.139,1.133,1.128,1.122,1.117,1.117,1.117,1.139,1.139,1.139,1.133,1.156,1.156,1.179,1.173,1.174],
+  df: [1.0,0.995,1.015,1.015,1.035,1.030,1.050,1.040,1.040,1.060,1.055,1.097,1.086,1.086,1.086,1.086,1.099,1.099,1.099,1.096,1.085,1.085,1.085,1.080,1.080,1.080,1.089,1.083,1.105,1.105,1.105,1.105,1.116,1.116,1.105,1.105,1.127,1.115,1.110,1.110,1.110,1.099,1.099,1.093,1.093,1.093,1.093,1.109,1.092,1.114,1.103,1.103,1.091,1.091,1.080,1.080,1.080,1.080,1.102,1.102,1.124,1.124,1.118,1.118,1.118,1.118,1.134,1.129,1.123,1.117,1.111,1.111,1.111,1.133,1.133,1.133,1.128,1.150,1.150,1.173,1.167,1.168],
+  du: [1.0,0.994,1.014,1.014,1.034,1.028,1.049,1.038,1.038,1.058,1.053,1.093,1.081,1.081,1.081,1.081,1.086,1.086,1.086,1.084,1.072,1.072,1.072,1.064,1.064,1.064,1.074,1.068,1.089,1.089,1.089,1.089,1.101,1.101,1.090,1.090,1.111,1.099,1.093,1.093,1.093,1.081,1.081,1.075,1.075,1.075,1.075,1.089,1.072,1.093,1.082,1.082,1.071,1.071,1.060,1.060,1.060,1.060,1.080,1.080,1.099,1.099,1.094,1.094,1.094,1.094,1.109,1.103,1.098,1.092,1.086,1.086,1.086,1.109,1.109,1.109,1.103,1.125,1.125,1.147,1.141,1.142],
+  pf: { labels: ["4h 24","4h 48","1d 20","1d 40","1d 55","1d 100"], gross: [1.155,1.238,1.625,1.877,1.781,1.193], fees: [1.072,1.154,1.587,1.833,1.742,1.167], full: [1.055,1.128,1.490,1.683,1.579,1.033] },
+  fund: { labels: ["2020","2021","2022","2023","2024","2025","2026*"], vals: [17.24,30.61,4.16,7.87,11.96,5.13,2.60] }
+};
+
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs) { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); return n; }
+function mkSvg(host, w, h) { const s = el("svg", {viewBox: `0 0 ${w} ${h}`, width: w, height: h, role: "img"}); document.getElementById(host).appendChild(s); return s; }
+function cssVar(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim() || "#888"; }
+
+function lineChart(host, series, opts) {
+  const W = 560, H = opts.height || 210, m = {t: 10, r: 10, b: 22, l: 34};
+  const svg = mkSvg(host, W, H);
+  const all = series.flatMap(s => s.v);
+  const lin = !!opts.linear;
+  const lmin = Math.min(...all), lmax = Math.max(...all);
+  const lo = lin ? lmin - (lmax - lmin) * 0.15 : Math.log10(lmin * 0.92);
+  const hi = lin ? lmax + (lmax - lmin) * 0.10 : Math.log10(lmax * 1.05);
+  const x = i => m.l + i * (W - m.l - m.r) / (series[0].v.length - 1);
+  const y = v => lin
+    ? m.t + (hi - v) * (H - m.t - m.b) / (hi - lo)
+    : m.t + (hi - Math.log10(Math.max(v, 1e-6))) * (H - m.t - m.b) / (hi - lo);
+  const axis = cssVar("--border"), muted = cssVar("--muted-foreground");
+  const ticks = opts.ticks || [1, 1.5, 2];
+  ticks.forEach(t => {
+    if (lin ? (t < lo || t > hi) : (Math.log10(t) < lo || Math.log10(t) > hi)) return;
+    svg.appendChild(el("line", {x1: m.l, x2: W - m.r, y1: y(t), y2: y(t), stroke: axis, "stroke-width": 1, "stroke-dasharray": "3 4", opacity: .7}));
+    const tx = el("text", {x: m.l - 6, y: y(t) + 3.5, "text-anchor": "end", "font-size": 9, fill: muted}); tx.textContent = t.toFixed(1) + "×"; svg.appendChild(tx);
+  });
+  for (let i = 0; i < series[0].v.length - 1; i += 12) {
+    const yr = DATA.months[i].slice(0, 4);
+    const tx = el("text", {x: x(i), y: H - 6, "text-anchor": "middle", "font-size": 9, fill: muted}); tx.textContent = yr; svg.appendChild(tx);
+  }
+  series.forEach(s => {
+    let d = "";
+    s.v.forEach((v, i) => { d += (i ? "L" : "M") + x(i).toFixed(1) + "," + y(v).toFixed(1); });
+    svg.appendChild(el("path", {d, fill: "none", stroke: s.c, "stroke-width": 1.7, "stroke-linejoin": "round", "stroke-linecap": "round"}));
+  });
+}
+
+function barChart(host, cfg) {
+  const W = 560, H = cfg.height || 210, m = {t: 12, r: 8, b: 26, l: 30};
+  const svg = mkSvg(host, W, H);
+  const series = cfg.series, n = cfg.labels.length, groups = series.length;
+  const max = Math.max(...series.flatMap(s => s.v), cfg.hline || 0) * 1.08;
+  const bw = (W - m.l - m.r) / n / (groups + 0.8);
+  const y = v => m.t + (1 - v / max) * (H - m.t - m.b);
+  const axis = cssVar("--border"), muted = cssVar("--muted-foreground");
+  if (cfg.hline) {
+    svg.appendChild(el("line", {x1: m.l, x2: W - m.r, y1: y(cfg.hline), y2: y(cfg.hline), stroke: muted, "stroke-width": 1, "stroke-dasharray": "4 4"}));
+    const t = el("text", {x: W - m.r, y: y(cfg.hline) - 4, "text-anchor": "end", "font-size": 9, fill: muted}); t.textContent = cfg.hlineLabel || "1,00"; svg.appendChild(t);
+  }
+  cfg.ticks.forEach(v => {
+    svg.appendChild(el("line", {x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: axis, "stroke-width": 1, opacity: .5}));
+    const t = el("text", {x: m.l - 6, y: y(v) + 3.5, "text-anchor": "end", "font-size": 9, fill: muted}); t.textContent = cfg.fmt ? cfg.fmt(v) : v; svg.appendChild(t);
+  });
+  cfg.labels.forEach((lab, i) => {
+    series.forEach((s, j) => {
+      const v = s.v[i];
+      const xx = m.l + i * (W - m.l - m.r) / n + 4 + j * bw;
+      svg.appendChild(el("rect", {x: xx, y: y(v), width: Math.max(bw - 2.5, 1.5), height: Math.max(y(0) - y(v), 0.8), rx: 1.5, fill: s.c, opacity: s.op || 1}));
+    });
+    const t = el("text", {x: m.l + i * (W - m.l - m.r) / n + (groups * bw) / 2 + 4, y: H - 8, "text-anchor": "middle", "font-size": 9, fill: muted});
+    t.textContent = lab; svg.appendChild(t);
+  });
+}
+
+function draw() {
+  lineChart("c1", [
+    {v: DATA.g5, c: cssVar("--chart-2")},
+    {v: DATA.n5, c: cssVar("--destructive")}
+  ], {ticks: [1, 2]});
+  lineChart("c2", [
+    {v: DATA.dg, c: cssVar("--chart-2")},
+    {v: DATA.df, c: cssVar("--chart-3")},
+    {v: DATA.du, c: cssVar("--chart-1")}
+  ], {linear: true, ticks: [1, 1.05, 1.10, 1.15]});
+  barChart("c3", {
+    labels: DATA.pf.labels,
+    series: [
+      {v: DATA.pf.gross, c: cssVar("--muted-foreground"), op: .55},
+      {v: DATA.pf.fees, c: cssVar("--chart-3")},
+      {v: DATA.pf.full, c: cssVar("--chart-1")}
+    ],
+    hline: 1, hlineLabel: "PF 1,00", ticks: [1, 1.5, 2], fmt: v => v.toFixed(1)
+  });
+  barChart("c4", {
+    labels: DATA.fund.labels,
+    series: [{v: DATA.fund.vals, c: cssVar("--warning")}],
+    ticks: [0, 10, 20, 30], fmt: v => v + "%", height: 210
+  });
+}
+draw();
+</script>
+</body>
+</html>
