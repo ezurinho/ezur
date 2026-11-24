@@ -1,0 +1,436 @@
+{
+  "cycle_id": "CYCLE-2026-11-full",
+  "generated_at": "2026-11-23T04:08:20Z",
+  "method_version": "1.0.0",
+  "inputs": {
+    "data_hash": "80d6a6014eb92b23",
+    "specs_hash": "sha256:5d3ddd192bd4f157070af3822bc2c7db3aac9f7ea759b0a5c1b447d89bdc4199",
+    "universe_size": 19,
+    "daily_observations": 2496,
+    "coverage_years": 6.83
+  },
+  "universe": [
+    {
+      "name": "MOM-5M_ema_12_48",
+      "spec_id": "BTC-MOM-5M / ema_12_48",
+      "timeframe": "5m",
+      "variant": "registrada",
+      "trades": 15102,
+      "pf_net": 0.4902,
+      "exp_r": -0.5178,
+      "days": 15102
+    },
+    {
+      "name": "MOM-5M_ema_24_96",
+      "spec_id": "BTC-MOM-5M / ema_24_96",
+      "timeframe": "5m",
+      "variant": "registrada",
+      "trades": 8702,
+      "pf_net": 0.4976,
+      "exp_r": -0.5086,
+      "days": 8702
+    },
+    {
+      "name": "MOM-5M_ema_48_192",
+      "spec_id": "BTC-MOM-5M / ema_48_192",
+      "timeframe": "5m",
+      "variant": "registrada",
+      "trades": 4495,
+      "pf_net": 0.5297,
+      "exp_r": -0.4646,
+      "days": 4495
+    },
+    {
+      "name": "MR-5M_z2_192",
+      "spec_id": "BTC-MR-5M / z2_192",
+      "timeframe": "5m",
+      "variant": "registrada",
+      "trades": 15862,
+      "pf_net": 0.537,
+      "exp_r": -0.2963,
+      "days": 15862
+    },
+    {
+      "name": "MR-5M_z2_48",
+      "spec_id": "BTC-MR-5M / z2_48",
+      "timeframe": "5m",
+      "variant": "registrada",
+      "trades": 27591,
+      "pf_net": 0.4779,
+      "exp_r": -0.3537,
+      "days": 27591
+    },
+    {
+      "name": "MR-5M_z2_96",
+      "spec_id": "BTC-MR-5M / z2_96",
+      "timeframe": "5m",
+      "variant": "registrada",
+      "trades": 21045,
+      "pf_net": 0.4938,
+      "exp_r": -0.3381,
+      "days": 21045
+    },
+    {
+      "name": "ORB-5M_orb_15min",
+      "spec_id": "BTC-ORB-5M / orb_15min",
+      "timeframe": "5m",
+      "variant": "registrada",
+      "trades": 4724,
+      "pf_net": 0.6245,
+      "exp_r": -0.3174,
+      "days": 4724
+    },
+    {
+      "name": "ORB-5M_orb_30min",
+      "spec_id": "BTC-ORB-5M / orb_30min",
+      "timeframe": "5m",
+      "variant": "registrada",
+      "trades": 4461,
+      "pf_net": 0.7101,
+      "exp_r": -0.2177,
+      "days": 4461
+    },
+    {
+      "name": "ORB-5M_orb_60min",
+      "spec_id": "BTC-ORB-5M / orb_60min",
+      "timeframe": "5m",
+      "variant": "registrada",
+      "trades": 4105,
+      "pf_net": 0.7461,
+      "exp_r": -0.1698,
+      "days": 4105
+    },
+    {
+      "name": "TREND-1D_1d_10",
+      "spec_id": "BTC-TREND-1D / 1d_10",
+      "timeframe": "1d",
+      "variant": "registrada",
+      "trades": 89,
+      "pf_net": 1.2207,
+      "exp_r": 0.1663,
+      "days": 89
+    },
+    {
+      "name": "TREND-1D_1d_100",
+      "spec_id": "BTC-TREND-1D / 1d_100",
+      "timeframe": "1d",
+      "variant": "registrada",
+      "trades": 39,
+      "pf_net": 1.0334,
+      "exp_r": 0.0267,
+      "days": 39
+    },
+    {
+      "name": "TREND-1D_1d_20",
+      "spec_id": "BTC-TREND-1D / 1d_20",
+      "timeframe": "1d",
+      "variant": "registrada",
+      "trades": 78,
+      "pf_net": 1.4903,
+      "exp_r": 0.3555,
+      "days": 78
+    },
+    {
+      "name": "TREND-1D_1d_40",
+      "spec_id": "BTC-TREND-1D / 1d_40",
+      "timeframe": "1d",
+      "variant": "registrada",
+      "trades": 58,
+      "pf_net": 1.6829,
+      "exp_r": 0.4715,
+      "days": 58
+    },
+    {
+      "name": "TREND-1D_1d_55",
+      "spec_id": "BTC-TREND-1D / 1d_55",
+      "timeframe": "1d",
+      "variant": "registrada",
+      "trades": 47,
+      "pf_net": 1.5794,
+      "exp_r": 0.415,
+      "days": 47
+    },
+    {
+      "name": "TREND-4H_4h_12",
+      "spec_id": "BTC-TREND-4H / 4h_12",
+      "timeframe": "4h",
+      "variant": "registrada",
+      "trades": 726,
+      "pf_net": 0.9331,
+      "exp_r": -0.0461,
+      "days": 726
+    },
+    {
+      "name": "TREND-4H_4h_24",
+      "spec_id": "BTC-TREND-4H / 4h_24",
+      "timeframe": "4h",
+      "variant": "registrada",
+      "trades": 524,
+      "pf_net": 1.0552,
+      "exp_r": 0.0373,
+      "days": 524
+    },
+    {
+      "name": "TREND-4H_4h_48",
+      "spec_id": "BTC-TREND-4H / 4h_48",
+      "timeframe": "4h",
+      "variant": "registrada",
+      "trades": 358,
+      "pf_net": 1.1278,
+      "exp_r": 0.0858,
+      "days": 358
+    },
+    {
+      "name": "TREND-5M_donchian_288",
+      "spec_id": "BTC-TREND-5M / donchian_288",
+      "timeframe": "5m",
+      "variant": "registrada",
+      "trades": 5449,
+      "pf_net": 0.643,
+      "exp_r": -0.3128,
+      "days": 5449
+    },
+    {
+      "name": "TREND-5M_donchian_576",
+      "spec_id": "BTC-TREND-5M / donchian_576",
+      "timeframe": "5m",
+      "variant": "registrada",
+      "trades": 3507,
+      "pf_net": 0.6859,
+      "exp_r": -0.2656,
+      "days": 3507
+    }
+  ],
+  "pbo": {
+    "pbo": 0.0,
+    "n_splits": 252,
+    "blocks": 10,
+    "block_days": 249,
+    "median_logit": 1.0986,
+    "mean_oos_rank_pct": 0.8118,
+    "most_selected": {
+      "TREND-1D_1d_40": 109,
+      "TREND-1D_1d_20": 53,
+      "TREND-1D_1d_55": 36,
+      "TREND-4H_4h_48": 25,
+      "TREND-4H_4h_24": 18
+    },
+    "method": "CSCV (Bailey et al. 2015), S=10 blocks, all C(S,S/2) splits"
+  },
+  "dsr": {
+    "dsr": 0.8425,
+    "sharpe_daily": 0.0319,
+    "sharpe_annual": 0.6102,
+    "sr0_daily": 0.0146,
+    "sr0_annual": 0.2794,
+    "trials": 5,
+    "skew": 8.9658,
+    "kurtosis": 107.8168,
+    "observations": 2496,
+    "config": "TREND-1D_1d_40",
+    "source": "grupo BTC-TREND-1D"
+  },
+  "dsr_pooled": {
+    "dsr": 0.0,
+    "sharpe_daily": 0.0319,
+    "sharpe_annual": 0.6102,
+    "sr0_daily": 0.5602,
+    "sr0_annual": 10.7017,
+    "trials": 19,
+    "skew": 8.9658,
+    "kurtosis": 107.8168,
+    "observations": 2496
+  },
+  "dsr_by_group": {
+    "BTC-MOM-5M": {
+      "dsr": 0.0,
+      "sharpe_daily": -0.3379,
+      "sharpe_annual": -6.4557,
+      "sr0_daily": 0.1373,
+      "sr0_annual": 2.6241,
+      "trials": 3,
+      "skew": -2.5552,
+      "kurtosis": 25.5558,
+      "observations": 2496,
+      "config": "MOM-5M_ema_48_192"
+    },
+    "BTC-MR-5M": {
+      "dsr": 0.0,
+      "sharpe_daily": -0.5925,
+      "sharpe_annual": -11.3204,
+      "sr0_daily": 0.1303,
+      "sr0_annual": 2.489,
+      "trials": 3,
+      "skew": -1.223,
+      "kurtosis": 6.2544,
+      "observations": 2496,
+      "config": "MR-5M_z2_192"
+    },
+    "BTC-ORB-5M": {
+      "dsr": 0.0,
+      "sharpe_daily": -0.1706,
+      "sharpe_annual": -3.2602,
+      "sr0_daily": 0.0587,
+      "sr0_annual": 1.1213,
+      "trials": 3,
+      "skew": 0.3805,
+      "kurtosis": 2.5525,
+      "observations": 2496,
+      "config": "ORB-5M_orb_60min"
+    },
+    "BTC-TREND-1D": {
+      "dsr": 0.8425,
+      "sharpe_daily": 0.0319,
+      "sharpe_annual": 0.6102,
+      "sr0_daily": 0.0146,
+      "sr0_annual": 0.2794,
+      "trials": 5,
+      "skew": 8.9658,
+      "kurtosis": 107.8168,
+      "observations": 2496,
+      "config": "TREND-1D_1d_40"
+    },
+    "BTC-TREND-4H": {
+      "dsr": 0.5729,
+      "sharpe_daily": 0.0184,
+      "sharpe_annual": 0.3524,
+      "sr0_daily": 0.0149,
+      "sr0_annual": 0.2845,
+      "trials": 3,
+      "skew": 3.78,
+      "kurtosis": 23.9723,
+      "observations": 2496,
+      "config": "TREND-4H_4h_48"
+    },
+    "BTC-TREND-5M": {
+      "dsr": 0.0,
+      "sharpe_daily": -0.2136,
+      "sharpe_annual": -4.0803,
+      "sr0_daily": 0.0346,
+      "sr0_annual": 0.6612,
+      "trials": 2,
+      "skew": 0.1992,
+      "kurtosis": 6.329,
+      "observations": 2496,
+      "config": "TREND-5M_donchian_576"
+    }
+  },
+  "dsr_config": "TREND-1D_1d_40",
+  "minbtl": {
+    "minbtl_years": 15.82,
+    "n_trials": 19,
+    "sr_annual": 0.6102
+  },
+  "wfa": {
+    "folds": [
+      {
+        "fold": 1,
+        "is_end": "2022-01-18",
+        "oos": [
+          "2022-01-18",
+          "2023-01-03"
+        ],
+        "chosen": "TREND-1D_1d_40",
+        "is_trades": 18,
+        "is_pf": 2.0743,
+        "oos_trades": 6,
+        "oos_pf": 2.5698
+      },
+      {
+        "fold": 2,
+        "is_end": "2023-01-03",
+        "oos": [
+          "2023-01-03",
+          "2023-12-18"
+        ],
+        "chosen": "TREND-1D_1d_40",
+        "is_trades": 24,
+        "is_pf": 2.1784,
+        "oos_trades": 9,
+        "oos_pf": 0.9913
+      },
+      {
+        "fold": 3,
+        "is_end": "2023-12-18",
+        "oos": [
+          "2023-12-18",
+          "2024-12-02"
+        ],
+        "chosen": "TREND-1D_1d_40",
+        "is_trades": 33,
+        "is_pf": 1.7709,
+        "oos_trades": 11,
+        "oos_pf": 0.8358
+      },
+      {
+        "fold": 4,
+        "is_end": "2024-12-02",
+        "oos": [
+          "2024-12-02",
+          "2025-11-16"
+        ],
+        "chosen": "TREND-1D_1d_20",
+        "is_trades": 60,
+        "is_pf": 1.5743,
+        "oos_trades": 11,
+        "oos_pf": 0.8469
+      },
+      {
+        "fold": 5,
+        "is_end": "2025-11-16",
+        "oos": [
+          "2025-11-16",
+          "2026-10-31"
+        ],
+        "chosen": "TREND-1D_1d_40",
+        "is_trades": 52,
+        "is_pf": 1.4505,
+        "oos_trades": 6,
+        "oos_pf": 5.9923
+      }
+    ],
+    "folds_requested": 5,
+    "warmup_share": 0.3,
+    "evaluated_folds": 5,
+    "min_trades_per_fold": 6,
+    "total_oos_trades": 43,
+    "oos_pf_aggregate": 1.3866,
+    "distinct_configs_chosen": 2
+  },
+  "cpcv": {
+    "paths": 45,
+    "blocks": 10,
+    "test_blocks": 2,
+    "purge_blocks": 1,
+    "block_days": 249,
+    "share_below_median": 0.0,
+    "mean_oos_rank_pct": 0.8269,
+    "mean_oos_sr_daily": 0.01011,
+    "median_oos_sr_daily": 0.0168,
+    "share_negative_oos": 0.3556,
+    "most_selected": {
+      "TREND-1D_1d_40": 20,
+      "TREND-4H_4h_48": 9,
+      "TREND-1D_1d_55": 7,
+      "TREND-1D_1d_20": 5,
+      "TREND-4H_4h_24": 4
+    },
+    "method": "CPCV (Lopez de Prado 2018), 10 bloques, 2 de test, purga 1"
+  },
+  "psr": {
+    "psr": 0.9681,
+    "sharpe_daily": 0.0319,
+    "sharpe_annual": 0.6102,
+    "sr0_annual": 0.0,
+    "observations": 2496,
+    "method": "PSR (Bailey & Lopez de Prado 2012), sin ajuste por multiplicidad"
+  },
+  "caveats": [
+    "PBO y DSR son propiedades de este universo, no de una configuración suelta.",
+    "El DSR de la puerta se calcula dentro del grupo de variantes de cada hipótesis (el espacio de búsqueda real); el valor agrupado se incluye solo como contexto y suele ser más severo porque suma familias con signo opuesto.",
+    "El universo son vecindades paramétricas de las specs de referencia: si el investigador probó otras variantes fuera de esta lista, el PBO real es peor.",
+    "WFA elige de nuevo en cada fold, así que mide el procedimiento de selección, no la config ganadora del ciclo.",
+    "El PSR se reporta contra cero y sin deflactar: mide si hay habilidad, no si sobrevive a la multiplicidad. Por construcción es mayor que el DSR; no sustituye a la puerta.",
+    "La puerta de meseta (±20%) es un heurístico, no un test calibrado: la literatura reciente encuentra que la geometría de la meseta es un diagnóstico débil frente al PSR (Plateaus, Peaks and the PBO, 2025)."
+  ]
+}
