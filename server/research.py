@@ -45,8 +45,9 @@ GRIDS: dict[str, list[float | int]] = {
     "z": [1.5, 2.0, 2.5],
     "atr_k": [1.2, 2.0, 3.0],
     "tp_r": [2.0, 4.0],
+    "range_bars": [2, 4, 6],
 }
-SWEEPABLE = ("N", "z", "atr_k", "tp_r")
+SWEEPABLE = ("N", "z", "atr_k", "tp_r", "range_bars")
 
 
 class ResearchUnavailable(RuntimeError):
@@ -94,9 +95,129 @@ def _slug(value: float | int) -> str:
     return str(value).replace(".", "-")
 
 
-_TOKENS = {"N": "N", "z": "Z", "atr_k": "K", "tp_r": "TP"}
+_TOKENS = {"N": "N", "z": "Z", "atr_k": "K", "tp_r": "TP", "range_bars": "R"}
 ID_PATTERN = re.compile(r"^BTC-[A-Z0-9]+(-[A-Z0-9]+)*$")
 LABEL_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_.-]{1,48}$")
+
+
+# Familias que el motor ya implementa y que este bot nunca ha medido. El lado
+# de tendencia lleva seis semillas y noventa y seis variantes sin pasar el
+# filtro; probar el contrario y otro patrón de sesión es lo que falta.
+# `orb_session` cierra la sesión a 96 barras fijas, así que su marco natural es
+# 15m; pero el esquema del motor solo acepta "15m"/"30m" y pandas 3 rechaza esos
+# alias ("'m' is no longer supported"), así que todo marco de minutos salvo el
+# 5m nativo revienta al resamplear. Se mide en 5m: rango de la primera hora y
+# ventana de 8 h, que es la sesión que `_orb` sabe cerrar en ese marco.
+SEED_BLUEPRINTS: list[dict[str, Any]] = [
+    {
+        "id": "BTC-ZREV-1H",
+        "label": "zrev_1h_96",
+        "name": "Reversion z-score 1h",
+        "family": "mean_reversion",
+        "timeframe_signal": "1h",
+        "rule": "zscore_fade",
+        "hypothesis": (
+            "Las seis semillas del motor prueban tendencia y todas fueron rechazadas. "
+            "El lado contrario no está medido: una desviacion grande respecto a la "
+            "media de 96 barras de hora revierte antes de que el stop de 2 ATR se "
+            "toque. A 96 barras la media cubre cuatro dias, que es el horizonte donde "
+            "la reversión de BTC ya no la come el coste de 5 pb por lado."
+        ),
+        "long": "z[t] <= -z (cierre muy por debajo de la media)",
+        "short": "z[t] >= z (cierre muy por encima de la media)",
+        "params": {"N": 96, "z": 2.0, "atr_k": 2.0, "tp_r": 2.0},
+        "exit": {"stop": "2.0 * ATR(14)[t]", "target": "2.0 * R", "time_stop_bars": 48, "trailing": None},
+        "failure_modes": [
+            "tendencia sostenida: el precio no vuelve a la media y el stop corta",
+            "el z-score se dispara con el hueco, sin entrada posible al precio teorico",
+        ],
+    },
+    {
+        "id": "BTC-ZREV-4H",
+        "label": "zrev_4h_60",
+        "name": "Reversion z-score 4h",
+        "family": "mean_reversion",
+        "timeframe_signal": "4h",
+        "rule": "zscore_fade",
+        "hypothesis": (
+            "La misma reversión que en 1h, medida en barras de 4h: 60 barras son diez "
+            "días de media y el coste por operación baja a la mitad. Si la reversión "
+            "existe en BTC, debería verse mejor cuanto menos se paga por operar."
+        ),
+        "long": "z[t] <= -z (cierre muy por debajo de la media)",
+        "short": "z[t] >= z (cierre muy por encima de la media)",
+        "params": {"N": 60, "z": 2.0, "atr_k": 2.0, "tp_r": 2.0},
+        "exit": {"stop": "2.0 * ATR(14)[t]", "target": "2.0 * R", "time_stop_bars": 30, "trailing": None},
+        "failure_modes": [
+            "tendencia sostenida: el precio no vuelve a la media y el stop corta",
+            "con 60 barras la media reacciona tarde y el z-score llega agotado",
+        ],
+    },
+    {
+        "id": "BTC-ORB-5M",
+        "label": "orb_5m_12",
+        "name": "Opening range breakout 5m",
+        "family": "orb",  # el esquema solo admite trend/breakout/orb/mean_reversion/regime/momentum
+        "timeframe_signal": "5m",
+        "rule": "orb_session",
+        "hypothesis": (
+            "La primera hora del dia UTC define un rango y el primer cierre fuera de "
+            "el suele continuar durante las horas siguientes. En futuros con campana "
+            "de apertura el patron esta documentado; en BTC el dia UTC no tiene "
+            "campana, asi que la hipotesis es debil y por eso importa medirla en vez "
+            "de citarla. Doce barras de 5m son esa primera hora."
+        ),
+        "long": "close[t] > max(high[apertura .. apertura+range_bars])",
+        "short": "close[t] < min(low[apertura .. apertura+range_bars])",
+        "params": {"range_bars": 12, "atr_k": 2.0, "tp_r": 2.0},
+        "exit": {"stop": "2.0 * ATR(14)[t]", "target": "2.0 * R", "time_stop_bars": 96, "trailing": None},
+        "failure_modes": [
+            "falsas rupturas en un rango estrecho: el primer cierre fuera vuelve dentro",
+            "el rango de la primera hora es tan ancho que el stop queda lejos",
+        ],
+    },
+]
+
+
+def _base_template(home: Path) -> dict[str, Any]:
+    """Una spec real del motor, para heredar riesgo, costes y validacion."""
+    preferred = home / SPECS_DIR / "btc-trend-1d-donchian-40.json"
+    candidates = [preferred] if preferred.is_file() else sorted((home / SPECS_DIR).glob("*.json"))
+    if not candidates:
+        raise ResearchUnavailable(f"no hay specs en {home / SPECS_DIR}")
+    return json.loads(candidates[0].read_text(encoding="utf-8"))
+
+
+def seed_documents(template: dict[str, Any]) -> list[dict[str, Any]]:
+    """Semillas nuevas a partir de una spec real: nada de inventar campos."""
+    documents: list[dict[str, Any]] = []
+    for blueprint in SEED_BLUEPRINTS:
+        document = json.loads(json.dumps(template))
+        document.update(
+            id=blueprint["id"],
+            name=blueprint["name"],
+            label=blueprint["label"],
+            family=blueprint["family"],
+            hypothesis=blueprint["hypothesis"],
+            timeframe_signal=blueprint["timeframe_signal"],
+            version="1.0.0",
+        )
+        document.pop("parent_version", None)
+        document.pop("expected", None)  # no se inventan cifras de rendimiento
+        document["entry"] = {
+            "rule": blueprint["rule"],
+            "long": blueprint["long"],
+            "short": blueprint["short"],
+            "cooldown_bars": 0,
+        }
+        if blueprint["rule"] == "orb_session":
+            document["entry"]["sessions"] = ["00:00"]
+        document["exit"] = blueprint["exit"]
+        document["params"] = blueprint["params"]
+        document["failure_modes"] = blueprint["failure_modes"]
+        document["validation"] = {**document.get("validation", {}), "trials_declared": 1}
+        documents.append(document)
+    return documents
 
 
 def variants(spec: dict[str, Any]) -> list[dict[str, Any]]:
@@ -126,6 +247,13 @@ def variants(spec: dict[str, Any]) -> list[dict[str, Any]]:
         version = str(spec.get("version") or "1.0.0")
         document["parent_version"] = version if re.fullmatch(r"\d+\.\d+\.\d+", version) else "1.0.0"
         out.append(document)
+    # Cuantas mas combinaciones se prueban, mas se selecciona por azar: declarar
+    # solo las de la semilla seria contar la mitad de la historia.
+    for document in out:
+        validation = document.get("validation")
+        if isinstance(validation, dict):
+            declared = int(validation.get("trials_declared") or 0)
+            validation["trials_declared"] = max(declared, len(out) + 1)
     return out
 
 
@@ -281,6 +409,7 @@ def main(argv: list[str] | None = None) -> int:
         description="Puente único con el motor de estrategias"
     )
     parser.add_argument("--home", default=None, help="raíz del motor (o EZUR_RESEARCH_HOME)")
+    parser.add_argument("--seeds", action="store_true", help="crea semillas de familias sin medir")
     parser.add_argument("--generate", action="store_true", help="crea variantes de las specs semilla")
     parser.add_argument("--report", action="store_true", help="resume el ledger por familia y marco")
     parser.add_argument("--list", action="store_true", help="specs y estado, sin ejecutar")
@@ -301,6 +430,15 @@ def main(argv: list[str] | None = None) -> int:
     python = interpreter(home)
     ledger = Path(args.ledger)
     records = load_ledger(ledger)
+
+    if args.seeds:
+        documents = seed_documents(_base_template(home))
+        written, skipped = write_variants(documents, home / SPECS_DIR)
+        print(
+            f"semillas: {written} nuevas, {skipped} ya existían ({len(documents)} propuestas)",
+            flush=True,
+        )
+        return 0
 
     if args.generate:
         seeds = sorted((home / SPECS_DIR).glob("*.json"))
