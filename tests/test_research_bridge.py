@@ -62,6 +62,55 @@ def test_un_fallo_no_marca_la_spec_como_medida(tmp_path, monkeypatch):
     assert [path.stem for path in queue] == ["a", "b"]
 
 
+def test_las_semillas_nuevas_cumplen_el_esquema():
+    template = {
+        "id": "BTC-X", "name": "x", "version": "1.0.0", "label": "x",
+        "family": "trend", "hypothesis": "h", "instrument": "BTCUSDT_PERP",
+        "timeframe_signal": "1d", "data_requirements": {"datasets": ["klines_5m"]},
+        "entry": {"rule": "donchian_breakout"}, "exit": {"time_stop_bars": 1},
+        "params": {"N": 40, "atr_k": 1.5, "tp_r": 2.0},
+        "risk": {}, "costs": {}, "execution": {},
+        "validation": {"trials_declared": 8}, "expected": {"turnover_per_year": 1.0},
+    }
+
+    docs = research.seed_documents(template)
+
+    assert len(docs) == len(research.SEED_BLUEPRINTS)
+    assert len({doc["id"] for doc in docs}) == len(docs)
+    for doc in docs:
+        assert research.ID_PATTERN.fullmatch(doc["id"])
+        assert research.LABEL_PATTERN.fullmatch(doc["label"])
+        assert doc["validation"]["trials_declared"] == 1
+        assert doc["params"] == research.SEED_BLUEPRINTS[
+            [b["id"] for b in research.SEED_BLUEPRINTS].index(doc["id"])
+        ]["params"]
+    # Sin cifras de rendimiento inventadas para una familia que nunca se midió.
+    assert all("expected" not in doc for doc in docs)
+
+
+def test_orb_solo_se_siembra_en_el_marco_que_el_motor_cierra():
+    orb = [b for b in research.SEED_BLUEPRINTS if b["rule"] == "orb_session"]
+
+    assert orb
+    # `_orb` cierra la sesión a 96 barras fijas: en 1h serían cuatro días. Y el
+    # marco tiene que ser 5m porque pandas 3 rechaza los alias "15m"/"30m" que
+    # el esquema del motor sí admite; el resample reventaría antes de medir.
+    assert all(b["timeframe_signal"] == "5m" for b in orb)
+    assert all(b["params"]["range_bars"] == 12 for b in orb)  # una hora de 5m
+
+
+def test_las_variantes_declaran_los_intentos_de_verdad():
+    spec = {
+        "id": "BTC-X", "version": "1.0.0", "label": "x",
+        "params": {"N": 40, "atr_k": 1.5, "tp_r": 4.0},
+        "validation": {"trials_declared": 8},
+    }
+
+    out = research.variants(spec)
+
+    assert all(doc["validation"]["trials_declared"] == len(out) + 1 for doc in out)
+
+
 def test_las_variantes_no_repiten_la_semilla():
     spec = {"id": "BTC-X", "version": "1.4.0", "label": "1d_ens5_vt",
             "params": {"N": 40, "atr_k": 1.5, "tp_r": 4.0}}

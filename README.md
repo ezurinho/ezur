@@ -359,12 +359,24 @@ que se une es el mando: un comando del bot lo descubre, lo ejecuta y guarda cada
 veredicto en `data/research/runs.jsonl`.
 
 ```bash
+python -m server.research --seeds     # familias que nunca se han medido
 python -m server.research --generate  # variantes de las specs semilla
 python -m server.research --list      # specs y estado
 python -m server.research --once      # la siguiente pendiente
 python -m server.research --loop      # sigue buscando mientras el bot corre
 python -m server.research --report    # qué ha encontrado, por familia y marco
 ```
+
+`--seeds` escribe tres semillas nuevas heredando riesgo, costes y validación de
+una spec real del motor: reversión z-score en 1 h y 4 h, y opening range
+breakout en 5 m. La tendencia lleva seis semillas y noventa y seis variantes sin
+pasar el filtro; probar el lado contrario y otro patrón no es más de lo mismo.
+
+Dos límites del motor que conviene saber antes de sembrar: `orb_session` cierra
+la sesión a 96 barras fijas (en 1 h serían cuatro días, así que se mide en 5 m
+con la primera hora como rango) y pandas 3 rechaza los alias `15m`/`30m` aunque
+el esquema los admita, de modo que cualquier marco de minutos salvo 5 m revienta
+al resamplear.
 
 `--generate` barre los parámetros que cada spec declara —`N` 20/40/60, `atr_k`
 1,2/2,0/3,0 y `tp_r` 2/4— y escribe las candidatas en `data/research/specs`.
