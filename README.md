@@ -351,6 +351,28 @@ su código deja de leerlo o si el documento no cuadra con lo que espera. Cambiar
 `min_profit_factor` una vez lo cambia en los dos, en vez de dejar que un
 veredicto dependa de qué copia se acuerde actualizar.
 
+## Bot y motor, un solo mando
+
+El motor de estrategias sigue en su árbol porque necesita pandas y su propio
+venv; meterlo en el .exe multiplicaría el instalador y duplicaría el motor. Lo
+que se une es el mando: un comando del bot lo descubre, lo ejecuta y guarda cada
+veredicto en `data/research/runs.jsonl`.
+
+```bash
+python -m server.research --list    # specs y estado
+python -m server.research --once    # la siguiente pendiente
+python -m server.research --loop    # sigue buscando mientras el bot corre
+```
+
+Cada spec se identifica por la huella de su JSON, así que reiniciar el bucle no
+repite lo ya medido; un fallo no marca la spec como medida y tres fallos seguidos
+paran el bucle para no quemar tiempo. La ruta del motor se toma de
+`EZUR_RESEARCH_HOME` (o de la ubicación por defecto) y su intérprete de
+`EZUR_RESEARCH_PYTHON` o del venv del propio motor.
+
+Los tres contratos compartidos: el fichero de umbrales, los datos de
+`data/*.csv` que ambos leen y el ledger de veredictos.
+
 ## Alertas
 
 Un webhook opcional envía los eventos `warn`/`error` (parada de emergencia,
