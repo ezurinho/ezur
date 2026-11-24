@@ -174,6 +174,19 @@ class OKXFeed(MarketFeed):
                 symbol: [bar for bar in bars if self._last_ts is None or bar.t > self._last_ts]
                 for symbol, bars in batch.items()
             }
+            # Un parón del proceso (no del HTTP) también deja huecos: si la
+            # ventana nueva empieza más de dos velas después de la última
+            # emitida, se pide el backfill para rellenarlos.
+            if not recovering and self._last_ts is not None:
+                oldest = min((bars[0].t for bars in batch.values() if bars), default=None)
+                if oldest is not None and (oldest - self._last_ts).total_seconds() > 120:
+                    batch = await asyncio.to_thread(self.fetch, self.bars)
+                    fresh = {
+                        symbol: [
+                            bar for bar in bars if bar.t > self._last_ts
+                        ]
+                        for symbol, bars in batch.items()
+                    }
             if not all(fresh.values()):
                 continue
             for tick in aligned_ticks(fresh):
