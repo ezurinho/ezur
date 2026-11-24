@@ -33,6 +33,7 @@ class SimulatedFeed(MarketFeed):
         bars: int = 390,
         interval_minutes: int = 1,
         tick_size: float = 0.25,
+        reference_prices: dict[str, float] | None = None,
         start: datetime | None = None,
     ) -> None:
         self.seed_date = seed_date
@@ -40,6 +41,7 @@ class SimulatedFeed(MarketFeed):
         self.bars_count = bars
         self.interval_minutes = interval_minutes
         self.tick_size = tick_size
+        self.reference_prices = dict(reference_prices or {})
         self.start = start
 
     def iter_ticks(self) -> Iterator[Tick]:
@@ -52,6 +54,7 @@ class SimulatedFeed(MarketFeed):
                 bars=self.bars_count,
                 interval_minutes=self.interval_minutes,
                 tick_size=self.tick_size,
+                reference_price=self.reference_prices.get(symbol),
             )
             for symbol in self.instruments
         }
