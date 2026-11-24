@@ -350,6 +350,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--seeds", action="store_true", help="crea semillas de familias sin medir")
     parser.add_argument("--generate", action="store_true", help="crea variantes de las specs semilla")
     parser.add_argument("--report", action="store_true", help="resume el ledger por familia y marco")
+    parser.add_argument("--rank", action="store_true", help="qué specs están más cerca de pasar")
     parser.add_argument("--vault", action="store_true", help="escribe el vault de Markdown con la memoria")
     parser.add_argument("--vault-lint", action="store_true", help="revisa enlaces rotos y notas huérfanas")
     parser.add_argument("--vault-dir", default=None, help="dónde escribir el vault")
@@ -394,6 +395,37 @@ def main(argv: list[str] | None = None) -> int:
             f"variantes: {written} nuevas, {skipped} ya existían "
             f"({len(created)} calculadas de {len(seeds)} semillas)"
         )
+        return 0
+
+    if args.rank:
+        from server.vault import ARTIFACTS as ARTIFACTS_DIR
+        from server.vault import ranking, read_artifacts
+
+        from server.vault import constant_gates, grouped_ranking
+
+        artifacts = read_artifacts(ARTIFACTS_DIR)
+        rows = ranking(artifacts, constant_gates(artifacts))
+        if not rows:
+            print(f"sin artefactos en {ARTIFACTS_DIR}", flush=True)
+            return 0
+        print(
+            f"{'familia':<16} {'marco':<5} {'specs':>5} {'mejor':>7} {'obstáculo':<16} "
+            f"{'margen':>7} mejor spec",
+            flush=True,
+        )
+        ignored = constant_gates(artifacts)
+        if ignored:
+            print(f"constantes fuera del margen: {', '.join(sorted(ignored))}", flush=True)
+        for group in grouped_ranking(rows):
+            best = group["best"]
+            margin = best["margin"]
+            shown = f"{margin:+.3f}" if margin is not None else "—"
+            print(
+                f"{group['family'][:16]:<16} {group['timeframe']:<5} {group['specs']:>5} "
+                f"{best['passed']}/{best['measured']:<4} {str(best['blocker'] or '—')[:16]:<16} "
+                f"{shown:>7} {best['id'][:34]}",
+                flush=True,
+            )
         return 0
 
     if args.vault_lint:
