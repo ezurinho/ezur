@@ -22,6 +22,17 @@ Sistema visual de la terminal. Una sola fuente de verdad: `frontend/src/styles.c
 7. **El color nunca es la única señal.** Cada estado lleva texto además de color
    (`running`, `bloqueado`, `ok`), para daltonismo y para capturas en gris.
 
+## Marca
+
+`Logo` (`frontend/src/components/Logo.tsx`): placa redondeada de 48 con la E
+tallada en tres barras de 6,5 y huecos de 3,25. A 16 px las barras siguen
+midiendo más de 2 px y el hueco no se cierra, que es el punto donde una marca
+deja de leerse. La placa toma `--accent`, así que el logo cambia con el tema y
+con el acento que elija el operador; las barras se recortan con `--logo-cut` (el
+color del fondo) para que la letra se lea como un hueco y no como un trazo.
+`public/favicon.svg` y `public/logo.svg` repiten la geometría con el cian fijo,
+porque fuera de la app no hay variables CSS.
+
 ## Temas y acento
 
 Cinco temas son conjuntos de tokens, no hojas de estilo distintas: los mismos
@@ -83,6 +94,28 @@ Los dos canvas de `lightweight-charts` se recrean al cambiar de tema porque no
 heredan variables CSS; los SVG (`Sparkline`, `Gauge`, `MarketPulse`) se
 recolorean solos. Todo respeta `prefers-reduced-motion`: sin animación, pero con
 el trazo completo.
+
+## Razonamiento
+
+Tarjeta `Reasoning`, en Inicio del modo avanzado. Contesta tres cosas en este
+orden: qué decidió, por qué, y qué decidió **no** hacer.
+
+| Paso | De dónde sale |
+|---|---|
+| Datos | `data.provider`, `bars_available`, `staleness_ms`, `quality` |
+| Sesión | `session.label`, `phase`, `is_open` |
+| Estrategia | `strategy.name`, `state`, `state_label` |
+| Señal | `strategy.signal` o `strategy.rejection` |
+| Riesgo | `risk.blocked`, `block_reason`, `daily_trades`, `limits` |
+| Ejecución | `position`, `orders` |
+
+Cada paso lleva ✓ (cumple), ✗ (no cumple), ! (a medias) o · (sin dato). El
+veredicto no se genera: sale de `buildReasoning()` (`frontend/src/reasoning.ts`),
+una función pura con tests, y de los códigos ya traducidos en `reasons.ts`; por
+eso la tarjeta lleva el sello **determinista**. La convicción solo aparece si la
+estrategia publica `signal.strength`, en bandas alta/media/baja: un 0,73 suelto
+no se puede accionar. El veto —«rechazó N señales hoy»— solo aparece si
+`risk.block_count > 0`; un panel que siempre felicita es decoración.
 
 ## Laboratorio
 
