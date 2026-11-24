@@ -1,0 +1,68 @@
+{
+  "assumed_half_spread_bp": 0.07,
+  "measured_spread_bp_median": 0.9192,
+  "measured_half_spread_bp": 0.4596,
+  "ratio_measured_over_assumed": 6.566,
+  "verdict": "el supuesto subestima el coste y hay que subirlo",
+  "method": "|sum(s_i*p*q)| / sum(p*q) per hour, s_i=+1 when the buyer is the maker; hourly distribution reported, not a single day figure",
+  "days": [
+    "2026-06-15",
+    "2026-06-16",
+    "2025-10-10",
+    "2024-08-05"
+  ],
+  "results": [
+    {
+      "trades": 1354068,
+      "spread_bp": 0.3253,
+      "half_spread_bp": 0.1627,
+      "tick_bp": 0.0151,
+      "autocov": -1.162714,
+      "method": "Roll (1984), spread = 2*sqrt(-cov(dp_t, dp_t-1))",
+      "plausible": true,
+      "median_price": 66288.2,
+      "symbol": "BTCUSDT",
+      "day": "2026-06-15"
+    },
+    {
+      "trades": 1226690,
+      "spread_bp": 0.1806,
+      "half_spread_bp": 0.0903,
+      "tick_bp": 0.0151,
+      "autocov": -0.3555777,
+      "method": "Roll (1984), spread = 2*sqrt(-cov(dp_t, dp_t-1))",
+      "plausible": true,
+      "median_price": 66018.9,
+      "symbol": "BTCUSDT",
+      "day": "2026-06-16"
+    },
+    {
+      "trades": 4324091,
+      "spread_bp": 2.6087,
+      "half_spread_bp": 1.3043,
+      "tick_bp": 0.0088,
+      "autocov": -220.2695,
+      "method": "Roll (1984), spread = 2*sqrt(-cov(dp_t, dp_t-1))",
+      "plausible": true,
+      "median_price": 113784.7,
+      "symbol": "BTCUSDT",
+      "day": "2025-10-10"
+    },
+    {
+      "trades": 6088369,
+      "spread_bp": 1.5131,
+      "half_spread_bp": 0.7566,
+      "tick_bp": 0.0188,
+      "autocov": -16.1352,
+      "method": "Roll (1984), spread = 2*sqrt(-cov(dp_t, dp_t-1))",
+      "plausible": true,
+      "median_price": 53094.3,
+      "symbol": "BTCUSDT",
+      "day": "2024-08-05"
+    }
+  ],
+  "caveats": [
+    "aggTrades no trae el libro, así que esto mide desplazamiento por flujo de órdenes, no el spread cotizado; es una cota del coste de cruzar.",
+    "El tamaño de muestra son 4 días elegidos por régimen, no una serie continua."
+  ]
+}
