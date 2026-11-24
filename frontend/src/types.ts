@@ -136,6 +136,7 @@ export interface StrategyBlock {
   metrics: Record<string, KvEntry>;
   signal: Signal | null;
   rejection: Record<string, string> | null;
+  rejections?: Record<string, number>;
 }
 
 export interface Position {
