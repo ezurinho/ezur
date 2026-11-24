@@ -204,6 +204,8 @@ def books(db_path: Path) -> dict[str, Any]:
         peak = _kv(conn, "peak_equity")
         heartbeat = _kv(conn, "heartbeat")
         emergency = _kv(conn, "emergency")
+        day = _kv(conn, "day_stats")
+        session = _kv(conn, "session_id")
     finally:
         conn.close()
     return {
@@ -212,6 +214,8 @@ def books(db_path: Path) -> dict[str, Any]:
         "peak": _number(peak),
         "heartbeat": heartbeat,
         "emergency": bool(emergency) if emergency is not None else None,
+        "day": day if isinstance(day, dict) else None,
+        "session": session if isinstance(session, str) else None,
     }
 
 
@@ -294,6 +298,17 @@ def render(
         if health.get("emergency"):
             parts.append("emergencia activa")
         lines.append("estado: " + " · ".join(parts))
+    day = (books_state or {}).get("day")
+    if isinstance(day, dict) and day.get("trades") is not None:
+        session = (books_state or {}).get("session")
+        detail = (
+            f"día: {int(day.get('trades') or 0)} ops · "
+            f"P&L {_money(day.get('pnl'))} · "
+            f"racha {int(day.get('consecutive_losses') or 0)}"
+        )
+        if session:
+            detail += f" · sesión {session}"
+        lines.append(detail)
     if books_state:
         expected = capital + pnl
         curve = books_state.get("curve")
