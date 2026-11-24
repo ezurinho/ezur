@@ -32,7 +32,40 @@ def test_corrupt_config_is_archived_and_defaults_restored(tmp_path):
     path.write_text("{not json", encoding="utf-8")
     settings = load_settings(path)
     assert settings.risk.risk_per_trade_pct == 1.0
+    assert settings.auto_start is False
     assert (tmp_path / "config.json.broken").exists()
+
+
+def test_missing_profile_does_not_auto_start(tmp_path):
+    assert load_settings(tmp_path / "missing.json").auto_start is False
+
+
+def test_future_schema_version_is_rejected():
+    with pytest.raises(ValidationError):
+        Settings.model_validate({"version": 999})
+
+
+def test_non_finite_risk_and_negative_costs_are_rejected():
+    with pytest.raises(ValidationError):
+        Settings.model_validate({"risk": {"max_daily_loss_pct": float("nan")}})
+    with pytest.raises(ValidationError):
+        Settings.model_validate({"execution": {"commission_per_unit_side": -0.1}})
+
+
+def test_instrument_metadata_is_validated_before_the_engine_sees_it():
+    with pytest.raises(ValidationError):
+        InstrumentConfig(symbol="AAA", tick_size=0)
+    with pytest.raises(ValidationError):
+        InstrumentsConfig(
+            items=[InstrumentConfig(symbol="AAA", role="primary", session_template="missing")],
+            primary="AAA",
+        )
+
+
+def test_synthetic_reference_price_is_explicit_and_positive():
+    assert InstrumentConfig(symbol="AAA", reference_price=60_000).reference_price == 60_000
+    with pytest.raises(ValidationError):
+        InstrumentConfig(symbol="AAA", reference_price=0)
 
 
 def test_save_is_atomic(tmp_path):
