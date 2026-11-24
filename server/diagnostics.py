@@ -95,6 +95,25 @@ def _kv_number(connection: sqlite3.Connection, key: str) -> float | None:
         return None
 
 
+def _peak_reset(
+    connection: sqlite3.Connection, tables: set[str]
+) -> tuple[str, float] | None:
+    """Último reinicio manual del pico: (cuándo, pico nuevo), si lo hay."""
+    if "events" not in tables:
+        return None
+    row = connection.execute(
+        "SELECT ts, meta FROM events WHERE category = 'risk' "
+        "AND message LIKE 'pico reiniciado%' ORDER BY ts DESC, id DESC LIMIT 1"
+    ).fetchone()
+    if row is None:
+        return None
+    try:
+        after = float((json.loads(row["meta"] or "{}") or {}).get("after"))
+    except (TypeError, ValueError):
+        return None
+    return str(row["ts"]), after
+
+
 def _books(
     connection: sqlite3.Connection, tables: set[str], capital: float
 ) -> dict[str, Any]:
@@ -113,14 +132,26 @@ def _books(
     ).fetchone()
     rows = int(connection.execute("SELECT COUNT(*) AS c FROM equity").fetchone()["c"])
     last = connection.execute("SELECT ts, equity FROM equity ORDER BY ts DESC LIMIT 1").fetchone()
-    high_row = connection.execute("SELECT MAX(equity) AS high FROM equity").fetchone()
+    # Un reinicio manual del pico es legítimo: desde ahí se mide el drawdown, no
+    # desde el máximo histórico de la curva. Si no se tiene en cuenta, la
+    # auditoría señalaría como desviación una decisión deliberada.
+    reset = _peak_reset(connection, tables)
+    if reset is not None:
+        reset_at, base = reset
+        high_row = connection.execute(
+            "SELECT MAX(equity) AS high FROM equity WHERE ts >= ?", (reset_at,)
+        ).fetchone()
+    else:
+        reset_at = None
+        base = float(capital)
+        high_row = connection.execute("SELECT MAX(equity) AS high FROM equity").fetchone()
     total = float(total_row["total"] or 0.0)
     high = float(high_row["high"]) if high_row and high_row["high"] is not None else None
     book = float(capital) + total
     state = _kv_number(connection, "equity")
     peak_state = _kv_number(connection, "peak_equity")
     curve = float(last["equity"]) if last else None
-    peak_expected = max(float(capital), high) if high is not None else float(capital)
+    peak_expected = max(base, high) if high is not None else base
 
     differences: dict[str, float | int] = {}
     if state is not None and abs(state - book) > EQUITY_TOLERANCE:
@@ -142,6 +173,7 @@ def _books(
         "curve_equity": curve,
         "peak_equity": peak_state,
         "peak_expected": round(peak_expected, 8),
+        "peak_reset_at": reset_at,
         "differences": differences,
         "consistent": not differences,
     }

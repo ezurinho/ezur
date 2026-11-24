@@ -221,3 +221,34 @@ def test_diagnose_compara_instantes_y_no_texto(tmp_path):
     ledger = diagnose(path)["ledger"]
 
     assert [row["id"] for row in ledger["impossible"]] == [1]
+
+def test_diagnose_entiende_un_pico_reiniciado(tmp_path):
+    from datetime import datetime, timezone
+
+    path = tmp_path / "terminal.db"
+    store = Store(path)
+    _seed_trade(store, datetime(2026, 11, 24, 1, 30, tzinfo=timezone.utc), pnl_net=1000.0)
+    _seed_trade(store, datetime(2026, 11, 24, 2, 0, tzinfo=timezone.utc), pnl_net=-990.0)
+    store.kv_set("equity", 25_010.0)
+    store.kv_set("peak_equity", 25_010.0)
+    store.append_equity(26_000.0, datetime(2026, 11, 24, 1, 30, tzinfo=timezone.utc))
+    store.append_equity(25_010.0, datetime(2026, 11, 24, 2, 0, tzinfo=timezone.utc))
+    store.conn.execute(
+        "INSERT INTO events (ts, level, category, message, meta) VALUES (?,?,?,?,?)",
+        (
+            "2026-11-24T03:00:00+00:00",
+            "warn",
+            "risk",
+            "pico reiniciado a la equity del libro: 26000.0 -> 25010.0",
+            json.dumps({"before": 26_000.0, "after": 25_010.0}),
+        ),
+    )
+    store.conn.commit()
+    store.close()
+
+    books = diagnose(path, 25_000.0)["books"]
+
+    assert books["peak_reset_at"] == "2026-11-24T03:00:00+00:00"
+    assert books["peak_expected"] == 25_010.0
+    assert books["differences"] == {}
+    assert books["consistent"] is True
