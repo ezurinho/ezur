@@ -30,9 +30,11 @@ def _bucket(stamp: datetime, rule: str) -> datetime:
         return stamp.replace(hour=0, minute=0, second=0, microsecond=0)
     if rule == "4H":
         return stamp.replace(hour=(stamp.hour // 4) * 4, minute=0, second=0, microsecond=0)
+    if rule == "15m":
+        return stamp.replace(minute=(stamp.minute // 15) * 15, second=0, microsecond=0)
     if rule == "1H":
         return stamp.replace(minute=0, second=0, microsecond=0)
-    raise ValueError(f"regla no soportada: {rule!r} (usa 1H, 4H o 1D)")
+    raise ValueError(f"regla no soportada: {rule!r} (usa 15m, 1H, 4H o 1D)")
 
 
 def resample(source: Path | str, output: Path | str, rule: str = "1D") -> dict[str, Any]:
@@ -176,7 +178,7 @@ def main() -> None:
     resample_cmd = sub.add_parser("resample", help="agrega un CSV a 1H/4H/1D")
     resample_cmd.add_argument("--in", dest="source", required=True)
     resample_cmd.add_argument("--out", required=True)
-    resample_cmd.add_argument("--rule", default="1D", choices=["1H", "4H", "1D"])
+    resample_cmd.add_argument("--rule", default="1D", choices=["15m", "1H", "4H", "1D"])
 
     args = parser.parse_args()
     if args.command == "list":
