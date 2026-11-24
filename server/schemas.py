@@ -145,6 +145,10 @@ class StrategyBlock(_Model):
     metrics: dict[str, KvEntryModel] = Field(default_factory=dict)
     signal: SignalModel | None = None
     rejection: dict[str, str] | None = None
+    # Señales descartadas en toda la corrida, por código de riesgo. El total
+    # sobrevive a los reinicios de sesión, así que sirve para explicar «por qué
+    # no entra» sin depender de la última vela.
+    rejections: dict[str, int] = Field(default_factory=dict)
 
 
 class SessionModel(_Model):
