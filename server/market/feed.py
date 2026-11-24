@@ -7,10 +7,12 @@ instrument. Nothing here knows which symbols exist: they arrive as a list.
 from __future__ import annotations
 
 import csv
+import math
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterator
 
+from ..config import MIN_TICK_SIZE
 from ..models import Bar, Tick
 from . import synthetic
 
@@ -33,14 +35,35 @@ class SimulatedFeed(MarketFeed):
         bars: int = 390,
         interval_minutes: int = 1,
         tick_size: float = 0.25,
+        tick_sizes: dict[str, float] | None = None,
         reference_prices: dict[str, float] | None = None,
         start: datetime | None = None,
     ) -> None:
+        tick_metadata = [("tick_size", tick_size)] + [
+            (f"tick_sizes[{symbol}]", value) for symbol, value in (tick_sizes or {}).items()
+        ]
+        for label, value in tick_metadata:
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not math.isfinite(value)
+                or value < MIN_TICK_SIZE
+            ):
+                raise ValueError(f"{label} must be a finite number >= {MIN_TICK_SIZE}")
+        for symbol, value in (reference_prices or {}).items():
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not math.isfinite(value)
+                or value <= 0
+            ):
+                raise ValueError(f"reference_prices[{symbol}] must be positive and finite")
         self.seed_date = seed_date
         self.instruments = list(instruments)
         self.bars_count = bars
         self.interval_minutes = interval_minutes
         self.tick_size = tick_size
+        self.tick_sizes = dict(tick_sizes or {})
         self.reference_prices = dict(reference_prices or {})
         self.start = start
 
@@ -53,7 +76,7 @@ class SimulatedFeed(MarketFeed):
                 start=start,
                 bars=self.bars_count,
                 interval_minutes=self.interval_minutes,
-                tick_size=self.tick_size,
+                tick_size=self.tick_sizes.get(symbol, self.tick_size),
                 reference_price=self.reference_prices.get(symbol),
             )
             for symbol in self.instruments

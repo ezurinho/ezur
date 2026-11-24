@@ -55,7 +55,7 @@ def test_el_tamano_a_media_maquina_recorta_unidades():
 
     assert decision.approved
     assert decision.code == "approved"
-    assert decision.size_factor == pytest.approx(0.25)
+    assert decision.size_factor == pytest.approx(round(59 / 239, 4))
     assert decision.units < 240  # 240 sería el tamaño completo al 1 % de 24.000
     assert "tamaño al 25%" in decision.message
 

@@ -33,6 +33,11 @@ const ROUTINE_BLOCK = new Set([
   "outside_window",
   "excluded_window",
   "no_price",
+  "stale_order",
+  "stale_signal",
+  "below_min_notional",
+  "gap_through_stop",
+  "gap_through_target",
 ]);
 
 /**

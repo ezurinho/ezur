@@ -22,6 +22,11 @@ const WORDS: Record<string, string> = {
   excluded_window: "Está dentro de la franja horaria que el perfil excluye (por ejemplo, apertura de mercado).",
   no_price: "Todavía no tiene precio de referencia del mercado.",
   stale_data: "El mercado lleva demasiado tiempo sin entregar velas nuevas. No abre operaciones con datos obsoletos.",
+  stale_order: "La orden pendiente tardó demasiado y se canceló: no ejecuta una señal antigua.",
+  stale_signal: "La señal venció antes de llegar a riesgo: no abre una operación con una entrada antigua.",
+  below_min_notional: "La orden no alcanza el valor mínimo del instrumento y se rechazó.",
+  gap_through_stop: "La apertura ya atravesó el stop: la orden se rechaza en vez de abrir una operación inválida.",
+  gap_through_target: "La apertura ya alcanzó el objetivo: no abre una operación que nacería cerrada.",
   no_signal: "El precio no cumple su regla de entrada ahora mismo.",
   risk_per_trade: "La operación saldría demasiado grande para el riesgo permitido.",
   stop_too_wide: "El stop necesario es más ancho del máximo permitido.",
@@ -29,7 +34,7 @@ const WORDS: Record<string, string> = {
   daily_profit_limit:
     "Hoy ya ganó el máximo configurado. Deja de abrir operaciones para no devolverlo.",
   size_below_minimum:
-    "Con el riesgo y la cuenta actuales, la operación saldría por debajo de una unidad. No merece la pena abrirla.",
+    "Con el riesgo y la cuenta actuales, la operación saldría por debajo de un lote. No merece la pena abrirla.",
   invalid_stop_side:
     "La señal pide el stop del lado equivocado: no protegería nada. Es un fallo de la estrategia, no del mercado.",
   invalid_target_side:
@@ -51,6 +56,11 @@ const UNLOCK: Record<string, string> = {
   excluded_window: "se desbloquea al terminar la franja excluida",
   no_price: "se desbloquea cuando llegue el primer precio",
   stale_data: "se desbloquea cuando vuelvan a llegar velas frescas",
+  stale_order: "se desbloquea con una nueva señal",
+  stale_signal: "se desbloquea con una nueva señal",
+  below_min_notional: "se desbloquea con una orden de mayor tamaño",
+  gap_through_stop: "se desbloquea con una nueva señal",
+  gap_through_target: "se desbloquea con una nueva señal",
 };
 
 export interface ReasonContext {

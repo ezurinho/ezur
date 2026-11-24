@@ -131,6 +131,7 @@ def build_feed(settings) -> MarketFeed:
         symbols,
         start=start,
         tick_size=settings.instruments.by_symbol(settings.instruments.primary).tick_size,
+        tick_sizes={item.symbol: item.tick_size for item in settings.instruments.items},
         reference_prices={
             item.symbol: item.reference_price
             for item in settings.instruments.items

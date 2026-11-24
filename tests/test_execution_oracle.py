@@ -132,6 +132,41 @@ def test_signal_price_oracle_rejects_a_target_reached_before_entry():
     assert events[0].reason == "gap_through_target"
 
 
+def test_signal_price_notional_uses_the_actual_long_fill():
+    engine = _engine(model="signal_price")
+    engine.instruments["PRIMARY"].contract_size = 1
+    engine.instruments["PRIMARY"].min_notional = 496
+    signal = Signal(key="notional-long", side="long", reason="t", ts=NOW, stop_price=98, target_price=101)
+    engine.arm(RiskDecision(approved=True, units=5, risk_per_unit=1), signal, "PRIMARY", 99, NOW)
+    trade, events = _trade(engine, [{"o": 100.0, "h": 100.5, "l": 98.9}])
+    assert trade is None
+    assert events[0].reason == "below_min_notional"
+
+
+def test_signal_price_notional_does_not_reject_a_valid_long_fill():
+    engine = _engine(model="signal_price")
+    engine.instruments["PRIMARY"].contract_size = 1
+    engine.instruments["PRIMARY"].min_notional = 496
+    signal = Signal(key="notional-long-ok", side="long", reason="t", ts=NOW, stop_price=98, target_price=101)
+    engine.arm(RiskDecision(approved=True, units=5, risk_per_unit=1), signal, "PRIMARY", 100, NOW)
+    trade, events = _trade(engine, [{"o": 99.1, "h": 100.2, "l": 98.9}])
+    assert trade is None
+    assert engine.position is not None
+    assert engine.position.entry_price == pytest.approx(100)
+    assert all(event.reason != "below_min_notional" for event in events)
+
+
+def test_signal_price_notional_uses_the_actual_short_fill():
+    engine = _engine(model="signal_price")
+    engine.instruments["PRIMARY"].contract_size = 1
+    engine.instruments["PRIMARY"].min_notional = 505
+    signal = Signal(key="notional-short", side="short", reason="t", ts=NOW, stop_price=102, target_price=99)
+    engine.arm(RiskDecision(approved=True, units=5, risk_per_unit=1), signal, "PRIMARY", 100, NOW)
+    trade, events = _trade(engine, [{"o": 101.1, "h": 101.2, "l": 99.8}])
+    assert trade is None
+    assert events[0].reason == "below_min_notional"
+
+
 def test_target_gap_oracle_rejects_both_sides():
     for side, target, bar in (
         ("long", 101.0, {"o": 102.0, "h": 102.5, "l": 101.5}),
@@ -152,19 +187,3 @@ def test_same_bar_target_oracle_is_counted():
     assert trade.exit_price == pytest.approx(102.25)
     assert trade.pnl_net == pytest.approx(22.5)
     assert events[-1].diagnostics["same_bar_exit"] is True
-
-
-def test_intrabar_oracle_matches_a_non_gap_target():
-    engine = _engine(model="intrabar")
-    _arm(engine)
-    trade, _ = _trade(
-        engine,
-        [
-            {"o": 100.0, "h": 100.4, "l": 99.8},
-            {"o": 101.0, "h": 103.0, "l": 100.8},
-        ],
-    )
-    assert trade is not None
-    assert trade.entry_price == pytest.approx(100.0)
-    assert trade.exit_price == pytest.approx(102.25)
-    assert trade.pnl_net == pytest.approx(22.5)

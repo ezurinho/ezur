@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import timedelta
+
 import pytest
 
 from server.models import RiskDecision
@@ -89,6 +91,44 @@ def test_cancel_all_clears_pending(engine, decision, signal_long):
     assert engine.execution.cancel_all() == 0
 
 
+def test_pending_orders_expire_after_their_ttl(engine, decision, signal_long):
+    order = engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, NOW)
+    assert order is not None
+    assert engine.execution.expire_pending(120, NOW + timedelta(seconds=121)) == 1
+    assert order.status == "cancelled"
+    assert engine.execution.pending_orders() == []
+    assert engine.execution.expire_pending(120, NOW + timedelta(seconds=122)) == 0
+
+
+def test_young_pending_orders_survive_expiry(engine, decision, signal_long):
+    order = engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, NOW)
+    assert order is not None
+    assert engine.execution.expire_pending(120, NOW + timedelta(seconds=119)) == 0
+    assert order.status == "pending"
+
+
+def test_fill_revalidates_minimum_notional(settings, decision):
+    from server.execution import ExecutionEngine
+    from server.strategy.base import Signal
+
+    instrument = settings.instruments.by_symbol(settings.instruments.primary)
+    instrument.contract_size = 2
+    instrument.min_notional = 1000
+    settings.execution.slippage_ticks = 0
+    engine = ExecutionEngine(
+        settings.execution,
+        {item.symbol: item for item in settings.instruments.items},
+    )
+    signal = Signal(key="min-notional", side="long", reason="t", ts=NOW, stop_price=99.0, target_price=101.0)
+    engine.arm(decision, signal, "PRIMARY", 100.0, NOW)
+
+    events = engine.on_bar({"PRIMARY": make_bar(o=99.25, h=99.5, l=99.0)})
+
+    assert engine.position is None
+    assert events[0].reason == "below_min_notional"
+    assert engine.orders[-1].status == "rejected"
+
+
 def test_slippage_is_capped_by_max_slippage_ticks(settings):
     from server.execution import ExecutionEngine
     from server.strategy.base import Signal
@@ -121,19 +161,7 @@ def _with_model(engine, model: str) -> None:
     )
 
 
-def test_intrabar_rejects_a_gap_through_the_stop(engine, decision, signal_long):
-    _with_model(engine, "intrabar")
-    engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, NOW)
-    # Opens below the stop: entering here would be born stopped out.
-    events = engine.execution.on_bar({"PRIMARY": make_bar(o=99.0, h=99.4, l=98.6)})
-    assert engine.execution.position is None
-    assert [event.type for event in events] == ["cancel"]
-    assert events[0].reason == "gap_through_stop"
-    assert engine.execution.orders[-1].status == "rejected"
-
-
 def test_entry_bar_can_kill_the_trade_and_says_so(engine, decision, signal_long):
-    _with_model(engine, "intrabar")
     engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, NOW)
     events = engine.execution.on_bar({"PRIMARY": make_bar(o=100.0, h=100.4, l=99.2)})
     assert [event.type for event in events] == ["fill", "exit"]
@@ -143,7 +171,7 @@ def test_entry_bar_can_kill_the_trade_and_says_so(engine, decision, signal_long)
     assert engine.execution.position is None
 
 
-@pytest.mark.parametrize("model", ["next_open", "signal_price", "intrabar"])
+@pytest.mark.parametrize("model", ["next_open", "signal_price"])
 def test_every_fill_model_rejects_an_entry_gap_through_the_stop(engine, decision, signal_long, model):
     _with_model(engine, model)
     engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, NOW)

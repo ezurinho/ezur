@@ -10,7 +10,7 @@
   "auto_start": true,
   "execution": {
     "commission_per_unit_side": 25.2279,
-    "fill_model": "intrabar",
+    "fill_model": "next_open",
     "max_slippage_ticks": 5,
     "partial_fill_ratio": 0.6,
     "simulate_partial_fills": false,
