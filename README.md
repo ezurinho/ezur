@@ -301,6 +301,29 @@ da esperanza neta positiva (+0,096 R con las 2.496 velas).
 En intraday el problema no es solo el coste: es que no hay borde que pagarlo.
 Subir de marco abarata operar; no crea señal.
 
+### Perfil agresivo
+
+`config/agresivo.json` (activarlo es `cp config/agresivo.json
+profiles/agresivo/config.json`): 5 % por operación, stop 3×ATR, sin freno de
+drawdown ni de racha, hasta 50 operaciones al día y 1.000 unidades. Medido sobre
+las 2.496 velas diarias con 5 pb por lado:
+
+| Stop | Riesgo | Ops | Acierto | PF | Esperanza | P&L | DD |
+|---|---|---|---|---|---|---|---|
+| 1,2 ATR | 5 % | 131 | 35,1 % | 0,96 | +0,02 R | −203.597 | 80,3 % |
+| 3,0 ATR | 5 % | 45 | 51,1 % | 1,79 | +0,52 R | +1.793.957 | 42,9 % |
+| 3,0 ATR | 2 % | 45 | 51,1 % | 1,88 | +0,52 R | +469.868 | 9,9 % |
+
+El stop ancho es lo que mueve el resultado: el mismo Donchian pasa de 35 % a
+51 % de acierto y de PF 0,96 a 1,79, porque deja respirar la tendencia en vez de
+sacarlo por ruido. Pero 45 operaciones no llegan al mínimo de 80 (G4) y el 5 % de
+riesgo lleva el drawdown al 43 % (G6): el veredicto sigue siendo RECHAZADA. Al
+2 % el drawdown cae al 10 % sin tocar la esperanza por operación.
+
+Con 25.000 de capital el perfil no puede abrir ni una unidad: un stop diario de
+3 ATR vale unos 2.000 $ y una unidad es 1 BTC, así que el perfil usa 1 M. Para
+operar BTC con 25.000 haría falta tamaño fraccionario, que el motor no modela.
+
 ### Juzgar una corrida: fuera de muestra, rechazos y JSON
 
 ```bash
