@@ -2,6 +2,7 @@ import type { ConnectionState } from "../api";
 import type { SnapshotData } from "../types";
 import { Logo } from "./Logo";
 import { useClock } from "./Sparkline";
+import { marketFreshness, phaseLabel, qualityLabel, sessionWindow } from "../utils";
 import { useUiMode } from "../mode";
 import { ThemePicker } from "./ThemePicker";
 import { VersionBadge } from "./VersionBadge";
@@ -39,13 +40,21 @@ function PriceFlash({ price }: { price: number | undefined }) {
 }
 
 export function TopBar({ snapshot, connection, onOpenPalette }: Props) {
+  // Antes del primer estado no se sabe si el motor corre ni en qué modo está:
+  // «stopped» y «paper» serían dos afirmaciones inventadas, justo debajo de una
+  // conexión que aún dice «conectando».
+  const loaded = snapshot !== null;
   const status = snapshot?.status ?? "stopped";
   const mode = snapshot?.mode ?? "paper";
   const session = snapshot?.session;
+  const sessionHours = session ? sessionWindow(session.open_ts, session.close_ts) : null;
   const quality = snapshot?.data.quality ?? "unknown";
-  const equity = snapshot?.risk.equity ?? 0;
-  const dailyPnl = snapshot?.risk.daily_pnl ?? 0;
+  // Antes del primer snapshot no hay equidad que enseñar: un 0,00 en el HUD se
+  // lee como «la cuenta está a cero», no como «todavía no sé».
+  const equity = snapshot?.risk.equity ?? null;
+  const dailyPnl = snapshot?.risk.daily_pnl ?? null;
   const now = useClock();
+  const fresh = marketFreshness(snapshot?.data.last_bar_ts ?? null, now.getTime());
   const { isSimple, setMode } = useUiMode();
   const primary = snapshot?.instruments.find((item) => item.role === "primary")?.symbol;
   const price = primary ? (snapshot?.quotes[primary]?.last ?? undefined) : undefined;
@@ -63,27 +72,41 @@ export function TopBar({ snapshot, connection, onOpenPalette }: Props) {
           </span>
         </div>
 
-        <div className="hud-group">
-          <span className={`led led-${status}`} aria-hidden="true" />
-          <span className="hud-value">{status}</span>
+        <div className="hud-group" title={loaded ? undefined : "Esperando el primer estado del motor"}>
+          <span className={`led${loaded ? ` led-${status}` : ""}`} aria-hidden="true" />
+          <span className="hud-value">{loaded ? status : "—"}</span>
         </div>
 
-        <span className="badge badge-mode">{mode}</span>
+        <span className="badge badge-mode" title={loaded ? `modo ${mode}` : "Esperando el primer estado del motor"}>
+          {loaded ? mode : "—"}
+        </span>
         <span className="hud-sep" aria-hidden="true" />
         <div className="hud-group">
           <span className="hud-label">equity</span>
-          <AnimatedNumber
-            value={equity}
-            className={`hud-value hud-value-lg ${dailyPnl > 0 ? "tone-good" : dailyPnl < 0 ? "tone-bad" : ""}`}
-          />
+          {equity === null ? (
+            <span className="hud-value hud-value-lg" title="Esperando el primer estado del motor">
+              —
+            </span>
+          ) : (
+            <AnimatedNumber
+              value={equity}
+              className={`hud-value hud-value-lg ${dailyPnl !== null && dailyPnl > 0 ? "tone-good" : dailyPnl !== null && dailyPnl < 0 ? "tone-bad" : ""}`}
+            />
+          )}
         </div>
         <div className="hud-group">
           <span className="hud-label">p&amp;l día</span>
-          <AnimatedNumber
-            value={dailyPnl}
-            format={(value) => money(value, true)}
-            className={`hud-value hud-value-lg ${dailyPnl > 0 ? "tone-good" : dailyPnl < 0 ? "tone-bad" : ""}`}
-          />
+          {dailyPnl === null ? (
+            <span className="hud-value hud-value-lg" title="Esperando el primer estado del motor">
+              —
+            </span>
+          ) : (
+            <AnimatedNumber
+              value={dailyPnl}
+              format={(value) => money(value, true)}
+              className={`hud-value hud-value-lg ${dailyPnl > 0 ? "tone-good" : dailyPnl < 0 ? "tone-bad" : ""}`}
+            />
+          )}
         </div>
         <PriceFlash price={price} />
       </div>
@@ -111,16 +134,37 @@ export function TopBar({ snapshot, connection, onOpenPalette }: Props) {
           </button>
         </div>
         <span className="hud-sep" aria-hidden="true" />
-        <div className="hud-group session-group">
+        <div
+          className="hud-group session-group"
+          title={
+            session && sessionHours
+              ? `${session.label}: ${sessionHours.local} (${sessionHours.utc} UTC)`
+              : undefined
+          }
+        >
           <span className="hud-label">sesión</span>
           <span className="hud-value">
-            {session ? `${session.label} · ${session.phase}` : "sin sesión"}
+            {!loaded ? "—" : session ? `${session.label} · ${phaseLabel(session.phase)}` : "sin sesión"}
           </span>
         </div>
-        <span className={`badge badge-quality-${quality}`}>{quality}</span>
-        <span className={`badge badge-connection-${connection}`}>
-          <span className={`led led-${connection === "open" ? "running" : "stopped"}`} aria-hidden="true" />
-          {connection}
+        <span className={`badge badge-quality-${quality}`} title={`calidad del feed: ${quality}`}>
+          {qualityLabel(quality)}
+        </span>
+        {!isSimple ? (
+          <span
+            className={`fresh-chip fresh-${fresh.tone}`}
+            title="Antigüedad de la última vela recibida del mercado"
+            data-freshness={fresh.tone}
+          >
+            {fresh.label}
+          </span>
+        ) : null}
+        <span className={`badge badge-connection-${connection}`} data-connection={connection}>
+          <span
+            className={`led led-${connection === "open" ? "running" : connection === "closed" ? "stopped" : "paused"}`}
+            aria-hidden="true"
+          />
+          {connection === "open" ? "en línea" : connection === "closed" ? "sin conexión" : "conectando"}
         </span>
         <span className="hud-sep" aria-hidden="true" />
         <span className="hud-clock" aria-label="hora local">
