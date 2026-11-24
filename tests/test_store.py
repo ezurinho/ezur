@@ -145,3 +145,19 @@ def test_reset_stats_clears_operational_state(store):
     ):
         assert store.kv_get(key) is None
     assert store.kv_get("emergency") is True
+
+
+def test_la_pagina_siguiente_no_repite_ni_salta_corridas(store):
+    ids = ["b", "e", "a", "d", "c"]
+    for run_id in ids:
+        store.save_backtest(run_id, {"strategy_id": "reference", "trades": []})
+
+    seen: list[str] = []
+    cursor = None
+    for _ in range(3):
+        page = store.list_backtest_runs(cursor=cursor, limit=2)
+        seen.extend(row["run_id"] for row in page["runs"])
+        cursor = page["next_cursor"]
+
+    assert seen == list(reversed(ids))
+    assert len(set(seen)) == len(ids)
