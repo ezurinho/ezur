@@ -16,6 +16,16 @@ TODAY = NOW.strftime("%Y-%m-%d")
 YESTERDAY = "2020-01-01"
 
 
+@pytest.fixture(autouse=True)
+def _fixed_clock(monkeypatch):
+    """El reloj del motor se fija al mismo instante que la operación de prueba.
+
+    Sin esto, si el módulo se importa un instante antes de medianoche UTC y el
+    motor arranca un instante después, la operación "de hoy" cae en el día
+    anterior y el test falla por el reloj, no por el código."""
+    monkeypatch.setattr("server.engine.now_utc", lambda: NOW)
+
+
 def _settings() -> Settings:
     """Sesión de 24 h en UTC, como el perfil que opera: el día es el día."""
     return Settings(
@@ -93,7 +103,7 @@ def test_el_contador_de_ayer_no_bloquea_el_dia_de_hoy(tmp_path):
         store.close()
 
 
-def test_el_contador_de_la_misma_sesion_se_respeta(tmp_path):
+def test_la_cache_de_la_misma_sesion_no_gana_al_libro(tmp_path):
     store = _store(tmp_path, [_trade(NOW, 10.0, "hoy-1")])
     session = TradingEngine(_settings(), store, feed=None).state.session
     assert session is not None
@@ -104,8 +114,9 @@ def test_el_contador_de_la_misma_sesion_se_respeta(tmp_path):
     )
     try:
         engine = TradingEngine(_settings(), store, feed=None)
-        assert engine.state.day_stats.trades == 5
-        assert engine.state.day_stats.pnl == pytest.approx(80.0)
+        assert engine.state.day_stats.trades == 1
+        assert engine.state.day_stats.pnl == pytest.approx(10.0)
+        assert store.kv_get("day_stats")["trades"] == 1
     finally:
         store.close()
 
