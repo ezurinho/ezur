@@ -1,0 +1,126 @@
+{
+  "alerts": {
+    "dedupe_window_s": 60.0,
+    "enabled": false,
+    "max_retries": 3,
+    "min_level": "warn",
+    "timeout_s": 5.0,
+    "webhook_url": ""
+  },
+  "auto_start": true,
+  "execution": {
+    "commission_per_unit_side": 0.049,
+    "fill_model": "next_open",
+    "max_slippage_ticks": 5,
+    "partial_fill_ratio": 0.6,
+    "simulate_partial_fills": false,
+    "slippage_ticks": 1
+  },
+  "feed": {
+    "backfill_bars": 240,
+    "csv_path": "data/bars.csv",
+    "latency_ms": 0,
+    "loop_sessions": false,
+    "poll_interval_s": 5.0,
+    "provider": "okx",
+    "replay_speed": 1.0,
+    "start_date": null
+  },
+  "instruments": {
+    "items": [
+      {
+        "currency": "USDT",
+        "decimals": 2,
+        "enabled": true,
+        "point_value": null,
+        "reference_price": 60000,
+        "role": "primary",
+        "session_template": "CRYPTO24",
+        "symbol": "BTC",
+        "tick_size": 0.01,
+        "tick_value": 1e-05,
+        "venue_symbol": "BTC-USDT"
+      }
+    ],
+    "primary": "BTC",
+    "templates": [
+      {
+        "close": "23:59",
+        "name": "CRYPTO24",
+        "open": "00:00",
+        "timezone": "UTC",
+        "weekdays": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      }
+    ]
+  },
+  "live": {
+    "account_ref": null,
+    "adapter_implemented": false,
+    "broker": "none",
+    "data_feed": null,
+    "environment": "demo",
+    "live_confirmation": null,
+    "live_enabled": false
+  },
+  "promotion": {
+    "required": true,
+    "mode": "reduce",
+    "size_factor": 0.25,
+    "evidence": "data/research/promotion/reference-1m-1x.json",
+    "stress_evidence": "data/research/promotion/reference-1m-2x.json",
+    "cycle": "data/research/cycles/CYCLE-BOT-1D.json"
+  },
+  "risk": {
+    "close_at_session_end": false,
+    "cooldown_minutes": 2,
+    "entry_exclusion_end": null,
+    "entry_exclusion_start": null,
+    "initial_capital": 1000000.0,
+    "loss_streak_cooldown_min": 45,
+    "max_concurrent_positions": 1,
+    "max_daily_loss_pct": 3.0,
+    "max_daily_profit_pct": 0.0,
+    "max_drawdown_pct": 100.0,
+    "soft_brakes": false,
+    "soft_brake_floor": 0.25,
+    "soft_brake_halt_multiple": 2.0,
+    "max_stop_ticks": 40000,
+    "max_trades_per_day": 8,
+    "max_units_per_trade": 1000,
+    "no_trade_after_consecutive_losses": 3,
+    "risk_per_trade_pct": 0.01,
+    "session_close_time": "23:59",
+    "trade_window_end": "23:59",
+    "trade_window_start": "00:00"
+  },
+  "strategy": {
+    "enabled": true,
+    "id": "reference",
+    "params": {
+      "atr_period": 14,
+      "fast": 7,
+      "rr": 1.2,
+      "slow": 21,
+      "stop_atr": 6.0
+    },
+    "version": "0.1.0"
+  },
+  "ui": {
+    "locale": "es",
+    "panels": [
+      "strategy_state",
+      "quotes",
+      "position"
+    ],
+    "theme": "dark"
+  },
+  "version": 1
+}
