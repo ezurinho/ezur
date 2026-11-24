@@ -73,6 +73,9 @@ def test_backtest_run_records_an_experiment(app_client):
     assert payload["trades"] > 0
     assert payload["verdict"] == "RECHAZADA"
     assert len(payload["dataset_id"]) == 64
+    # Con cero operaciones hace falta saber si la regla no disparó o si el
+    # riesgo las descartó: el diagnóstico viaja con la corrida.
+    assert isinstance(payload["diagnostics"]["rejections"], dict)
 
     ledger = client.get("/api/experiments").json()
     assert ledger["summary"]["experiments"] == 1
