@@ -26,6 +26,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from .config import Settings
+
 MIN_OOS_PF = 1.0
 MIN_OOS_TRADES = 100
 MAX_COST_R = 0.25
@@ -153,7 +155,7 @@ def evaluate(
     )
 
     pbo = ((cycle or {}).get("pbo") or {}).get("pbo")
-    evidence_tf = _timeframe((evidence or {}).get("dataset"))
+    evidence_tf = str((evidence or {}).get("timeframe") or "") or _timeframe((evidence or {}).get("dataset"))
     cycle_tfs = {
         str(item.get("timeframe"))
         for item in ((cycle or {}).get("universe") or [])
@@ -263,6 +265,42 @@ def evaluate_paths(
     strategy: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return evaluate(load(evidence_path), load(stress_path), load(cycle_path), strategy)
+
+
+def effective_settings_and_verdict(
+    settings: Settings,
+) -> tuple[Settings, dict[str, Any] | None]:
+    """Configuración que debe usar el motor y el veredicto que la explica.
+
+    La reducción por falta de promoción es una decisión de arranque: no puede
+    escribirse en `risk_per_trade_pct` porque el siguiente guardado la tomaría
+    como valor configurado y volvería a reducirla. El archivo conserva el valor
+    que eligió el operador; el motor recibe una copia efectiva.
+
+    Devuelve el veredicto para que el arranque pueda dejar constancia del motivo
+    sin volver a evaluar la evidencia. Si la puerta está apagada, el veredicto
+    es `None`; si pasa o el modo es `block`, la configuración vuelve intacta.
+    """
+    if not settings.promotion.required:
+        return settings, None
+    verdict = evaluate_paths(
+        settings.promotion.evidence,
+        settings.promotion.stress_evidence,
+        settings.promotion.cycle,
+        {"id": settings.strategy.id, "version": settings.strategy.version},
+    )
+    if verdict["passed"] or settings.promotion.mode != "reduce":
+        return settings, verdict
+    effective = settings.model_copy(deep=True)
+    effective.risk.risk_per_trade_pct = round(
+        settings.risk.risk_per_trade_pct * settings.promotion.size_factor, 4
+    )
+    return effective, verdict
+
+
+def effective_settings(settings: Settings) -> Settings:
+    """Atajo para quien solo necesita la configuración efectiva."""
+    return effective_settings_and_verdict(settings)[0]
 
 
 def _shown(value: Any) -> str:
