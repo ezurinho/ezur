@@ -1,5 +1,5 @@
-import { act, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { act, render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Sidebar, SIMPLE_VIEWS, VIEWS } from "../components/Sidebar";
 import { UiModeProvider, useUiMode } from "../mode";
@@ -97,7 +97,12 @@ describe("Sidebar por modo", () => {
 });
 
 describe("vistas de principiante", () => {
-  it("el inicio fácil enseña un esqueleto en vez de inventar cifras", () => {
+  it("el inicio fácil enseña un esqueleto en vez de inventar cifras", async () => {
+    // Las cargas de historial y precio quedan pendientes: el test mira el
+    // primer render, y una promesa que falla después solo añadiría ruido de act().
+    const { api } = await import("../api");
+    const tradesSpy = vi.spyOn(api, "trades").mockReturnValue(new Promise(() => {}));
+    const chartSpy = vi.spyOn(api, "chart").mockReturnValue(new Promise(() => {}));
     const { container } = render(
       <UiModeProvider>
         <ToastProvider>
@@ -107,9 +112,15 @@ describe("vistas de principiante", () => {
     );
     expect(container.querySelector("[aria-busy='true']")).not.toBeNull();
     expect(container.querySelectorAll(".skeleton").length).toBeGreaterThan(2);
+    tradesSpy.mockRestore();
+    chartSpy.mockRestore();
   });
 
-  it("los ajustes simples piden solo tres números", () => {
+  it("los ajustes simples no enseñan números hasta leerlos del servidor", async () => {
+    const { api } = await import("../api");
+    const spy = vi.spyOn(api, "config").mockResolvedValue({
+      risk: { risk_per_trade_pct: 1, max_daily_loss_pct: 3, max_trades_per_day: 8 },
+    });
     const { container } = render(
       <UiModeProvider>
         <ToastProvider>
@@ -117,9 +128,20 @@ describe("vistas de principiante", () => {
         </ToastProvider>
       </UiModeProvider>,
     );
-    expect(container.querySelectorAll("input[type='range']").length).toBe(3);
+    // Un slider con valores de ejemplo se lee como si fueran los reales.
+    expect(container.querySelectorAll("input[type='range']").length).toBe(0);
+    expect(screen.getByText(/Leyendo la configuración actual/)).toBeInTheDocument();
+    await waitFor(() =>
+      expect(container.querySelectorAll("input[type='range']").length).toBe(3),
+    );
     expect(screen.getByText("Cuánto arriesgar en cada operación")).toBeInTheDocument();
     expect(screen.getByText("Cuánto puedes perder en un día")).toBeInTheDocument();
     expect(screen.getByText("Operaciones máximas al día")).toBeInTheDocument();
+    expect(screen.getByText(/8 ops/)).toBeInTheDocument();
+    // El control debe poder caer exactamente en el valor del motor: con un paso
+    // que no lo alcanza, el slider enseñaba 3,25 % donde el motor tenía 3 %.
+    const loss = container.querySelector<HTMLInputElement>("input[name='max_daily_loss_pct']");
+    expect(loss?.value).toBe("3");
+    spy.mockRestore();
   });
 });
