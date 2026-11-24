@@ -13,6 +13,7 @@ a pitch.
 from __future__ import annotations
 
 from datetime import datetime
+import math
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -85,7 +86,12 @@ class DonchianStrategy(BaseStrategy):
         if upper is None or lower is None or volatility is None or volatility <= 0:
             return StrategyOutput(state="warmup", state_label="Calentando", phases=phases)
 
-        buffer = self.params.buffer_ticks * 0.25
+        tick_size = md.context.get("tick_size")
+        buffer = (
+            self.params.buffer_ticks * float(tick_size)
+            if isinstance(tick_size, (int, float)) and math.isfinite(tick_size) and tick_size > 0
+            else 0.0
+        )
         broke_up = last.c > upper + buffer
         broke_down = last.c < lower - buffer
         side = "long" if broke_up else "short" if broke_down else None
