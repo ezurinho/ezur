@@ -304,6 +304,8 @@ def test_books_lee_pico_latido_y_emergencia(tmp_path):
     store.kv_set("peak_equity", 25_000.0)
     store.kv_set("heartbeat", "2026-11-24T00:00:00+00:00")
     store.kv_set("emergency", False)
+    store.kv_set("day_stats", {"trades": 3, "pnl": 153.9, "consecutive_losses": 0})
+    store.kv_set("session_id", "2026-11-24:CRYPTO24")
     store.close()
 
     stored = paper.books(db)
@@ -311,3 +313,19 @@ def test_books_lee_pico_latido_y_emergencia(tmp_path):
     assert stored["peak"] == 25_000.0
     assert stored["heartbeat"] == "2026-11-24T00:00:00+00:00"
     assert stored["emergency"] is False
+    assert stored["day"]["trades"] == 3
+    assert stored["session"] == "2026-11-24:CRYPTO24"
+
+
+def test_el_informe_muestra_el_dia_de_la_sesion():
+    text = paper.render(
+        SUMMARY,
+        25_000.0,
+        "db",
+        books_state={
+            "day": {"trades": 3, "pnl": 153.8954522, "consecutive_losses": 0},
+            "session": "2026-11-24:CRYPTO24",
+        },
+    )
+
+    assert "día: 3 ops · P&L 153.90 · racha 0 · sesión 2026-11-24:CRYPTO24" in text
