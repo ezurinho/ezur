@@ -9,6 +9,8 @@ from server.models import Bar, SessionInfo
 from server.strategy.base import MarketData
 from server.strategy.donchian import DonchianParams, DonchianStrategy
 from server.strategy.fade import FadeParams, FadeStrategy
+from server.strategy.reference import ReferenceStrategy
+from server.strategy.trend import TrendParams, TrendStrategy
 
 NOW = datetime(2026, 1, 15, 15, 0, tzinfo=timezone.utc)
 
@@ -49,6 +51,7 @@ def _market(bars: list[Bar]) -> MarketData:
         clock=bars[-1].t,
         primary="PRIMARY",
         bars={"PRIMARY": bars},
+        context={"tick_size": 0.25},
     )
 
 
@@ -196,3 +199,82 @@ def test_fade_publishes_the_mean_line_zone():
 def test_fade_rejects_unknown_params():
     with pytest.raises(ValidationError):
         FadeParams(periodo=10)
+
+
+# --- Trend filter ----------------------------------------------------------
+
+
+def _walk(count: int, seed: int = 7) -> list[Bar]:
+    """A deterministic random walk: crosses happen, both ways."""
+    import random
+
+    rng = random.Random(seed)
+    price = 100.0
+    bars: list[Bar] = []
+    for index in range(count):
+        step = rng.uniform(-0.6, 0.6)
+        opened = price
+        price = max(50.0, price + step)
+        bars.append(
+            Bar(
+                t=NOW + timedelta(minutes=index),
+                o=opened,
+                h=max(opened, price) + 0.05,
+                l=min(opened, price) - 0.05,
+                c=price,
+                v=10,
+            )
+        )
+    return bars
+
+
+def _signals(strategy, bars: list[Bar]):
+    found = []
+    for index in range(2, len(bars) + 1):
+        output = strategy.evaluate(_market(bars[:index]))
+        if output.signal is not None:
+            tide = output.metrics.get("trend")
+            found.append((output.signal.ts, output.signal.side, bars[index - 1].c,
+                          tide.value if tide is not None else None))
+    return found
+
+
+def test_trend_needs_warmup_until_the_filter_is_ready():
+    strategy = TrendStrategy({"fast": 3, "slow": 5, "trend": 30, "atr_period": 5})
+    assert strategy.evaluate(_market(_flat_bars(10))).state == "warmup"
+    assert strategy.evaluate(_market(_flat_bars(40))).state != "warmup"
+
+
+def test_trend_rejects_a_filter_shorter_than_the_slow_average():
+    with pytest.raises(ValidationError):
+        TrendParams(fast=3, slow=20, trend=10)
+
+
+def test_trend_only_enters_with_the_tide():
+    bars = _walk(240)
+    strategy = TrendStrategy({"fast": 3, "slow": 8, "trend": 40, "atr_period": 8,
+                              "stop_atr": 6.0, "rr": 1.2})
+    found = _signals(strategy, bars)
+    assert found, "la caminata debe producir algún cruce alineado"
+    for _ts, side, close, tide in found:
+        if side == "long":
+            assert close >= tide
+        else:
+            assert close <= tide
+
+
+def test_trend_is_a_subset_of_the_unfiltered_crosses():
+    bars = _walk(240)
+    params = {"fast": 3, "slow": 8, "atr_period": 8}
+    filtered = _signals(TrendStrategy({**params, "trend": 40}), bars)
+    plain = _signals(ReferenceStrategy(params), bars)
+    plain_keys = {(ts, side) for ts, side, *_ in plain}
+    assert len(filtered) <= len(plain)
+    assert all((ts, side) in plain_keys for ts, side, *_ in filtered)
+
+
+def test_trend_publishes_the_tide_as_a_metric():
+    strategy = TrendStrategy({"fast": 3, "slow": 8, "trend": 40, "atr_period": 8})
+    output = strategy.evaluate(_market(_walk(80)))
+    assert "trend" in output.metrics
+    assert "distance" in output.metrics
