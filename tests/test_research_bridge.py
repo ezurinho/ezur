@@ -99,6 +99,54 @@ def test_las_variantes_entran_en_la_cola(tmp_path):
     assert {"a", "b", "v"} <= names
 
 
+def test_el_resumen_cuenta_por_familia_y_marco():
+    records = [
+        {"family": "trend", "timeframe": "1d", "verdict": "REJECTED"},
+        {"family": "trend", "timeframe": "1d", "verdict": "APPROVED"},
+        {"family": "momentum", "timeframe": "5m", "verdict": None},
+    ]
+
+    groups = research.summarize(records)
+
+    assert groups[("trend", "1d")] == {
+        "total": 2, "APPROVED": 1, "REJECTED": 1,
+        "INCONCLUSIVE": 0, "sin veredicto": 0,
+    }
+    assert groups[("momentum", "5m")]["sin veredicto"] == 1
+
+
+def test_el_informe_del_cli_lista_lo_no_rechazado(tmp_path, capsys, monkeypatch):
+    home = _fake_home(tmp_path)
+    ledger = tmp_path / "runs.jsonl"
+    ledger.write_text(
+        "\n".join(
+            [
+                json.dumps({"family": "trend", "timeframe": "1d", "verdict": "REJECTED", "seconds": 3}),
+                json.dumps({"id": "X", "family": "trend", "timeframe": "4h", "verdict": "APPROVED", "seconds": 7}),
+            ]
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    code = research.main(["--home", str(home), "--report", "--ledger", str(ledger)])
+
+    assert code == 0
+    out = capsys.readouterr().out
+    assert "X 4h -> APPROVED" in out
+    assert "2 corridas" in out
+
+
+def test_el_informe_sin_ledger_no_falla(tmp_path, capsys, monkeypatch):
+    home = _fake_home(tmp_path)
+    monkeypatch.chdir(tmp_path)
+
+    code = research.main(["--home", str(home), "--report", "--ledger", str(tmp_path / "nada.jsonl")])
+
+    assert code == 0
+    assert "ledger vacío" in capsys.readouterr().out
+
+
 def test_run_spec_lee_el_veredicto(tmp_path):
     home = _fake_home(tmp_path)
     spec = home / "runner" / "specs" / "a.json"

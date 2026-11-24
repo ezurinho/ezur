@@ -166,6 +166,24 @@ def measured(records: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     return done
 
 
+def summarize(records: list[dict[str, Any]]) -> dict[tuple[str, str], dict[str, int]]:
+    """Cuenta veredictos por familia y marco: lo que el bucle ha averiguado."""
+    groups: dict[tuple[str, str], dict[str, int]] = {}
+    for record in records:
+        key = (str(record.get("family") or "?"), str(record.get("timeframe") or "?"))
+        group = groups.setdefault(
+            key,
+            {"total": 0, "APPROVED": 0, "REJECTED": 0, "INCONCLUSIVE": 0, "sin veredicto": 0},
+        )
+        group["total"] += 1
+        verdict = record.get("verdict")
+        if verdict in ("APPROVED", "REJECTED", "INCONCLUSIVE"):
+            group[verdict] += 1
+        else:
+            group["sin veredicto"] += 1
+    return groups
+
+
 def _append(record: dict[str, Any], path: Path | str = LEDGER) -> None:
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -245,6 +263,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--home", default=None, help="raíz del motor (o EZUR_RESEARCH_HOME)")
     parser.add_argument("--generate", action="store_true", help="crea variantes de las specs semilla")
+    parser.add_argument("--report", action="store_true", help="resume el ledger por familia y marco")
     parser.add_argument("--list", action="store_true", help="specs y estado, sin ejecutar")
     parser.add_argument("--once", action="store_true", help="ejecuta la siguiente pendiente")
     parser.add_argument("--loop", action="store_true", help="sigue buscando hasta --max-runs")
@@ -277,6 +296,32 @@ def main(argv: list[str] | None = None) -> int:
             f"variantes: {written} nuevas, {skipped} ya existían "
             f"({len(created)} calculadas de {len(seeds)} semillas)"
         )
+        return 0
+
+    if args.report:
+        if not records:
+            print(f"ledger vacío: {ledger}")
+            return 0
+        groups = summarize(records)
+        print(f"{'familia':<12} {'marco':<5} {'total':>6} {'APPROVED':>9} {'REJECTED':>9} "
+              f"{'INCONCLUSO':>11} {'fallos':>7}")
+        for (family, frame), group in sorted(groups.items()):
+            print(
+                f"{family:<12} {frame:<5} {group['total']:>6} {group['APPROVED']:>9} "
+                f"{group['REJECTED']:>9} {group['INCONCLUSIVE']:>11} {group['sin veredicto']:>7}"
+            )
+        interesting = [
+            record for record in records
+            if record.get("verdict") in ("APPROVED", "INCONCLUSIVE")
+        ]
+        if interesting:
+            print("\nno rechazadas:")
+            for record in interesting:
+                print(f"  {record.get('id')} {record.get('timeframe')} -> {record.get('verdict')}")
+        else:
+            print("\nninguna spec ha pasado el filtro todavía")
+        seconds = sum(float(record.get("seconds") or 0) for record in records)
+        print(f"\n{len(records)} corridas · {seconds/60:.1f} min de motor")
         return 0
 
     if args.list:
