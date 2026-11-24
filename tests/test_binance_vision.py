@@ -111,6 +111,31 @@ def test_resample_a_diario_agrega_ohlcv(tmp_path):
     assert rows[1]["o"] == "95.0" and rows[1]["c"] == "96.0"
 
 
+def test_resample_a_quince_minutos_corta_en_el_cubo(tmp_path):
+    source = _write_csv(
+        tmp_path / "min.csv",
+        [
+            ["2024-01-01T00:00:00+00:00", "BTC", "100", "101", "99", "100", "1"],
+            ["2024-01-01T00:07:00+00:00", "BTC", "100", "103", "98", "102", "1"],
+            ["2024-01-01T00:14:00+00:00", "BTC", "102", "102", "95", "96", "1"],
+            ["2024-01-01T00:15:00+00:00", "BTC", "96", "99", "96", "99", "1"],
+            ["2024-01-01T00:29:00+00:00", "BTC", "99", "100", "97", "98", "1"],
+        ],
+    )
+    result = datasets.resample(source, tmp_path / "q.csv", "15m")
+    assert result["rows"] == 2
+    with (tmp_path / "q.csv").open(encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
+    assert [row["ts"] for row in rows] == [
+        "2024-01-01T00:00:00+00:00",
+        "2024-01-01T00:15:00+00:00",
+    ]
+    assert (rows[0]["o"], rows[0]["h"], rows[0]["l"], rows[0]["c"]) == (
+        "100.0", "103.0", "95.0", "96.0"
+    )
+    assert (rows[1]["o"], rows[1]["c"]) == ("96.0", "98.0")
+
+
 def test_resample_rechaza_una_regla_que_no_existe(tmp_path):
     source = _write_csv(
         tmp_path / "min.csv",

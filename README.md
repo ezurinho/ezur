@@ -277,8 +277,29 @@ Un backtest diario con el perfil tal cual no mide la estrategia, mide la
 configuración: `max_stop_ticks` (40.000 ticks = 400 $) rechaza todo stop diario,
 el guardián de drawdown del 5 % detiene la serie tras la primera pérdida, y
 `tick_value` (1e-05 con tick 0,01 y 1 unidad = 1 BTC) hace que el tamaño salga
-en el tope de 300 unidades. El perfil de validación está en `data/okx-daily.json`
-(ignorado por git) y no toca los perfiles que operan.
+en el tope de 300 unidades. El perfil de validación está en `config/okx-daily.json`
+y no toca los perfiles que operan.
+
+### 15 m y 1 h: cuánto cuesta operar
+
+Misma ventana (2025-01 → 2026-10, 963.360 velas de 1 m), parámetros por defecto
+de cada estrategia, una operación diaria como tope, 5 pb por lado. Entre
+paréntesis, la misma corrida con comisión cero: la diferencia es el coste.
+
+| Marco | reference | donchian | fade | coste por operación |
+|---|---|---|---|---|
+| 1 h | −0,139 (+0,059) | −0,046 (+0,061) | −0,222 (−0,091) | 0,08–0,13 R |
+| 15 m | −0,232 (−0,036) | −0,367 (−0,111) | −0,364 (−0,067) | 0,20–0,30 R |
+| 1 m | −1,548 (+0,061) | −2,379 (+0,058) | −2,491 (+0,027) | 1,6–2,5 R |
+
+El coste cae veinte veces de 1 m a 1 h, como era de esperar: una comisión fija
+pesa menos cuanto más ancho es el stop. Pero **la señal no aparece**: sin
+comisión los tres marcos intraday están entre −0,11 y +0,06 R, y lo positivo de
+1 m es el artefacto del tope — una operación al día, la primera. Solo el diario
+da esperanza neta positiva (+0,096 R con las 2.496 velas).
+
+En intraday el problema no es solo el coste: es que no hay borde que pagarlo.
+Subir de marco abarata operar; no crea señal.
 
 ## Umbrales: un solo fichero
 
