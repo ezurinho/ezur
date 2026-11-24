@@ -95,6 +95,19 @@ class Store:
     def close(self) -> None:
         self.conn.close()
 
+    def backup(self, target: str | Path) -> Path:
+        """Copia consistente con SQLite online backup, incluyendo el WAL."""
+        path = Path(target)
+        if path.resolve() == self.path.resolve():
+            raise ValueError("backup target must differ from the live database")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        destination = sqlite3.connect(str(path))
+        try:
+            self.conn.backup(destination)
+        finally:
+            destination.close()
+        return path
+
     # --- schema -----------------------------------------------------------
     def schema_version(self) -> int:
         row = self.conn.execute(
@@ -136,9 +149,9 @@ class Store:
                 INSERT INTO trades (
                     symbol, side, units, entry_price, exit_price, stop_price,
                     target_price, opened_ts, closed_ts, pnl_gross, fees,
-                    pnl_net, r_multiple, exit_reason, mode, signal_key,
+                    funding, pnl_net, r_multiple, exit_reason, mode, signal_key,
                     diagnostics
-                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 ON CONFLICT DO NOTHING
                 """,
                 (
@@ -153,6 +166,7 @@ class Store:
                     _iso(trade.closed_ts),
                     trade.pnl_gross,
                     trade.fees,
+                    trade.funding,
                     trade.pnl_net,
                     trade.r_multiple,
                     trade.exit_reason,
@@ -225,20 +239,30 @@ class Store:
         params.extend([limit, offset])
         return [dict(row) for row in self.conn.execute(query, params)]
 
-    def all_trades(self, limit: int = 1_000_000) -> list[TradeRecord]:
+    def all_trades(
+        self, limit: int = 1_000_000, mode: str | None = None
+    ) -> list[TradeRecord]:
         return [
             TradeRecord.model_validate(row_to_trade(row))
-            for row in reversed(self.list_trades(limit=limit))
+            for row in reversed(self.list_trades(limit=limit, mode=mode))
         ]
 
-    def realized_pnl(self) -> float:
-        row = self.conn.execute(
-            "SELECT COALESCE(SUM(pnl_net), 0) AS total FROM trades"
-        ).fetchone()
+    def realized_pnl(self, mode: str | None = None) -> float:
+        query = "SELECT COALESCE(SUM(pnl_net), 0) AS total FROM trades"
+        params: tuple[Any, ...] = ()
+        if mode is not None:
+            query += " WHERE mode = ?"
+            params = (mode,)
+        row = self.conn.execute(query, params).fetchone()
         return float(row["total"] or 0.0)
 
-    def count_trades(self) -> int:
-        return int(self.conn.execute("SELECT COUNT(*) AS c FROM trades").fetchone()["c"])
+    def count_trades(self, mode: str | None = None) -> int:
+        query = "SELECT COUNT(*) AS c FROM trades"
+        params: tuple[Any, ...] = ()
+        if mode is not None:
+            query += " WHERE mode = ?"
+            params = (mode,)
+        return int(self.conn.execute(query, params).fetchone()["c"])
 
     # --- events -----------------------------------------------------------
     def insert_event(
@@ -378,7 +402,7 @@ class Store:
             "backtests": int(self.conn.execute("SELECT COUNT(*) c FROM backtests").fetchone()["c"]),
         }
 
-    def reset_stats(self, *, include_backtests: bool = False) -> dict[str, int]:
+    def reset_stats(self, *, include_backtests: bool = False, mode: str | None = None) -> dict[str, int]:
         """Delete operational history. Backtests are preserved by default.
 
         También se borra el estado operativo de `kv`: si sobrevive, el próximo
@@ -388,7 +412,12 @@ class Store:
         """
         before = self.stats_counts()
         with self.conn:
-            self.conn.execute("DELETE FROM trades")
+            if include_backtests:
+                self.conn.execute("DELETE FROM trades")
+            elif mode is not None:
+                self.conn.execute("DELETE FROM trades WHERE mode = ?", (mode,))
+            else:
+                self.conn.execute("DELETE FROM trades")
             self.conn.execute("DELETE FROM equity")
             self.conn.execute("DELETE FROM events")
             self.conn.execute(
@@ -421,6 +450,7 @@ def row_to_trade(row: dict[str, Any]) -> dict[str, Any]:
         "closed_ts": row["closed_ts"],
         "pnl_gross": row["pnl_gross"],
         "fees": row["fees"],
+        "funding": row.get("funding", 0.0),
         "pnl_net": row["pnl_net"],
         "r_multiple": row["r_multiple"],
         "exit_reason": row["exit_reason"],
