@@ -1,6 +1,7 @@
 """La promoción es una puerta del arranque, no un informe que se ignora."""
 from __future__ import annotations
 
+import asyncio
 import json
 from pathlib import Path
 
@@ -38,7 +39,7 @@ def _boot(tmp_path: Path, promotion: dict) -> tuple[TestClient, list[bool]]:
 
 def test_sin_promocion_el_motor_no_arranca_solo(tmp_path, monkeypatch):
     started: list[bool] = []
-    monkeypatch.setattr(TradingEngine, "start_task", lambda self: started.append(True))
+    monkeypatch.setattr(TradingEngine, "start_task", lambda self: asyncio.sleep(0, result=started.append(True)))
 
     config, _ = _boot(
         tmp_path,
@@ -58,7 +59,7 @@ def test_sin_promocion_el_motor_no_arranca_solo(tmp_path, monkeypatch):
 
 def test_con_la_evidencia_completa_arranca(tmp_path, monkeypatch):
     started: list[bool] = []
-    monkeypatch.setattr(TradingEngine, "start_task", lambda self: started.append(True))
+    monkeypatch.setattr(TradingEngine, "start_task", lambda self: asyncio.sleep(0, result=started.append(True)))
 
     config, _ = _boot(
         tmp_path,
@@ -83,7 +84,7 @@ def test_con_la_evidencia_completa_arranca(tmp_path, monkeypatch):
 
 def test_la_evidencia_de_otra_estrategia_no_promueve(tmp_path, monkeypatch):
     started: list[bool] = []
-    monkeypatch.setattr(TradingEngine, "start_task", lambda self: started.append(True))
+    monkeypatch.setattr(TradingEngine, "start_task", lambda self: asyncio.sleep(0, result=started.append(True)))
 
     otra = {**EVIDENCE, "strategy": {"id": "donchian", "version": "0.1.0"}}
     config, _ = _boot(
@@ -109,7 +110,7 @@ def test_la_evidencia_de_otra_estrategia_no_promueve(tmp_path, monkeypatch):
 
 def test_la_puerta_apagada_no_bloquea_nada(tmp_path, monkeypatch):
     started: list[bool] = []
-    monkeypatch.setattr(TradingEngine, "start_task", lambda self: started.append(True))
+    monkeypatch.setattr(TradingEngine, "start_task", lambda self: asyncio.sleep(0, result=started.append(True)))
 
     config, _ = _boot(tmp_path, {"required": False})
     app = server_main.create_app(
@@ -126,7 +127,7 @@ def test_la_puerta_apagada_no_bloquea_nada(tmp_path, monkeypatch):
 
 def test_sin_promocion_en_modo_reduce_arranca_a_menor_tamano(tmp_path, monkeypatch):
     started: list[bool] = []
-    monkeypatch.setattr(TradingEngine, "start_task", lambda self: started.append(True))
+    monkeypatch.setattr(TradingEngine, "start_task", lambda self: asyncio.sleep(0, result=started.append(True)))
 
     config, _ = _boot(
         tmp_path,
@@ -144,7 +145,94 @@ def test_sin_promocion_en_modo_reduce_arranca_a_menor_tamano(tmp_path, monkeypat
     )
     with TestClient(app) as client:
         status = client.get("/api/status").json()["data"]["status"]
+        effective = client.get("/api/status").json()["data"]["risk"]["limits"]["risk_per_trade_pct"]
+        configured = client.get("/api/config").json()["risk"]["risk_per_trade_pct"]
+        events = client.get("/api/events?limit=20").json()
+        promotion_events = [
+            event["message"] for event in events if event.get("category") == "promotion"
+        ]
 
     assert status == "running"
     assert started == [True]
+    assert effective == 0.25
+    assert configured == 1.0
     assert app.state.settings.risk.risk_per_trade_pct == 0.25
+    assert app.state.configured_settings.risk.risk_per_trade_pct == 1.0
+    # El motor tiene que nacer con la copia efectiva: si el RiskManager se
+    # construye antes de la reducción, el snapshot miente y el tamaño real
+    # sigue siendo el configurado.
+    assert app.state.engine.risk.config.risk_per_trade_pct == 0.25
+    assert app.state.engine.builder.settings.risk.risk_per_trade_pct == 0.25
+    # El evento debe contar 1,00 -> 0,25, no 0,25 -> 0,06: si se redacta
+    # después de mutar la configuración, el diagnóstico confunde la causa.
+    assert any("riesgo 1.00 % -> 0.25 %" in message for message in promotion_events)
+
+
+def test_guardar_config_no_compone_la_reduccion_por_promocion(tmp_path, monkeypatch):
+    started: list[bool] = []
+    monkeypatch.setattr(TradingEngine, "start_task", lambda self: asyncio.sleep(0, result=started.append(True)))
+
+    config, _ = _boot(
+        tmp_path,
+        {
+            "required": True,
+            "mode": "reduce",
+            "size_factor": 0.25,
+            "evidence": str(tmp_path / "no-existe.json"),
+        },
+    )
+    app = server_main.create_app(
+        config_path=config,
+        db_path=tmp_path / "reduced-save.db",
+        experiment_ledger=tmp_path / "ledger.jsonl",
+    )
+    with TestClient(app) as client:
+        assert client.get("/api/config").json()["risk"]["risk_per_trade_pct"] == 1.0
+        first = client.put("/api/config", json={"patch": {"risk": {"max_trades_per_day": 4}}})
+        assert first.status_code == 200
+        assert first.json()["risk"]["risk_per_trade_pct"] == 1.0
+        assert client.get("/api/status").json()["data"]["risk"]["limits"]["risk_per_trade_pct"] == 0.25
+
+        saved = json.loads(config.read_text(encoding="utf-8"))
+        assert saved["risk"]["risk_per_trade_pct"] == 1.0
+        assert saved["risk"]["max_trades_per_day"] == 4
+
+        # Un segundo guardado tampoco puede convertir 0,25 en el nuevo 1,0.
+        second = client.put("/api/config", json={"patch": {"risk": {"max_trades_per_day": 5}}})
+        assert second.status_code == 200
+        saved = json.loads(config.read_text(encoding="utf-8"))
+        assert saved["risk"]["risk_per_trade_pct"] == 1.0
+        assert client.get("/api/status").json()["data"]["risk"]["limits"]["risk_per_trade_pct"] == 0.25
+
+
+def test_cambiar_el_riesgo_configurado_reduce_sobre_el_nuevo_valor(tmp_path, monkeypatch):
+    started: list[bool] = []
+    monkeypatch.setattr(TradingEngine, "start_task", lambda self: asyncio.sleep(0, result=started.append(True)))
+
+    config, _ = _boot(
+        tmp_path,
+        {
+            "required": True,
+            "mode": "reduce",
+            "size_factor": 0.25,
+            "evidence": str(tmp_path / "no-existe.json"),
+        },
+    )
+    app = server_main.create_app(
+        config_path=config,
+        db_path=tmp_path / "risk-reduce.db",
+        experiment_ledger=tmp_path / "ledger.jsonl",
+    )
+    with TestClient(app) as client:
+        response = client.put(
+            "/api/config",
+            json={"patch": {"risk": {"risk_per_trade_pct": 2.0}}},
+        )
+        assert response.status_code == 200
+        assert response.json()["risk"]["risk_per_trade_pct"] == 2.0
+        status = client.get("/api/status").json()["data"]["risk"]["limits"]["risk_per_trade_pct"]
+
+    saved = json.loads(config.read_text(encoding="utf-8"))
+    assert saved["risk"]["risk_per_trade_pct"] == 2.0
+    assert status == 0.5
+    assert app.state.engine.risk.config.risk_per_trade_pct == 0.5
