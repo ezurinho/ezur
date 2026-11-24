@@ -232,6 +232,55 @@ def test_run_spec_pasa_una_ruta_absoluta(tmp_path, monkeypatch):
     assert record["verdict"] == "APPROVED"
 
 
+def test_run_spec_pasa_el_ciclo_de_validacion_explicito(tmp_path, monkeypatch):
+    body = (
+        "import sys\n"
+        "assert '--validation' in sys.argv, sys.argv\n"
+        "print('VERDICT APPROVED')\n"
+    )
+    home = _fake_home(tmp_path, body=body)
+    monkeypatch.chdir(tmp_path)
+    cycle = tmp_path / "cycle.json"
+    cycle.write_text("{}", encoding="utf-8")
+
+    record = research.run_spec(
+        home, sys.executable, home / "runner" / "specs" / "a.json",
+        out_dir=tmp_path / "out", timeout=30, validation=cycle,
+    )
+
+    assert record["verdict"] == "APPROVED"
+    assert record["validation"] == str(cycle)
+
+
+def test_run_cycle_escribe_el_artefacto_y_lee_sus_numeros(tmp_path, monkeypatch):
+    home = _fake_home(tmp_path)
+    monkeypatch.chdir(tmp_path)  # los ciclos se guardan en el bot, no en el motor
+    script = home / "runner" / "selection_cycle.py"
+    script.write_text(
+        "import json, pathlib, sys\n"
+        "out = pathlib.Path(sys.argv[sys.argv.index('--out') + 1])\n"
+        "name = sys.argv[sys.argv.index('--cycle') + 1]\n"
+        "out.mkdir(parents=True, exist_ok=True)\n"
+        "(out / f'{name}.json').write_text(json.dumps({\n"
+        "    'inputs': {'universe_size': 5},\n"
+        "    'pbo': {'pbo': 0.11},\n"
+        "    'dsr': {'dsr': 0.96},\n"
+        "    'minbtl': {'minbtl_years': 2.5},\n"
+        "}))\n",
+        encoding="utf-8",
+    )
+
+    record = research.run_cycle(
+        home, sys.executable, home / "runner" / "specs" / "a.json", axis="N", cycle="CYCLE-TEST"
+    )
+
+    assert record["returncode"] == 0
+    assert (tmp_path / "data" / "research" / "cycles" / "CYCLE-TEST.json").is_file()
+    assert not (home / "runner" / "validation").exists()
+    assert record["pbo"] == 0.11 and record["dsr"] == 0.96
+    assert record["universe_size"] == 5 and record["minbtl_years"] == 2.5
+
+
 def test_run_spec_registra_el_fallo(tmp_path):
     home = _fake_home(tmp_path, body='import sys; print("boom", file=sys.stderr); sys.exit(3)')
     spec = home / "runner" / "specs" / "a.json"

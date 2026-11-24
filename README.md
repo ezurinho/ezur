@@ -365,6 +365,7 @@ python -m server.research --list      # specs y estado
 python -m server.research --once      # la siguiente pendiente
 python -m server.research --loop      # sigue buscando mientras el bot corre
 python -m server.research --report    # qué ha encontrado, por familia y marco
+python -m server.research --cycle     # mide el ciclo de selección (PBO, DSR, MinBTL, WFA)
 python -m server.research --rank      # qué spec está más cerca de pasar
 python -m server.research --vault     # memoria navegable en Markdown
 python -m server.research --vault-lint  # enlaces rotos y notas huérfanas
@@ -400,6 +401,14 @@ Los tres contratos compartidos: el fichero de umbrales, los datos de
 `--report` lee ese ledger y responde a la única pregunta que importa cuando el
 bucle lleva horas: cuántas specs se midieron por familia y marco, cuántas
 pasaron y cuáles. Sin él, cien corridas son cien líneas.
+
+`--cycle` ataca la raíz del problema anterior: PBO, DSR, MinBTL y WFA no son
+propiedades de un backtest sino de una **selección**, y el motor los deja nulos
+en una corrida suelta. Su `selection_cycle` los calcula sobre un universo de
+vecinos y escribe un JSON que el runner sabe consumir; el bot lo lanza desde
+`--cycle` (por defecto sobre la mejor spec del ranking), lo guarda en
+`data/research/cycles` y lo pasa explícito con `--validation`, para que el
+ciclo de una familia no juzgue a otra por ser el más reciente del directorio.
 
 `--rank` ordena los artefactos por cercanía a pasar: puertas superadas y, a
 igualdad, cuánto le faltó a la más cercana en fracción de su umbral. Es triaje,
