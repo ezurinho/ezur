@@ -12,5 +12,6 @@ const plain = (value: number) =>
 /** A number that moves toward its value instead of teleporting. */
 export function AnimatedNumber({ value, format = plain, className }: Props) {
   const display = useCountUp(value);
+  if (!Number.isFinite(display)) return <span className={className}>—</span>;
   return <span className={className}>{format(display)}</span>;
 }
