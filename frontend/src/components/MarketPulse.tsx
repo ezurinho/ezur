@@ -6,6 +6,9 @@ interface Props {
   height?: number;
   points?: number;
   label?: string;
+  /** Antes de la primera respuesta se dibuja una silueta; después, si no hay
+   *  velas, se dice: un esqueleto eterno finge que algo está cargando. */
+  loading?: boolean;
 }
 
 function pathFor(values: number[], width: number, height: number, pad = 4) {
@@ -32,7 +35,13 @@ function pathFor(values: number[], width: number, height: number, pad = 4) {
  * the exact value under the cursor. No library, no axis soup, and the same
  * accent as the rest of the HUD.
  */
-export function MarketPulse({ candles, height = 120, points = 90, label = "precio" }: Props) {
+export function MarketPulse({
+  candles,
+  height = 120,
+  points = 90,
+  label = "precio",
+  loading = false,
+}: Props) {
   const gradient = useId().replace(/:/g, "");
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [hover, setHover] = useState<number | null>(null);
@@ -54,16 +63,33 @@ export function MarketPulse({ candles, height = 120, points = 90, label = "preci
       line,
       path: `M${polyline}`,
       area: `M0,${height} L${polyline} L${width},${height} Z`,
-      rising: closes[closes.length - 1] >= closes[0],
+      // Plana no es alcista: el mismo criterio que la minigráfica del inicio.
+      direction:
+        closes[closes.length - 1] > closes[0]
+          ? "up"
+          : closes[closes.length - 1] < closes[0]
+            ? "down"
+            : "flat",
     };
   }, [sampled, height]);
 
   if (!geometry) {
-    return <div className="market-pulse-empty skeleton skeleton-block" />;
+    return loading ? (
+      <div className="market-pulse-empty skeleton skeleton-block" />
+    ) : (
+      <p className="empty">Sin velas todavía: el mercado aún no ha entregado dos velas.</p>
+    );
   }
 
-  const color = geometry.rising ? "var(--good)" : "var(--bad)";
-  const active = hover !== null ? geometry.line.points[hover] : null;
+  const color =
+    geometry.direction === "up"
+      ? "var(--good)"
+      : geometry.direction === "down"
+        ? "var(--bad)"
+        : "var(--muted)";
+  // El puntero puede quedarse en un índice que la vela recortada ya no tiene:
+  // sin acotarlo, `sampled[hover].c` revienta al llegar menos velas.
+  const hoverIndex = hover !== null ? Math.min(hover, sampled.length - 1) : null;
 
   const onMove = (event: React.PointerEvent<SVGSVGElement>) => {
     const rect = svgRef.current?.getBoundingClientRect();
@@ -72,8 +98,9 @@ export function MarketPulse({ candles, height = 120, points = 90, label = "preci
     setHover(Math.round(ratio * (sampled.length - 1)));
   };
 
-  const activeCandle = hover !== null ? sampled[hover] : sampled[sampled.length - 1];
-  const value = hover !== null ? sampled[hover].c : sampled[sampled.length - 1].c;
+  const active = hoverIndex !== null ? geometry.line.points[hoverIndex] : null;
+  const activeCandle = hoverIndex !== null ? sampled[hoverIndex] : sampled[sampled.length - 1];
+  const value = hoverIndex !== null ? sampled[hoverIndex].c : sampled[sampled.length - 1].c;
 
   return (
     <div className="market-pulse" style={{ ["--pulse-color" as string]: color }}>
@@ -82,7 +109,11 @@ export function MarketPulse({ candles, height = 120, points = 90, label = "preci
         viewBox={`0 0 ${geometry.width} ${height}`}
         preserveAspectRatio="none"
         role="img"
-        aria-label={`${label}: ${value.toFixed(2)}`}
+        aria-label={`${label}: ${value.toFixed(2)}${
+          activeCandle
+            ? ` · ${new Date(activeCandle.t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+            : ""
+        }`}
         onPointerMove={onMove}
         onPointerLeave={() => setHover(null)}
       >
