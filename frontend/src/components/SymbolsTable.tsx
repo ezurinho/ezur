@@ -24,7 +24,9 @@ export function SymbolsTable({ instruments, quotes }: Props) {
         {instruments.map((instrument) => {
           const quote = quotes[instrument.symbol];
           const change = quote?.change_pct ?? null;
-          const tone = change === null ? "neutral" : change >= 0 ? "good" : "bad";
+          // Sin cambio no hay color: verde en un 0.00 % se lee como subida.
+          const tone =
+            change === null || change === 0 ? "neutral" : change > 0 ? "good" : "bad";
           return (
             <tr key={instrument.symbol} data-symbol={instrument.symbol}>
               <td>{instrument.symbol}</td>
@@ -34,7 +36,9 @@ export function SymbolsTable({ instruments, quotes }: Props) {
                 <small>{instrument.currency}</small>
               </td>
               <td className={`tone-${tone}`}>
-                {formatValue(change, "pct", instrument.decimals)}
+                {/* Los decimales del precio no son los del porcentaje: con 0
+                    decimales, un 0,4 % se leería como «0 %». */}
+                {formatValue(change, "pct")}
               </td>
             </tr>
           );
