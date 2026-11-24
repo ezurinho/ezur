@@ -187,7 +187,7 @@ docs/              arquitectura, plugins, UI, protocolo, operación, competencia
 | Hecho | Evidencia |
 |---|---|
 | Motor determinista | Mismo dataset ⇒ mismo hash de backtest |
-| Snapshot conforme al contrato | 396 tests de backend, 76 de frontend, `tsc` limpio, build 417,29 kB |
+| Snapshot conforme al contrato | 422 tests de backend, 76 de frontend, `tsc` limpio, build 418,33 kB |
 | Pipeline completo con trades reales | `reports/backtest/simulation-180d.json` |
 | Ninguna rejilla de parámetros se salva | `reports/backtest/walkforward-reference.json` (6 combinaciones × 3 ventanas, todas negativas) |
 | Estrategia de referencia rentable | **No.** Veredicto automático: RECHAZADA |
@@ -232,6 +232,52 @@ El gráfico se redibuja cuando llega una vela nueva. Ver `docs/OPERACION.md`.
 
 ![Inicio con datos reales](docs/img/live-dashboard.png)
 ![Gráfico con velas de OKX](docs/img/live-chart.png)
+
+## Datos largos (Binance Vision)
+
+La API de OKX da 600 velas; para validar una tendencia diaria hacen falta años.
+Los ficheros mensuales públicos de Binance se descargan con su `.CHECKSUM`, se
+guardan en caché y se convierten al CSV del bot:
+
+```bash
+python -m server.datasets vision --start 2020-01 --end 2026-10 \
+    --out data/BTC_1m_binance.csv --cache data/vision
+python -m server.datasets resample --in data/BTC_1m_binance.csv \
+    --out data/BTC_1d_binance.csv --rule 1D
+python -m server.backtest --dataset data/BTC_1d_binance.csv \
+    --config profiles/okx/config.json --strategy donchian \
+    --params '{"channel":40,"atr_period":14,"stop_atr":1.5,"rr":2.0}' --gates
+```
+
+Medido el 2026-11-24: **3.591.915 velas de 1 m** (2020-01-01 → 2026-10-31) y
+**2.496 velas diarias**, sin un solo día ausente. Donchian sobre ese histórico,
+comisión 5 pb por lado, 1 % de riesgo:
+
+| Canal | Ops | Acierto | PF | Esperanza | DD | Veredicto |
+|---|---|---|---|---|---|---|
+| 20 | 117 | 37,6 % | 1,142 | +0,097 R | 7,84 % | RECHAZADA |
+| 40 | 88 | 37,5 % | 1,138 | +0,096 R | 10,65 % | RECHAZADA |
+| 60 | 70 | 40,0 % | 1,253 | +0,173 R | 6,04 % | RECHAZADA |
+
+La tendencia existe —PF > 1,1 y P&L positivo en los tres canales— pero falla
+G5/G6, G9/G10 (sin las cinco mejores operaciones el resultado es negativo) y G11
+(el IC80 de la esperanza toca cero). **Positivo no es lo mismo que distinguible
+del ruido**, y coincide con el laboratorio: t = 1,66 frente a 3,0.
+
+Un backtest diario con el perfil tal cual no mide la estrategia, mide la
+configuración: `max_stop_ticks` (40.000 ticks = 400 $) rechaza todo stop diario,
+el guardián de drawdown del 5 % detiene la serie tras la primera pérdida, y
+`tick_value` (1e-05 con tick 0,01 y 1 unidad = 1 BTC) hace que el tamaño salga
+en el tope de 300 unidades. El perfil de validación está en `data/okx-daily.json`
+(ignorado por git) y no toca los perfiles que operan.
+
+## Umbrales: un solo fichero
+
+`config/gates.json` es la fuente única. Lo leen el bot (`server/gates.py`) y el
+motor de estrategias (`runner/gates.py`), y cada lado tiene un test que falla si
+su código deja de leerlo o si el documento no cuadra con lo que espera. Cambiar
+`min_profit_factor` una vez lo cambia en los dos, en vez de dejar que un
+veredicto dependa de qué copia se acuerde actualizar.
 
 ## Alertas
 
