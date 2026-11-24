@@ -34,7 +34,35 @@ export function DispatchButton({ action, label }: Props) {
     setBusy(true);
     setError(null);
     try {
-      await ENDPOINTS[action]();
+      const result = (await ENDPOINTS[action]()) as
+        | { closed?: boolean; count?: number }
+        | undefined;
+      // El servidor dice si había algo que cerrar: anunciar «posición cerrada»
+      // cuando responde `closed: false` es inventarse la operación.
+      if (action === "close" && result?.closed === false) {
+        push({
+          title: "No había posición abierta",
+          detail: "No se cerró nada: la posición ya estaba cerrada.",
+          tone: "warn",
+        });
+        return;
+      }
+      if (action === "cancel" && result?.count === 0) {
+        push({
+          title: "No había órdenes pendientes",
+          detail: "No se canceló nada: la cola ya estaba vacía.",
+          tone: "warn",
+        });
+        return;
+      }
+      if (action === "cancel" && result?.count) {
+        push({
+          title: SUCCESS[action],
+          detail: `${result.count} ${result.count === 1 ? "orden pendiente" : "órdenes pendientes"}.`,
+          tone: "good",
+        });
+        return;
+      }
       push({ title: SUCCESS[action], tone: action === "emergency" ? "warn" : "good" });
     } catch (cause) {
       const message = (cause as Error).message;
