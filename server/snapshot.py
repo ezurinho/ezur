@@ -164,7 +164,11 @@ class SnapshotBuilder:
             for bar in candles or []
         ]
 
-    def _strategy(self, output: StrategyOutput | None) -> StrategyBlock:
+    def _strategy(
+        self,
+        output: StrategyOutput | None,
+        rejections: dict[str, int] | None = None,
+    ) -> StrategyBlock:
         cfg = self.settings.strategy
         meta = self.strategy_meta or {}
         strategy_id = meta.get("id", cfg.id)
@@ -177,6 +181,7 @@ class SnapshotBuilder:
                 version=strategy_version,
                 state="disabled",
                 state_label="Sin estrategia",
+                rejections=dict(rejections or {}),
             )
         signal = None
         if output.signal is not None:
@@ -200,6 +205,7 @@ class SnapshotBuilder:
             metrics=dict(self._metric(key, metric) for key, metric in output.metrics.items()),
             signal=signal,
             rejection=output.rejection,
+            rejections=dict(rejections or {}),
         )
 
     def _session(self, state: EngineState) -> SessionModel:
@@ -230,25 +236,76 @@ class SnapshotBuilder:
             r_open=None,
         )
 
+    def _block_reason(self, state: EngineState) -> str | None:
+        """El motivo del último rechazo, salvo que el propio estado lo desmienta.
+
+        `block_reason` se queda pegado hasta el siguiente rechazo o el cambio de
+        sesión. Tras un replay puede decir «posición abierta» cuando la posición
+        ya se cerró, y tras subir un límite en Ajustes puede seguir diciendo
+        «máximo de operaciones» cuando ya no lo es: el snapshot no puede afirmar
+        un bloqueo que sus propios datos contradicen.
+        """
+        reason = state.block_reason
+        if reason is None:
+            return None
+        cfg = self.settings.risk
+        pending = any(order.status == "pending" for order in state.orders)
+        if reason == "position_open" and state.position is None and not pending:
+            return None
+        if reason == "order_pending" and not pending:
+            return None
+        if reason == "max_trades_reached" and state.day_stats.trades < cfg.max_trades_per_day:
+            return None
+        loss_wall = -abs(cfg.initial_capital * cfg.max_daily_loss_pct / 100)
+        if reason == "daily_loss_limit" and state.day_stats.pnl > loss_wall:
+            return None
+        if reason == "daily_profit_limit" and (
+            cfg.max_daily_profit_pct <= 0
+            or state.day_stats.pnl
+            < cfg.initial_capital * cfg.max_daily_profit_pct / 100
+        ):
+            return None
+        if reason == "consecutive_losses" and not cfg.loss_streak_cooldown_min:
+            # Con minutos de pausa el motivo caduca por tiempo y aquí no se
+            # sabe cuándo fue la última salida; sin pausa, la racha es el dato.
+            if not cfg.no_trade_after_consecutive_losses:
+                return None
+            if state.day_stats.consecutive_losses < cfg.no_trade_after_consecutive_losses:
+                return None
+        return reason
+
     def _risk(self, state: EngineState) -> RiskModel:
         cfg = self.settings.risk
+        reason = self._block_reason(state)
+        # El motor aplica el límite sobre el capital inicial configurado, no
+        # sobre la equity actual. Si la UI lo calcula por su cuenta con la
+        # equity del día, anuncia un muro que no es el que después aplica.
+        daily_loss_limit = cfg.initial_capital * cfg.max_daily_loss_pct / 100
+        limits = {
+            "risk_per_trade_pct": cfg.risk_per_trade_pct,
+            "max_daily_loss_pct": cfg.max_daily_loss_pct,
+            "daily_loss_limit": daily_loss_limit,
+            # Sin el capital inicial la UI no puede decir «vas −2 % desde el
+            # arranque» sin adivinar contra qué comparar.
+            "initial_capital": cfg.initial_capital,
+            "max_trades_per_day": float(cfg.max_trades_per_day),
+            "loss_streak_cooldown_min": float(cfg.loss_streak_cooldown_min),
+            "no_trade_after_consecutive_losses": float(
+                cfg.no_trade_after_consecutive_losses
+            ),
+        }
+        if cfg.soft_brakes:
+            # Mismo umbral que server/risk.py: al 80 % del muro, media máquina.
+            limits["soft_brake_at"] = daily_loss_limit * 0.8
         return RiskModel(
             equity=state.equity,
             open_risk=state.open_risk,
             daily_pnl=state.day_stats.pnl,
             daily_trades=state.day_stats.trades,
-            blocked=bool(state.emergency or state.block_reason),
-            block_reason=state.block_reason,
+            blocked=bool(state.emergency or reason),
+            block_reason=reason,
             block_count=state.block_count,
-            limits={
-                "risk_per_trade_pct": cfg.risk_per_trade_pct,
-                "max_daily_loss_pct": cfg.max_daily_loss_pct,
-                "max_trades_per_day": float(cfg.max_trades_per_day),
-                "loss_streak_cooldown_min": float(cfg.loss_streak_cooldown_min),
-                "no_trade_after_consecutive_losses": float(
-                    cfg.no_trade_after_consecutive_losses
-                ),
-            },
+            limits=limits,
         )
 
     # --- public -----------------------------------------------------------
@@ -261,16 +318,39 @@ class SnapshotBuilder:
         candles: Iterable[Bar] | None = None,
         series: Iterable[dict[str, Any]] | None = None,
         stats: dict[str, Any] | None = None,
+        rejections: dict[str, int] | None = None,
     ) -> dict[str, Any]:
+        public_settings = self.settings.model_dump(mode="json")
+        if public_settings["alerts"]["webhook_url"]:
+            # El snapshot viaja por WebSocket: no lleva credenciales de alertas.
+            public_settings["alerts"]["webhook_url"] = "••••••"
+        quality = state.quality
+        staleness_ms = state.staleness_ms
+        if (
+            state.mode in {"paper", "live"}
+            and state.provider in {"okx", "live"}
+            and state.last_bar_ts is not None
+        ):
+            # Sin ticks nuevos el motor no puede envejecer su calidad: el
+            # snapshot sí puede, usando el reloj de pared. Un replay histórico
+            # conserva su calidad para no marcarse obsoleto por ser viejo.
+            age_s = (
+                _now() - (state.last_bar_ts if state.last_bar_ts.tzinfo else state.last_bar_ts.replace(tzinfo=timezone.utc))
+            ).total_seconds()
+            staleness_ms = max(staleness_ms, int(max(0.0, age_s) * 1000))
+            if age_s > 900:
+                quality = "stale"
+            elif age_s > 180:
+                quality = "degraded"
         data = SnapshotData(
             status=state.status,
             mode=state.mode,
             session=self._session(state),
             data=DataInfo(
                 provider=state.provider or self.settings.feed.provider,
-                quality=state.quality,
+                quality=quality,
                 last_bar_ts=state.last_bar_ts,
-                staleness_ms=state.staleness_ms,
+                staleness_ms=staleness_ms,
                 bars_available=state.bars_available,
             ),
             instruments=self._instruments(),
@@ -282,13 +362,13 @@ class SnapshotBuilder:
                 zones=self._zones(output),
                 markers=self._markers(output),
             ),
-            strategy=self._strategy(output),
+            strategy=self._strategy(output, rejections),
             position=self._position(state),
             orders=[OrderModel.model_validate(order.model_dump()) for order in state.orders],
             risk=self._risk(state),
             stats=stats or {},
             day_stats=state.day_stats.model_dump(),
-            settings=self.settings.model_dump(mode="json"),
+            settings=public_settings,
             ui=UIModel(
                 panels=list(self.settings.ui.panels),
                 theme=self.settings.ui.theme,
