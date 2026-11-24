@@ -111,6 +111,9 @@ class TradingEngine:
         self._last_publish_at = 0.0
         self._stats_cache: dict[str, Any] | None = None
         self._rejections: dict[str, dict[str, object]] = {}
+        # Acumulado de toda la corrida: `_rejections` se vacía en cada sesión y
+        # en un backtest de años solo quedaría el último día.
+        self._rejection_totals: dict[str, int] = {}
         self._restore()
         if self.state.session is None:
             primary = settings.instruments.primary
@@ -431,6 +434,10 @@ class TradingEngine:
                 {"symbol": primary, "units": decision.units, "side": output.signal.side},
             )
 
+    def rejection_totals(self) -> dict[str, int]:
+        """Señales rechazadas en toda la corrida, por código de riesgo."""
+        return dict(self._rejection_totals)
+
     def _note_rejection(self, code: str, message: str, when: datetime) -> None:
         """Count every rejection, log the first one and then at most one per window.
 
@@ -442,6 +449,7 @@ class TradingEngine:
         )
         entry["count"] = int(entry["count"]) + 1
         entry["message"] = message
+        self._rejection_totals[code] = self._rejection_totals.get(code, 0) + 1
         self.state.block_count = int(entry["count"])
         last = entry["last"]
         first = last is None

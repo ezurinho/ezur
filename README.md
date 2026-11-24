@@ -301,6 +301,25 @@ da esperanza neta positiva (+0,096 R con las 2.496 velas).
 En intraday el problema no es solo el coste: es que no hay borde que pagarlo.
 Subir de marco abarata operar; no crea señal.
 
+### Juzgar una corrida: fuera de muestra, rechazos y JSON
+
+```bash
+python -m server.backtest --dataset data/BTC_1h_2025.csv \
+    --config config/okx-daily.json --strategy donchian \
+    --params '{"channel":20,"atr_period":14,"stop_atr":1.2,"rr":2.0}' \
+    --split 2026-01-01 --gates --out .build/1h-donchian.json
+```
+
+`--split` parte por fecha de cierre y mide dentro y fuera de muestra por
+separado, con la degradación entre ambos: sin eso, cualquier PF es in-sample.
+`--out` guarda la corrida entera —identidad del dataset, hash de configuración,
+métricas, puertas y reparto— para comparar dos resultados sin volver a ejecutar.
+
+La línea `rechazos` explica por qué una corrida da pocas operaciones: en el
+ejemplo, 688 señales cayeron por el tope diario y 340 porque ya había posición
+abierta; no es que la estrategia no viera oportunidades. Y `coste` traduce las
+comisiones a R por operación, que es la cifra que decide si un marco es viable.
+
 ## Umbrales: un solo fichero
 
 `config/gates.json` es la fuente única. Lo leen el bot (`server/gates.py`) y el
