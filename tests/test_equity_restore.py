@@ -78,3 +78,15 @@ def test_el_pico_nunca_queda_por_debajo_de_la_equity(tmp_path):
         assert engine.peak_equity == pytest.approx(engine.state.equity)
     finally:
         store.close()
+
+def test_sin_pico_guardado_el_pico_es_la_equity_si_ya_gano(tmp_path):
+    store = Store(tmp_path / "pico-nuevo.db")
+    try:
+        store.insert_trade(_trade(5_000.0, "a"))
+
+        engine = TradingEngine(Settings(), store, feed=None)
+
+        assert engine.state.equity == pytest.approx(30_000.0)
+        assert engine.peak_equity == pytest.approx(30_000.0)
+    finally:
+        store.close()
