@@ -85,3 +85,17 @@ def test_report_is_serialisable(tmp_path):
     payload = report.as_dict()
     assert payload["ok"] is True
     assert payload["symbols"] == ["AAA"]
+
+def test_precios_no_finitos_o_no_positivos_son_invalidos(tmp_path):
+    path = tmp_path / "rotas.csv"
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(["ts", "symbol", "o", "h", "l", "c", "v"])
+        writer.writerow([START.isoformat(), "AAA", 100, "nan", 99, 100, 10])
+        writer.writerow([(START + timedelta(minutes=1)).isoformat(), "AAA", 0, 0.5, 0, 0.25, 10])
+
+    report = validate_dataset(path, ["AAA"])
+
+    assert report.ok is False
+    invalid = [issue for issue in report.errors if issue.code == "invalid_bar"]
+    assert len(invalid) == 2

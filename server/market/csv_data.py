@@ -7,6 +7,7 @@ readable codes. No instrument names: the expected symbols come as a list.
 from __future__ import annotations
 
 import csv
+import math
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -84,13 +85,24 @@ def validate_dataset(
                 errors.append(ValidationIssue("bad_timestamp", row["ts"], index))
                 continue
             try:
+                open_ = float(row["o"])
                 high = float(row["h"])
                 low = float(row["l"])
-                if high < low:
-                    errors.append(ValidationIssue("invalid_bar", "high < low", index))
+                close = float(row["c"])
             except (TypeError, ValueError):
                 errors.append(ValidationIssue("invalid_bar", "valores no numéricos", index))
                 continue
+            if not all(
+                math.isfinite(value) for value in (open_, high, low, close)
+            ) or low <= 0:
+                # `nan`/`inf` pasan cualquier comparación (nan < low es falso) y
+                # un precio no positivo rompe los indicadores que dividen.
+                errors.append(
+                    ValidationIssue("invalid_bar", "precio no finito o no positivo", index)
+                )
+                continue
+            if high < low:
+                errors.append(ValidationIssue("invalid_bar", "high < low", index))
             stamps[symbol].append(stamp)
 
     for symbol in instruments:
