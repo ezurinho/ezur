@@ -39,12 +39,15 @@ export function Onboarding() {
         <div>
           <span className="onboarding-num">2</span>
           <b>Con límites</b>
-          <p>Si pierde lo máximo del día, se para. Tú decides ese máximo en Ajustes.</p>
+          <p>Si pierde lo máximo del día, deja de abrir operaciones. Tú decides ese máximo en Ajustes.</p>
         </div>
         <div>
           <span className="onboarding-num">3</span>
           <b>Sin humo</b>
-          <p>La estrategia incluida está sin validar: puede perder, y lo dice en Inicio.</p>
+          <p>
+            La estrategia incluida no está validada: puede perder. El resultado real está en la
+            tarjeta de la cuenta; el detalle, en Estadísticas.
+          </p>
         </div>
       </div>
       <button type="button" className="btn btn-ghost onboarding-close" onClick={dismiss}>
