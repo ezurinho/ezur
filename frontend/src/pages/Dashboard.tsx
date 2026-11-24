@@ -3,6 +3,7 @@ import { StrategyPanel } from "../components/StrategyPanel";
 import { DispatchButton } from "../components/Controls";
 import { Gauge } from "../components/Gauge";
 import { BlockedBanner } from "../components/BlockedBanner";
+import { Reasoning } from "../components/Reasoning";
 import { Sparkline } from "../components/Sparkline";
 import { useStore } from "../store";
 import { AnimatedNumber } from "../components/AnimatedNumber";
@@ -84,6 +85,8 @@ export function DashboardPage() {
       </h2>
 
       <BlockedBanner snapshot={snapshot} />
+
+      <Reasoning snapshot={snapshot} />
 
       <div className="kpi-grid">
         {kpis.map((kpi) => (

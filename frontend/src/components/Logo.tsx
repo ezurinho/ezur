@@ -6,14 +6,20 @@ interface Props {
 }
 
 /**
- * The ezur mark: an E cut out of a chamfered plate.
+ * La marca de ezur: la E tallada en una placa redondeada.
  *
- * Drawn as a filled plate with the letter carved as negative space, so the arms
- * open to the right edge and the shape survives 16 px. Vector only, no font, no
- * dependency. `useId` keeps the gradient id unique when React renders it twice.
+ * Una sola idea y tres formas —placa, E, nada más—: la E es la letra y también
+ * tres barras de un gráfico. Las barras miden 6,5 de 48 con huecos de 3,25, así
+ * que a 16 px siguen midiendo más de 2 px y el hueco no se cierra: el criterio
+ * de las guías de marca es que por debajo de eso la marca se vuelve un borrón.
+ *
+ * La placa usa `--accent`, o sea el color que el operador haya elegido en el
+ * selector de temas; las barras se recortan con el color del fondo
+ * (`--logo-cut`), de modo que la letra se lee como un hueco y no como un trazo
+ * encima. Vector puro: sin fuente, sin imagen, sin dependencia.
  */
 export function Logo({ size = 30, title }: Props) {
-  const gradientId = `ezur-${useId().replace(/:/g, "")}`;
+  const shineId = `ezur-shine-${useId().replace(/:/g, "")}`;
   return (
     <svg
       width={size}
@@ -25,28 +31,37 @@ export function Logo({ size = 30, title }: Props) {
       data-logo="ezur"
     >
       <defs>
-        <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#7dfbea" />
-          <stop offset=".55" stopColor="#37e0d0" />
-          <stop offset="1" stopColor="#0f9a91" />
+        {/* Luz de arriba y sombra abajo: da volumen sin depender de un color fijo. */}
+        <linearGradient id={shineId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#ffffff" stopOpacity=".26" />
+          <stop offset=".52" stopColor="#ffffff" stopOpacity=".03" />
+          <stop offset="1" stopColor="#000000" stopOpacity=".22" />
         </linearGradient>
-        <clipPath id={`${gradientId}-plate`}>
-          <path d="M6 13 13 6h29v29l-7 7H6Z" />
-        </clipPath>
       </defs>
-      <path d="M6 13 13 6h29v29l-7 7H6Z" fill={`url(#${gradientId})`} />
-      <g clipPath={`url(#${gradientId}-plate)`} fill="var(--logo-cut, #070b11)">
-        <rect x="13" y="11.2" width="28" height="5.4" />
-        <rect x="13" y="21.3" width="22" height="5.4" />
-        <rect x="13" y="31.4" width="28" height="5.4" />
-        <rect x="13" y="11.2" width="5.8" height="25.6" />
+      <rect x="1.5" y="1.5" width="45" height="45" rx="12" fill="var(--accent, #37e0d0)" />
+      <rect
+        x="1.5"
+        y="1.5"
+        width="45"
+        height="45"
+        rx="12"
+        fill={`url(#${shineId})`}
+      />
+      <g fill="var(--logo-cut, #070b11)">
+        <rect x="13" y="11" width="6.5" height="26" />
+        <rect x="13" y="11" width="21" height="6.5" />
+        <rect x="13" y="20.75" width="17" height="6.5" />
+        <rect x="13" y="30.5" width="23" height="6.5" />
       </g>
-      <path
-        d="M6 13 13 6h29v29l-7 7H6Z"
+      <rect
+        x="1.5"
+        y="1.5"
+        width="45"
+        height="45"
+        rx="12"
         fill="none"
-        stroke="#9dfff2"
-        strokeOpacity=".45"
-        strokeWidth="1"
+        stroke="#ffffff"
+        strokeOpacity=".16"
       />
     </svg>
   );
