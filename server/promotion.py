@@ -21,6 +21,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -38,6 +39,18 @@ def _number(value: Any) -> float | None:
         return float(value)
     except (TypeError, ValueError):
         return None
+
+
+def _instant(value: Any) -> datetime | None:
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(str(value))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed
 
 
 def _check(name: str, value: Any, threshold: str, passed: bool, reason: str) -> dict[str, Any]:
@@ -61,6 +74,24 @@ def evaluate(
     strategy: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     checks: list[dict[str, Any]] = []
+
+    metrics = (evidence or {}).get("metrics") or {}
+    split = (evidence or {}).get("split") or {}
+    last_ts = str(metrics.get("last_ts") or "")
+    cut_at = str(split.get("at") or "")
+    last = _instant(last_ts)
+    cut = _instant(cut_at)
+    if last is not None and cut is not None:
+        checks.append(
+            _check(
+                "corrida_completa_hasta_el_corte",
+                last_ts,
+                f"≥ {cut_at}",
+                last >= cut,
+                f"la corrida terminó en {last_ts}, antes del corte {cut_at}: "
+                "no hay periodo fuera de muestra",
+            )
+        )
 
     oos = _oos(evidence or {})
     pf = oos.get("profit_factor")
