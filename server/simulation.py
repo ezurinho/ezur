@@ -60,6 +60,7 @@ def simulated_ticks(
                 start=start,
                 bars=bars,
                 tick_size=settings.instruments.by_symbol(symbol).tick_size,
+                reference_price=settings.instruments.by_symbol(symbol).reference_price,
             )
             for symbol in symbols
         }
@@ -97,9 +98,10 @@ def run_simulation(
         ticks = simulated_ticks(settings, calendar, bars=bars)
         if max_ticks is not None:
             ticks = ticks[:max_ticks]
+        dataset_id = _ticks_dataset_id(ticks)
         for tick in ticks:
             engine._process(tick)
-        trades = store.all_trades()
+        trades = store.all_trades(mode="dry_run")
         stats = aggregate(
             trades,
             settings.risk.initial_capital,
@@ -108,6 +110,7 @@ def run_simulation(
             ).timezone,
         )
         stats["simulation"] = {
+            "dataset_id": dataset_id,
             "strategy_id": strategy.id,
             "strategy_version": strategy.version,
             "sessions": len(calendar),
@@ -161,10 +164,25 @@ def _result_key(result: dict) -> str:
     return json.dumps(payload, sort_keys=True, default=str)
 
 
-def _dataset_id(strategy_id: str, days: int, bars: int) -> str:
-    """Deterministic identity for a synthetic run: same inputs, same dataset id."""
-    payload = f"synthetic|{strategy_id}|{days}|{bars}".encode("utf-8")
-    return hashlib.sha256(payload).hexdigest()
+def _ticks_dataset_id(ticks: list[Tick]) -> str:
+    """Identidad de las velas generadas, independiente de la estrategia."""
+    digest = hashlib.sha256()
+    for tick in ticks:
+        payload = {
+            "ts": tick.ts.isoformat(),
+            "bars": {
+                symbol: {
+                    "o": bar.o,
+                    "h": bar.h,
+                    "l": bar.l,
+                    "c": bar.c,
+                    "v": bar.v,
+                }
+                for symbol, bar in sorted(tick.bars.items())
+            },
+        }
+        digest.update(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8"))
+    return digest.hexdigest()
 
 
 def main() -> None:
@@ -238,7 +256,7 @@ def main() -> None:
             kind="simulation",
             strategy_id=settings.strategy.id,
             strategy_version=result["simulation"]["strategy_version"],
-            dataset_id=_dataset_id(args.strategy, args.days, args.bars),
+            dataset_id=result["simulation"]["dataset_id"],
             config=settings.model_dump(mode="json"),
             metrics={k: v for k, v in result.items() if k != "trades"},
             verdict=result["validation"]["verdict"],
