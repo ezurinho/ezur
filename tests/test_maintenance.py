@@ -144,3 +144,80 @@ def test_diagnostics_cli_prints_json(tmp_path, monkeypatch, capsys):
     assert payload["exists"] is True
     assert payload["integrity"] == "ok"
     assert payload["missing_tables"] == []
+
+
+def _seed_trade(store: Store, closed, pnl_net: float = 10.0):
+    from datetime import datetime, timezone
+
+    from server.models import TradeRecord
+
+    trade = TradeRecord(
+        symbol="BTC",
+        side="long",
+        units=1,
+        entry_price=100.0,
+        exit_price=110.0,
+        opened_ts=datetime(2026, 11, 24, 1, 0, tzinfo=timezone.utc),
+        closed_ts=closed,
+        pnl_net=pnl_net,
+    )
+    return store.insert_trade_once(trade)
+
+
+def test_diagnose_audita_las_tres_copias_del_libro(tmp_path):
+    from datetime import datetime, timezone
+
+    path = tmp_path / "terminal.db"
+    store = Store(path)
+    closed = datetime(2026, 11, 24, 2, 0, tzinfo=timezone.utc)
+    _seed_trade(store, closed, pnl_net=10.0)
+    store.kv_set("equity", 25_010.0)
+    store.kv_set("peak_equity", 25_010.0)
+    store.append_equity(25_010.0, closed)
+    store.close()
+
+    books = diagnose(path, 25_000.0)["books"]
+
+    assert books["checked"] is True
+    assert books["book_equity"] == 25_010.0
+    assert books["consistent"] is True
+    assert books["differences"] == {}
+
+
+def test_diagnose_señala_la_copia_que_se_desvió(tmp_path):
+    from datetime import datetime, timezone
+
+    path = tmp_path / "terminal.db"
+    store = Store(path)
+    closed = datetime(2026, 11, 24, 2, 0, tzinfo=timezone.utc)
+    _seed_trade(store, closed, pnl_net=10.0)
+    store.kv_set("equity", 24_990.0)
+    store.kv_set("peak_equity", 25_010.0)
+    store.append_equity(25_010.0, closed)
+    store.close()
+
+    books = diagnose(path, 25_000.0)["books"]
+
+    assert books["consistent"] is False
+    assert books["differences"]["state_vs_book"] == -20.0
+    assert "curve_vs_book" not in books["differences"]
+
+
+def test_diagnose_compara_instantes_y_no_texto(tmp_path):
+    from datetime import datetime, timezone
+
+    path = tmp_path / "terminal.db"
+    store = Store(path)
+    _seed_trade(store, datetime(2026, 11, 24, 5, 0, tzinfo=timezone.utc))
+    # 05:00+02:00 son las 03:00Z: cierra antes de abrir. Como texto parecería
+    # posterior a las 04:05Z y la comprobación antigua no lo veía.
+    store.conn.execute(
+        "UPDATE trades SET opened_ts = ?, closed_ts = ? WHERE id = 1",
+        ("2026-11-24T04:05:00+00:00", "2026-11-24T05:00:00+02:00"),
+    )
+    store.conn.commit()
+    store.close()
+
+    ledger = diagnose(path)["ledger"]
+
+    assert [row["id"] for row in ledger["impossible"]] == [1]
