@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+import pytest
+
 from server.migrations import CURRENT_VERSION, apply_migrations
 from server.models import TradeRecord
 
@@ -85,12 +87,37 @@ def test_trade_filter_by_mode(store):
     assert len(store.list_trades(mode="backtest")) == 1
 
 
+def test_accounting_can_isolate_a_mode(store):
+    store.insert_trade(_trade(mode="paper", pnl_net=100.0, signal_key="paper"))
+    store.insert_trade(_trade(mode="backtest", pnl_net=-40.0, signal_key="backtest"))
+    assert store.realized_pnl() == pytest.approx(60.0)
+    assert store.realized_pnl(mode="paper") == pytest.approx(100.0)
+    assert store.realized_pnl(mode="backtest") == pytest.approx(-40.0)
+    assert store.count_trades(mode="paper") == 1
+    assert [trade.mode for trade in store.all_trades(mode="paper")] == ["paper"]
+
+
 def test_equity_curve_is_chronological(store):
     stamp = datetime(2026, 1, 15, tzinfo=timezone.utc)
     store.append_equity(25000, stamp)
     store.append_equity(25010, stamp)
     curve = store.equity_curve()
     assert [point["equity"] for point in curve] == [25000, 25010]
+
+
+def test_online_backup_is_a_consistent_snapshot(store, tmp_path):
+    store.insert_trade(_trade(signal_key="before"))
+    target = store.backup(tmp_path / "backup.db")
+    store.insert_trade(_trade(signal_key="after", exit_price=102.0, closed_ts=datetime(2026, 1, 15, 15, 1, tzinfo=timezone.utc)))
+
+    import sqlite3
+
+    copied = sqlite3.connect(target)
+    try:
+        assert copied.execute("SELECT COUNT(*) FROM trades").fetchone()[0] == 1
+        assert copied.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+    finally:
+        copied.close()
 
 
 def test_backtest_pagination(store):
@@ -114,6 +141,13 @@ def test_reset_stats_preserves_backtests(store):
     assert deleted["equity"] == 1
     assert deleted["backtests"] == 0
     assert store.stats_counts()["backtests"] == 1
+
+
+def test_reset_one_mode_preserves_other_trade_modes(store):
+    store.insert_trade(_trade(mode="paper", signal_key="paper"))
+    store.insert_trade(_trade(mode="backtest", signal_key="backtest"))
+    store.reset_stats(mode="paper")
+    assert [trade.mode for trade in store.all_trades()] == ["backtest"]
 
 
 def test_reset_stats_can_clear_backtests(store):
