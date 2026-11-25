@@ -37,6 +37,23 @@ def test_unknown_bot_action_is_404(pair):
     assert client.post("/api/bot/teleport").status_code == 404
 
 
+def test_el_bloqueo_por_promocion_frena_el_arranque_manual(pair):
+    client, engine = pair
+    state = client.app.state
+    state.settings.promotion.required = True
+    state.settings.promotion.mode = "block"
+    state.promotion_verdict = {
+        "passed": False,
+        "reason": "PF fuera de muestra 0.446 ≤ 1",
+    }
+
+    response = client.post("/api/bot/start")
+
+    assert response.status_code == 409
+    assert "sin promoción" in response.json()["detail"]
+    assert engine.state.status == "stopped"
+
+
 def test_start_pause_stop_cycle(pair):
     client, engine = pair
     assert client.post("/api/bot/start").json()["status"] == "running"
