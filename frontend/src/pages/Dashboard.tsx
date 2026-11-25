@@ -3,6 +3,7 @@ import { StrategyPanel } from "../components/StrategyPanel";
 import { DispatchButton } from "../components/Controls";
 import { Gauge } from "../components/Gauge";
 import { BlockedBanner } from "../components/BlockedBanner";
+import { PromotionCard } from "../components/PromotionCard";
 import { Reasoning } from "../components/Reasoning";
 import { Sparkline } from "../components/Sparkline";
 import { useStore } from "../store";
@@ -178,6 +179,8 @@ export function DashboardPage() {
           </article>
         ))}
       </div>
+
+      <PromotionCard promotion={snapshot.promotion ?? null} />
 
       <div className="grid-two">
         <StrategyPanel strategy={strategy} />
