@@ -226,6 +226,9 @@ def create_app(
             strategy_factory=lambda cfg: resolve_strategy(cfg.strategy.id, cfg.strategy.params),
             notifier=notifier,
         )
+        from .paper import promotion_state
+
+        engine.builder.promotion = promotion_state(config_path.parent)
         engine.subscribe(hub.broadcast)
         if not engine.equity_audit["ok"]:
             # El motor también se niega a arrancar; dejar constancia aquí evita
