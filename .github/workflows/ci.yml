@@ -15,6 +15,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: python -m pip install -r requirements.txt
+      - run: python -m ruff check server tests
       - run: python -m pytest --cov=server --cov-report=term --cov-fail-under=85
       # Smoke test of the CLI path: it must produce a report and a verdict.
       - run: python -m server.simulation --days 2 --bars 60 --out /tmp/smoke.json --no-ledger
