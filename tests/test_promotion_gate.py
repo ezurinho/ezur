@@ -11,6 +11,7 @@ from server import main as server_main
 from server.backtest import config_fingerprint
 from server.config import Settings
 from server.engine import TradingEngine
+from server.promotion import evaluate
 
 GATE_CONFIG = {
     "auto_start": True,
@@ -47,6 +48,37 @@ CYCLE = {
 def _write(path: Path, payload: dict) -> str:
     path.write_text(json.dumps(payload), encoding="utf-8")
     return str(path)
+
+
+def _cycle_with_stress(pf: float) -> dict:
+    survives = pf > 1.0
+    return {
+        **CYCLE,
+        "stress": {
+            "multiplier": 2.0,
+            "method": "rerun",
+            "selected": "fast5",
+            "selected_survives": survives,
+            "survivors": ["fast5"] if survives else [],
+            "configs": [
+                {
+                    "name": "fast5",
+                    "trades": 169,
+                    "pf_net": pf,
+                    "exp_r": 0.02 if survives else -0.02,
+                    "survives": survives,
+                }
+            ],
+        },
+    }
+
+
+def _stress_check(verdict: dict) -> dict:
+    return next(
+        check
+        for check in verdict["checks"]
+        if check["name"] == "pf_con_coste_duplicado"
+    )
 
 
 def _boot(tmp_path: Path, promotion: dict) -> tuple[TestClient, list[bool]]:
@@ -156,6 +188,55 @@ def test_la_evidencia_de_otra_configuracion_no_promueve(tmp_path, monkeypatch):
 
     assert status in {"idle", "stopped"}
     assert started == []
+
+
+def test_el_estres_sale_del_ciclo_sin_fichero_aparte():
+    verdict = evaluate(
+        EVIDENCE,
+        None,
+        _cycle_with_stress(1.03),
+        {"id": "null", "version": "0.0.0"},
+        config_hash=EVIDENCE["config_hash"],
+        execution=EVIDENCE["execution"],
+    )
+
+    check = _stress_check(verdict)
+    assert check["pass"] is True
+    assert check["source"] == "ciclo"
+    assert check["multiplier"] == 2.0
+    assert verdict["passed"] is True
+
+
+def test_el_ciclo_con_estres_insuficiente_no_promueve():
+    verdict = evaluate(
+        EVIDENCE,
+        None,
+        _cycle_with_stress(0.9),
+        {"id": "null", "version": "0.0.0"},
+        config_hash=EVIDENCE["config_hash"],
+        execution=EVIDENCE["execution"],
+    )
+
+    check = _stress_check(verdict)
+    assert check["pass"] is False
+    assert check["source"] == "ciclo"
+    assert "coste duplicado (ciclo)" in check["reason"]
+    assert verdict["passed"] is False
+
+
+def test_el_fichero_de_estres_sigue_siendo_el_fallback():
+    verdict = evaluate(
+        EVIDENCE,
+        STRESS,
+        CYCLE,
+        {"id": "null", "version": "0.0.0"},
+        config_hash=EVIDENCE["config_hash"],
+        execution=EVIDENCE["execution"],
+    )
+
+    check = _stress_check(verdict)
+    assert check["pass"] is True
+    assert check["source"] == "fichero"
 
 
 def test_la_puerta_apagada_no_bloquea_nada(tmp_path, monkeypatch):
