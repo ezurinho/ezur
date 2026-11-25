@@ -1,7 +1,7 @@
 ---
 name: trading-strategy-plugin
-description: "Escribe, registra y prueba un plugin de estrategia para ezur sin tocar motor, snapshot ni React. Úsala cuando haya que añadir una estrategia nueva, cambiar su lógica o sus parámetros, emitir fases/métricas/zonas/marcadores, o revisar que un plugin cumple el contrato BaseStrategy."
-version: 1.0.0
+description: "Escribe, registra y prueba un plugin de estrategia para ezur sin tocar motor, snapshot ni React. Incluye la frontera con la IA y el marco de barras de la estrategia. Úsala cuando haya que añadir una estrategia nueva, cambiar su lógica o sus parámetros, emitir fases/métricas/zonas/marcadores, o revisar que un plugin cumple el contrato BaseStrategy."
+version: 1.1.0
 ---
 
 # Escribir un plugin de estrategia
@@ -10,7 +10,11 @@ version: 1.0.0
 
 Añadir `server/strategy/<nombre>.py`, cambiar `evaluate()`, añadir parámetros, emitir
 señales o métricas nuevas, o revisar un plugin existente. Si el cambio toca el
-snapshot o React, lee también la skill `trading-terminal-contract`.
+snapshot o React, lee también la skill `trading-bot-ops`.
+
+Si la estrategia nace de una spec de IA, el plugin sigue siendo determinista: el LLM
+no entra en `evaluate` ni en el motor. La spec se valida y se mide con
+`trading-ai-strategy-engine`; aquí solo se implementan sus reglas y se prueban.
 
 ## Lee antes de escribir
 
@@ -27,6 +31,7 @@ snapshot o React, lee también la skill `trading-terminal-contract`.
 | `params_model` | Pydantic con `extra="forbid"` y rangos `ge/le` |
 | `warmup_requirements()` | `Warmup(bars={"*": n}, session_ready=bool)` |
 | `evaluate(md)` | determinista; sin red, disco, reloj ni azar |
+| `md.bars` | barras cerradas del marco `strategy.timeframe`; el motor agrega y descarta el cubo abierto; el plugin no resamplea |
 | `StrategyOutput.phases` | 0..n; `status` del enum cerrado |
 | `StrategyOutput.metrics` | clave → `Metric`; `format` y `tone` del enum |
 | `StrategyOutput.signal` | `None` o `Signal` con `stop_price` positivo |
@@ -34,6 +39,10 @@ snapshot o React, lee también la skill `trading-terminal-contract`.
 
 El tiempo sale de `md.clock`, no de `datetime.now()`. Los símbolos salen de
 `md.primary` y `md.bars`, nunca de una constante.
+
+`md.bars` llega en el marco de la estrategia (`strategy.timeframe`), no en el marco
+del feed. El motor agrupa por cubos cerrados y descarta el cubo abierto; no llames a
+`resample` dentro del plugin ni mezcles marcos.
 
 ## Pasos
 
@@ -128,7 +137,7 @@ deja la estrategia anterior intacta.
 ## Tests que hay que dejar verdes
 
 ```powershell
-python -m pytest tests/test_strategy_plugins.py tests/test_snapshot_contract.py tests/test_no_hardcoded_instruments.py -q
+python -m pytest tests/test_strategy_plugins.py tests/test_snapshot_contract.py tests/test_no_hardcoded_instruments.py tests/test_timeframe.py tests/test_resample.py -q
 python -m pytest tests/test_parity.py -q
 ```
 
@@ -137,10 +146,22 @@ python -m pytest tests/test_parity.py -q
 | `test_strategy_plugins.py` | señales, warmup, params y determinismo |
 | `test_snapshot_contract.py` | el snapshot sigue siendo v1 válido |
 | `test_no_hardcoded_instruments.py` | ni tickers ni conceptos de estrategia en infra |
+| `test_timeframe.py` | `md.bars` usa el marco de la estrategia y descarta el cubo abierto |
+| `test_resample.py` | agregación OHLCV por cubos cerrados y rechazo de marcos inválidos |
 | `test_parity.py` | backtest y motor real dan las mismas operaciones |
 
 Para una estrategia nueva, añade al menos: warmup insuficiente, señal larga, señal
 corta, stop inválido y dos ejecuciones con el mismo resultado.
+
+## Frontera con IA
+
+- Un LLM puede proponer la spec o revisar el código, pero el plugin que corre no
+  importa SDK de LLM, red, disco, reloj ni azar.
+- No calcules métricas de rendimiento dentro del plugin: las produce el backtest o el
+  runner determinista. El plugin solo emite señal, fases, métricas de estado, zonas y
+  marcadores.
+- Un cambio generado por IA se revisa, se testea y sube `version`; no se promociona
+  por la confianza del modelo.
 
 ## Validación rápida (no es promoción)
 
