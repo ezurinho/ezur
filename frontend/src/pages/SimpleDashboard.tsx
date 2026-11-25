@@ -485,7 +485,8 @@ export function SimpleDashboard() {
             Ver todo (modo avanzado)
           </button>
           <span className="muted small">
-            Aquí no hay métricas ni R: solo si gana o pierde y por qué cerró. El bot arranca solo.
+            Aquí no hay métricas ni R: solo si gana o pierde y por qué cerró. El bot opera
+            en papel cuando lo reanudas.
           </span>
         </footer>
       </section>
