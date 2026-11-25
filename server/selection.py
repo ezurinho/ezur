@@ -30,6 +30,7 @@ What it computes, and how:
 
 Usage (as CLI):
     python -m server.selection --cycle CYCLE-2026-11 --blocks 10 --folds 5
+    python -m server.selection --cycle CYCLE-2025 --from 2025-01-01 --to 2026-01-01
     python -m server.selection --cycle CYCLE-2026-11 --from-registry --db data/terminal.db
 
 Usage (as library):
@@ -52,6 +53,7 @@ import pandas as pd
 
 # Reuse the runner's backtest logic
 from .strategy.spec_schema import StrategySpec
+from .strategy import registry
 from .strategy.registry import load_spec_file
 from .config import Settings, InstrumentConfig, SessionTemplate
 
@@ -392,7 +394,11 @@ def load_universe_specs(spec_dir: Path) -> list[StrategySpec]:
     for spec_id in DEFAULT_UNIVERSE_SPECS:
         spec_path = spec_dir / f"{spec_id}.json"
         if spec_path.exists():
-            specs.append(load_spec_file(spec_path))
+            spec = load_spec_file(spec_path)
+            # El motor resuelve la estrategia por id: sin registrar la spec, el
+            # backtest responde ERROR y el ciclo no mide nada.
+            registry.register_spec(spec.id, spec_path)
+            specs.append(spec)
         else:
             print(f"Warning: spec {spec_id} not found at {spec_path}")
     return specs
@@ -604,6 +610,27 @@ def run_backtest_for_spec(spec: StrategySpec, df5: pd.DataFrame, quiet: bool = F
             pass
 
 
+def _iso_day(value: str) -> datetime:
+    """Fecha ISO del CLI; sin zona se asume UTC, como el resto del motor."""
+    parsed = datetime.fromisoformat(value)
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+
+
+def _window(
+    df: pd.DataFrame, start: datetime | None, end: datetime | None
+) -> pd.DataFrame:
+    """Recorta el dataset congelado a [start, end); sin fechas, no toca nada."""
+    if start is None and end is None:
+        return df
+    stamps = pd.to_datetime(df["ts"], utc=True)
+    keep = pd.Series(True, index=df.index)
+    if start is not None:
+        keep &= stamps >= start
+    if end is not None:
+        keep &= stamps < end
+    return df.loc[keep].reset_index(drop=True)
+
+
 def run_selection_cycle(
     cycle_id: str = "CYCLE-2026-11",
     blocks: int = 10,
@@ -612,6 +639,8 @@ def run_selection_cycle(
     purge: int = 1,
     spec_dir: Path | None = None,
     quiet: bool = False,
+    start: datetime | None = None,
+    end: datetime | None = None,
 ) -> dict:
     """Run the full selection cycle and return the payload."""
     if spec_dir is None:
@@ -620,10 +649,14 @@ def run_selection_cycle(
     df5 = pd.read_pickle(ROOT / "data" / "btc_5m.pkl") if (ROOT / "data" / "btc_5m.pkl").exists() else pd.DataFrame()
     if df5.empty:
         raise FileNotFoundError("Frozen 5m dataset not found at data/btc_5m.pkl")
+    df5 = _window(df5, start, end)
+    if df5.empty:
+        raise ValueError("la ventana pedida no deja velas en data/btc_5m.pkl")
 
     specs = load_universe_specs(spec_dir)
     if not specs:
         raise ValueError("No specs loaded")
+
 
     # Run backtest for each spec
     daily: dict[str, pd.Series] = {}
@@ -770,6 +803,18 @@ def main() -> None:
     ap.add_argument("--test-blocks", type=int, default=2, help="CPCV blocks held out per path")
     ap.add_argument("--purge", type=int, default=1, help="CPCV purge blocks")
     ap.add_argument("--spec-dir", type=Path, default=None, help="directory with spec JSON files")
+    ap.add_argument(
+        "--from",
+        dest="date_from",
+        default=None,
+        help="primer día ISO (AAAA-MM-DD), incluido; sin esto, desde el inicio",
+    )
+    ap.add_argument(
+        "--to",
+        dest="date_to",
+        default=None,
+        help="día ISO (AAAA-MM-DD) de corte, excluido; sin esto, hasta el final",
+    )
     ap.add_argument("--quiet", action="store_true")
     args = ap.parse_args()
 
@@ -784,6 +829,8 @@ def main() -> None:
         purge=args.purge,
         spec_dir=args.spec_dir,
         quiet=args.quiet,
+        start=_iso_day(args.date_from) if args.date_from else None,
+        end=_iso_day(args.date_to) if args.date_to else None,
     )
 
     args.spec_dir = args.spec_dir or (ROOT / "data" / "specs")
