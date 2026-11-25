@@ -109,7 +109,7 @@ class TradingEngine:
         # Peak equity is what the trailing drawdown guard measures against.
         self.peak_equity = settings.risk.initial_capital
         self._bars: dict[str, list[Bar]] = {
-            symbol: [] for symbol in settings.instruments.symbols
+                    symbol: [] for symbol in settings.instruments.symbols
         }
         self._chart_bars: list[Bar] = []
         self._chart_symbol: str | None = None
@@ -118,8 +118,9 @@ class TradingEngine:
         # Signal timeframe aggregators (what the strategy reads)
         self._signal_aggregated = self._signal_aggregators_for(settings)
         self._signal_minutes = timeframe_minutes(
-            settings.strategy.timeframe_signal or settings.strategy.timeframe
+                    settings.strategy.timeframe_signal or settings.strategy.timeframe
         )
+        self._bar_index = 0
         self._output: StrategyOutput | None = None
         self._subscribers: list[SnapshotHook] = []
         self._task: asyncio.Task[None] | None = None
