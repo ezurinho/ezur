@@ -21,6 +21,7 @@ from .config import load_settings
 from .db import Store
 from .engine import TradingEngine
 from .env import env
+from .instance_lock import InstanceAlreadyRunning, InstanceLock
 from .market.feed import CSVFeed, LiveFeed, MarketFeed, SimulatedFeed
 from .market.okx import OKXFeed
 from .strategy.registry import resolve_strategy
@@ -155,6 +156,15 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        # Dos procesos sobre la misma cuenta se pelearían por el libro y por el
+        # mismo mercado: el segundo se niega a arrancar en vez de duplicar.
+        lock = InstanceLock(db_path.with_name(db_path.stem + ".lock"))
+        try:
+            lock.acquire()
+        except InstanceAlreadyRunning as error:
+            logger.error("%s", error)
+            raise
+        app.state.instance_lock = lock
         store = Store(db_path)
         backup_dir = db_path.parent / "backups"
 
@@ -276,6 +286,7 @@ def create_app(
             if notifier is not None:
                 notifier.close()
             store.close()
+            lock.release()
 
     app = FastAPI(title="ezur", version=__version__, lifespan=lifespan)
     app.state.backtest_lock = asyncio.Lock()
