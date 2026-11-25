@@ -7,6 +7,7 @@ import { AnimatedNumber } from "../components/AnimatedNumber";
 import { MarketPulse } from "../components/MarketPulse";
 import { TradeRange } from "../components/TradeRange";
 import { Onboarding } from "../components/Onboarding";
+import { PromotionCard } from "../components/PromotionCard";
 import { dominantRejection, plainReason, unblockHint } from "../reasons";
 import type { Candle } from "../types";
 import { useUiMode } from "../mode";
@@ -406,6 +407,8 @@ export function SimpleDashboard() {
         </article>
       </div>
 
+      <PromotionCard promotion={snapshot.promotion ?? null} compact />
+
       <section className="card simple-pulse">
         <header className="card-header">
           <h3>El precio, en corto</h3>
@@ -485,8 +488,8 @@ export function SimpleDashboard() {
             Ver todo (modo avanzado)
           </button>
           <span className="muted small">
-            Aquí no hay métricas ni R: solo si gana o pierde y por qué cerró. El bot opera
-            en papel cuando lo reanudas.
+            Aquí no hay métricas de la estrategia ni R: solo el resultado, la puerta de
+            promoción y por qué cerró. El bot opera en papel cuando lo reanudas.
           </span>
         </footer>
       </section>
