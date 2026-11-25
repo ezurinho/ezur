@@ -296,14 +296,17 @@ def test_el_ciclo_completo_produce_pbo_dsr_y_wfa(tmp_path, monkeypatch):
         selection, "load_universe_specs", lambda spec_dir, all_specs=False: specs
     )
 
-    def fake_backtest(spec, df5, quiet=False, base=None):
+    def fake_backtest(spec, df5, quiet=False, base=None, cost_multiplier=1.0):
         stamps = pd.date_range("2024-01-02", periods=120, freq="D", tz="UTC")
         returns = rng.normal(0.05, 1.0, size=120)
         trades = pd.DataFrame(
             {"ts": stamps, "r_net": returns, "pnl_net": returns, "pnl_gross": returns}
         )
+        stressed = cost_multiplier != 1.0
+        pf = 1.2 if not stressed else (1.05 if spec.label == "a" else 0.9)
+        exp = 0.1 if not stressed else (0.02 if spec.label == "a" else -0.05)
         return trades, [], {
-            "closed": {"trades": 120, "profit_factor": 1.2, "expectancy_r": 0.1}
+            "closed": {"trades": 120, "profit_factor": pf, "expectancy_r": exp}
         }
 
     monkeypatch.setattr(selection, "run_backtest_for_spec", fake_backtest)
@@ -315,6 +318,11 @@ def test_el_ciclo_completo_produce_pbo_dsr_y_wfa(tmp_path, monkeypatch):
     assert payload["cycle_id"] == "CYCLE-TEST"
     assert payload["pbo"]["n_splits"] == math.comb(10, 5)
     assert payload["inputs"]["universe_size"] == 3
+    assert payload["inputs"]["stress_multiplier"] == 2.0
+    assert payload["stress"]["multiplier"] == 2.0
+    assert payload["stress"]["survivors"] == ["a"]
+    assert payload["stress"]["selected"] == payload["dsr_config"]
+    assert len(payload["stress"]["configs"]) == 3
     assert payload["dsr_config"] in {"a", "b", "c"}
     assert payload["wfa"]["folds_requested"] == 3
     assert payload["dsr"]["source"] == "grupo BTC-TREND-15M"
