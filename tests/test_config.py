@@ -37,7 +37,7 @@ def test_strategy_timeframe_defaults_to_one_minute():
 
 def test_strategy_timeframe_rejects_unknown():
     with pytest.raises(ValidationError):
-        Settings.model_validate({"strategy": {"timeframe": "7m"}})
+        Settings.model_validate({"strategy": {"timeframe": "1w"}})
 
 
 def test_corrupt_config_is_archived_and_defaults_restored(tmp_path):
