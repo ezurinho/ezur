@@ -340,6 +340,22 @@ export function qualityLabel(quality: string): string {
 }
 
 /**
+ * El estado del motor llega como clave (`running`, `stopped`). El HUD no debe
+ * mezclar inglés y español: la clave se queda para la lógica y el CSS.
+ */
+const STATUS_WORD: Record<string, string> = {
+  idle: "en espera",
+  running: "corriendo",
+  paused: "en pausa",
+  stopped: "detenido",
+  error: "error",
+};
+
+export function statusLabel(status: string): string {
+  return STATUS_WORD[status] ?? status;
+}
+
+/**
  * La sesión del motor empieza a las 00:00 UTC, no a la medianoche del reloj
  * que el usuario tiene en pantalla. Sin decirlo, «hoy» y el badge de sesión
  * se leen con el huso equivocado. Se devuelven las dos horas.
