@@ -196,6 +196,7 @@ class OrderModel(_Model):
     stop_price: float | None = None
     target_price: float | None = None
     signal_key: str = ""
+    risk_budget: float = 0.0
 
 
 class RiskModel(_Model):
