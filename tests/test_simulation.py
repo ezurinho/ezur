@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date
 
 from server.config import Settings
 from server.simulation import run_simulation, simulated_ticks, trading_days
