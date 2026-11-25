@@ -39,6 +39,20 @@ Panel en `http://127.0.0.1:8765`. El motor arranca **solo** (`auto_start`):
 consume el feed y evalúa la estrategia sin intervención. Con
 `"auto_start": false` en el perfil queda `idle` hasta `POST /api/bot/start`.
 
+### Arranque al iniciar sesión (Windows)
+
+La tarea `ezur-paper` lanza `start_paper.bat` oculto 30 s después de entrar en la
+sesión; el motor arranca solo con el `auto_start` del perfil. La tarea vive en el
+Programador de tareas, fuera del repo: si mueves la carpeta o reinstalas Windows
+se pierde, y se recrea desde la copia actual sin tocar rutas a mano:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\tarea_programada.ps1
+```
+
+Se quita añadiendo `-Borrar` al final. La salida del arranque sin ventana queda en
+`data\run\start_paper.log` (decisiones) y `data\run\engine.log` (motor).
+
 Con datos sintéticos y la estrategia de referencia:
 
 ```bash
