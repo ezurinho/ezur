@@ -152,7 +152,7 @@ class ExecutionEngine:
                 stop_price=order.stop_price or fill,
                 target_price=order.target_price,
                 opened_ts=bar.t,
-                entry_fees=self.config.commission_per_unit_side * order.units,
+                entry_fees=self._fees(order.symbol, order.units, fill),
                 entry_slippage=abs(fill - bar.o),
                 signal_key=order.signal_key,
             )
@@ -257,7 +257,9 @@ class ExecutionEngine:
         exit_price = price if price is not None else (self.last_price or position.entry_price)
         stamp = when or datetime.now(timezone.utc)
         pnl_gross = self._pnl(position.symbol, position.side, position.entry_price, exit_price, position.units)
-        fees = self.config.commission_per_unit_side * position.units * 2
+        fees = self._fees(
+            position.symbol, position.units, position.entry_price
+        ) + self._fees(position.symbol, position.units, exit_price)
         risk = self._risk_per_unit(position)
         pnl_net = pnl_gross - fees
         trade = TradeRecord(
@@ -285,6 +287,15 @@ class ExecutionEngine:
     def _risk_per_unit(self, position: Position) -> float:
         spec = self._instrument(position.symbol)
         return abs(position.entry_price - position.stop_price) / spec.tick_size * spec.tick_value
+
+    def _fees(self, symbol: str, units: int, price: float) -> float:
+        """Comision de un lado: porcentaje del nocional o importe por unidad."""
+        pct = self.config.commission_pct_side
+        if pct > 0:
+            spec = self._instrument(symbol)
+            contract = spec.tick_value / spec.tick_size if spec.tick_size else 0.0
+            return units * contract * price * pct
+        return self.config.commission_per_unit_side * units
 
     def cancel_all(self) -> None:
         for order in self.orders:
