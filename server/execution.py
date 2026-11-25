@@ -17,8 +17,12 @@ Every model rejects an entry whose opening fill is already through the stop
 or has already reached the target. A later stop gap fills at the bar open with
 adverse slippage, never at the stale stop price.
 
-Cost model (from strategy_spec):
-- fee_maker_bps / fee_taker_bps: per-side fees in basis points
+Cost model (from strategy_spec). The exchange fee is charged once: an explicit
+commission (percentage of the notional or per unit) replaces the bps fee; the
+bps fee only applies when there is no explicit commission. The half spread and
+the impact are always added: they are not the exchange fee.
+- commission_pct_side / commission_per_unit_side: explicit commission per side
+- fee_maker_bps / fee_taker_bps: per-side fees in basis points when no explicit commission is set
 - half_spread_bps: half the bid-ask spread in basis points
 - assumed_fill: "taker" | "maker" | "mixed" (how the entry is classified)
 - impact_model: "none" | "sqrt_law" | "ofi" (market impact model)
@@ -126,33 +130,34 @@ class ExecutionEngine:
     def _fees(self, symbol: str, units: int, price: float, is_maker: bool | None = None) -> float:
         """Fee for one side (entry or exit) in quote currency.
 
-        Uses fee_maker_bps / fee_taker_bps + half_spread_bps.
-        If assumed_fill is "mixed", averages maker/taker.
+        The exchange fee is charged once. An explicit commission (percentage of
+        the notional, or per unit) replaces the bps fee; the bps fee only applies
+        when there is no explicit commission. The half spread and the impact are
+        always added: they are not the exchange fee.
         """
         cfg = self.config
         spec = self._instrument(symbol)
-
-        # Determine which fee to use
-        if cfg.assumed_fill == "maker":
-            fee_bps = cfg.fee_maker_bps
-        elif cfg.assumed_fill == "taker":
-            fee_bps = cfg.fee_taker_bps
-        else:  # mixed
-            fee_bps = (cfg.fee_maker_bps + cfg.fee_taker_bps) / 2
-
-        # Total bps per side = fee + half_spread
-        total_bps = fee_bps + cfg.half_spread_bps
-
-        # Impact
         contract = spec.tick_value / spec.tick_size if spec.tick_size else 0.0
         notional = units * contract * price
-        impact_bps = self._impact_bps(symbol, notional, units, "long")
 
-        # Commission (per unit or percentage)
-        pct = cfg.commission_pct_side
-        if pct > 0:
-            return units * contract * price * pct + (notional * (total_bps + impact_bps) * 1e-4)
-        return cfg.commission_per_unit_side * units + (notional * (total_bps + impact_bps) * 1e-4)
+        if cfg.commission_pct_side > 0:
+            commission = notional * cfg.commission_pct_side
+            extra_bps = cfg.half_spread_bps
+        elif cfg.commission_per_unit_side > 0:
+            commission = cfg.commission_per_unit_side * units
+            extra_bps = cfg.half_spread_bps
+        else:
+            if cfg.assumed_fill == "maker":
+                fee_bps = cfg.fee_maker_bps
+            elif cfg.assumed_fill == "taker":
+                fee_bps = cfg.fee_taker_bps
+            else:  # mixed
+                fee_bps = (cfg.fee_maker_bps + cfg.fee_taker_bps) / 2
+            commission = 0.0
+            extra_bps = fee_bps + cfg.half_spread_bps
+
+        impact_bps = self._impact_bps(symbol, notional, units, "long")
+        return commission + notional * (extra_bps + impact_bps) * 1e-4
 
     def round_trip_fee_per_unit(self, symbol: str, price: float) -> float:
         """Comisión y spread de ida y vuelta por unidad, en divisa de cotización.

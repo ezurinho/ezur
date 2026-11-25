@@ -178,7 +178,9 @@ def test_commission_applied_per_side(engine, decision, signal_long):
     assert trade is not None
     spec = engine.execution._instrument("PRIMARY")
     contract = spec.tick_value / spec.tick_size
-    bps = 5.0 + 0.07
+    # La comisión por unidad ya es la de bolsa: el modelo en pb no se suma otra
+    # vez. Sólo queda el medio spread.
+    bps = 0.07
     expected = (
         2 * 0.62 * decision.units
         + decision.units * contract * (100.25 + 100.5) * bps * 1e-4
@@ -210,10 +212,54 @@ def test_commission_can_be_a_percentage_of_notional(engine, decision, signal_lon
     trade = engine.execution.close("manual", price=100.5, when=NOW)
 
     assert trade is not None
-    # 10 pb de 100.25 al entrar y de 100.50 al salir, más el coste de
-    # bolsa/slippage del modelo de costes (5 pb + medio spread por lado).
-    bps = 5.0 + 0.07
+    # 10 pb de 100.25 al entrar y de 100.50 al salir, más el medio spread: el
+    # porcentaje ya es la comisión de bolsa y no se cobra dos veces.
+    bps = 0.07
     expected = decision.units * contract * (100.25 + 100.5) * (0.001 + bps * 1e-4)
+    assert trade.fees == pytest.approx(expected)
+
+
+def test_exchange_fee_is_charged_once(engine, decision, signal_long):
+    from server.config import ExecutionConfig
+
+    # Comisión por unidad y, además, el modelo en pb por defecto: son la misma
+    # comisión de bolsa. Se cobra una vez.
+    engine.execution.config = ExecutionConfig.model_validate(
+        {
+            **engine.execution.config.model_dump(),
+            "fee_taker_bps": 5.0,
+            "half_spread_bps": 0.0,
+        }
+    )
+    engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, NOW)
+    engine.execution.on_bar({"PRIMARY": make_bar(o=100.0, h=101.0, l=99.8)})
+    trade = engine.execution.close("manual", price=100.5, when=NOW)
+
+    assert trade is not None
+    assert trade.fees == pytest.approx(2 * 0.62 * decision.units)
+
+
+def test_bps_fee_applies_when_no_explicit_commission(engine, decision, signal_long):
+    from server.config import ExecutionConfig
+
+    engine.execution.config = ExecutionConfig.model_validate(
+        {
+            **engine.execution.config.model_dump(),
+            "commission_per_unit_side": 0.0,
+            "commission_pct_side": 0.0,
+            "fee_taker_bps": 5.0,
+            "half_spread_bps": 0.5,
+        }
+    )
+    spec = engine.execution._instrument("PRIMARY")
+    contract = spec.tick_value / spec.tick_size
+
+    engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, NOW)
+    engine.execution.on_bar({"PRIMARY": make_bar(o=100.0, h=101.0, l=99.8)})
+    trade = engine.execution.close("manual", price=100.5, when=NOW)
+
+    assert trade is not None
+    expected = decision.units * contract * (100.25 + 100.5) * (5.0 + 0.5) * 1e-4
     assert trade.fees == pytest.approx(expected)
 
 

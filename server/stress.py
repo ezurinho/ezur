@@ -36,6 +36,11 @@ def stressed_settings(settings: Settings, multiplier: float = 2.0) -> Settings:
     clone.execution.commission_pct_side = (
         settings.execution.commission_pct_side * multiplier
     )
+    # El modelo en pb sustituye a la comisión explícita: si el perfil lo usa,
+    # duplicar sólo la comisión no duplicaría nada.
+    clone.execution.fee_maker_bps = settings.execution.fee_maker_bps * multiplier
+    clone.execution.fee_taker_bps = settings.execution.fee_taker_bps * multiplier
+    clone.execution.half_spread_bps = settings.execution.half_spread_bps * multiplier
     # `slippage_ticks` es un recuento entero: pydantic no revalida al asignar y
     # un 2.0 viajaba hasta el informe como si fuera otra unidad.
     clone.execution.slippage_ticks = max(
