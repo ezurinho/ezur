@@ -406,34 +406,25 @@ def run_universe(specs: list[StrategySpec], df5: pd.DataFrame, quiet: bool = Fal
 
     for spec in specs:
         name = spec.label
-        tf = spec.timeframe_signal
-
-        # Create engine settings for this spec
-        settings = Settings()
-        settings.strategy.id = spec.id
-        settings.strategy.timeframe = tf
-        settings.strategy.timeframe_signal = tf
-        settings.strategy.params = spec.params.model_dump(exclude_none=True)
-        settings.execution = spec.execution if hasattr(spec, "execution") else None
-        settings.risk = spec.risk if hasattr(spec, "risk") else None
-
-        # Run backtest: el motor determinista es el mismo que mide el terminal.
-        from .backtest import run_backtest
-        result = run_backtest(settings, df5)
-
-        trades = result.trades
-        if not trades:
+        # El motor determinista es el mismo que mide el terminal; antes se le
+        # pasaba el DataFrame a `run_backtest`, que espera una ruta y reventaba.
+        trade_df, _equity, metrics = run_backtest_for_spec(spec, df5, quiet=quiet)
+        if trade_df.empty:
             if not quiet:
                 print(f"  {name:26s} sin trades")
             continue
 
-        # Convert trades to daily returns
-        # This is simplified - full implementation would use the runner's exact logic
-        trade_log[name] = pd.DataFrame()  # placeholder
-
+        trade_log[name] = trade_df
+        daily[name] = trade_df.groupby(trade_df["ts"].dt.date)["r_net"].sum()
+        closed = metrics.get("closed", {})
         summary.append({
-            "name": name, "spec_id": spec.id, "timeframe": tf,
-            "trades": 0, "pf_net": 0.0, "exp_r": 0.0, "days": 0,
+            "name": name,
+            "spec_id": spec.id,
+            "timeframe": spec.timeframe_signal,
+            "trades": closed.get("trades", 0),
+            "pf_net": closed.get("profit_factor", 0.0),
+            "exp_r": closed.get("expectancy_r", 0.0),
+            "days": int(daily[name].size),
         })
 
     matrix = pd.DataFrame(daily).fillna(0.0).sort_index()
@@ -461,7 +452,6 @@ def run_backtest_for_spec(spec: StrategySpec, df5: pd.DataFrame, quiet: bool = F
     Returns (trades_df, equity_curve, metrics_dict) or (empty_df, [], {}) if no trades.
     """
     from .backtest import run_backtest
-    from .config import Settings
 
     tf = spec.timeframe_signal
     name = spec.label
@@ -571,9 +561,11 @@ def run_backtest_for_spec(spec: StrategySpec, df5: pd.DataFrame, quiet: bool = F
         if not trades:
             return pd.DataFrame(), [], {}
 
-        # Convert trades to daily returns for the matrix
-        from .stats import compute_stats
-        metrics = compute_stats(trades, initial_equity=settings.risk.initial_capital, equity=result.equity)
+        # Mismo agregado que el CLI: los consumidores leen `metrics["closed"]`.
+        from .stats import aggregate
+        metrics = aggregate(
+            trades, settings.risk.initial_capital, timezone_name="UTC"
+        )
 
         # Build trade log DataFrame
         trade_rows = []
