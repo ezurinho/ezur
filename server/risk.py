@@ -127,6 +127,11 @@ class RiskManager:
         stop_ticks = stop_distance / instrument.tick_size
         if stop_ticks > cfg.max_stop_ticks:
             return reject("stop_too_wide", f"stop de {stop_ticks:.0f} ticks supera el máximo")
+        if cfg.min_stop_ticks and stop_ticks < cfg.min_stop_ticks:
+            return reject(
+                "stop_too_tight",
+                f"stop de {stop_ticks:.0f} ticks por debajo del mínimo",
+            )
 
         if clock is not None and timezone_name is not None:
             window_code = self._outside_window(clock, timezone_name)

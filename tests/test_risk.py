@@ -125,6 +125,19 @@ def test_stop_too_wide_is_rejected(settings, signal_long):
     assert decision.code == "stop_too_wide"
 
 
+def test_stop_too_tight_is_rejected(settings, signal_long):
+    settings.risk.min_stop_ticks = 100
+    decision = _evaluate(settings, signal_long, _portfolio(settings))
+    assert decision.approved is False
+    assert decision.code == "stop_too_tight"
+
+
+def test_a_stop_above_the_minimum_is_approved(settings, signal_long):
+    settings.risk.min_stop_ticks = 1
+    decision = _evaluate(settings, signal_long, _portfolio(settings))
+    assert decision.approved is True
+
+
 def test_outside_trade_window_is_rejected(settings, signal_long):
     settings.risk.trade_window_start = "09:00"
     settings.risk.trade_window_end = "10:00"
@@ -278,6 +291,11 @@ def test_cooldown_out_of_range_is_rejected():
         RiskConfig(loss_streak_cooldown_min=-1)
     with pytest.raises(ValueError):
         RiskConfig(loss_streak_cooldown_min=2000)
+
+
+def test_min_stop_ticks_cannot_be_negative():
+    with pytest.raises(ValueError):
+        RiskConfig(min_stop_ticks=-1)
 
 
 def test_last_exit_survives_a_restart(tmp_path, settings, signal_long):

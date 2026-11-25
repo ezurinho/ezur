@@ -363,6 +363,12 @@ describe("por qué no entra", () => {
     expect(dominantRejection({})).toBeNull();
   });
 
+  it("un stop por debajo del mínimo se explica en palabras", async () => {
+    const { plainReason, unblockHint } = await import("../reasons");
+    expect(plainReason("stop_too_tight")).toContain("más estrecho que el mínimo");
+    expect(unblockHint("stop_too_tight")).toContain("mínimo del perfil");
+  });
+
   it("un motivo con cero rechazos no cuenta", async () => {
     const { dominantRejection } = await import("../reasons");
     expect(dominantRejection({ no_price: 0 })).toBeNull();

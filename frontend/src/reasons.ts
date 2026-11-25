@@ -30,6 +30,8 @@ const WORDS: Record<string, string> = {
   no_signal: "El precio no cumple su regla de entrada ahora mismo.",
   risk_per_trade: "La operación saldría demasiado grande para el riesgo permitido.",
   stop_too_wide: "El stop necesario es más ancho del máximo permitido.",
+  stop_too_tight:
+    "El stop necesario es más estrecho que el mínimo permitido: el ruido del mercado lo barrería antes de que la idea se cumpla.",
   invalid_stop: "El stop de la señal cae justo sobre la entrada: no protegería nada.",
   daily_profit_limit:
     "Hoy ya ganó el máximo configurado. Deja de abrir operaciones para no devolverlo.",
@@ -61,6 +63,7 @@ const UNLOCK: Record<string, string> = {
   below_min_notional: "se desbloquea con una orden de mayor tamaño",
   gap_through_stop: "se desbloquea con una nueva señal",
   gap_through_target: "se desbloquea con una nueva señal",
+  stop_too_tight: "se desbloquea cuando la volatilidad dé un stop más ancho o se baje el mínimo del perfil",
 };
 
 export interface ReasonContext {
