@@ -39,33 +39,12 @@ def test_backtest_records_dataset_identity(settings, dataset_path):
     assert result.diagnostics["dataset_sessions"] == 1
 
 
-def _synthetic_csv(settings, path, day: str = "2026-01-15", bars: int = 390):
-    import csv
-    from datetime import date
-
-    from server.market import synthetic
-    from server.simulation import session_start_utc
-
-    series = synthetic.generate_session(
-        day,
-        settings.instruments.primary,
-        start=session_start_utc(settings, date.fromisoformat(day)),
-        bars=bars,
-    )
-    with path.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.writer(handle)
-        writer.writerow(["ts", "symbol", "o", "h", "l", "c", "v"])
-        for bar in series:
-            writer.writerow(
-                [bar.t.isoformat(), settings.instruments.primary, bar.o, bar.h, bar.l, bar.c, bar.v]
-            )
-    return path
-
-
-def test_reference_strategy_backtest_is_deterministic_and_trades(settings, tmp_path):
+def test_reference_strategy_backtest_is_deterministic_and_trades(
+    settings, tmp_path, synthetic_csv
+):
     from server.strategy.reference import ReferenceStrategy
 
-    path = _synthetic_csv(settings, tmp_path / "synthetic.csv")
+    path = synthetic_csv(tmp_path / "synthetic.csv")
     first = run_backtest(settings, path, ReferenceStrategy({}))
     second = run_backtest(settings, path, ReferenceStrategy({}))
 
@@ -77,13 +56,42 @@ def test_reference_strategy_backtest_is_deterministic_and_trades(settings, tmp_p
     )
 
 
-def test_backtest_verdict_rejects_the_reference_strategy(settings, tmp_path):
+def test_backtest_verdict_rejects_the_reference_strategy(
+    settings, tmp_path, synthetic_csv
+):
     from server.gates import evaluate_gates
     from server.stats import aggregate
     from server.strategy.reference import ReferenceStrategy
 
-    path = _synthetic_csv(settings, tmp_path / "single.csv", bars=120)
+    path = synthetic_csv(tmp_path / "single.csv", bars=120)
     result = run_backtest(settings, path, ReferenceStrategy({}))
     payload = aggregate(result.trades, settings.risk.initial_capital)
     report = evaluate_gates(payload, initial_capital=settings.risk.initial_capital)
     assert report.verdict == "RECHAZADA"
+
+
+def test_el_coste_del_backtest_usa_el_riesgo_real(
+    settings, tmp_path, synthetic_csv
+):
+    from server.promotion import cost_metrics, execution_model
+    from server.strategy.reference import ReferenceStrategy
+
+    path = synthetic_csv(tmp_path / "real-risk.csv")
+    result = run_backtest(settings, path, ReferenceStrategy({}))
+    budget = settings.risk.initial_capital * settings.risk.risk_per_trade_pct / 100
+
+    metrics = cost_metrics(
+        result.trades,
+        execution_model(settings),
+        budget=budget,
+        max_units=settings.risk.max_units_per_trade,
+    )
+
+    assert metrics["trades"] == len(result.trades) > 0
+    assert metrics["avg_stop_ticks"] and metrics["avg_stop_ticks"] > 0
+    assert 0 < metrics["avg_risk_per_trade"] < budget
+    assert metrics["cost_per_trade_r"] == pytest.approx(
+        metrics["cost_per_trade_r_weighted"]
+    )
+    assert metrics["cost_per_trade_r_simple"] is not None
+    assert metrics["cost_per_trade_r_nominal"] is not None
