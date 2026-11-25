@@ -41,6 +41,7 @@
       "family": "orb",
       "timeframe_signal": "5m",
       "rule": "orb_session",
+      "sessions": ["00:00"],
       "hypothesis": "La primera hora del dia UTC define un rango y el primer cierre fuera de el suele continuar durante las horas siguientes. En futuros con campana de apertura el patron esta documentado; en BTC el dia UTC no tiene campana, asi que la hipotesis es debil y por eso importa medirla en vez de citarla. Doce barras de 5m son esa primera hora.",
       "long": "close[t] > max(high[apertura .. apertura+range_bars])",
       "short": "close[t] < min(low[apertura .. apertura+range_bars])",
