@@ -95,10 +95,12 @@ def sharpe_daily(r: np.ndarray) -> float:
 
 def _sr_from_sums(s: np.ndarray, ss: np.ndarray, n: float) -> np.ndarray:
     """Daily Sharpe from running sums, vectorised over configs."""
-    mean = s / n
-    var = (ss - s * s / n) / (n - 1.0)
-    var = np.maximum(var, 0.0)
+    # n puede ser 1 en una partición degenerada: el aviso de numpy no aporta
+    # nada y ensuciaría el log del ciclo.
     with np.errstate(divide="ignore", invalid="ignore"):
+        mean = s / n
+        var = (ss - s * s / n) / (n - 1.0)
+        var = np.maximum(var, 0.0)
         out = np.where(var > 0, mean / np.sqrt(var), 0.0)
     return out
 
