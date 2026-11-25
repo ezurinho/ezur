@@ -198,6 +198,7 @@ class RiskConfig(_Model):
     max_concurrent_positions: int = 1
     max_units_per_trade: int = 5
     max_stop_ticks: int = 200
+    min_stop_ticks: int = 0
     trade_window_start: str = "09:00"
     trade_window_end: str = "15:30"
     entry_exclusion_start: str | None = None
@@ -266,7 +267,12 @@ class RiskConfig(_Model):
             raise ValueError("risk limits must be positive")
         return value
 
-    @field_validator("max_daily_profit_pct", "cooldown_minutes", "no_trade_after_consecutive_losses")
+    @field_validator(
+        "max_daily_profit_pct",
+        "cooldown_minutes",
+        "no_trade_after_consecutive_losses",
+        "min_stop_ticks",
+    )
     @classmethod
     def _nonnegative_limit(cls, value: float | int) -> float | int:
         if value < 0:

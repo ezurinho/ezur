@@ -201,6 +201,15 @@ def main() -> None:
             "las señales de velas grandes por stop_too_wide"
         ),
     )
+    parser.add_argument(
+        "--min-stop-ticks",
+        type=int,
+        default=None,
+        help=(
+            "mínimo de stop en ticks para esta corrida; recorta la cola de "
+            "señales con coste alto (0 = sin filtro)"
+        ),
+    )
     parser.add_argument("--json", action="store_true", help="imprime el resultado como JSON")
     parser.add_argument("--out", default=None, help="escribe ese JSON en una ruta")
     args = parser.parse_args()
@@ -214,6 +223,8 @@ def main() -> None:
         settings.execution.commission_per_unit_side = args.commission_per_unit
     if args.max_stop_ticks is not None:
         settings.risk.max_stop_ticks = args.max_stop_ticks
+    if args.min_stop_ticks is not None:
+        settings.risk.min_stop_ticks = args.min_stop_ticks
 
     result = run_backtest(settings, args.dataset)
     primary = settings.instruments.primary
@@ -318,7 +329,7 @@ def _report_run(args, settings, result, stats, report) -> None:
         print(f"rechazos  {sum(rejections.values())} · {detail}")
         blockers = sum(
             count for code, count in rejections.items()
-            if code in {"stop_too_wide", "max_drawdown_reached"}
+            if code in {"stop_too_wide", "stop_too_tight", "max_drawdown_reached"}
         )
         if blockers:
             print(
