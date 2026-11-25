@@ -249,8 +249,12 @@ export function connectSnapshotStream(
     socket = new WebSocket(`${protocol}://${window.location.host}/api/ws`);
     socket.onopen = () => onState("open");
     socket.onmessage = (event) => {
-      const message = JSON.parse(event.data) as SnapshotMessage;
-      if (message.type === "snapshot") onSnapshot(message.data);
+      try {
+        const message = JSON.parse(event.data) as SnapshotMessage;
+        if (message.type === "snapshot") onSnapshot(message.data);
+      } catch {
+        // Un frame corrupto no debe tumbar el stream ni impedir el siguiente.
+      }
     };
     socket.onclose = () => {
       onState("closed");
