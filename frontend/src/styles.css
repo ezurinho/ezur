@@ -3554,6 +3554,9 @@ label {
 
 .simple-pulse {
   margin-bottom: 14px;
+  /* La tarjeta del gráfico no necesita un borde inferior: al cruzar el corte
+     del gráfico se leía como una línea suelta en mitad de la pantalla. */
+  border-bottom-color: transparent;
 }
 
 /* ---- primeros pasos ------------------------------------------------------ */
