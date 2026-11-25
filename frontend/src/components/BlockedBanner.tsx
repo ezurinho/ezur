@@ -93,6 +93,14 @@ export function BlockedBanner({ snapshot }: { snapshot: SnapshotData }) {
   const context = { lossStreakCooldownMin: risk.limits.loss_streak_cooldown_min ?? 0 };
   const hint = unblockHint(risk.block_reason, context);
   const routine = risk.block_reason !== null && ROUTINE_BLOCK.has(risk.block_reason);
+  const edge = risk.edge;
+  const edgeFigures =
+    risk.block_reason === "edge_below_cost" &&
+    edge &&
+    typeof edge.expectancy_r === "number" &&
+    typeof edge.cost_r === "number"
+      ? { scope: edge.scope, expectancy: edge.expectancy_r, cost: edge.cost_r }
+      : null;
   return (
     <div
       className={`why-strip ${routine ? "why-hold" : "why-blocked"}`}
@@ -109,6 +117,12 @@ export function BlockedBanner({ snapshot }: { snapshot: SnapshotData }) {
           {when ? ` · la última ${when}` : ""}
           {hint ? ` · ${hint}` : ""}
         </span>
+        {edgeFigures ? (
+          <span className="why-meta" data-edge="blocked">
+            Esperanza medida ({edgeFigures.scope}) {edgeFigures.expectancy.toFixed(3)} R ·
+            coste por operación {edgeFigures.cost.toFixed(3)} R
+          </span>
+        ) : null}
       </div>
     </div>
   );
