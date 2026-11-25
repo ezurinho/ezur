@@ -234,6 +234,65 @@ def test_cpcv_sin_combinaciones_validas_no_inventa_metricas():
     assert "sin combinaciones" in result["reason"]
 
 
+# Los nombres de fichero son los que busca `load_universe_specs`; el contenido
+# va en 5m nativo porque el motor remuestrea a `timeframe_signal` y un 1d sobre
+# velas de 5m produce stops de decenas de miles de ticks.
+UNIVERSE = [
+    ("BTC-TREND-1D", "trend_n8", "5m", 8),
+    ("BTC-TREND-4H", "trend_n12", "5m", 12),
+    ("BTC-MOM-5M", "trend_n20", "5m", 20),
+]
+
+
+def test_run_selection_cycle_trae_operaciones_y_pf_reales(tmp_path, monkeypatch):
+    """El resumen del ciclo no puede salir a cero: ahí se perdía metrics["closed"]."""
+    monkeypatch.setattr(registry, "_SPEC_BUILDERS", dict(registry._SPEC_BUILDERS))
+    monkeypatch.setattr(registry, "_SPEC_CACHE", dict(registry._SPEC_CACHE))
+
+    data_dir = tmp_path / "data"
+    specs_dir = data_dir / "specs"
+    specs_dir.mkdir(parents=True)
+    _df5(bars=60 * 288, drift=4.0, noise=25.0).to_pickle(data_dir / "btc_5m.pkl")
+
+    for spec_id, label, timeframe, window in UNIVERSE:
+        path = specs_dir / f"{spec_id}.json"
+        path.write_text(
+            json.dumps(
+                _spec_document(
+                    id=spec_id,
+                    label=label,
+                    timeframe_signal=timeframe,
+                    params={"atr_k": 2.0, "tp_r": 2.0, "N": window},
+                )
+            ),
+            encoding="utf-8",
+        )
+        registry.register_spec(spec_id, path)
+
+    monkeypatch.setattr(selection, "ROOT", tmp_path)
+
+    payload = selection.run_selection_cycle(
+        cycle_id="CYCLE-TEST",
+        blocks=6,
+        folds=3,
+        test_blocks=2,
+        purge=1,
+        spec_dir=specs_dir,
+        quiet=True,
+    )
+
+    summary = payload["universe"]
+    assert {row["name"] for row in summary} == {"trend_n8", "trend_n12", "trend_n20"}
+    for row in summary:
+        assert row["trades"] > 0, f"{row['name']} sin operaciones"
+        assert row["pf_net"] > 0, f"{row['name']} con PF cero"
+        assert row["exp_r"] != 0.0
+        assert row["days"] > 0
+    assert payload["inputs"]["daily_observations"] > 0
+    assert payload["pbo"]["pbo"] is not None
+    assert payload["wfa"]["evaluated_folds"] >= 1
+
+
 def test_momentos_degenerados_se_reportan_sin_numero(monkeypatch):
     """Si el denominador del PSR no es positivo, se dice el motivo y no se inventa."""
     monkeypatch.setattr(selection, "_psr_from", lambda *args: None)
