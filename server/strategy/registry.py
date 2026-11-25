@@ -93,8 +93,6 @@ def _build_strategy_from_spec(spec: StrategySpec, params: dict[str, Any] | None 
 
     if rule == "donchian_breakout":
         return spec_driven.DonchianBreakoutStrategy(merged_params)
-    if rule == "fade":
-        return spec_driven.ZScoreFadeStrategy(merged_params)  # fade maps to zscore_fade in spec
     if rule == "ema_state":
         return spec_driven.EMAStateStrategy(merged_params)
     if rule == "orb_session":
@@ -106,10 +104,17 @@ def _build_strategy_from_spec(spec: StrategySpec, params: dict[str, Any] | None 
 
 
 def register_spec(spec_id: str, spec_path: Path) -> None:
-    """Register a spec file at runtime (for dynamic loading)."""
+    """Register a spec file at runtime (for dynamic loading).
+
+    El constructor se queda con la ruta: dar por hecho que el fichero se llama
+    como el id obligaba a renombrar specs que ya estaban validadas.
+    """
     spec = load_spec(spec_path)
+    path = Path(spec_path)
     _SPEC_CACHE[spec_id] = spec
-    _SPEC_BUILDERS[spec_id] = lambda p, sid=spec_id: _load_spec_strategy(sid, p)
+    _SPEC_BUILDERS[spec_id] = lambda p, file=path: _build_strategy_from_spec(
+        load_spec(file), p
+    )
 
 
 def available() -> list[str]:
