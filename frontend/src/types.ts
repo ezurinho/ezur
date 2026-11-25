@@ -169,6 +169,16 @@ export interface Order {
   risk_budget?: number;
 }
 
+export interface EdgeMeasure {
+  expectancy_r: number | null;
+  cost_r: number | null;
+  timeframe: string | null;
+  scope: string;
+  passes: boolean | null;
+  reason: string | null;
+  detail: string;
+}
+
 export interface Risk {
   equity: number;
   open_risk: number;
@@ -177,6 +187,8 @@ export interface Risk {
   blocked: boolean;
   block_reason: string | null;
   block_count: number;
+  block_detail?: string | null;
+  edge?: EdgeMeasure | null;
   limits: Record<string, number>;
 }
 
