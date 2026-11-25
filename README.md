@@ -208,7 +208,7 @@ por la misma vara que el estudio:
 |---|---|
 | PF fuera de muestra | > 1 |
 | operaciones fuera de muestra | >= 100 |
-| coste medio por operación | < 0,25 R |
+| coste ponderado por operación (fees totales / riesgo total) | < 0,25 R |
 | PF con el coste duplicado | > 1 |
 | PBO de su ciclo de selección | <= 0,2 |
 
@@ -216,10 +216,11 @@ por la misma vara que el estudio:
 python -m server.promotion --config profiles/okx/config.json --evidence bt.json --stress bt-2x.json --cycle CYCLE-BOT-1D.json
 ```
 
-El coste se mide con la comisión y el `tick_value` del perfil que va a operar: `--config` es obligatorio, y una evidencia que no declara su modelo de ejecución no supera ese criterio. Sale con 1 si no está promovida. En el perfil, `"promotion": {"required": true,
-"evidence": "...", "stress_evidence": "...", "cycle": "..."}` impide el
-`auto_start`; con `"mode": "reduce"` arranca, pero multiplica el riesgo efectivo
-por `size_factor` y deja un evento con el criterio que falló. La reducción no se
+El coste se mide con la comisión y el `tick_value` del perfil que va a operar: `--config` es obligatorio, y una evidencia que no declara su modelo de ejecución no supera ese criterio. El número que decide es el **ponderado** (fees totales / riesgo total) y se mide sobre el mismo tramo fuera de muestra que el PF; la media simple por operación (fees/riesgo) se publica como distribución (mediana, p90, p99) y no aprueba nada. Sale con 1 si no está promovida. En el perfil, `"promotion": {"required": true,
+"evidence": "...", "stress_evidence": "...", "cycle": "..."}` con
+`"mode": "block"` impide arrancar, tanto por `auto_start` como a mano; con
+`"mode": "reduce"` arranca, pero multiplica el riesgo efectivo por `size_factor`
+y deja un evento con el criterio que falló. La reducción no se
 escribe en `config.json`: el valor configurado se conserva y Ajustes y
 Configuración muestran el efectivo. Apagada por defecto: encenderla es decisión
 del perfil.
@@ -346,7 +347,10 @@ paréntesis, la misma corrida con comisión cero: la diferencia es el coste.
 | 1 m | −1,548 (+0,061) | −2,379 (+0,058) | −2,491 (+0,027) | 1,6–2,5 R |
 
 El coste cae veinte veces de 1 m a 1 h, como era de esperar: una comisión fija
-pesa menos cuanto más ancho es el stop. Pero **la señal no aparece**: sin
+pesa menos cuanto más ancho es el stop. Estas cifras son nominales
+(fees / operaciones / presupuesto), la unidad de aquella medición; la puerta
+actual usa el ponderado por riesgo real, que con stops estrechos puede ser
+varias veces mayor. Pero **la señal no aparece**: sin
 comisión los tres marcos intraday están entre −0,11 y +0,06 R, y lo positivo de
 1 m es el artefacto del tope — una operación al día, la primera. Solo el diario
 da esperanza neta positiva (+0,096 R con las 2.496 velas).
