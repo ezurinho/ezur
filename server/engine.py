@@ -29,6 +29,7 @@ from .models import (
     TradeRecord,
 )
 from .risk import RiskManager
+from .resample import BarAggregator, timeframe_minutes
 from .snapshot import SnapshotBuilder
 from .stats import aggregate
 from .strategy.base import BaseStrategy, MarketData, Phase, StrategyOutput
@@ -100,6 +101,8 @@ class TradingEngine:
         self._bars: dict[str, list[Bar]] = {
             symbol: [] for symbol in settings.instruments.symbols
         }
+        self._aggregated = self._aggregators_for(settings)
+        self._aggregated_minutes = timeframe_minutes(settings.strategy.timeframe)
         self._output: StrategyOutput | None = None
         self._subscribers: list[SnapshotHook] = []
         self._task: asyncio.Task[None] | None = None
@@ -187,11 +190,18 @@ class TradingEngine:
             self.state.block_count = 0
         for symbol in settings.instruments.symbols:
             self._bars.setdefault(symbol, [])
+        minutes = timeframe_minutes(settings.strategy.timeframe)
+        if minutes != self._aggregated_minutes:
+            # Otro marco es otro sistema: no se mezclan buckets del anterior
+            # con los nuevos, y la estrategia vuelve a calentar.
+            self._aggregated_minutes = minutes
+            self._aggregated = self._aggregators_for(settings)
         if self.feed_factory is not None and self.feed is not None:
             # A new instrument needs data: rebuild the feed and drop stale bars
             # rather than mixing two sessions of the same timestamps.
             self.feed = self.feed_factory(settings)
             self._bars = {symbol: [] for symbol in settings.instruments.symbols}
+            self._aggregated = self._aggregators_for(settings)
             self._previous_tick_ts = None
             self.state.bars_available = 0
             self.state.last_bar_ts = None
@@ -236,6 +246,7 @@ class TradingEngine:
                 # A looped demo replay starts the session again from scratch: the
                 # bars are rebuilt, the trades and the equity keep accumulating.
                 self._bars = {symbol: [] for symbol in self.settings.instruments.symbols}
+                self._aggregated = self._aggregators_for(self.settings)
                 self._previous_tick_ts = None
                 self.state.bars_available = 0
                 self.state.last_bar_ts = None
@@ -321,6 +332,9 @@ class TradingEngine:
                 continue
             self._bars[symbol].append(bar)
             del self._bars[symbol][:-MAX_BARS]
+            aggregator = self._aggregated.get(symbol)
+            if aggregator is not None:
+                aggregator.add(bar)
 
         self.state.session = session
         self.state.last_bar_ts = tick.ts
@@ -367,15 +381,32 @@ class TradingEngine:
             self._persist()
         self._update_open_risk()
 
+    def _aggregators_for(self, settings: Settings) -> dict[str, BarAggregator]:
+        minutes = timeframe_minutes(settings.strategy.timeframe)
+        if minutes <= 1:
+            return {}
+        return {
+            symbol: BarAggregator(minutes, MAX_BARS)
+            for symbol in settings.instruments.symbols
+        }
+
+    def _bar_source(self) -> dict[str, list[Bar]]:
+        """Lo que lee la estrategia: buckets cerrados o las velas del feed."""
+        if self._aggregated:
+            return {
+                symbol: aggregator.bars
+                for symbol, aggregator in self._aggregated.items()
+            }
+        return self._bars
+
     def _warmup_progress(self) -> tuple[bool, str]:
         requirement = self.strategy.warmup_requirements()
         if not requirement.bars:
             return True, ""
+        series = self._bar_source()
         for symbol, needed in requirement.bars.items():
             targets = (
-                self._bars.values()
-                if symbol == "*"
-                else [self._bars.get(symbol, [])]
+                series.values() if symbol == "*" else [series.get(symbol, [])]
             )
             have = min((len(values) for values in targets), default=0)
             if have < needed:
@@ -384,7 +415,7 @@ class TradingEngine:
 
     def _evaluate(self, tick: Tick, session: SessionInfo) -> None:
         primary = self.settings.instruments.primary
-        bars = {symbol: list(values) for symbol, values in self._bars.items()}
+        bars = {symbol: list(values) for symbol, values in self._bar_source().items()}
         if not bars.get(primary):
             return
         ready, detail = self._warmup_progress()
