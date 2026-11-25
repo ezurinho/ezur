@@ -100,7 +100,7 @@ def grid_combinations(grid: dict[str, Sequence[Any]]) -> list[dict[str, Any]]:
         return [{}]
     keys = sorted(grid)
     return [
-        dict(zip(keys, values))
+        dict(zip(keys, values, strict=True))
         for values in itertools.product(*(list(grid[key]) for key in keys))
     ]
 
