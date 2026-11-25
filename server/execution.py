@@ -223,24 +223,25 @@ class ExecutionEngine:
         tol = spec.tick_size / 2
         stop = position.stop_price
         target = position.target_price
-        if position.side == "long":
-            stop_hit = bar.l <= stop + tol
-            target_hit = target is not None and bar.h >= target - tol
-            if stop_hit and target_hit:
-                return _Hit(price=stop, reason="stop", diagnostics={"ambiguous_bar": True})
-            if stop_hit:
-                return _Hit(price=stop, reason="stop", diagnostics={})
-            if target_hit and target is not None:
-                return _Hit(price=target, reason="target", diagnostics={})
-        else:
-            stop_hit = bar.h >= stop - tol
-            target_hit = target is not None and bar.l <= target + tol
-            if stop_hit and target_hit:
-                return _Hit(price=stop, reason="stop", diagnostics={"ambiguous_bar": True})
-            if stop_hit:
-                return _Hit(price=stop, reason="stop", diagnostics={})
-            if target_hit and target is not None:
-                return _Hit(price=target, reason="target", diagnostics={})
+        long = position.side == "long"
+        # Un stop es una orden a mercado: si la vela abre mas alla del precio,
+        # el relleno es el de la apertura. Rellenar al stop regalaba en el
+        # backtest todo hueco en contra.
+        stop_fill = min(bar.o, stop) if long else max(bar.o, stop)
+        gap = bar.o < stop if long else bar.o > stop
+        stop_hit = bar.l <= stop + tol if long else bar.h >= stop - tol
+        target_hit = target is not None and (
+            bar.h >= target - tol if long else bar.l <= target + tol
+        )
+        diagnostics: dict[str, Any] = {}
+        if gap:
+            diagnostics["gap_through_stop"] = True
+        if stop_hit and target_hit:
+            diagnostics["ambiguous_bar"] = True
+        if stop_hit:
+            return _Hit(price=stop_fill, reason="stop", diagnostics=diagnostics)
+        if target_hit and target is not None:
+            return _Hit(price=target, reason="target", diagnostics={})
         return None
 
     def close(

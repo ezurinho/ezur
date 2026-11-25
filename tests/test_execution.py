@@ -45,6 +45,40 @@ def test_ambiguous_bar_resolves_stop_first(engine, decision, signal_long):
     assert events[-1].trade.diagnostics["ambiguous_bar"] is True
 
 
+def test_stop_fills_at_the_open_when_the_bar_gaps_through_it(
+    engine, decision, signal_long
+):
+    engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, NOW)
+    engine.execution.on_bar({"PRIMARY": make_bar(o=100.0, h=101.0, l=99.8)})
+    events = engine.execution.on_bar({"PRIMARY": make_bar(o=98.0, h=98.6, l=97.5)})
+    assert events[-1].reason == "stop"
+    assert events[-1].trade is not None
+    # Stop en 99.5, apertura en 98.0: se sale a 98.0, no al stop.
+    assert events[-1].trade.exit_price == pytest.approx(98.0)
+    assert events[-1].diagnostics["gap_through_stop"] is True
+
+
+def test_short_stop_fills_at_the_open_when_the_bar_gaps_through_it(engine, decision):
+    from server.strategy.base import Signal
+
+    signal = Signal(
+        key="gap-short",
+        side="short",
+        reason="t",
+        ts=NOW,
+        stop_price=100.5,
+        target_price=98.0,
+    )
+    engine.execution.arm(decision, signal, "PRIMARY", 100.0, NOW)
+    engine.execution.on_bar({"PRIMARY": make_bar(o=100.0, h=100.2, l=99.6)})
+    events = engine.execution.on_bar({"PRIMARY": make_bar(o=102.0, h=102.4, l=101.5)})
+    assert events[-1].reason == "stop"
+    assert events[-1].trade is not None
+    # Stop en 100.5, apertura en 102.0: se sale a 102.0, no al stop.
+    assert events[-1].trade.exit_price == pytest.approx(102.0)
+    assert events[-1].diagnostics["gap_through_stop"] is True
+
+
 def test_commission_applied_per_side(engine, decision, signal_long):
     engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, NOW)
     engine.execution.on_bar({"PRIMARY": make_bar(o=100.0, h=101.0, l=99.8)})
