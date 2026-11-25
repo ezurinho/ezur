@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -242,6 +243,30 @@ UNIVERSE = [
     ("BTC-TREND-4H", "trend_n12", "5m", 12),
     ("BTC-MOM-5M", "trend_n20", "5m", 20),
 ]
+
+
+def test_window_recorta_inclusivo_excluyente():
+    """--from entra y --to no: el corte de fin de año no debe colar la vela siguiente."""
+    df = pd.DataFrame(
+        {
+            "ts": [
+                "2024-12-31T23:55:00+00:00",
+                "2025-01-01T00:00:00+00:00",
+                "2025-06-01T00:00:00+00:00",
+                "2026-01-01T00:00:00+00:00",
+            ]
+        }
+    )
+    out = selection._window(
+        df,
+        datetime(2025, 1, 1, tzinfo=timezone.utc),
+        datetime(2026, 1, 1, tzinfo=timezone.utc),
+    )
+    assert out["ts"].tolist() == [
+        "2025-01-01T00:00:00+00:00",
+        "2025-06-01T00:00:00+00:00",
+    ]
+    assert selection._window(df, None, None) is df
 
 
 def test_run_selection_cycle_trae_operaciones_y_pf_reales(tmp_path, monkeypatch):
