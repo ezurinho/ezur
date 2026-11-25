@@ -3,7 +3,7 @@
 Fill, bracket and close. The rule that matters: when a bar touches both the
 stop and the target, the stop wins and the trade says so in its diagnostics.
 
-Fill models (all declared instead of assumed):
+Two fill models, both declared instead of assumed:
 
 * ``next_open`` (default) market order at the next bar's open, slippage bounded
   by ``max_slippage_ticks``. The entry bar counts: if it reaches the stop, the
@@ -13,8 +13,6 @@ Fill models (all declared instead of assumed):
   degrades to ``next_open`` and says ``fill_fallback`` in the diagnostics. If
   OHLC cannot establish whether a stop or target extreme happened before that
   fill, it also degrades instead of using future information.
-* ``intrabar`` deprecated alias for ``next_open``.
-
 Every model rejects an entry whose opening fill is already through the stop
 or has already reached the target. A later stop gap fills at the bar open with
 adverse slippage, never at the stale stop price.
