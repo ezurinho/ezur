@@ -340,7 +340,7 @@ class ExecutionConfig(_Model):
     commission_pct_side: float = 0.0
     slippage_ticks: int = 1
     max_slippage_ticks: int = 4
-    fill_model: Literal["next_open", "signal_price", "intrabar"] = "next_open"
+    fill_model: Literal["next_open", "signal_price"] = "next_open"
     simulate_partial_fills: bool = False
     partial_fill_ratio: float = 0.6
     # Cost model fields (from strategy_spec)
