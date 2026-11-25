@@ -18,7 +18,7 @@ from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
 from .config import Settings, apply_settings, save_settings
-from .promotion import effective_settings
+from .promotion import effective_settings_and_verdict
 from .market.csv_data import validate_dataset
 from .models import DayStats, TradeRecord
 from .gates import evaluate_gates
@@ -228,13 +228,14 @@ async def put_config(request: Request, body: ConfigPatch) -> dict[str, Any]:
         # Validate the plugin parameters before they reach the running engine:
         # a bad payload must be a 422, not a dead replay loop.
         resolve_strategy(updated.strategy.id, updated.strategy.params)
-        effective = effective_settings(updated)
+        effective, verdict = effective_settings_and_verdict(updated)
         engine.update_settings(effective)
     except (ValueError, KeyError, OSError) as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
     save_settings(updated, request.app.state.config_path)
     request.app.state.settings = effective
     request.app.state.configured_settings = updated
+    request.app.state.promotion_verdict = verdict
 
     # Activar alertas desde la interfaz tiene que activarlas de verdad: el
     # notifier se construye al arrancar, así que un cambio en `alerts` se
@@ -253,11 +254,12 @@ async def reset_config(request: Request) -> dict[str, Any]:
             detail="no se puede restablecer el capital con operaciones o exposición registradas",
         )
     fresh = Settings()
-    effective = effective_settings(fresh)
+    effective, verdict = effective_settings_and_verdict(fresh)
     engine.update_settings(effective)
     save_settings(fresh, request.app.state.config_path)
     request.app.state.settings = effective
     request.app.state.configured_settings = fresh
+    request.app.state.promotion_verdict = verdict
     _rebuild_notifier(request, engine, fresh.alerts)
     return fresh.model_dump(mode="json")
 
@@ -282,6 +284,15 @@ def get_strategy_schema(request: Request, strategy_id: str | None = None) -> dic
 async def bot_action(request: Request, action: str) -> dict[str, Any]:
     engine = _engine(request)
     if action == "start":
+        verdict = getattr(request.app.state, "promotion_verdict", None)
+        if (
+            engine.settings.promotion.required
+            and engine.settings.promotion.mode == "block"
+            and verdict is not None
+            and not verdict.get("passed")
+        ):
+            reason = verdict.get("reason") or "la estrategia no está promovida"
+            raise HTTPException(status_code=409, detail=f"sin promoción: {reason}")
         try:
             engine.start()
             await engine.start_task()
