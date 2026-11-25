@@ -145,8 +145,8 @@ def seed_documents(
             "short": blueprint["short"],
             "cooldown_bars": 0,
         }
-        if blueprint["rule"] == "orb_session":
-            document["entry"]["sessions"] = ["00:00"]
+        if blueprint.get("sessions"):
+            document["entry"]["sessions"] = list(blueprint["sessions"])
         document["exit"] = blueprint["exit"]
         document["params"] = blueprint["params"]
         document["failure_modes"] = blueprint["failure_modes"]
