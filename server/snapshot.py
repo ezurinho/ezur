@@ -54,6 +54,8 @@ class SnapshotBuilder:
         # strategy that is actually running, not just what the config claims.
         self.strategy_meta: dict[str, str] | None = None
         self.store = store
+        # Lo fija el motor con la medición de ventaja contra coste del perfil.
+        self.edge_guard = None
 
     # --- pieces -----------------------------------------------------------
     def _instruments(self) -> list[InstrumentModel]:
@@ -284,6 +286,16 @@ class SnapshotBuilder:
     def _risk(self, state: EngineState) -> RiskModel:
         cfg = self.settings.risk
         reason = self._block_reason(state)
+        guard = self.edge_guard
+        edge = guard.as_dict() if guard is not None else None
+        block_detail = None
+        if guard is not None and guard.passes is False:
+            # La guarda es del motor, no de la última vela: aunque el estado se
+            # haya limpiado, el panel sigue diciendo por qué no se abre nada.
+            if reason is None:
+                reason = "edge_below_cost"
+            if reason == "edge_below_cost":
+                block_detail = guard.detail()
         # El motor aplica el límite sobre el capital inicial configurado, no
         # sobre la equity actual. Si la UI lo calcula por su cuenta con la
         # equity del día, anuncia un muro que no es el que después aplica.
@@ -312,6 +324,8 @@ class SnapshotBuilder:
             blocked=bool(state.emergency or reason),
             block_reason=reason,
             block_count=state.block_count,
+            block_detail=block_detail,
+            edge=edge,
             limits=limits,
         )
 
