@@ -102,6 +102,7 @@ class TradingEngine:
             symbol: [] for symbol in settings.instruments.symbols
         }
         self._aggregated = self._aggregators_for(settings)
+        self._aggregated_minutes = timeframe_minutes(settings.strategy.timeframe)
         self._output: StrategyOutput | None = None
         self._subscribers: list[SnapshotHook] = []
         self._task: asyncio.Task[None] | None = None
@@ -189,6 +190,12 @@ class TradingEngine:
             self.state.block_count = 0
         for symbol in settings.instruments.symbols:
             self._bars.setdefault(symbol, [])
+        minutes = timeframe_minutes(settings.strategy.timeframe)
+        if minutes != self._aggregated_minutes:
+            # Otro marco es otro sistema: no se mezclan buckets del anterior
+            # con los nuevos, y la estrategia vuelve a calentar.
+            self._aggregated_minutes = minutes
+            self._aggregated = self._aggregators_for(settings)
         if self.feed_factory is not None and self.feed is not None:
             # A new instrument needs data: rebuild the feed and drop stale bars
             # rather than mixing two sessions of the same timestamps.

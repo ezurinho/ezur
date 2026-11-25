@@ -38,3 +38,19 @@ def test_the_default_timeframe_is_the_feed_itself(settings, store):
         engine._process(_tick(minute))
 
     assert len(engine._bar_source()["PRIMARY"]) == 3
+
+
+def test_changing_the_timeframe_at_runtime_drops_the_old_buckets(settings, store):
+    engine = TradingEngine(settings, store, feed=None)
+    for minute in range(2):
+        engine._process(_tick(minute))
+    assert len(engine._bar_source()["PRIMARY"]) == 2
+
+    settings.strategy.timeframe = "1h"
+    engine.update_settings(settings)
+    assert engine._bar_source()["PRIMARY"] == []
+
+    engine._process(_tick(75))
+    assert engine._bar_source()["PRIMARY"] == []
+    engine._process(_tick(121))
+    assert len(engine._bar_source()["PRIMARY"]) == 1
