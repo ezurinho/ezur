@@ -175,13 +175,16 @@ class SnapshotBuilder:
         strategy_name = meta.get("name", cfg.id)
         strategy_version = meta.get("version", cfg.version)
         if output is None:
+            # El motor detenido no es «sin estrategia»: el perfil sigue cargado.
+            # Solo el NullStrategy real (id "null") no tiene regla que aplicar.
+            pending = strategy_id == "null"
             return StrategyBlock(
                 id=strategy_id,
                 name=strategy_name,
                 version=strategy_version,
                 timeframe=cfg.timeframe,
-                state="disabled",
-                state_label="Sin estrategia",
+                state="disabled" if pending else "idle",
+                state_label="Sin estrategia" if pending else "Motor detenido",
                 rejections=dict(rejections or {}),
             )
         signal = None
