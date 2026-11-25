@@ -36,6 +36,27 @@ def test_target_exit(engine, decision, signal_long):
     assert events[-1].trade.exit_price == 102.25
 
 
+def test_open_pnl_charges_both_sides(engine, decision, signal_long):
+    engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, NOW)
+    engine.execution.on_bar({"PRIMARY": make_bar(o=100.0, h=101.0, l=99.8)})
+    position = engine.execution.position
+    assert position is not None
+    spec = engine.execution._instrument("PRIMARY")
+    gross = (
+        (100.5 - position.entry_price)
+        / spec.tick_size
+        * spec.tick_value
+        * position.units
+    )
+    expected = (
+        gross
+        - position.entry_fees
+        - engine.execution._fees("PRIMARY", position.units, 100.5)
+    )
+    assert engine.execution.open_pnl(position, 100.5) == pytest.approx(expected)
+    assert engine.execution.open_pnl(position, position.entry_price) < 0
+
+
 def test_ambiguous_bar_resolves_stop_first(engine, decision, signal_long):
     engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, NOW)
     events = engine.execution.on_bar({"PRIMARY": make_bar(o=100.0, h=103.0, l=99.0)})

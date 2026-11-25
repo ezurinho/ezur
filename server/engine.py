@@ -380,6 +380,20 @@ class TradingEngine:
         if self.mode != "backtest":
             self._persist()
         self._update_open_risk()
+        self._record_equity_point(tick.ts)
+
+    def _record_equity_point(self, stamp: datetime) -> None:
+        """Marca a mercado mientras hay posicion.
+
+        Sin esto el equity solo cambia al cerrar: un drawdown abierto no
+        aparece ni en la curva ni en la puerta G6, que mide el peor momento de
+        la cuenta como si la cuenta solo existiera en los cierres.
+        """
+        if self.execution.position is None:
+            return
+        self.store.append_equity(
+            self.state.equity + self.state.unrealized, stamp
+        )
 
     def _aggregators_for(self, settings: Settings) -> dict[str, BarAggregator]:
         minutes = timeframe_minutes(settings.strategy.timeframe)
@@ -445,6 +459,7 @@ class TradingEngine:
             equity=self.state.equity,
             peak_equity=max(self.peak_equity, self.state.equity),
             open_risk=self.state.open_risk,
+            unrealized=self.state.unrealized,
             daily_pnl=self.state.day_stats.pnl,
             daily_trades=self.state.day_stats.trades,
             consecutive_losses=self.state.day_stats.consecutive_losses,
@@ -699,10 +714,15 @@ class TradingEngine:
         position = self.execution.position
         if position is None:
             self.state.open_risk = 0.0
+            self.state.unrealized = 0.0
             return
         spec = self.settings.instruments.by_symbol(position.symbol)
         ticks = abs(position.entry_price - position.stop_price) / spec.tick_size
         self.state.open_risk = ticks * spec.tick_value * position.units
+        bars = self._bars.get(position.symbol) or []
+        self.state.unrealized = (
+            self.execution.open_pnl(position, bars[-1].c) if bars else 0.0
+        )
 
     # --- output -----------------------------------------------------------
     def quotes(self) -> dict[str, dict[str, Any]]:
