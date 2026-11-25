@@ -81,6 +81,7 @@ def evaluate(
     stress: dict[str, Any] | None = None,
     cycle: dict[str, Any] | None = None,
     strategy: dict[str, Any] | None = None,
+    config_hash: str | None = None,
 ) -> dict[str, Any]:
     checks: list[dict[str, Any]] = []
 
@@ -213,6 +214,20 @@ def evaluate(
             )
         )
 
+    expected_hash = str(config_hash or "")
+    if expected_hash:
+        found_hash = str((evidence or {}).get("config_hash") or "")
+        checks.append(
+            _check(
+                "evidencia_de_la_configuracion",
+                found_hash or "?",
+                expected_hash,
+                found_hash == expected_hash,
+                "la evidencia no se midio con esta configuracion: "
+                "sus numeros describen otro perfil",
+            )
+        )
+
     failed = [check for check in checks if not check["pass"]]
     reason = failed[0]["reason"] if failed else ""
     if (
@@ -261,8 +276,15 @@ def evaluate_paths(
     stress_path: str | None,
     cycle_path: str | None,
     strategy: dict[str, Any] | None = None,
+    config_hash: str | None = None,
 ) -> dict[str, Any]:
-    return evaluate(load(evidence_path), load(stress_path), load(cycle_path), strategy)
+    return evaluate(
+        load(evidence_path),
+        load(stress_path),
+        load(cycle_path),
+        strategy,
+        config_hash,
+    )
 
 
 def _shown(value: Any) -> str:
