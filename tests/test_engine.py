@@ -1208,10 +1208,15 @@ def test_stopped_okx_engine_seeds_the_chart_from_recent_csv(settings, store):
         "atr_period": 14,
     }
     engine = TradingEngine(settings, store)
-    assert engine.state.bars_available == 500
+    # El seed es solo historial de chart: no siembra las velas que lee la
+    # estrategia ni finge que el feed entregó un dato hace un mes.
+    assert engine.state.bars_available == 0
+    assert engine.state.last_bar_ts is None
+    assert engine._bars["BTC"] == []
     for timeframe in ("1m", "5m", "15m", "30m"):
         assert len(engine.history(timeframe, 500)) == 500
     snapshot = engine.snapshot()["data"]
     assert len(snapshot["chart"]["candles"]) == 500
     assert snapshot["strategy"]["state_label"] == "Motor detenido"
-    assert snapshot["data"]["quality"] == "stale"
+    assert snapshot["data"]["quality"] == "unknown"
+    assert snapshot["data"]["last_bar_ts"] is None
