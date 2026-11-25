@@ -29,6 +29,14 @@ def test_snapshot_validates_against_schema(settings):
     assert snapshot["data"]["strategy"]["phases"] == []
 
 
+def test_stopped_engine_keeps_the_configured_strategy_label(settings):
+    settings.strategy.id = "reference"
+    snapshot = SnapshotBuilder(settings).build(_state(), None)
+    strategy = snapshot["data"]["strategy"]
+    assert strategy["state"] == "idle"
+    assert strategy["state_label"] == "Motor detenido"
+
+
 def test_data_payload_also_validates(settings):
     snapshot = SnapshotBuilder(settings).build(_state(), None)
     SnapshotData.model_validate(snapshot["data"])
