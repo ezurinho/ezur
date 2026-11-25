@@ -23,7 +23,7 @@ from typing import Any
 from .config import Settings
 from .db import row_to_trade
 from .models import TradeRecord
-from .promotion import evaluate_paths, execution_model
+from .promotion import evaluate_paths, execution_model, load
 from .stats import aggregate
 
 
@@ -137,11 +137,78 @@ def promotion_state(profile: Path) -> dict[str, Any] | None:
         else None,
         execution=execution,
     )
+    cycle = load(block.get("cycle"))
+    checks: list[dict[str, Any]] = []
+    for check in verdict["checks"]:
+        checks.append(
+            {
+                "name": str(check.get("name") or ""),
+                "passed": bool(check.get("pass")),
+                "value": check.get("value"),
+                "threshold": check.get("threshold"),
+                "reason": check.get("reason") or "",
+            }
+        )
+    failed = [check for check in checks if not check["passed"]]
+    blocking = failed[0] if failed else None
+    by_name = {check["name"]: check for check in checks}
+    pbo_check = by_name.get("pbo_del_ciclo") or {}
+    dsr_check = by_name.get("dsr_del_ciclo") or {}
+    stress_check = by_name.get("pf_con_coste_duplicado") or {}
+    pbo_block = (cycle or {}).get("pbo") or {}
+    dsr_block = (cycle or {}).get("dsr") or {}
+    wfa = (cycle or {}).get("wfa") or {}
+    if not isinstance(pbo_block, dict):
+        pbo_block = {}
+    if not isinstance(dsr_block, dict):
+        dsr_block = {}
+    if not isinstance(wfa, dict):
+        wfa = {}
+    folds = wfa.get("folds") or []
+    if not isinstance(folds, list):
+        folds = []
+    wfa_trades = wfa.get("total_oos_trades")
+    if wfa_trades is None:
+        wfa_trades = sum(
+            int(fold.get("oos_trades") or 0)
+            for fold in folds
+            if isinstance(fold, dict)
+        )
+    risk_pct = (document.get("risk") or {}).get("risk_per_trade_pct")
+    size_factor = block.get("size_factor")
+    mode = block.get("mode") or "block"
+    effective_risk_pct = risk_pct
+    if (
+        not verdict["passed"]
+        and mode == "reduce"
+        and isinstance(risk_pct, (int, float))
+        and isinstance(size_factor, (int, float))
+    ):
+        effective_risk_pct = round(float(risk_pct) * float(size_factor), 6)
     return {
+        "required": True,
         "passed": bool(verdict["passed"]),
         "reason": verdict["reason"],
-        "mode": block.get("mode") or "block",
-        "size_factor": block.get("size_factor"),
+        "mode": mode,
+        "size_factor": size_factor,
+        "configured_risk_pct": risk_pct,
+        "effective_risk_pct": effective_risk_pct,
+        "pbo": pbo_block.get("pbo"),
+        "pbo_threshold": pbo_check.get("threshold"),
+        "dsr": dsr_block.get("dsr"),
+        "dsr_threshold": dsr_check.get("threshold"),
+        "wfa_oos_trades": wfa_trades,
+        "wfa_folds": wfa.get("evaluated_folds", len(folds)),
+        "wfa_pf": wfa.get("oos_pf_aggregate"),
+        "stress_pf": stress_check.get("value"),
+        "blocking_gate": blocking["name"] if blocking else None,
+        "blocking_detail": blocking["reason"] if blocking else None,
+        "blocking_value": blocking["value"] if blocking else None,
+        "blocking_threshold": blocking["threshold"] if blocking else None,
+        "checks": checks,
+        "cycle_path": block.get("cycle"),
+        "cycle_generated_at": (cycle or {}).get("generated_at"),
+        "cycle_id": (cycle or {}).get("cycle_id"),
     }
 
 
