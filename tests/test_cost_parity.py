@@ -2,8 +2,9 @@
 
 El 24/11 la evidencia declaraba 0,0375 R por operación y el paper pagaba 0,26 R:
 la puerta aprobaba el criterio con la comisión de otra corrida. Estas pruebas
-fijan la corrección, el límite de divergencia bruta y el rechazo del coste
-heredado cuando falta el perfil.
+fijan la corrección, la paridad con el coste **ponderado** (fees totales /
+riesgo total), el límite de divergencia y el rechazo del coste heredado cuando
+falta el perfil. El coste simple queda como distribución, no como comparable.
 """
 from __future__ import annotations
 
@@ -38,6 +39,18 @@ PAPER_UNITS = 160
 PAPER_STOP_TICKS = 37022
 PAPER_FEES = 0.049 * PAPER_UNITS * 2
 PAPER_RISK = PAPER_UNITS * 1e-05 * PAPER_STOP_TICKS
+# Agregado de las 13 operaciones cerradas del paper (desglose 24/11):
+# ponderado = fees totales / riesgo total; simple = media por operación.
+PAPER_TRADES = 13
+PAPER_WEIGHTED_COST = 0.3163128017
+PAPER_SIMPLE_COST = 0.3318228842
+
+
+def test_el_coste_de_un_trade_es_un_punto_de_la_distribucion():
+    single = PAPER_FEES / PAPER_RISK
+    assert single == pytest.approx(0.2647, rel=1e-3)
+    # Un solo trade no es el agregado del paper: no se usa para la paridad.
+    assert single != pytest.approx(PAPER_WEIGHTED_COST)
 
 
 def test_la_puerta_recalcula_el_coste_con_la_ejecucion_del_perfil():
@@ -121,15 +134,13 @@ def test_el_paper_y_la_evidencia_no_divergen_mas_de_dos_veces():
 
     research, reason = cost_per_trade_r(evidence, PROFILE_EXECUTION)
     assert reason == ""
-    paper = PAPER_FEES / PAPER_RISK
+    # El comparable correcto es el ponderado de las 13 operaciones del paper
+    # (0,3163 R), no el 0,2647 R de un único trade. El simple (0,3318 R) queda
+    # como distribución y no se usa aquí. El umbral 2× no se toca.
+    paper = PAPER_WEIGHTED_COST
     ratio = max(paper, research) / min(paper, research)
 
-    # 1,75×: 0,4618 R de research (stop medio 21.221 tics con el tope de 40.000
-    # del perfil) frente a 0,2647 R del paper (37.022 tics). Antes la corrida
-    # tenía stops de 134.424 tics y la divergencia era 3,63×: no era el mismo
-    # régimen. El coste en R se mide contra el stop, así que la comparación
-    # solo vale con una corrida que respete el tope del perfil.
     assert ratio <= 2, (
-        f"la divergencia bruta es {ratio:.2f}×; falta evidencia de research "
+        f"la divergencia ponderada es {ratio:.2f}×; falta evidencia de research "
         "en el régimen de stop del paper"
     )
