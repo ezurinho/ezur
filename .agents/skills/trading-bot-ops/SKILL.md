@@ -34,9 +34,15 @@ ledger roto) usa `trading-incident-triage`.
 `start_paper.bat` hace lo mismo que la primera fila, con el servidor en segundo plano
 (`pythonw`, sin ventana): sus decisiones quedan en `data/run/start_paper.log` y la
 salida del motor en `data/run/engine.log`.
+
 Sin `EZUR_PROFILE_DIR` se usan
 `data/config.json` y `data/terminal.db`. El panel queda en `http://127.0.0.1:8765`;
 `EZUR_HOST`, `EZUR_PORT` y `EZUR_OPEN=1` cambian host, puerto y apertura del navegador.
+
+La tarea `ezur-paper` (arranque al iniciar sesión) se recrea desde esta copia con
+`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\tarea_programada.ps1`;
+comprueba que la acción registrada apunta al `start_paper.bat` de este repo y falla
+si no. Se quita añadiendo `-Borrar` al final.
 
 Con `auto_start: true` (por defecto) el motor ya está `running` al abrir. Con `false`
 queda `idle`/`stopped` hasta `POST /api/bot/start`. Con `promotion.required=true` y
