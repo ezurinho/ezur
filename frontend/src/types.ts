@@ -215,6 +215,40 @@ export interface UiHints {
   locale: string;
 }
 
+export interface PromotionCheck {
+  name: string;
+  passed: boolean;
+  value: number | string | null;
+  threshold: string | null;
+  reason: string | null;
+}
+
+export interface Promotion {
+  required: boolean;
+  passed: boolean;
+  reason: string | null;
+  mode: string;
+  size_factor: number | null;
+  configured_risk_pct: number | null;
+  effective_risk_pct: number | null;
+  pbo: number | null;
+  pbo_threshold: string | null;
+  dsr: number | null;
+  dsr_threshold: string | null;
+  wfa_oos_trades: number | null;
+  wfa_folds: number | null;
+  wfa_pf: number | null;
+  stress_pf: number | null;
+  blocking_gate: string | null;
+  blocking_detail: string | null;
+  blocking_value: number | string | null;
+  blocking_threshold: string | null;
+  checks: PromotionCheck[];
+  cycle_path: string | null;
+  cycle_generated_at: string | null;
+  cycle_id: string | null;
+}
+
 export interface SnapshotData {
   status: EngineStatus;
   mode: RunMode;
@@ -227,6 +261,8 @@ export interface SnapshotData {
   position: Position | null;
   orders: Order[];
   risk: Risk;
+  /** Veredicto de la puerta del perfil; null si no exige promoción. */
+  promotion?: Promotion | null;
   stats: Record<string, unknown>;
   day_stats: Record<string, unknown>;
   rejections: Record<string, number>;
