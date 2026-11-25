@@ -24,7 +24,7 @@ import asyncio
 import json
 import urllib.parse
 import urllib.request
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Any, AsyncIterator, Iterator
 
 from ..models import Bar, Tick
