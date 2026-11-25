@@ -287,7 +287,9 @@ def create_app(
         """Liveness del proceso: no depende del motor ni del paper."""
         return {"status": "ok", "service": "ezur"}
 
-    dist = Path("frontend/dist")
+    # Ruta anclada al repo: lanzado desde otra carpeta (Programador de tareas),
+    # un "frontend/dist" relativo no existe y el panel se queda sin montar.
+    dist = Path(__file__).resolve().parents[1] / "frontend" / "dist"
     if dist.is_dir():
         app.mount("/", StaticFiles(directory=str(dist), html=True), name="ui")
     return app
