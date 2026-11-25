@@ -88,7 +88,6 @@ class ORBStrategy(BaseStrategy):
         # For now, use a simple approach: check if we're in the first N bars of the session
         # In a real implementation, this would use session timing
 
-        closes = [bar.c for bar in bars]
         highs = [bar.h for bar in bars]
         lows = [bar.l for bar in bars]
         atr_val = atr(bars, self.params.atr_period)
