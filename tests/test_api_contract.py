@@ -35,6 +35,12 @@ def test_health_returns_ok(client):
     assert response.json()["status"] == "ok"
 
 
+def test_liveness_health_returns_ok(client):
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok", "service": "ezur"}
+
+
 def test_openapi_exposes_all_groups(client):
     paths = client.get("/openapi.json").json()["paths"]
     missing = [path for path in EXPECTED_PATHS if path not in paths]
