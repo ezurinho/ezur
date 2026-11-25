@@ -55,7 +55,7 @@ import pandas as pd
 from .strategy.spec_schema import StrategySpec
 from .strategy import registry
 from .strategy.registry import load_spec_file
-from .config import Settings, InstrumentConfig, SessionTemplate
+from .config import Settings, InstrumentConfig, SessionTemplate, load_settings
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "data" / "validation"
@@ -388,19 +388,24 @@ DEFAULT_UNIVERSE_SPECS = [
 ]
 
 
-def load_universe_specs(spec_dir: Path) -> list[StrategySpec]:
-    """Load all spec files from the spec directory."""
+def load_universe_specs(
+    spec_dir: Path, all_specs: bool = False
+) -> list[StrategySpec]:
+    """Load the default universe, or every JSON in `spec_dir` with `all_specs`."""
+    if all_specs:
+        paths = sorted(spec_dir.glob("*.json"))
+    else:
+        paths = [spec_dir / f"{spec_id}.json" for spec_id in DEFAULT_UNIVERSE_SPECS]
     specs = []
-    for spec_id in DEFAULT_UNIVERSE_SPECS:
-        spec_path = spec_dir / f"{spec_id}.json"
+    for spec_path in paths:
         if spec_path.exists():
             spec = load_spec_file(spec_path)
             # El motor resuelve la estrategia por id: sin registrar la spec, el
             # backtest responde ERROR y el ciclo no mide nada.
             registry.register_spec(spec.id, spec_path)
             specs.append(spec)
-        else:
-            print(f"Warning: spec {spec_id} not found at {spec_path}")
+        elif not all_specs:
+            print(f"Warning: spec {spec_path.stem} not found at {spec_path}")
     return specs
 
 
@@ -452,8 +457,16 @@ def bars_for(df5: pd.DataFrame, tf: str) -> tuple[pd.DataFrame, str]:
 
 # ----------------------------------------------------------------------- backtest execution
 
-def run_backtest_for_spec(spec: StrategySpec, df5: pd.DataFrame, quiet: bool = False) -> tuple[pd.DataFrame, list, dict]:
+def run_backtest_for_spec(
+    spec: StrategySpec,
+    df5: pd.DataFrame,
+    quiet: bool = False,
+    base: Settings | None = None,
+) -> tuple[pd.DataFrame, list, dict]:
     """Run backtest for a single spec using the deterministic engine.
+
+    Con `base`, mandan los límites y costes del perfil; la spec solo aporta la
+    estrategia y sus parámetros. Sin `base` se usan los límites de investigación.
 
     Returns (trades_df, equity_curve, metrics_dict) or (empty_df, [], {}) if no trades.
     """
@@ -551,6 +564,30 @@ def run_backtest_for_spec(spec: StrategySpec, df5: pd.DataFrame, quiet: bool = F
         SessionTemplate(name='24h', timezone='UTC', open='00:00', close='23:59', weekdays=[0,1,2,3,4,5,6])
     ]
 
+    if base is not None:
+        # Los límites del perfil mandan: capital, riesgo por operación, topes de
+        # unidades, stop, operaciones/día, drawdown y costes reales. De la spec
+        # solo salen la estrategia y el símbolo que casa con el CSV.
+        settings = base.model_copy(deep=True)
+        settings.strategy.id = spec.id
+        settings.strategy.timeframe = tf
+        settings.strategy.timeframe_signal = tf
+        settings.strategy.params = spec.params.model_dump(exclude_none=True)
+        primary = next(
+            (
+                item
+                for item in settings.instruments.items
+                if item.symbol == settings.instruments.primary
+            ),
+            None,
+        )
+        if primary is None:
+            raise ValueError("el perfil no declara el instrumento primario")
+        item = primary.model_copy(deep=True)
+        item.symbol = spec.instrument
+        settings.instruments.items = [item]
+        settings.instruments.primary = item.symbol
+
     # Write df5 to a temporary CSV for the backtest
     import tempfile
     with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
@@ -641,8 +678,14 @@ def run_selection_cycle(
     quiet: bool = False,
     start: datetime | None = None,
     end: datetime | None = None,
+    base_settings: Settings | None = None,
+    all_specs: bool = False,
 ) -> dict:
-    """Run the full selection cycle and return the payload."""
+    """Run the full selection cycle and return the payload.
+
+    Con `base_settings`, cada backtest usa los límites y costes de ese perfil en
+    vez de los de investigación: el ciclo mide el bot que va a operar.
+    """
     if spec_dir is None:
         spec_dir = ROOT / "data" / "specs"
 
@@ -653,7 +696,7 @@ def run_selection_cycle(
     if df5.empty:
         raise ValueError("la ventana pedida no deja velas en data/btc_5m.pkl")
 
-    specs = load_universe_specs(spec_dir)
+    specs = load_universe_specs(spec_dir, all_specs=all_specs)
     if not specs:
         raise ValueError("No specs loaded")
 
@@ -668,7 +711,7 @@ def run_selection_cycle(
 
     for spec in specs:
         name = spec.label
-        trade_df, equity, metrics = run_backtest_for_spec(spec, df5)
+        trade_df, equity, metrics = run_backtest_for_spec(spec, df5, base=base_settings)
 
         if trade_df.empty:
             if not quiet:
@@ -762,6 +805,7 @@ def run_selection_cycle(
             "universe_size": len(specs),
             "daily_observations": int(matrix.shape[0]),
             "coverage_years": round(float(years), 2),
+            "limits_source": "perfil" if base_settings is not None else "investigacion",
         },
         "universe": summary,
         "pbo": pbo,
@@ -804,6 +848,17 @@ def main() -> None:
     ap.add_argument("--purge", type=int, default=1, help="CPCV purge blocks")
     ap.add_argument("--spec-dir", type=Path, default=None, help="directory with spec JSON files")
     ap.add_argument(
+        "--config",
+        type=Path,
+        default=Path("profiles/okx/config.json"),
+        help="perfil cuyos límites y costes usa el ciclo",
+    )
+    ap.add_argument(
+        "--all-specs",
+        action="store_true",
+        help="carga todos los .json del directorio, no solo el universo por defecto",
+    )
+    ap.add_argument(
         "--from",
         dest="date_from",
         default=None,
@@ -821,6 +876,15 @@ def main() -> None:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
 
+    base_settings = None
+    if args.config is not None:
+        if Path(args.config).is_file():
+            base_settings = load_settings(args.config)
+            if not args.quiet:
+                print(f"límites del perfil: {args.config}")
+        elif not args.quiet:
+            print(f"Aviso: no encuentro {args.config}; uso los límites de investigación")
+
     payload = run_selection_cycle(
         cycle_id=args.cycle,
         blocks=args.blocks,
@@ -831,6 +895,8 @@ def main() -> None:
         quiet=args.quiet,
         start=_iso_day(args.date_from) if args.date_from else None,
         end=_iso_day(args.date_to) if args.date_to else None,
+        base_settings=base_settings,
+        all_specs=args.all_specs,
     )
 
     args.spec_dir = args.spec_dir or (ROOT / "data" / "specs")
