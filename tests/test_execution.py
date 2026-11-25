@@ -130,7 +130,14 @@ def test_commission_applied_per_side(engine, decision, signal_long):
     engine.execution.on_bar({"PRIMARY": make_bar(o=100.0, h=101.0, l=99.8)})
     trade = engine.execution.close("manual", price=100.5, when=NOW)
     assert trade is not None
-    assert trade.fees == pytest.approx(2 * 0.62 * decision.units)
+    spec = engine.execution._instrument("PRIMARY")
+    contract = spec.tick_value / spec.tick_size
+    bps = 5.0 + 0.07
+    expected = (
+        2 * 0.62 * decision.units
+        + decision.units * contract * (100.25 + 100.5) * bps * 1e-4
+    )
+    assert trade.fees == pytest.approx(expected)
 
 
 def test_market_close_applies_adverse_slippage(engine, decision, signal_long):
@@ -157,8 +164,10 @@ def test_commission_can_be_a_percentage_of_notional(engine, decision, signal_lon
     trade = engine.execution.close("manual", price=100.5, when=NOW)
 
     assert trade is not None
-    # 10 pb de 100.25 al entrar y de 100.50 al salir.
-    expected = decision.units * contract * (100.25 + 100.5) * 0.001
+    # 10 pb de 100.25 al entrar y de 100.50 al salir, más el coste de
+    # bolsa/slippage del modelo de costes (5 pb + medio spread por lado).
+    bps = 5.0 + 0.07
+    expected = decision.units * contract * (100.25 + 100.5) * (0.001 + bps * 1e-4)
     assert trade.fees == pytest.approx(expected)
 
 
