@@ -168,13 +168,14 @@ def variants(spec: dict[str, Any]) -> list[dict[str, Any]]:
     tag = fingerprint(spec)[:4]
     out: list[dict[str, Any]] = []
     for combo in itertools.product(*(GRIDS[key] for key in keys)):
-        if all(params[key] == value for key, value in zip(keys, combo)):
+        if all(params[key] == value for key, value in zip(keys, combo, strict=True)):
             continue
         suffix = "-".join(
-            f"{_TOKENS.get(key, key)}{_slug(value)}" for key, value in zip(keys, combo)
+            f"{_TOKENS.get(key, key)}{_slug(value)}"
+            for key, value in zip(keys, combo, strict=True)
         ).upper()
         document = json.loads(json.dumps(spec))
-        document["params"] = {**params, **dict(zip(keys, combo))}
+        document["params"] = {**params, **dict(zip(keys, combo, strict=True))}
         document["id"] = f"{base_id}-{suffix}-{tag.upper()}"
         document["label"] = f"{spec.get('label', base_id)}-{suffix}".lower()[:49]
         # `parent_version` es el único campo de linaje que admite el esquema;
