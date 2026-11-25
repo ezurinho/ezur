@@ -204,12 +204,29 @@ def load_data() -> tuple[pd.DataFrame, dict]:
     return df, info
 
 
+_RULE = re.compile(r"(\d+)([mhd])")
+
+
+def resample_rule(tf: str) -> str:
+    """Offset de pandas para un marco del esquema (`15m` -> `15min`).
+
+    pandas 3 retiró los alias de minutos sin sufijo: `15m` se leía como
+    "15 meses" y el resample reventaba, así que ningún marco salvo 5 m se
+    podía medir. El esquema y el bot hablan en minutos; la traducción vive
+    aquí, en un sitio, y no repartida por cada llamada.
+    """
+    match = _RULE.fullmatch(tf.strip())
+    if match is None:
+        raise SystemExit(f"marco no soportado: {tf!r} (usa 5m, 15m, 30m, 1h, 4h o 1d)")
+    size, unit = match.group(1), match.group(2)
+    return f"{size}min" if unit == "m" else f"{size}{unit}"
+
+
 def bars_for(df5: pd.DataFrame, tf: str) -> tuple[pd.DataFrame, str]:
     """Resample the frozen 5m series to the signal timeframe (no new data)."""
     if tf == "5m":
         return df5, "5m (native)"
-    rule = tf
-    bars = fs.resample(df5, rule)
+    bars = fs.resample(df5, resample_rule(tf))
     return bars, "resampled from 5m"
 
 

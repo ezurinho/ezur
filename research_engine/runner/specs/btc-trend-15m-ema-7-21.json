@@ -1,0 +1,87 @@
+{
+  "id": "BTC-TREND-15M",
+  "name": "Cruce de medias 15m con stop ancho",
+  "version": "1.0.0",
+  "label": "15m_7_21_a10",
+  "family": "trend",
+  "hypothesis": "La estrategia de referencia del bot (cruce de medias 7/21 con stop de ATR y objetivo en R) no tiene borde demostrado: existe para probar la tubería. Este universo mide si en 15m, con un stop de 10 ATR que deja respirar al precio y un objetivo de 1 R, la familia deja de ser ruido o si el coste se come cualquier persistencia. Se declara como un intento más y el DSR se descuenta por él.",
+  "instrument": "BTCUSDT_PERP",
+  "timeframe_signal": "15m",
+  "timeframe_context": null,
+  "data_requirements": {
+    "datasets": [
+      "klines_5m",
+      "funding_rate"
+    ],
+    "min_coverage": "2020-01-01/2026-10-31",
+    "integrity": {
+      "gaps": 0,
+      "duplicates": 0,
+      "timezone": "UTC"
+    }
+  },
+  "entry": {
+    "rule": "ema_state",
+    "long": "ema[7][t] > ema[21][t] tras un cambio de estado",
+    "short": "ema[7][t] < ema[21][t] tras un cambio de estado",
+    "cooldown_bars": 0
+  },
+  "exit": {
+    "stop": "10.0 * ATR(14)[t]",
+    "target": "1.0 * R",
+    "time_stop_bars": 240,
+    "trailing": null
+  },
+  "params": {
+    "fast": 7,
+    "slow": 21,
+    "atr_k": 10,
+    "tp_r": 1
+  },
+  "risk": {
+    "sizing": "fixed_fractional",
+    "risk_per_trade": 0.0025,
+    "target_vol_annual": 0.2,
+    "kelly_fraction": 0.25,
+    "max_gross_leverage": 2,
+    "max_mdd_budget": 0.25
+  },
+  "costs": {
+    "fee_maker_bps": 2,
+    "fee_taker_bps": 5,
+    "assumed_fill": "taker",
+    "half_spread_bps": 0.07,
+    "impact_model": "none",
+    "funding": "real_timestamps"
+  },
+  "execution": {
+    "signal_bar": "closed",
+    "fill": "next_bar_open",
+    "intrabar_priority": "stop_first",
+    "gap_fill": "bar_open"
+  },
+  "validation": {
+    "trials_declared": 5,
+    "is_oos_split": "0.60/0.20/0.20",
+    "seed": 7,
+    "bootstrap": {
+      "block": 5,
+      "reps": 4000
+    },
+    "wfa": {
+      "train_years": 2,
+      "test_months": 6,
+      "min_trades_per_fold": 30
+    }
+  },
+  "expected": {
+    "turnover_per_year": 60,
+    "cost_R_per_trade": 0.049,
+    "capacity_usd": 250000
+  },
+  "failure_modes": [
+    "cruce de medias sin borde: el 15m solo añade más señales y más comisiones",
+    "stop de 10 ATR: cada pérdida cuesta más R y la racha pesa más",
+    "objetivo de 1 R con coste de 0,05 R: hace falta acertar más de la mitad"
+  ]
+}
