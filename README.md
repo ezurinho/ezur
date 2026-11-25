@@ -432,6 +432,9 @@ python -m server.backtest --dataset data/BTC_1h_2025.csv \
 
 `--split` parte por fecha de cierre y mide dentro y fuera de muestra por
 separado, con la degradación entre ambos: sin eso, cualquier PF es in-sample.
+`--from` y `--to` acotan la ventana (ISO, `--to` excluido) sin copiar el CSV:
+`--from 2025-01-01 --to 2026-01-01` mide solo 2025. `--max-stop-ticks 0` quita el
+tope de stop del perfil para ver las señales que descarta.
 `--out` guarda la corrida entera —identidad del dataset, hash de configuración,
 métricas, puertas y reparto— para comparar dos resultados sin volver a ejecutar.
 
