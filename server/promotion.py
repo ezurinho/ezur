@@ -7,7 +7,12 @@ configuración que quiera operar:
 - PF fuera de muestra > 1 con al menos 100 operaciones fuera de muestra;
 - coste ponderado < 0,25 R por operación (fees totales / riesgo total);
 - PF fuera de muestra > 1 con el coste duplicado;
-- PBO del ciclo de selección de su universo <= 0,2.
+- PBO del ciclo de selección de su universo <= 0,2;
+- DSR del ciclo >= 0,95 (el Sharpe sobrevive a la multiplicidad de intentos).
+
+El PBO y el DSR no se escriben aquí: salen de `config/gates.json`, el mismo
+fichero que lee el motor de estrategias, para que la misma selección no se
+mida con dos varas.
 
 Y la evidencia tiene que ser de la estrategia que se va a operar: un backtest
 de otra estrategia no dice nada de esta, por bien que puntúe.
@@ -33,6 +38,7 @@ MIN_OOS_PF = 1.0
 MIN_OOS_TRADES = 100
 MAX_COST_R = 0.25
 MAX_PBO = 0.20
+MIN_DSR = 0.95
 
 
 def _number(value: Any) -> float | None:
@@ -63,6 +69,27 @@ _TIMEFRAME = re.compile(r"_(1m|3m|5m|15m|30m|1h|2h|4h|6h|8h|12h|1d|1w)(?:_|\.|$)
 def _timeframe(dataset: Any) -> str:
     match = _TIMEFRAME.search(str(dataset or ""))
     return match.group(1) if match else ""
+
+
+def _limits() -> dict[str, float]:
+    """Umbrales de selección del contrato compartido (`config/gates.json`).
+
+    El PBO y el DSR son la misma vara en el laboratorio y en el arranque: si se
+    escriben dos veces, acaban midiendo distinto. Manda el fichero; los valores
+    de este módulo son el respaldo para cuando no está.
+    """
+    from . import gates
+
+    try:
+        research = gates.research_thresholds()
+    except (OSError, ValueError):
+        return {"max_pbo": MAX_PBO, "min_dsr": MIN_DSR}
+
+    def pick(key: str, default: float) -> float:
+        value = _number(research.get(key))
+        return default if value is None else value
+
+    return {"max_pbo": pick("max_pbo", MAX_PBO), "min_dsr": pick("min_dsr", MIN_DSR)}
 
 
 def _check(name: str, value: Any, threshold: str, passed: bool, reason: str) -> dict[str, Any]:
@@ -400,7 +427,11 @@ def evaluate(
     }
     if (cycle or {}).get("timeframe"):
         cycle_tfs.add(str((cycle or {}).get("timeframe")))
+    limits = _limits()
+    max_pbo = limits["max_pbo"]
+    min_dsr = limits["min_dsr"]
     comparable = True
+    pbo_value = _number(pbo)
     pbo_reason = "sin ciclo de selección, o el universo es indistinguible del ruido"
     if not evidence_tf:
         comparable = False
@@ -416,15 +447,45 @@ def evaluate(
             f"el ciclo mide {'/'.join(sorted(cycle_tfs))}, no {evidence_tf}: "
             "PBO no comparable"
         )
+    elif pbo_value is None:
+        pbo_reason = "el ciclo no declara PBO: no se puede medir la selección"
+    elif pbo_value > max_pbo:
+        pbo_reason = (
+            f"PBO {pbo_value:.3f} > {max_pbo:g}: el mejor del universo no se "
+            "distingue de la mediana"
+        )
     checks.append(
         _check(
             "pbo_del_ciclo",
             pbo,
-            f"<= {MAX_PBO}",
-            comparable
-            and (pbo_value := _number(pbo)) is not None
-            and pbo_value <= MAX_PBO,
+            f"<= {max_pbo:g}",
+            comparable and pbo_value is not None and pbo_value <= max_pbo,
             pbo_reason,
+        )
+    )
+
+    # El PBO dice si la selección es ruido; el DSR dice si el Sharpe que la
+    # sostiene sobrevive a haber probado muchas configuraciones. Faltaba: el
+    # ciclo lo medía y la puerta no lo miraba.
+    dsr_block = (cycle or {}).get("dsr")
+    dsr = dsr_block.get("dsr") if isinstance(dsr_block, dict) else None
+    dsr_value = _number(dsr)
+    if not comparable:
+        dsr_reason = "sin ciclo comparable: DSR no verificable"
+    elif dsr_value is None:
+        dsr_reason = "el ciclo no declara DSR: no se puede medir la selección"
+    else:
+        dsr_reason = (
+            f"DSR {dsr_value:.3f} < {min_dsr:g}: el Sharpe no sobrevive a los "
+            "intentos de selección"
+        )
+    checks.append(
+        _check(
+            "dsr_del_ciclo",
+            dsr,
+            f">= {min_dsr:g}",
+            comparable and dsr_value is not None and dsr_value >= min_dsr,
+            dsr_reason,
         )
     )
 
