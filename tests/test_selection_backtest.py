@@ -314,8 +314,46 @@ def test_run_selection_cycle_trae_operaciones_y_pf_reales(tmp_path, monkeypatch)
         assert row["exp_r"] != 0.0
         assert row["days"] > 0
     assert payload["inputs"]["daily_observations"] > 0
+    assert payload["inputs"]["limits_source"] == "investigacion"
     assert payload["pbo"]["pbo"] is not None
     assert payload["wfa"]["evaluated_folds"] >= 1
+
+
+def test_con_perfil_mandan_sus_limites_y_no_los_de_investigacion(tmp_path, monkeypatch):
+    from server.config import load_settings
+
+    spec = _registered_spec(tmp_path, monkeypatch)
+    df5 = _df5(bars=3000)
+    research, _, _ = selection.run_backtest_for_spec(spec, df5)
+
+    profile = load_settings("profiles/okx/config.json")
+    profile.risk.max_trades_per_day = 1
+    profile.risk.max_cost_r = 0.0
+    profile.risk.max_drawdown_pct = 0.0
+    profile.risk.soft_brakes = False
+    limited, _, metrics = selection.run_backtest_for_spec(spec, df5, base=profile)
+
+    days = pd.to_datetime(df5["ts"], utc=True).dt.date.nunique()
+    assert len(research) > len(limited)
+    assert 0 < len(limited) <= days
+    assert metrics["closed"]["trades"] == len(limited)
+
+
+def test_all_specs_carga_todos_los_json_del_directorio(tmp_path, monkeypatch):
+    monkeypatch.setattr(registry, "_SPEC_BUILDERS", dict(registry._SPEC_BUILDERS))
+    monkeypatch.setattr(registry, "_SPEC_CACHE", dict(registry._SPEC_CACHE))
+    for name, spec_id, label in (
+        ("a", SPEC_ID, "trend_15m"),
+        ("b", "BTC-TREND-16M", "trend_16m"),
+    ):
+        path = tmp_path / f"{name}.json"
+        path.write_text(
+            json.dumps(_spec_document(id=spec_id, label=label)), encoding="utf-8"
+        )
+
+    specs = selection.load_universe_specs(tmp_path, all_specs=True)
+
+    assert {spec.id for spec in specs} == {SPEC_ID, "BTC-TREND-16M"}
 
 
 def test_momentos_degenerados_se_reportan_sin_numero(monkeypatch):
