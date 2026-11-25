@@ -1149,3 +1149,29 @@ def test_stats_cache_is_invalidated_after_a_trade(settings, store):
     )
     engine._on_trade_closed(trade)
     assert engine.snapshot()["data"]["stats"]["closed"]["trades"] == 1
+
+
+def test_stopped_okx_engine_seeds_the_chart_from_recent_csv(settings, store):
+    from pathlib import Path
+
+    if not Path("data/recent_1m.csv").is_file():
+        pytest.skip("falta data/recent_1m.csv")
+    settings.feed.provider = "okx"
+    settings.instruments.primary = "BTC"
+    settings.instruments.items[0].symbol = "BTC"
+    settings.strategy.id = "reference"
+    settings.strategy.params = {
+        "fast": 7,
+        "slow": 21,
+        "stop_atr": 10.0,
+        "rr": 1.0,
+        "atr_period": 14,
+    }
+    engine = TradingEngine(settings, store)
+    assert engine.state.bars_available == 500
+    for timeframe in ("1m", "5m", "15m", "30m"):
+        assert len(engine.history(timeframe, 500)) == 500
+    snapshot = engine.snapshot()["data"]
+    assert len(snapshot["chart"]["candles"]) == 500
+    assert snapshot["strategy"]["state_label"] == "Motor detenido"
+    assert snapshot["data"]["quality"] == "stale"
