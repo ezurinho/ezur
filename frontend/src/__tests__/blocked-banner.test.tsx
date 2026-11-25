@@ -58,6 +58,24 @@ describe("aviso de por qué no opera", () => {
     expect(document.querySelector('[data-why="hold"]')).not.toBeNull();
   });
 
+  it("la guarda de ventaja enseña esperanza y coste, no solo el motivo", () => {
+    const snap = snapshot(true, "edge_below_cost");
+    snap.risk.edge = {
+      expectancy_r: 0.03,
+      cost_r: 0.049,
+      timeframe: "15m",
+      scope: "fuera de muestra",
+      passes: false,
+      reason: null,
+      detail: "la esperanza medida no supera el coste por operación",
+    };
+    render(<BlockedBanner snapshot={snap} />);
+    expect(screen.getByText("Bloqueo de riesgo activo")).toBeInTheDocument();
+    expect(screen.getByText(/0\.030 R/)).toBeInTheDocument();
+    expect(screen.getByText(/0\.049 R/)).toBeInTheDocument();
+    expect(document.querySelector('[data-edge="blocked"]')).not.toBeNull();
+  });
+
   it("sin bloqueo dice que puede operar", () => {
     render(<BlockedBanner snapshot={snapshot(false, null)} />);
     expect(screen.getByText("Puede operar.")).toBeInTheDocument();
