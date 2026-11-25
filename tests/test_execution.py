@@ -87,6 +87,25 @@ def test_commission_applied_per_side(engine, decision, signal_long):
     assert trade.fees == pytest.approx(2 * 0.62 * decision.units)
 
 
+def test_commission_can_be_a_percentage_of_notional(engine, decision, signal_long):
+    from server.config import ExecutionConfig
+
+    engine.execution.config = ExecutionConfig.model_validate(
+        {**engine.execution.config.model_dump(), "commission_pct_side": 0.001}
+    )
+    spec = engine.execution._instrument("PRIMARY")
+    contract = spec.tick_value / spec.tick_size
+
+    engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, NOW)
+    engine.execution.on_bar({"PRIMARY": make_bar(o=100.0, h=101.0, l=99.8)})
+    trade = engine.execution.close("manual", price=100.5, when=NOW)
+
+    assert trade is not None
+    # 10 pb de 100.25 al entrar y de 100.50 al salir.
+    expected = decision.units * contract * (100.25 + 100.5) * 0.001
+    assert trade.fees == pytest.approx(expected)
+
+
 def test_signal_is_executed_only_once(engine, decision, signal_long):
     first = engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, NOW)
     second = engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, NOW)
