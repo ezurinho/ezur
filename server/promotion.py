@@ -5,7 +5,7 @@ Ganar en un backtest no demuestra nada. Los cuatro criterios salen de
 configuración que quiera operar:
 
 - PF fuera de muestra > 1 con al menos 100 operaciones fuera de muestra;
-- coste medio < 0,25 R por operación;
+- coste ponderado < 0,25 R por operación (fees totales / riesgo total);
 - PF fuera de muestra > 1 con el coste duplicado;
 - PBO del ciclo de selección de su universo <= 0,2.
 
@@ -92,43 +92,206 @@ def _execution_model(block: Any) -> dict[str, float] | None:
     return {"commission": commission, "tick_value": tick_value}
 
 
-def cost_per_trade_r(
-    evidence: dict[str, Any], execution: dict[str, Any] | None
-) -> tuple[float | None, str]:
-    """Coste por operación en R medido con la ejecución que se va a usar.
+def _reprice_cost(
+    cost: float, declared: dict[str, float], model: dict[str, float]
+) -> float:
+    """Reexpresa un coste en R con el modelo de ejecución del perfil."""
+    return cost * (model["commission"] / model["tick_value"]) / (
+        declared["commission"] / declared["tick_value"]
+    )
 
-    El coste en R de una operación es 2·comisión/(stop·tick_value). El número
-    que trae la evidencia se midió con la comisión y el tick_value de aquella
-    corrida; si el perfil opera con otro modelo, ese número no vale. De la
-    corrida se recupera el stop medio implícito (comisiones, operaciones y
-    presupuesto de riesgo) y se recalcula con el modelo del perfil. Sin modelo
-    declarado no hay número: una evidencia que no dice con qué costes se midió
-    no puede aprobar el criterio, y sin el modelo del perfil tampoco se acepta
-    el número heredado.
+
+def cost_metrics(
+    trades: list[Any],
+    execution: dict[str, Any] | None,
+    budget: float | None = None,
+    max_units: int | None = None,
+) -> dict[str, Any]:
+    """Coste en R con el riesgo real de cada operación.
+
+    `cost_per_trade_r` es el **ponderado** (`fees totales / riesgo total`),
+    comparable con el nominal (`fees / operaciones / presupuesto`). El **simple**
+    (`media de fees/riesgo por operación`) se conserva aparte como distribución
+    (mediana, p90, p99, cola >1R), no como métrica de aprobación: mezclar la
+    media por operación con un nominal ponderado da un factor engañoso.
     """
-    if execution is None:
-        return None, "falta el perfil que va a operar: coste no verificable"
+    empty = {
+        "trades": 0,
+        "avg_risk_per_trade": None,
+        "avg_stop_ticks": None,
+        "cost_per_trade_r": None,
+        "cost_per_trade_r_weighted": None,
+        "cost_per_trade_r_simple": None,
+        "cost_per_trade_r_median": None,
+        "cost_per_trade_r_p90": None,
+        "cost_per_trade_r_p99": None,
+        "cost_above_1r": 0,
+        "cost_above_1r_rate": None,
+        "cost_min": None,
+        "cost_max": None,
+        "cost_per_trade_r_nominal": None,
+        "risk_budget_utilization": None,
+        "trades_at_cap": 0,
+        "cap_rate": None,
+    }
     model = _execution_model(execution)
     if model is None:
-        return None, "el perfil no declara comisión y tick_value: coste no verificable"
+        return empty
+    raw_execution = execution if isinstance(execution, dict) else {}
+    tick_size = _number(raw_execution.get("tick_size"))
+    if tick_size is None or tick_size <= 0:
+        return empty
+    rows: list[tuple[float, float, float]] = []
+    at_cap = 0
+    for trade in trades:
+        entry = _number(getattr(trade, "entry_price", None))
+        stop = _number(getattr(trade, "stop_price", None))
+        units = _number(getattr(trade, "units", None))
+        fees = _number(getattr(trade, "fees", None))
+        if entry is None or stop is None or units is None or fees is None:
+            continue
+        if units <= 0:
+            continue
+        stop_ticks = abs(entry - stop) / tick_size
+        risk = stop_ticks * model["tick_value"] * units
+        if risk <= 0:
+            continue
+        rows.append((risk, fees, stop_ticks))
+        if max_units is not None and units >= max_units:
+            at_cap += 1
+    if not rows:
+        return empty
+    n = len(rows)
+    total_risk = sum(risk for risk, _, _ in rows)
+    total_fees = sum(fees for _, fees, _ in rows)
+    costs = [fees / risk for risk, fees, _ in rows]
+    ordered = sorted(costs)
+
+    def percentile(fraction: float) -> float:
+        position = fraction * (len(ordered) - 1)
+        lower = int(position)
+        upper = min(lower + 1, len(ordered) - 1)
+        weight = position - lower
+        return ordered[lower] * (1 - weight) + ordered[upper] * weight
+
+    weighted = total_fees / total_risk
+    simple = sum(costs) / n
+    above_one = sum(1 for cost in costs if cost > 1.0)
+    return {
+        "trades": n,
+        "avg_risk_per_trade": total_risk / n,
+        "avg_stop_ticks": sum(ticks for _, _, ticks in rows) / n,
+        # Ponderado: fees totales / riesgo total. Es el comparable con el
+        # nominal (fees / operaciones / presupuesto) y el que usa la puerta.
+        "cost_per_trade_r": weighted,
+        "cost_per_trade_r_weighted": weighted,
+        # Simple: media de fees/riesgo por operación. Es una distribución,
+        # no la métrica de aprobación.
+        "cost_per_trade_r_simple": simple,
+        "cost_per_trade_r_median": percentile(0.5),
+        "cost_per_trade_r_p90": percentile(0.9),
+        "cost_per_trade_r_p99": percentile(0.99),
+        "cost_above_1r": above_one,
+        "cost_above_1r_rate": above_one / n,
+        "cost_min": ordered[0],
+        "cost_max": ordered[-1],
+        "cost_per_trade_r_nominal": (
+            total_fees / n / budget if budget and budget > 0 else None
+        ),
+        "risk_budget_utilization": (
+            total_risk / n / budget if budget and budget > 0 else None
+        ),
+        "trades_at_cap": at_cap,
+        "cap_rate": at_cap / n,
+    }
+
+
+def _measured_cost(
+    evidence: dict[str, Any], execution: dict[str, Any] | None
+) -> tuple[float | None, str, str]:
+    """Coste por operación en R, método usado y motivo si no se puede medir.
+
+    El número real es el **ponderado** (`fees totales / riesgo total`), que es
+    el comparable con el nominal; el simple es una distribución y no se usa
+    para aprobar. El coste en R de una operación es
+    2·comisión/(stop·tick_value). El número que trae la evidencia se midió con
+    la comisión y el tick_value de aquella corrida; si el perfil opera con otro
+    modelo, ese número no vale. De la corrida se recupera el stop medio
+    implícito (comisiones, operaciones y presupuesto de riesgo) y se recalcula
+    con el modelo del perfil. Sin modelo declarado no hay número: una evidencia
+    que no dice con qué costes se midió no puede aprobar el criterio, y sin el
+    modelo del perfil tampoco se acepta el número heredado.
+    """
+    if execution is None:
+        return None, "unknown", "falta el perfil que va a operar: coste no verificable"
+    model = _execution_model(execution)
+    if model is None:
+        return (
+            None,
+            "unknown",
+            "el perfil no declara comisión y tick_value: coste no verificable",
+        )
     declared = _execution_model(evidence.get("execution"))
     if declared is None:
-        return None, "la evidencia no declara su modelo de ejecución: coste no verificable"
+        return (
+            None,
+            "unknown",
+            "la evidencia no declara su modelo de ejecución: coste no verificable",
+        )
+
+    real_cost = _number(evidence.get("cost_per_trade_r_weighted"))
+    if real_cost is None:
+        real_cost = _number(evidence.get("cost_per_trade_r"))
+    if str(evidence.get("cost_method") or "") == "real_risk":
+        if str(evidence.get("cost_scope") or "") != "out_of_sample":
+            return (
+                None,
+                "unknown",
+                "el coste real no declara el tramo fuera de muestra: coste no verificable",
+            )
+        if real_cost is None or real_cost <= 0:
+            return (
+                None,
+                "unknown",
+                "el coste real declarado no es válido: coste no verificable",
+            )
+        return _reprice_cost(real_cost, declared, model), "real_risk", ""
+
+    avg_stop = _number(evidence.get("avg_stop_ticks"))
+    if avg_stop is not None and avg_stop > 0:
+        measured = 2 * declared["commission"] / (avg_stop * declared["tick_value"])
+        return _reprice_cost(measured, declared, model), "avg_stop", ""
+
+    # Compatibilidad con evidencias anteriores a la medición con riesgo real.
     metrics = evidence.get("metrics") or {}
     trades = _number(metrics.get("trades"))
     fees = _number(metrics.get("fees"))
     budget = _number(evidence.get("risk_budget"))
     if not trades or not fees or not budget or trades <= 0 or fees <= 0 or budget <= 0:
-        return None, (
+        return (
+            None,
+            "unknown",
             "la evidencia no declara operaciones, comisiones y presupuesto: "
-            "coste no verificable"
+            "coste no verificable",
         )
     stop_ticks = (
         2 * declared["commission"] * trades * budget / (fees * declared["tick_value"])
     )
     if stop_ticks <= 0:
-        return None, "el stop implícito de la corrida no es válido: coste no verificable"
-    return 2 * model["commission"] / (stop_ticks * model["tick_value"]), ""
+        return (
+            None,
+            "unknown",
+            "el stop implícito de la corrida no es válido: coste no verificable",
+        )
+    return 2 * model["commission"] / (stop_ticks * model["tick_value"]), "nominal", ""
+
+
+def cost_per_trade_r(
+    evidence: dict[str, Any], execution: dict[str, Any] | None
+) -> tuple[float | None, str]:
+    """Coste por operación y motivo; el método queda en `_measured_cost`."""
+    cost, _method, reason = _measured_cost(evidence, execution)
+    return cost, reason
 
 
 def evaluate(
@@ -181,16 +344,31 @@ def evaluate(
         )
     )
 
-    cost, cost_reason = cost_per_trade_r(evidence or {}, execution)
-    checks.append(
-        _check(
-            "coste_por_operacion",
-            cost,
-            f"< {MAX_COST_R} R",
-            (cost_value := _number(cost)) is not None and cost_value < MAX_COST_R,
-            cost_reason or "sin coste medido, o demasiado alto para dejar margen",
-        )
+    evidence_doc = evidence or {}
+    cost, cost_method, cost_reason = _measured_cost(evidence_doc, execution)
+    if cost_reason:
+        cost_failure = cost_reason
+    elif cost is not None:
+        kind = {
+            "real_risk": "ponderado",
+            "avg_stop": "estimado por stop medio",
+            "nominal": "nominal",
+        }.get(cost_method, cost_method)
+        cost_failure = f"coste {kind} {cost:.3f} R ≥ {MAX_COST_R:g} R"
+    else:
+        cost_failure = "sin coste medido"
+    cost_check = _check(
+        "coste_por_operacion",
+        cost,
+        f"< {MAX_COST_R} R",
+        (cost_value := _number(cost)) is not None and cost_value < MAX_COST_R,
+        cost_failure,
     )
+    cost_check["method"] = cost_method
+    cost_check["metric"] = "weighted" if cost_method == "real_risk" else cost_method
+    cost_check["simple"] = _number(evidence_doc.get("cost_per_trade_r_simple"))
+    cost_check["scope"] = evidence_doc.get("cost_scope")
+    checks.append(cost_check)
 
     stressed_oos = _oos(stress or {})
     stressed_pf = stressed_oos.get("profit_factor")
