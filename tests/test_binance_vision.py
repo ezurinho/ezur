@@ -142,3 +142,150 @@ def test_resample_rechaza_una_regla_que_no_existe(tmp_path):
     )
     with pytest.raises(ValueError):
         datasets.resample(source, tmp_path / "x.csv", "7D")
+
+
+# --- descarga y verificación ------------------------------------------------
+
+
+class _Response:
+    def __init__(self, payload: bytes) -> None:
+        self.payload = payload
+
+    def read(self) -> bytes:
+        return self.payload
+
+    def __enter__(self) -> "_Response":
+        return self
+
+    def __exit__(self, *args) -> bool:
+        return False
+
+
+def test_download_reutiliza_el_zip_cacheado(tmp_path, monkeypatch):
+    cached = tmp_path / "BTCUSDT-1m-2020-01.zip"
+    cached.write_bytes(b"zip")
+
+    def explode(*args, **kwargs):
+        raise AssertionError("no debe tocar la red si el fichero ya está")
+
+    monkeypatch.setattr(bv.urllib.request, "urlopen", explode)
+
+    path, state = bv.download("2020-01", tmp_path)
+
+    assert path == cached
+    assert state == "cached"
+
+
+def test_download_guarda_el_zip_sin_verificar(tmp_path, monkeypatch):
+    monkeypatch.setattr(bv.urllib.request, "urlopen", lambda *a, **k: _Response(b"zip-bytes"))
+
+    path, state = bv.download("2020-01", tmp_path, verify=False)
+
+    assert state == "downloaded"
+    assert path.read_bytes() == b"zip-bytes"
+
+
+def test_download_rechaza_un_fichero_vacio(tmp_path, monkeypatch):
+    monkeypatch.setattr(bv.urllib.request, "urlopen", lambda *a, **k: _Response(b""))
+
+    with pytest.raises(ValueError, match="vacío"):
+        bv.download("2020-01", tmp_path, verify=False)
+
+
+def test_download_borra_el_zip_si_el_checksum_no_cuadra(tmp_path, monkeypatch):
+    monkeypatch.setattr(bv.urllib.request, "urlopen", lambda *a, **k: _Response(b"corrupto"))
+    monkeypatch.setattr(bv, "verify_checksum", lambda *a, **k: False)
+
+    with pytest.raises(ValueError, match="sha256"):
+        bv.download("2020-01", tmp_path)
+
+    assert not (tmp_path / "BTCUSDT-1m-2020-01.zip").exists()
+
+
+def test_verify_checksum_compara_con_el_fichero_publicado(tmp_path, monkeypatch):
+    target = tmp_path / "mes.zip"
+    target.write_bytes(b"contenido")
+    import hashlib
+
+    digest = hashlib.sha256(b"contenido").hexdigest()
+    monkeypatch.setattr(
+        bv.urllib.request, "urlopen", lambda *a, **k: _Response(f"{digest}  mes.zip\n".encode())
+    )
+
+    assert bv.verify_checksum(target, "2020-01") is True
+
+    monkeypatch.setattr(
+        bv.urllib.request, "urlopen", lambda *a, **k: _Response(b"0" * 64 + b"  mes.zip\n")
+    )
+    assert bv.verify_checksum(target, "2020-01") is False
+
+
+def test_verify_checksum_no_acusa_sin_fichero_de_control(tmp_path, monkeypatch):
+    target = tmp_path / "mes.zip"
+    target.write_bytes(b"contenido")
+
+    def offline(*args, **kwargs):
+        raise bv.urllib.error.URLError("sin red")
+
+    monkeypatch.setattr(bv.urllib.request, "urlopen", offline)
+    assert bv.verify_checksum(target, "2020-01") is True
+
+    monkeypatch.setattr(bv.urllib.request, "urlopen", lambda *a, **k: _Response(b"\n"))
+    assert bv.verify_checksum(target, "2020-01") is True
+
+
+# --- build ------------------------------------------------------------------
+
+
+def test_build_convierte_los_zip_en_un_csv_del_bot(tmp_path, monkeypatch):
+    source = _zip_with(
+        [
+            "1577836800000,7195.24,7196.25,7183.14,7186.68,51.64,1577836859999,0,0,0,0,0",
+            "1577836860000,7186.68,7190.00,7180.00,7185.00,10.00,1577836919999,0,0,0,0,0",
+        ]
+    )
+    monkeypatch.setattr(bv, "download", lambda *a, **k: (source, "downloaded"))
+    calls: list[tuple] = []
+
+    result = bv.build(
+        tmp_path / "out.csv",
+        tmp_path / "cache",
+        ["2020-01"],
+        report=lambda *args: calls.append(args),
+    )
+
+    assert result["rows"] == 2
+    assert result["months"] == 1
+    assert result["first"].startswith("2020-01-01")
+    assert calls == [("2020-01", 2, 2, "downloaded")]
+    with (tmp_path / "out.csv").open(encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
+    assert rows[0] == {
+        "ts": "2020-01-01T00:00:00+00:00",
+        "symbol": "BTC",
+        "o": "7195.24",
+        "h": "7196.25",
+        "l": "7183.14",
+        "c": "7186.68",
+        "v": "51.64",
+    }
+    source.unlink()
+
+
+def test_build_explica_que_mes_fallo(tmp_path, monkeypatch):
+    def broken(*args, **kwargs):
+        raise OSError("sin red")
+
+    monkeypatch.setattr(bv, "download", broken)
+
+    with pytest.raises(ValueError, match="2020-01: no se pudo preparar el mes"):
+        bv.build(tmp_path / "out.csv", tmp_path / "cache", ["2020-01"])
+
+
+def test_un_zip_sin_csv_lo_dice(tmp_path):
+    path = tmp_path / "sin-csv.zip"
+    with zipfile.ZipFile(path, "w") as archive:
+        archive.writestr("LEEME.txt", "nada")
+
+    with pytest.raises(ValueError, match="no trae CSV"):
+        list(bv.rows(path))
