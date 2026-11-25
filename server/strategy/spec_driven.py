@@ -584,7 +584,6 @@ class ORBSessionStrategy(BaseStrategy):
                 metrics={"bars": Metric(label="Velas", value=len(bars), format="number", unit="barras")},
             )
 
-        closes = [bar.c for bar in bars]
         highs = [bar.h for bar in bars]
         lows = [bar.l for bar in bars]
         atr_val = atr(bars, self.params.atr_period)
@@ -717,4 +716,3 @@ def _stamp(value: datetime) -> str:
 
 
 # Import Marker
-from .base import Marker  # noqa: E402
