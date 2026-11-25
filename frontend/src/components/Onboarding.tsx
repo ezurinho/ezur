@@ -34,7 +34,7 @@ export function Onboarding() {
         <div>
           <span className="onboarding-num">1</span>
           <b>Solo, sin ti</b>
-          <p>Arranca al abrir y opera en papel con precios reales. No mueve dinero tuyo.</p>
+          <p>Cuando lo reanudas, opera en papel con precios reales. No mueve dinero tuyo.</p>
         </div>
         <div>
           <span className="onboarding-num">2</span>
