@@ -72,8 +72,9 @@ python scripts/watchdog.py
 ```
 
 Comprueba `/health` cada 5 s; a los 3 fallos mata solo el PID que escucha en 8765 y
-relanza `run.py` con el perfil `okx` y `auto_start=false`. Nunca llama a
-`/api/bot/start`, así que un reinicio no reanuda el paper. Log: `data/watchdog.log`;
+relanza `run.py` con el perfil `okx`. Nunca llama a `/api/bot/start`: el paper se
+reanuda solo si el perfil trae `auto_start: true`, que es lo que tiene `okx`.
+Log: `data/watchdog.log`;
 salida del servidor: `data/paper-15m-server.log`. No lo confundas con el watchdog de
 frescura del motor, que solo marca `degraded`/`stale` y cancela pendientes.
 
