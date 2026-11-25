@@ -231,6 +231,9 @@ class SnapshotData(_Model):
     position: PositionModel | None = None
     orders: list[OrderModel] = Field(default_factory=list)
     risk: RiskModel
+    # Veredicto de promoción del perfil (PBO, DSR, WFA y puerta que bloquea).
+    # Es opcional: un perfil sin puerta no inventa un estado.
+    promotion: dict[str, Any] | None = None
     stats: dict[str, Any] = Field(default_factory=dict)
     day_stats: dict[str, Any] = Field(default_factory=dict)
     # Acumulado de la corrida: `risk.block_count` es la racha de la sesion y se
