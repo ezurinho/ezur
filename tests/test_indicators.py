@@ -10,7 +10,7 @@ from tests.conftest import NOW, make_bar
 def _bars(closes: list[float], highs: list[float], lows: list[float]):
     return [
         make_bar(t=NOW, o=close, h=high, l=low, c=close, v=1.0)
-        for close, high, low in zip(closes, highs, lows)
+        for close, high, low in zip(closes, highs, lows, strict=True)
     ]
 
 
