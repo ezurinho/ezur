@@ -38,13 +38,16 @@ def test_target_exit(engine, decision, signal_long):
     assert "exit_slippage" not in events[-1].diagnostics
 
 
-def test_a_market_close_pays_slippage(engine, decision, signal_long):
+def test_an_explicit_exit_price_is_respected(engine, decision, signal_long):
     engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, NOW)
     engine.execution.on_bar({"PRIMARY": make_bar(o=100.0, h=101.0, l=99.8)})
     trade = engine.execution.close("manual", price=100.5, when=NOW)
     assert trade is not None
     assert trade.exit_price == pytest.approx(100.5)
+    assert "exit_slippage" not in trade.diagnostics
 
+
+def test_a_market_close_pays_slippage(engine, decision, signal_long):
     engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, NOW)
     engine.execution.on_bar({"PRIMARY": make_bar(o=100.0, h=101.0, l=99.8)})
     engine.execution.last_price = 100.5
