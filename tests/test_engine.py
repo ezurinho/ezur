@@ -403,6 +403,55 @@ def _risk_events(store):
     return [e for e in store.list_events(limit=500) if e["category"] == "risk"]
 
 
+def _with_edge_evidence(settings, tmp_path, expectancy: float, cost: float = 0.05):
+    """Evidencia que declara el mismo modelo que el perfil: el coste no se reexpresa."""
+    settings.execution.commission_per_unit_side = 0.049
+    item = settings.instruments.items[0]
+    document = {
+        "execution": {
+            "commission_per_unit_side": 0.049,
+            "tick_size": item.tick_size,
+            "tick_value": item.tick_value,
+        },
+        "cost_per_trade_r_weighted": cost,
+        "cost_per_trade_r": cost,
+        "cost_method": "real_risk",
+        "cost_scope": "out_of_sample",
+        "split": {"out_of_sample": {"expectancy_r": expectancy}},
+        "metrics": {"expectancy_r": expectancy, "trades": 105},
+    }
+    path = tmp_path / "edge-evidence.json"
+    path.write_text(json.dumps(document), encoding="utf-8")
+    settings.promotion.evidence = str(path)
+    return settings
+
+
+def test_la_guarda_de_ventaja_frena_la_entrada(settings, store, tmp_path):
+    _with_edge_evidence(settings, tmp_path, 0.03)
+    engine = TradingEngine(settings, store, feed=None, strategy=_AlwaysSignalStrategy())
+    engine.start()
+    engine._process(_tick(DAY_ONE))
+
+    assert engine.execution.pending_orders() == []
+    assert engine.state.block_reason == "edge_below_cost"
+    assert engine.rejection_totals().get("edge_below_cost") == 1
+    risk = engine.snapshot()["data"]["risk"]
+    assert risk["block_reason"] == "edge_below_cost"
+    assert "0.030" in risk["block_detail"]
+    assert "0.050" in risk["block_detail"]
+    assert risk["edge"]["passes"] is False
+
+
+def test_la_guarda_de_ventaja_deja_pasar_la_entrada(settings, store, tmp_path):
+    _with_edge_evidence(settings, tmp_path, 0.13)
+    engine = TradingEngine(settings, store, feed=None, strategy=_AlwaysSignalStrategy())
+    engine.start()
+    engine._process(_tick(DAY_ONE))
+
+    assert engine.state.block_reason != "edge_below_cost"
+    assert engine.execution.pending_orders()
+
+
 def test_repeated_rejections_are_counted_but_logged_once(settings, store):
     engine = TradingEngine(settings, store, feed=None, strategy=_AlwaysSignalStrategy())
     engine.start()
