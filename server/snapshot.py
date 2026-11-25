@@ -261,6 +261,7 @@ class SnapshotBuilder:
         candles: Iterable[Bar] | None = None,
         series: Iterable[dict[str, Any]] | None = None,
         stats: dict[str, Any] | None = None,
+        rejections: dict[str, int] | None = None,
     ) -> dict[str, Any]:
         data = SnapshotData(
             status=state.status,
@@ -288,6 +289,7 @@ class SnapshotBuilder:
             risk=self._risk(state),
             stats=stats or {},
             day_stats=state.day_stats.model_dump(),
+            rejections=dict(rejections or {}),
             settings=self.settings.model_dump(mode="json"),
             ui=UIModel(
                 panels=list(self.settings.ui.panels),
