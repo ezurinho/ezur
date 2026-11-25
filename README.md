@@ -41,8 +41,9 @@ consume el feed y evalúa la estrategia sin intervención. Con
 
 ### Arranque al iniciar sesión (Windows)
 
-La tarea `ezur-paper` lanza `start_paper.bat` oculto 30 s después de entrar en la
-sesión; el motor arranca solo con el `auto_start` del perfil. La tarea vive en el
+La tarea `ezur-paper` lanza `start_paper.bat` 30 s después de entrar en la sesión.
+El servidor corre con `pythonw`, sin ventana, y la consola del `.bat` se cierra en
+cuanto termina; el motor arranca solo con el `auto_start` del perfil. La tarea vive en el
 Programador de tareas, fuera del repo: si mueves la carpeta o reinstalas Windows
 se pierde, y se recrea desde la copia actual sin tocar rutas a mano:
 
