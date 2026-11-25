@@ -57,6 +57,9 @@ def test_profit_factor_and_expectancy():
     assert stats["win_rate"] == 0.5
     assert stats["profit_factor"] == 3.0
     assert stats["pnl_net"] == 40.0
+    # El bruto dice si la ventaja existe antes de pagar el peaje.
+    assert stats["pnl_gross"] == pytest.approx(44.96)
+    assert stats["pnl_gross"] - stats["fees"] == pytest.approx(stats["pnl_net"])
     assert stats["expectancy_r"] == (2.0 - 1.0 - 1.0 + 4.0) / 4
     assert stats["best_trade"] == 40.0
     assert stats["worst_trade"] == -10.0
@@ -68,6 +71,21 @@ def test_drawdown_is_measured_on_closed_equity():
     stats = compute_stats(trades, initial_equity=1000.0)
     # 1000 -> 950 -> 970 -> 940 : peak 1000, trough 940
     assert stats["max_drawdown"] == 60.0
+
+
+def test_drawdown_uses_the_marked_curve_when_given():
+    trades = [_trade(0, 100.0)]
+    # El cierre gana 100, pero la curva llego a 940 antes de recuperar: el
+    # drawdown realizado seria 0.
+    stats = compute_stats(
+        trades, initial_equity=1000.0, equity=[1100.0, 940.0, 1100.0]
+    )
+    assert stats["max_drawdown"] == 160.0
+
+
+def test_an_open_loss_counts_without_closed_trades():
+    stats = compute_stats([], initial_equity=1000.0, equity=[980.0])
+    assert stats["max_drawdown"] == 20.0
 
 
 def test_by_dimension_splits_by_side_and_hour():

@@ -33,6 +33,7 @@ from .models import (
     TradeRecord,
 )
 from .risk import RiskManager
+from .resample import BarAggregator, timeframe_minutes
 from .snapshot import SnapshotBuilder
 from .stats import aggregate
 from .strategy.base import BaseStrategy, MarketData, Phase, StrategyOutput
@@ -112,6 +113,8 @@ class TradingEngine:
         }
         self._chart_bars: list[Bar] = []
         self._chart_symbol: str | None = None
+        self._aggregated = self._aggregators_for(settings)
+        self._aggregated_minutes = timeframe_minutes(settings.strategy.timeframe)
         self._output: StrategyOutput | None = None
         self._subscribers: list[SnapshotHook] = []
         self._task: asyncio.Task[None] | None = None
@@ -279,11 +282,18 @@ class TradingEngine:
         self._sync_strategy_meta()
         for symbol in settings.instruments.symbols:
             self._bars.setdefault(symbol, [])
+        minutes = timeframe_minutes(settings.strategy.timeframe)
+        if minutes != self._aggregated_minutes:
+            # Otro marco es otro sistema: no se mezclan buckets del anterior
+            # con los nuevos, y la estrategia vuelve a calentar.
+            self._aggregated_minutes = minutes
+            self._aggregated = self._aggregators_for(settings)
         if next_feed is not None and self.feed is not None:
             self.feed = next_feed
             self._bars = {symbol: [] for symbol in settings.instruments.symbols}
             self._chart_bars = []
             self._chart_symbol = None
+            self._aggregated = self._aggregators_for(settings)
             self._previous_tick_ts = None
             self.state.bars_available = 0
             self.state.last_bar_ts = None
@@ -337,6 +347,7 @@ class TradingEngine:
                 self._bars = {symbol: [] for symbol in self.settings.instruments.symbols}
                 self._chart_bars = []
                 self._chart_symbol = None
+                self._aggregated = self._aggregators_for(self.settings)
                 self._previous_tick_ts = None
                 self.state.bars_available = 0
                 self.state.last_bar_ts = None
@@ -522,6 +533,9 @@ class TradingEngine:
                     self._chart_symbol = primary
                 self._chart_bars.append(bar)
                 del self._chart_bars[:-CHART_MAX_BARS]
+            aggregator = self._aggregated.get(symbol)
+            if aggregator is not None:
+                aggregator.add(bar)
 
         self.state.session = session
         self.state.last_bar_ts = tick.ts
@@ -594,6 +608,38 @@ class TradingEngine:
         if self.mode != "backtest":
             self._persist()
         self._update_open_risk()
+        self._record_equity_point(tick.ts)
+
+    def _record_equity_point(self, stamp: datetime) -> None:
+        """Marca a mercado mientras hay posicion.
+
+        Sin esto el equity solo cambia al cerrar: un drawdown abierto no
+        aparece ni en la curva ni en la puerta G6, que mide el peor momento de
+        la cuenta como si la cuenta solo existiera en los cierres.
+        """
+        if self.execution.position is None:
+            return
+        self.store.append_equity(
+            self.state.equity + self.state.unrealized, stamp
+        )
+
+    def _aggregators_for(self, settings: Settings) -> dict[str, BarAggregator]:
+        minutes = timeframe_minutes(settings.strategy.timeframe)
+        if minutes <= 1:
+            return {}
+        return {
+            symbol: BarAggregator(minutes, MAX_BARS)
+            for symbol in settings.instruments.symbols
+        }
+
+    def _bar_source(self) -> dict[str, list[Bar]]:
+        """Lo que lee la estrategia: buckets cerrados o las velas del feed."""
+        if self._aggregated:
+            return {
+                symbol: aggregator.bars
+                for symbol, aggregator in self._aggregated.items()
+            }
+        return self._bars
 
     def _strategy_bars(self, clock: datetime) -> dict[str, list[Bar]]:
         """Velas de la estrategia: agrega el feed al marco configurado.
@@ -637,12 +683,10 @@ class TradingEngine:
         requirement = self.strategy.warmup_requirements()
         if not requirement.bars:
             return True, ""
-        bars = self._strategy_bars(clock)
+        series = self._bar_source()
         for symbol, needed in requirement.bars.items():
             targets = (
-                bars.values()
-                if symbol == "*"
-                else [bars.get(symbol, [])]
+                series.values() if symbol == "*" else [series.get(symbol, [])]
             )
             have = min((len(values) for values in targets), default=0)
             if have < needed:
@@ -651,7 +695,7 @@ class TradingEngine:
 
     def _evaluate(self, tick: Tick, session: SessionInfo) -> None:
         primary = self.settings.instruments.primary
-        bars = self._strategy_bars(tick.ts)
+        bars = {symbol: list(values) for symbol, values in self._bar_source().items()}
         if not bars.get(primary):
             return
         ready, detail = self._warmup_progress(tick.ts)
@@ -713,6 +757,7 @@ class TradingEngine:
             equity=self.state.equity,
             peak_equity=max(self.peak_equity, self.state.equity),
             open_risk=self.state.open_risk,
+            unrealized=self.state.unrealized,
             daily_pnl=self.state.day_stats.pnl,
             daily_trades=self.state.day_stats.trades,
             consecutive_losses=self.state.day_stats.consecutive_losses,
@@ -1064,10 +1109,15 @@ class TradingEngine:
         position = self.execution.position
         if position is None:
             self.state.open_risk = 0.0
+            self.state.unrealized = 0.0
             return
         spec = self.settings.instruments.by_symbol(position.symbol)
         ticks = abs(position.entry_price - position.stop_price) / spec.tick_size
         self.state.open_risk = ticks * spec.tick_value * position.units
+        bars = self._bars.get(position.symbol) or []
+        self.state.unrealized = (
+            self.execution.open_pnl(position, bars[-1].c) if bars else 0.0
+        )
 
     # --- output -----------------------------------------------------------
     def quotes(self) -> dict[str, dict[str, Any]]:

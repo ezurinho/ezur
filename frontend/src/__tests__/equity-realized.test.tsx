@@ -21,6 +21,7 @@ function snapshot(withPosition: boolean): SnapshotData {
   return {
     status: "running",
     mode: "paper",
+    rejections: {},
     session: {
       id: "2026-11-24:CRYPTO24",
       label: "CRYPTO24",

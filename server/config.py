@@ -17,6 +17,8 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from .resample import timeframe_minutes
+
 DEFAULT_CONFIG_PATH = Path("data/config.json")
 MIN_TICK_SIZE = 1e-12
 
@@ -185,6 +187,10 @@ class StrategyConfig(_Model):
     id: str = "null"
     enabled: bool = True
     version: str = "0.0.0"
+    # Lo que ve la estrategia. El motor sigue ejecutando sobre cada vela del
+    # feed; esto solo agrega las que lee el plugin. Cambiarlo sin volver a
+    # medir no cambia de sistema: los parametros estan en velas de este marco.
+    timeframe: str = "1m"
     params: dict[str, Any] = Field(default_factory=dict)
     timeframe: str = "1m"
 
@@ -193,6 +199,12 @@ class StrategyConfig(_Model):
     def _timeframe_supported(cls, value: str) -> str:
         if value not in {"1m", "5m", "15m", "30m"}:
             raise ValueError("timeframe debe ser 1m, 5m, 15m o 30m")
+        return value
+
+    @field_validator("timeframe")
+    @classmethod
+    def _known_timeframe(cls, value: str) -> str:
+        timeframe_minutes(value)
         return value
 
 
@@ -303,6 +315,10 @@ class RiskConfig(_Model):
 
 class ExecutionConfig(_Model):
     commission_per_unit_side: float = 0.62
+    # Alternativa porcentual sobre el nocional de cada lado. Cuando es mayor
+    # que cero sustituye a `commission_per_unit_side`: un importe fijo por
+    # unidad es un porcentaje distinto cada vez que cambia el precio.
+    commission_pct_side: float = 0.0
     slippage_ticks: int = 1
     max_slippage_ticks: int = 4
     fill_model: Literal["next_open", "signal_price"] = "next_open"

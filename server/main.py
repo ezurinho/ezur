@@ -197,9 +197,12 @@ def create_app(
         # que eligió el operador; así un guardado posterior no lo reduce otra
         # vez y el RiskManager nace ya con el tamaño correcto.
         configured_settings = settings.model_copy(deep=True)
+        from .backtest import config_fingerprint
         from .promotion import effective_settings_and_verdict
 
-        settings, promotion_verdict = effective_settings_and_verdict(configured_settings)
+        settings, promotion_verdict = effective_settings_and_verdict(
+            configured_settings, config_hash=config_fingerprint(configured_settings)
+        )
         notifier = build_notifier(
             settings.alerts,
             url_override=env("ALERT_WEBHOOK_URL"),

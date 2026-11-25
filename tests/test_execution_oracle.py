@@ -41,9 +41,9 @@ def _trade(engine: ExecutionEngine, bars: list[dict]):
         ("long", {"o": 101.0, "h": 103.0, "l": 100.8}, 100.0, 102.25, 22.5, "target"),
         ("long", {"o": 98.0, "h": 99.4, "l": 97.5}, 100.25, 97.75, -25.0, "stop"),
         ("short", {"o": 102.0, "h": 102.5, "l": 100.6}, 99.75, 102.25, -25.0, "stop"),
-        ("short", {"o": 96.0, "h": 96.5, "l": 95.0}, 100.0, 96.0, 40.0, "target"),
+        ("short", {"o": 96.0, "h": 96.5, "l": 95.0}, 100.0, 97.75, 22.5, "target"),
         ("long", {"o": 100.5, "h": 103.0, "l": 99.0}, 100.0, 99.5, -5.0, "stop"),
-        ("long", {"o": 103.0, "h": 104.0, "l": 100.8}, 100.0, 103.0, 30.0, "target"),
+        ("long", {"o": 103.0, "h": 104.0, "l": 100.8}, 100.0, 102.25, 22.5, "target"),
     ],
 )
 def test_fill_oracle_matches_hand_calculated_pnl(side, second, want_entry, want_exit, want_pnl, want_reason):
@@ -94,8 +94,9 @@ def test_manual_close_oracle_applies_adverse_slippage():
     engine.on_bar({"PRIMARY": make_bar(o=100.0, h=100.4, l=99.8)})
     trade = engine.close("manual", when=NOW + timedelta(minutes=1))
     assert trade is not None
-    assert trade.exit_price == pytest.approx(100.75)
-    assert trade.pnl_net == pytest.approx(5.0)
+    # Entrada y salida pagan el mismo tick adverso: 100.25 -> 100.25.
+    assert trade.exit_price == pytest.approx(100.25)
+    assert trade.pnl_net == pytest.approx(0.0)
 
 
 def test_signal_price_oracle_degrades_when_pre_entry_stop_is_unknown():

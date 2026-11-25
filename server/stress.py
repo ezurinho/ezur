@@ -33,6 +33,9 @@ def stressed_settings(settings: Settings, multiplier: float = 2.0) -> Settings:
     clone.execution.commission_per_unit_side = (
         settings.execution.commission_per_unit_side * multiplier
     )
+    clone.execution.commission_pct_side = (
+        settings.execution.commission_pct_side * multiplier
+    )
     # `slippage_ticks` es un recuento entero: pydantic no revalida al asignar y
     # un 2.0 viajaba hasta el informe como si fuera otra unidad.
     clone.execution.slippage_ticks = max(

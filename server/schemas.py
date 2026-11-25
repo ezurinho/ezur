@@ -229,6 +229,9 @@ class SnapshotData(_Model):
     risk: RiskModel
     stats: dict[str, Any] = Field(default_factory=dict)
     day_stats: dict[str, Any] = Field(default_factory=dict)
+    # Acumulado de la corrida: `risk.block_count` es la racha de la sesion y se
+    # reinicia con ella, asi que no sirve para auditar un backtest de anos.
+    rejections: dict[str, int] = Field(default_factory=dict)
     settings: dict[str, Any] = Field(default_factory=dict)
     ui: UIModel = Field(default_factory=UIModel)
 

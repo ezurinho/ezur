@@ -65,11 +65,24 @@ class Dataset:
         return cls(path=target, dataset_id=digest.hexdigest(), symbols=list(symbols))
 
 
+# Campos que no pueden mover un P&L. Si entran en el hash, cambiar el tema de
+# la interfaz invalida la comparabilidad de dos corridas identicas.
+NON_ECONOMIC_SECTIONS = ("ui", "alerts", "live", "promotion")
+
+
 def config_fingerprint(settings: Settings) -> str:
-    """Hash of the effective settings: two runs with the same hash are comparable."""
+    """Hash de lo que puede cambiar un resultado, no de todo el perfil.
+
+    El tema, el webhook de alertas o el auto-arranque no tocan una operacion:
+    incluirlos hacia que dos corridas comparables dejaran de serlo.
+    """
     from .confirmatory import canonical_hash
 
-    return canonical_hash(settings.model_dump(mode="json"))[:16]
+    payload = settings.model_dump(mode="json")
+    for section in NON_ECONOMIC_SECTIONS:
+        payload.pop(section, None)
+    payload.pop("auto_start", None)
+    return canonical_hash(payload)[:16]
 
 
 def run_backtest(
@@ -110,7 +123,9 @@ def run_backtest(
         store.close()
 
     trades = [TradeRecord.model_validate(_trade_row(row)) for row in rows]
-    metrics = compute_stats(trades, initial_equity=settings.risk.initial_capital)
+    metrics = compute_stats(
+        trades, initial_equity=settings.risk.initial_capital, equity=equity
+    )
     return BacktestResult(
         # El hash del dataset identifica los datos; el run_id, esta ejecución.
         # Antes eran lo mismo y dos estrategias sobre el mismo CSV no se podían
