@@ -1,7 +1,7 @@
 ---
 name: trading-bot-ops
-description: "Opera la terminal de trading ezur: arranque por perfil, estados del motor, salud del feed, controles, copias de seguridad, cambio de estrategia y reconciliación de equity. Úsala cuando haya que arrancar o parar el bot, revisar por qué no opera, cambiar de perfil, hacer una copia o recuperar una cuenta descuadrada."
-version: 1.0.0
+description: "Opera la terminal de trading ezur: arranque por perfil, estados del motor, liveness, salud del feed, controles, copias de seguridad, cambio de estrategia y reconciliación de equity. Úsala cuando haya que arrancar o parar el bot, revisar por qué no opera, cambiar de perfil, hacer una copia o recuperar una cuenta descuadrada."
+version: 1.1.0
 ---
 
 # Operación de la terminal
@@ -36,15 +36,20 @@ ledger roto) usa `trading-incident-triage`.
 `EZUR_HOST`, `EZUR_PORT` y `EZUR_OPEN=1` cambian host, puerto y apertura del navegador.
 
 Con `auto_start: true` (por defecto) el motor ya está `running` al abrir. Con `false`
-queda `idle`/`stopped` hasta `POST /api/bot/start`.
+queda `idle`/`stopped` hasta `POST /api/bot/start`. Con `promotion.required=true` y
+`mode=block`, el arranque manual también se bloquea si la evidencia no pasa, incluido
+el `config_hash`; no fuerces el start, valida o deja el paper parado.
 
 ## Salud en 30 segundos
 
 ```powershell
+curl.exe -s http://127.0.0.1:8765/health
 curl.exe -s http://127.0.0.1:8765/api/health
 curl.exe -s http://127.0.0.1:8765/api/status
 ```
 
+`/health` es liveness del proceso: responde `{"status":"ok"}` si el servidor está
+vivo, sin depender del motor. Es el que usa `scripts/watchdog.py`.
 `/api/health` devuelve `status`, `version` y `engine` con `status`, `mode`, `feed`,
 `last_bar_age_s` y `session`. Un 200 no basta: si `engine.status` no es `running` o
 `last_bar_age_s` crece sin parar, el proceso vive pero el bot no.
@@ -59,6 +64,18 @@ curl.exe -s http://127.0.0.1:8765/api/status
 | `data.risk.block_reason` | `null` | `stale_data`, `stale_order`, `equity_mismatch`, `loss_streak` |
 | `data.strategy.state` | el del plugin (`scanning`, `disabled`…) | `error` o vacío inesperado |
 | `data.position` / `data.orders` | coherentes con Operaciones | posición fantasma u orden vieja |
+
+## Watchdog del proceso
+
+```powershell
+python scripts/watchdog.py
+```
+
+Comprueba `/health` cada 5 s; a los 3 fallos mata solo el PID que escucha en 8765 y
+relanza `run.py` con el perfil `okx` y `auto_start=false`. Nunca llama a
+`/api/bot/start`, así que un reinicio no reanuda el paper. Log: `data/watchdog.log`;
+salida del servidor: `data/paper-15m-server.log`. No lo confundas con el watchdog de
+frescura del motor, que solo marca `degraded`/`stale` y cancela pendientes.
 
 ## Los cuatro controles
 
@@ -89,7 +106,8 @@ curl.exe -s -X PUT http://127.0.0.1:8765/api/config -H "Content-Type: applicatio
 
 El plugin se reconstruye, el feed se rehace y el replay reinicia. Parámetros inválidos
 devuelven `422` y el motor sigue con la estrategia anterior. El esquema vivo está en
-`GET /api/strategy/schema`.
+`GET /api/strategy/schema`. Cambiar la estrategia o sus parámetros invalida la
+evidencia por `config_hash`: no es una promoción; vuelve a validar antes de operar.
 
 ## Copias y recuperación
 
