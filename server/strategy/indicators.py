@@ -30,7 +30,7 @@ def atr(bars: list[Bar], period: int) -> float | None:
     if period <= 0 or len(bars) < period + 1:
         return None
     ranges: list[float] = []
-    for previous, current in zip(bars[-period - 1 : -1], bars[-period:]):
+    for previous, current in zip(bars[-period - 1 : -1], bars[-period:], strict=True):
         ranges.append(
             max(
                 current.h - current.l,
