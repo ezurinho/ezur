@@ -7,7 +7,6 @@ Lo que se prueba es la conversión, que es donde se rompió la primera vez.
 from __future__ import annotations
 
 import csv
-import io
 import zipfile
 from pathlib import Path
 
