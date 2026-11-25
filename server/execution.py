@@ -79,6 +79,25 @@ class ExecutionEngine:
             ticks = -ticks
         return ticks * spec.tick_value * units
 
+    def open_pnl(self, position: Position, price: float) -> float:
+        """Lo que dejaria la posicion si se cerrara ahora a `price`.
+
+        Cobra la comision de entrada ya pagada y la de salida: un
+        mark-to-market que solo mira el precio pinta un drawdown menor que el
+        que se llevaria la cuenta al cerrar.
+        """
+        return (
+            self._pnl(
+                position.symbol,
+                position.side,
+                position.entry_price,
+                price,
+                position.units,
+            )
+            - position.entry_fees
+            - self._fees(position.symbol, position.units, price)
+        )
+
     def has_pending(self) -> bool:
         return any(order.status == "pending" for order in self.orders)
 
@@ -198,7 +217,7 @@ class ExecutionEngine:
                 stop_price=order.stop_price or fill,
                 target_price=order.target_price,
                 opened_ts=bar.t,
-                entry_fees=self.config.commission_per_unit_side * order.units,
+                entry_fees=self._fees(order.symbol, order.units, fill),
                 entry_slippage=abs(fill - bar.o),
                 signal_key=order.signal_key,
             )
@@ -223,14 +242,20 @@ class ExecutionEngine:
                     diagnostics = dict(hit.diagnostics)
                     if bar.t == self.position.opened_ts:
                         diagnostics["same_bar_exit"] = True
+                    price = hit.price
+                    if hit.reason == "stop":
+                        # Un stop es una orden a mercado; el objetivo, una
+                        # limite. Solo el primero paga slippage.
+                        price, slip = self._exit_slippage(self.position, price)
+                        diagnostics["exit_slippage"] = slip
                     events.append(
                         ExecutionEvent(
                             type="exit",
                             symbol=self.position.symbol,
-                            price=hit.price,
+                            price=price,
                             units=self.position.units,
                             reason=hit.reason,
-                            trade=self.close(hit.reason, hit.price, bar.t, diagnostics),
+                            trade=self.close(hit.reason, price, bar.t, diagnostics),
                             diagnostics=diagnostics,
                         )
                     )
@@ -317,38 +342,26 @@ class ExecutionEngine:
         slip = min(self.config.slippage_ticks, self.config.max_slippage_ticks) * spec.tick_size
         stop = position.stop_price
         target = position.target_price
-        if position.side == "long":
-            # Un stop de mercado no garantiza el precio de un gap: sale a la
-            # apertura, con deslizamiento adverso, no al nivel ya sobrepasado.
-            if bar.o <= stop + tol:
-                return _Hit(
-                    price=bar.o - slip,
-                    reason="stop",
-                    diagnostics={"gap_stop": True, "bar_open": bar.o},
-                )
-            stop_hit = bar.l <= stop + tol
-            target_hit = target is not None and bar.h >= target - tol
-            if stop_hit and target_hit:
-                return _Hit(price=stop, reason="stop", diagnostics={"ambiguous_bar": True})
-            if stop_hit:
-                return _Hit(price=stop, reason="stop", diagnostics={})
-            if target_hit and target is not None:
-                return _Hit(price=max(target, bar.o), reason="target", diagnostics={})
-        else:
-            if bar.o >= stop - tol:
-                return _Hit(
-                    price=bar.o + slip,
-                    reason="stop",
-                    diagnostics={"gap_stop": True, "bar_open": bar.o},
-                )
-            stop_hit = bar.h >= stop - tol
-            target_hit = target is not None and bar.l <= target + tol
-            if stop_hit and target_hit:
-                return _Hit(price=stop, reason="stop", diagnostics={"ambiguous_bar": True})
-            if stop_hit:
-                return _Hit(price=stop, reason="stop", diagnostics={})
-            if target_hit and target is not None:
-                return _Hit(price=min(target, bar.o), reason="target", diagnostics={})
+        long = position.side == "long"
+        # Un stop es una orden a mercado: si la vela abre mas alla del precio,
+        # el relleno es el de la apertura. Rellenar al stop regalaba en el
+        # backtest todo hueco en contra.
+        stop_fill = min(bar.o, stop) if long else max(bar.o, stop)
+        gap = bar.o < stop if long else bar.o > stop
+        stop_hit = bar.l <= stop + tol if long else bar.h >= stop - tol
+        target_hit = target is not None and (
+            bar.h >= target - tol if long else bar.l <= target + tol
+        )
+        diagnostics: dict[str, Any] = {}
+        if gap:
+            diagnostics["gap_through_stop"] = True
+            diagnostics["gap_stop"] = True
+        if stop_hit and target_hit:
+            diagnostics["ambiguous_bar"] = True
+        if stop_hit:
+            return _Hit(price=stop_fill, reason="stop", diagnostics=diagnostics)
+        if target_hit and target is not None:
+            return _Hit(price=target, reason="target", diagnostics={})
         return None
 
     def close(
@@ -366,17 +379,19 @@ class ExecutionEngine:
         if price is not None:
             exit_price = price
         elif self.last_price is not None:
-            spec = self._instrument(position.symbol)
-            slip = min(self.config.slippage_ticks, self.config.max_slippage_ticks) * spec.tick_size
-            exit_price = (
-                self.last_price + slip if position.side == "long" else self.last_price - slip
-            )
-            close_diagnostics["exit_slippage"] = slip
+            exit_price = self.last_price
         else:
             exit_price = position.entry_price
         stamp = when or datetime.now(timezone.utc)
+        if price is None:
+            # Cierre a mercado (manual, fin de sesion): se paga slippage. Un
+            # precio explicito ya viene ajustado por quien lo decide.
+            exit_price, slip = self._exit_slippage(position, exit_price)
+            close_diagnostics["exit_slippage"] = slip
         pnl_gross = self._pnl(position.symbol, position.side, position.entry_price, exit_price, position.units)
-        fees = self.config.commission_per_unit_side * position.units * 2
+        fees = self._fees(
+            position.symbol, position.units, position.entry_price
+        ) + self._fees(position.symbol, position.units, exit_price)
         risk = self._risk_per_unit(position)
         # El funding se pasa explícitamente cuando una fuente lo mide; por
         # defecto 0, no un cargo inventado. El neto siempre es la suma de sus
@@ -424,6 +439,22 @@ class ExecutionEngine:
                 order.status = "cancelled"
                 expired += 1
         return expired
+
+    def _exit_slippage(self, position: Position, price: float) -> tuple[float, float]:
+        """Salida a mercado: siempre en contra, con el mismo tope que la entrada."""
+        spec = self._instrument(position.symbol)
+        ticks = min(self.config.slippage_ticks, self.config.max_slippage_ticks)
+        slip = ticks * spec.tick_size
+        return (price - slip if position.side == "long" else price + slip), slip
+
+    def _fees(self, symbol: str, units: int, price: float) -> float:
+        """Comision de un lado: porcentaje del nocional o importe por unidad."""
+        pct = self.config.commission_pct_side
+        if pct > 0:
+            spec = self._instrument(symbol)
+            contract = spec.tick_value / spec.tick_size if spec.tick_size else 0.0
+            return units * contract * price * pct
+        return self.config.commission_per_unit_side * units
 
     def cancel_all(self) -> int:
         cancelled = 0

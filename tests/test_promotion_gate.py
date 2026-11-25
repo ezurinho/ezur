@@ -8,8 +8,20 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from server import main as server_main
+from server.backtest import config_fingerprint
+from server.config import Settings
 from server.engine import TradingEngine
 
+GATE_CONFIG = {
+    "auto_start": True,
+    "feed": {"provider": "simulated"},
+    "promotion": {
+        "required": True,
+        "evidence": "",
+        "stress_evidence": "",
+        "cycle": "",
+    },
+}
 EVIDENCE = {
     "strategy": {"id": "null", "version": "0.0.0"},
     "dataset": "data/BTC_1h_binance.csv",
@@ -22,6 +34,7 @@ EVIDENCE = {
         "tick_value": 0.5,
     },
     "cost_per_trade_r": 0.09,
+    "config_hash": config_fingerprint(Settings.model_validate(GATE_CONFIG)),
 }
 STRESS = {"split": {"out_of_sample": {"trades": 169, "profit_factor": 1.03}}}
 CYCLE = {"pbo": {"pbo": 0.11}, "universe": [{"timeframe": "1h"}]}
@@ -106,6 +119,32 @@ def test_la_evidencia_de_otra_estrategia_no_promueve(tmp_path, monkeypatch):
     app = server_main.create_app(
         config_path=config,
         db_path=tmp_path / "ajena.db",
+        experiment_ledger=tmp_path / "ledger.jsonl",
+    )
+    with TestClient(app) as client:
+        status = client.get("/api/status").json()["data"]["status"]
+
+    assert status in {"idle", "stopped"}
+    assert started == []
+
+
+def test_la_evidencia_de_otra_configuracion_no_promueve(tmp_path, monkeypatch):
+    started: list[bool] = []
+    monkeypatch.setattr(TradingEngine, "start_task", lambda self: started.append(True))
+
+    ajena = {**EVIDENCE, "config_hash": "0" * 16}
+    config, _ = _boot(
+        tmp_path,
+        {
+            "required": True,
+            "evidence": _write(tmp_path / "bt-ajena.json", ajena),
+            "stress_evidence": _write(tmp_path / "bt2x.json", STRESS),
+            "cycle": _write(tmp_path / "ciclo.json", CYCLE),
+        },
+    )
+    app = server_main.create_app(
+        config_path=config,
+        db_path=tmp_path / "hash.db",
         experiment_ledger=tmp_path / "ledger.jsonl",
     )
     with TestClient(app) as client:

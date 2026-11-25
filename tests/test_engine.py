@@ -8,7 +8,7 @@ import pytest
 from pydantic import BaseModel
 
 from server.engine import TradingEngine
-from server.models import Bar, Position, Tick, TradeRecord
+from server.models import Bar, Position, RiskDecision, Tick, TradeRecord
 from server.strategy.base import MarketData, StrategyOutput, Warmup
 from server.strategy.null_strategy import NullParams, NullStrategy
 
@@ -23,6 +23,46 @@ def _tick(stamp: datetime, price: float = 100.0, symbol: str = "PRIMARY") -> Tic
             symbol: Bar(t=stamp, o=price, h=price + 1, l=price - 1, c=price + 0.5, v=10)
         },
     )
+
+
+@pytest.fixture
+def decision() -> RiskDecision:
+    return RiskDecision(approved=True, code="approved", units=5, risk_per_unit=1.0)
+
+
+def test_an_open_loss_is_marked_to_market(engine, decision, signal_long):
+    engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, DAY_ONE)
+    engine.start()
+    engine._process(
+        Tick(
+            ts=DAY_ONE,
+            bars={
+                "PRIMARY": Bar(
+                    t=DAY_ONE, o=100.0, h=100.6, l=99.9, c=100.2, v=1
+                )
+            },
+        )
+    )
+    assert engine.execution.position is not None
+    assert engine.state.unrealized < 0
+
+    stamp = DAY_ONE + timedelta(minutes=1)
+    engine._process(
+        Tick(
+            ts=stamp,
+            bars={"PRIMARY": Bar(t=stamp, o=100.2, h=100.3, l=99.7, c=99.8, v=1)},
+        )
+    )
+
+    assert engine.execution.position is not None
+    assert engine.state.unrealized < 0
+    curve = [point["equity"] for point in engine.store.equity_curve()]
+    assert curve[-1] == pytest.approx(engine.state.equity + engine.state.unrealized)
+    assert curve[-1] < curve[0]
+
+    position = engine.snapshot()["data"]["position"]
+    assert position["unrealized"] == pytest.approx(engine.state.unrealized)
+    assert position["r_open"] is not None
 
 
 def test_engine_starts_stopped(engine):

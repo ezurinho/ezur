@@ -299,9 +299,14 @@ def evaluate(
     stress: dict[str, Any] | None = None,
     cycle: dict[str, Any] | None = None,
     strategy: dict[str, Any] | None = None,
+    config_hash: str | None = None,
     execution: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     checks: list[dict[str, Any]] = []
+    if execution is None and config_hash:
+        # La puerta por hash puede usar el modelo que declara la evidencia;
+        # sin hash sigue siendo obligatorio el perfil que va a operar.
+        execution = (evidence or {}).get("execution")
 
     metrics = (evidence or {}).get("metrics") or {}
     split = (evidence or {}).get("split") or {}
@@ -447,6 +452,20 @@ def evaluate(
             )
         )
 
+    expected_hash = str(config_hash or "")
+    if expected_hash:
+        found_hash = str((evidence or {}).get("config_hash") or "")
+        checks.append(
+            _check(
+                "evidencia_de_la_configuracion",
+                found_hash or "?",
+                expected_hash,
+                found_hash == expected_hash,
+                f"la evidencia declara {found_hash or 'sin hash'}, no "
+                f"{expected_hash}: se midio con otra configuracion",
+            )
+        )
+
     failed = [check for check in checks if not check["pass"]]
     reason = failed[0]["reason"] if failed else ""
     if (
@@ -495,10 +514,16 @@ def evaluate_paths(
     stress_path: str | None,
     cycle_path: str | None,
     strategy: dict[str, Any] | None = None,
+    config_hash: str | None = None,
     execution: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return evaluate(
-        load(evidence_path), load(stress_path), load(cycle_path), strategy, execution
+        load(evidence_path),
+        load(stress_path),
+        load(cycle_path),
+        strategy,
+        config_hash,
+        execution,
     )
 
 
@@ -523,6 +548,7 @@ def execution_model(settings: Settings) -> dict[str, float] | None:
 
 def effective_settings_and_verdict(
     settings: Settings,
+    config_hash: str | None = None,
 ) -> tuple[Settings, dict[str, Any] | None]:
     """Configuración que debe usar el motor y el veredicto que la explica.
 
@@ -543,7 +569,8 @@ def effective_settings_and_verdict(
         settings.promotion.stress_evidence,
         settings.promotion.cycle,
         {"id": settings.strategy.id, "version": settings.strategy.version},
-        execution,
+        config_hash=config_hash,
+        execution=execution,
     )
     if verdict["passed"] or settings.promotion.mode != "reduce":
         return settings, verdict
@@ -643,7 +670,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     execution = execution_model(profile)
     verdict = evaluate_paths(
-        args.evidence, args.stress, args.cycle, expected, execution
+        args.evidence, args.stress, args.cycle, expected, execution=execution
     )
     if args.json:
         print(json.dumps(verdict, indent=2, ensure_ascii=False))

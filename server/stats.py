@@ -22,6 +22,7 @@ EMPTY_STATS: dict[str, Any] = {
     "win_rate": 0.0,
     "profit_factor": 0.0,
     "expectancy_r": 0.0,
+    "pnl_gross": 0.0,
     "pnl_net": 0.0,
     "pnl_gross": 0.0,
     "fees": 0.0,
@@ -106,12 +107,36 @@ def _bootstrap_low(
     return means[int(0.10 * resamples)]
 
 
+def _curve_drawdown(values: Iterable[float], initial_equity: float) -> float:
+    """Peor caida pico-valle sobre una curva ya marcada a mercado."""
+    peak = initial_equity
+    worst = 0.0
+    for value in values:
+        peak = max(peak, value)
+        worst = max(worst, peak - value)
+    return worst
+
+
 def compute_stats(
-    trades: Iterable[TradeRecord], initial_equity: float = 0.0
+    trades: Iterable[TradeRecord],
+    initial_equity: float = 0.0,
+    equity: Iterable[float] | None = None,
 ) -> dict[str, Any]:
+    """Estadisticas de las operaciones cerradas.
+
+    `equity` es la curva marcada a mercado (incluye el P&L abierto). Cuando se
+    pasa, el drawdown se mide ahi: sobre cierres, una posicion perdedora
+    abierta no existe hasta que se cierra, y puede ser el peor momento.
+    """
     records = list(trades)
+    curve_drawdown = (
+        _curve_drawdown(equity, initial_equity) if equity is not None else None
+    )
     if not records:
-        return dict(EMPTY_STATS)
+        empty = dict(EMPTY_STATS)
+        if curve_drawdown is not None:
+            empty["max_drawdown"] = curve_drawdown
+        return empty
 
     wins = [trade for trade in records if trade.pnl_net > 0]
     losses = [trade for trade in records if trade.pnl_net < 0]
@@ -123,13 +148,16 @@ def compute_stats(
         (trade.closed_ts - trade.opened_ts).total_seconds() / 60 for trade in records
     ]
 
-    equity = initial_equity
-    peak = equity
-    max_drawdown = 0.0
-    for trade in sorted(records, key=lambda item: item.closed_ts):
-        equity += trade.pnl_net
-        peak = max(peak, equity)
-        max_drawdown = max(max_drawdown, peak - equity)
+    if curve_drawdown is not None:
+        max_drawdown = curve_drawdown
+    else:
+        closed_equity = initial_equity
+        peak = closed_equity
+        max_drawdown = 0.0
+        for trade in sorted(records, key=lambda item: item.closed_ts):
+            closed_equity += trade.pnl_net
+            peak = max(peak, closed_equity)
+            max_drawdown = max(max_drawdown, peak - closed_equity)
 
     pnls = sorted((trade.pnl_net for trade in records), reverse=True)
     gross_positive = sum(value for value in pnls if value > 0)
@@ -146,6 +174,9 @@ def compute_stats(
         if gross_loss
         else float(gross_win > 0),
         "expectancy_r": sum(trade.r_multiple for trade in records) / len(records),
+        # Sin el bruto no se distingue una estrategia sin ventaja de una con
+        # ventaja que se come el coste: las dos acaban en P&L negativo.
+        "pnl_gross": sum(trade.pnl_gross for trade in records),
         "pnl_net": pnl_net,
         "pnl_gross": pnl_net + fees,
         "fees": fees,

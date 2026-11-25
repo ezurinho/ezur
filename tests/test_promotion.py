@@ -112,6 +112,53 @@ def test_la_evidencia_de_la_estrategia_correcta_pasa():
     assert len(verdict["checks"]) == 6
 
 
+def test_la_evidencia_tiene_que_ser_de_la_configuracion_medida():
+    verdict = promotion.evaluate(
+        {
+            **EVIDENCE,
+            "strategy": {"id": "reference", "version": "0.1.0"},
+            "config_hash": "aaaaaaaaaaaaaaaa",
+        },
+        STRESS,
+        CYCLE,
+        {"id": "reference", "version": "0.1.0"},
+        "bbbbbbbbbbbbbbbb",
+    )
+
+    assert verdict["passed"] is False
+    assert verdict["failed"] == ["evidencia_de_la_configuracion"]
+    assert "aaaaaaaaaaaaaaaa" in verdict["reason"]
+
+
+def test_la_configuracion_medida_promueve():
+    verdict = promotion.evaluate(
+        {
+            **EVIDENCE,
+            "strategy": {"id": "reference", "version": "0.1.0"},
+            "config_hash": "aaaaaaaaaaaaaaaa",
+        },
+        STRESS,
+        CYCLE,
+        {"id": "reference", "version": "0.1.0"},
+        "aaaaaaaaaaaaaaaa",
+    )
+
+    assert verdict["passed"] is True
+    assert len(verdict["checks"]) == 7
+
+
+def test_una_evidencia_sin_hash_no_se_puede_atribuir():
+    verdict = promotion.evaluate(
+        {**EVIDENCE, "strategy": {"id": "reference", "version": "0.1.0"}},
+        STRESS,
+        CYCLE,
+        {"id": "reference", "version": "0.1.0"},
+        "aaaaaaaaaaaaaaaa",
+    )
+
+    assert verdict["failed"] == ["evidencia_de_la_configuracion"]
+
+
 def test_el_informe_dice_de_que_corrida_sale_el_veredicto(tmp_path, capsys):
     evidencia = {
         **EVIDENCE,

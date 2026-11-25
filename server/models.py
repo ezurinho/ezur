@@ -106,6 +106,8 @@ class PortfolioState(_Model):
     equity: float = 0.0
     peak_equity: float = 0.0
     open_risk: float = 0.0
+    # P&L de la posicion abierta, neto de las comisiones de los dos lados.
+    unrealized: float = 0.0
     daily_pnl: float = 0.0
     daily_trades: int = 0
     consecutive_losses: int = 0
@@ -140,6 +142,7 @@ class EngineState(_Model):
     day_stats: DayStats = Field(default_factory=DayStats)
     equity: float = 0.0
     open_risk: float = 0.0
+    unrealized: float = 0.0
     emergency: bool = False
     block_reason: str | None = None
     block_count: int = 0

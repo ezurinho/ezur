@@ -237,8 +237,10 @@ class SnapshotBuilder:
             stop_price=position.stop_price,
             target_price=position.target_price,
             opened_ts=position.opened_ts,
-            unrealized=None,
-            r_open=None,
+            unrealized=state.unrealized,
+            r_open=(state.unrealized / state.open_risk)
+            if state.open_risk
+            else None,
         )
 
     def _block_reason(self, state: EngineState) -> str | None:
@@ -373,6 +375,7 @@ class SnapshotBuilder:
             risk=self._risk(state),
             stats=stats or {},
             day_stats=state.day_stats.model_dump(),
+            rejections=dict(rejections or {}),
             settings=public_settings,
             ui=UIModel(
                 panels=list(self.settings.ui.panels),
