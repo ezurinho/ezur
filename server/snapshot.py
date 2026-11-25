@@ -226,8 +226,10 @@ class SnapshotBuilder:
             stop_price=position.stop_price,
             target_price=position.target_price,
             opened_ts=position.opened_ts,
-            unrealized=None,
-            r_open=None,
+            unrealized=state.unrealized,
+            r_open=(state.unrealized / state.open_risk)
+            if state.open_risk
+            else None,
         )
 
     def _risk(self, state: EngineState) -> RiskModel:

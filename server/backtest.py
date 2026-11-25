@@ -111,7 +111,9 @@ def run_backtest(
         store.close()
 
     trades = [TradeRecord.model_validate(_trade_row(row)) for row in rows]
-    metrics = compute_stats(trades, initial_equity=settings.risk.initial_capital)
+    metrics = compute_stats(
+        trades, initial_equity=settings.risk.initial_capital, equity=equity
+    )
     return BacktestResult(
         # El hash del dataset identifica los datos; el run_id, esta ejecución.
         # Antes eran lo mismo y dos estrategias sobre el mismo CSV no se podían
