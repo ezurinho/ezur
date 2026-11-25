@@ -158,7 +158,6 @@ class ExecutionEngine:
 
         impact_bps = self._impact_bps(symbol, notional, units, "long")
         return commission + notional * (extra_bps + impact_bps) * 1e-4
-
     def open_pnl(self, position: Position, price: float) -> float:
         """Lo que dejaria la posicion si se cerrara ahora a `price`.
 
@@ -220,6 +219,7 @@ class ExecutionEngine:
             stop_price=signal.stop_price,
             target_price=signal.target_price,
             signal_key=signal.key,
+            risk_budget=decision.risk_budget,
         )
         self.orders.append(order)
         self._armed_at[order.id] = armed_at or stamp
@@ -289,6 +289,28 @@ class ExecutionEngine:
                 )
                 continue
             fill, reason, fill_diagnostics = plan
+            units = self._risk_capped_units(order, fill)
+            if units < 1:
+                order.status = "rejected"
+                events.append(
+                    ExecutionEvent(
+                        type="cancel",
+                        symbol=order.symbol,
+                        units=order.units,
+                        reason="risk_budget_exceeded",
+                        diagnostics={
+                            "fill_price": fill,
+                            "signal_price": order.price,
+                            "stop_price": order.stop_price,
+                            "risk_budget": order.risk_budget,
+                            "fill_model": self.config.fill_model,
+                            "order_id": order.id,
+                            "signal_key": order.signal_key,
+                        },
+                    )
+                )
+                continue
+            order.units = units
             notional_rejection = self._notional_rejection(order, fill)
             if notional_rejection is not None:
                 order.status = "rejected"

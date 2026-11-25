@@ -4,13 +4,59 @@ from datetime import timedelta
 
 import pytest
 
-from server.models import RiskDecision
+from server.models import PortfolioState, RiskDecision
+from server.risk import RiskManager
 from tests.conftest import NOW, make_bar
 
 
 @pytest.fixture
 def decision() -> RiskDecision:
     return RiskDecision(approved=True, code="approved", units=5, risk_per_unit=1.0)
+
+
+def test_025_budget_is_reapplied_to_the_real_fill_and_fees(
+    settings, engine, signal_long
+):
+    settings.risk.risk_per_trade_pct = 0.25
+    settings.risk.max_units_per_trade = 300
+    settings.risk.max_stop_ticks = 400_000
+    spec = settings.instruments.by_symbol(settings.instruments.primary)
+    spec.tick_size = 0.01
+    spec.tick_value = 1e-5
+    spec.lot_size = 1
+    execution = settings.execution
+    execution.commission_per_unit_side = 0.049
+    execution.fee_maker_bps = 5.0
+    execution.fee_taker_bps = 5.0
+    execution.half_spread_bps = 0.07
+    execution.slippage_ticks = 0
+    execution.max_slippage_ticks = 0
+
+    # Caso real id1: la señal se calculó con el cierre 61.123,41285, pero el
+    # fill fue 61.087,31. El stop y el objetivo son los de la operación.
+    signal = signal_long.model_copy(
+        update={"stop_price": 60697.5714, "target_price": 61549.2543}
+    )
+    portfolio = PortfolioState(equity=24317.566581899995, last_price=61123.41285)
+    decision = RiskManager(settings.risk).evaluate(signal, portfolio, spec)
+    assert decision.approved is True
+    assert decision.risk_budget == pytest.approx(60.7939, rel=1e-4)
+    assert decision.units == 142
+
+    engine.execution.arm(decision, signal, "PRIMARY", portfolio.last_price, NOW)
+    events = engine.execution.on_bar(
+        {"PRIMARY": make_bar(o=61087.31, h=61087.31, l=60697.5714, c=60697.5714)}
+    )
+    trade = next(event.trade for event in events if event.type == "exit")
+    assert trade is not None
+    assert trade.units < decision.units
+    assert trade.pnl_gross == pytest.approx(
+        -abs(trade.entry_price - trade.stop_price)
+        / spec.tick_size
+        * spec.tick_value
+        * trade.units
+    )
+    assert abs(trade.pnl_net) <= decision.risk_budget + 1e-9
 
 
 def test_fill_at_next_open_with_bounded_slippage(engine, decision, signal_long):
