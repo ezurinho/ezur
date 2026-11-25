@@ -33,6 +33,15 @@ def test_config_hash_changes_with_the_effective_settings(tmp_path):
     assert config_fingerprint(base) == config_fingerprint(Settings())
 
 
+def test_config_hash_ignores_what_cannot_move_a_pnl():
+    base = Settings()
+    changed = Settings()
+    changed.ui.theme = "light" if base.ui.theme == "dark" else "dark"
+    changed.auto_start = False
+
+    assert config_fingerprint(base) == config_fingerprint(changed)
+
+
 def test_two_strategies_share_dataset_but_not_run(tmp_path):
     settings = Settings()
     settings.instruments.items = [
