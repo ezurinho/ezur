@@ -39,10 +39,10 @@ Sin `EZUR_PROFILE_DIR` se usan
 `data/config.json` y `data/terminal.db`. El panel queda en `http://127.0.0.1:8765`;
 `EZUR_HOST`, `EZUR_PORT` y `EZUR_OPEN=1` cambian host, puerto y apertura del navegador.
 
-La tarea `ezur-paper` (arranque al iniciar sesión) se recrea desde esta copia con
-`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\tarea_programada.ps1`;
-comprueba que la acción registrada apunta al `start_paper.bat` de este repo y falla
-si no. Se quita añadiendo `-Borrar` al final.
+Las tareas `ezur-paper` (motor) y `ezur-watchdog` (vigilante) se recrean desde esta
+copia con `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\tarea_programada.ps1`;
+comprueba que la acción registrada de cada una apunta al fichero de este repo y falla
+si no. Se quitan las dos añadiendo `-Borrar` al final.
 
 Con `auto_start: true` (por defecto) el motor ya está `running` al abrir. Con `false`
 queda `idle`/`stopped` hasta `POST /api/bot/start`. Con `promotion.required=true` y
@@ -83,9 +83,15 @@ python scripts/watchdog.py
 Comprueba `/health` cada 5 s; a los 3 fallos mata solo el PID que escucha en 8765 y
 relanza `run.py` con el perfil `okx`. Nunca llama a `/api/bot/start`: el paper se
 reanuda solo si el perfil trae `auto_start: true`, que es lo que tiene `okx`.
+La tarea `ezur-watchdog` lo arranca al iniciar sesión, 60 s después del motor; el
+comando manual sigue sirviendo para una sesión suelta.
 Log: `data/watchdog.log`;
 salida del servidor: `data/paper-15m-server.log`. No lo confundas con el watchdog de
 frescura del motor, que solo marca `degraded`/`stale` y cancela pendientes.
+
+El motor toma un lock por cuenta (`profiles/okx/terminal.lock`): un segundo proceso
+sobre la misma base se niega a arrancar con el PID del dueño. El lock lo libera el
+sistema al morir el proceso, así que el watchdog puede relanzar sin limpiar ficheros.
 
 ## Los cuatro controles
 
