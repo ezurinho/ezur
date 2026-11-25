@@ -219,6 +219,7 @@ class RiskConfig(_Model):
     max_trades_per_day: int = 3
     max_concurrent_positions: int = 1
     max_units_per_trade: int = 5
+    # 0 = sin tope; un perfil intradía lo acota para no operar velas enormes.
     max_stop_ticks: int = 200
     min_stop_ticks: int = 0
     # Peaje de ida y vuelta máximo, en fracción del riesgo de la señal (1 R).
