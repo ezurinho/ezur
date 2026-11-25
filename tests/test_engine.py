@@ -318,7 +318,6 @@ def test_emergency_allows_closing_the_open_position(settings, store):
 
 
 def test_emergency_blocks_new_entries(settings, store):
-    from server.models import RiskDecision
     from server.strategy.base import Signal
 
     engine = TradingEngine(settings, store, feed=None, strategy=NullStrategy())
