@@ -27,6 +27,8 @@ profiles/*/
 !profiles/okx/
 !profiles/okx/config.json
 profiles/*/run.log
+profiles/*/terminal.lock
+profiles/*/terminal.lock.owner
 .superpowers/
 *.db
 *.db-wal
