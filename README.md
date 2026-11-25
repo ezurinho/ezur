@@ -198,6 +198,9 @@ docs/              arquitectura, plugins, UI, protocolo, operación, competencia
 - Un `kind` de zona o marcador desconocido se descarta y se registra.
 - Los desgloses por hora y por día usan la zona horaria de la sesión, no UTC.
 - Un replay terminado deja el motor en `stopped`; no finge seguir corriendo.
+- El marco de la estrategia (`strategy.timeframe`) es del motor y no del gráfico:
+  agrupa el feed de 1 m en velas cerradas de 5, 15 o 30 m antes de evaluar, la
+  vela abierta no cuenta y el snapshot publica el marco en uso.
 
 ## La puerta de promoción
 
@@ -245,6 +248,7 @@ del perfil.
 | Pipeline completo con trades reales | `reports/backtest/simulation-180d.json` |
 | Ninguna rejilla de parámetros se salva | `reports/backtest/walkforward-reference.json` (6 combinaciones × 3 ventanas, todas negativas) |
 | Estrategia de referencia rentable | **No.** Veredicto automático: RECHAZADA |
+| Candidato de 15 m (stop 10 ATR) | Fuera de muestra PF 1,308; rechazado por PBO 0,441 (`CYCLE-BOT-15M`) |
 | Veredicto reproducible | `GET /api/validation` evalúa G4–G13 y nombra lo no medible |
 | Costes, determinismo e integridad medidos | G8, G2 y G1/G3/G14 se re-ejecutan, no se estiman |
 | Única puerta abierta en un backtest | H1-H5 (holdout sellado), por diseño |
@@ -357,6 +361,27 @@ da esperanza neta positiva (+0,096 R con las 2.496 velas).
 
 En intraday el problema no es solo el coste: es que no hay borde que pagarlo.
 Subir de marco abarata operar; no crea señal.
+
+### 15 m con stop ancho: el candidato que casi pasa
+
+Cambiar el marco a 15 m y dejar el stop en 10 ATR (objetivo 1 R) sobre
+`data/BTC_15m_2025.csv` (64.224 velas) da el mejor resultado medido hasta hoy:
+233 operaciones, 56,7 % de acierto, PF 1,204 y +0,092 R por operación. Fuera de
+muestra, 105 operaciones, PF 1,308, coste 0,049 R y PF 1,184 con el coste
+duplicado.
+
+La puerta lo rechaza por dos sitios: G5 (PF < 1,25 y esperanza < 0,10 R) y el
+PBO de su ciclo en 15 m (0,441 > 0,2). El histograma lo explica: todo el
+resultado son dos barras, +0,95 R y −1,03 R, o sea una apuesta 1:1 con 56,7 % de
+acierto cuando el empate está en 52,6 %. Con 233 tiradas eso es z ≈ 1,4, no una
+ventaja. `config/okx-15m-paper-regime.json` guarda el candidato medido y
+`profiles/okx/config.json` lo conserva **bloqueado**: el perfil no arranca sin
+promoción.
+
+El otro freno nuevo, `risk.min_stop_ticks`, rechaza señales con el stop pegado a
+la entrada. En 1 m sube el PF de 0,476 a 0,512 y recorta la peor racha de 27 a
+11 pérdidas seguidas, pero el bruto del filtro (474 $) no paga sus comisiones
+(140.209 $): el mínimo no rescata el marco de 1 m. Ver `docs/MEDICIONES.md`.
 
 ### Perfil agresivo
 
