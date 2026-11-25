@@ -81,13 +81,11 @@ def test_a_failing_measured_gate_rejects_the_strategy():
     assert "G8" in report.failed
 
 
-def test_stress_runs_are_deterministic(settings, tmp_path):
+def test_stress_runs_are_deterministic(settings, tmp_path, synthetic_csv):
     from server.stress import run_stress
     from server.strategy.reference import ReferenceStrategy
 
-    from tests.test_backtest_golden import _synthetic_csv
-
-    path = _synthetic_csv(settings, tmp_path / "s.csv")
+    path = synthetic_csv(tmp_path / "s.csv")
     strategy = ReferenceStrategy({})
     first = run_stress(settings, path, strategy)
     second = run_stress(settings, path, strategy)
