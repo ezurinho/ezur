@@ -7,11 +7,9 @@ from pathlib import Path
 
 from server.db import Store
 from server.engine import TradingEngine
-from server.market.feed import CSVFeed
 from server.models import Bar, Position, Tick
 from server.strategy.registry import resolve_strategy
 
-from tests.test_api_backtest import _dataset
 
 
 def _engine(tmp_path: Path, settings) -> tuple[TradingEngine, Store]:
