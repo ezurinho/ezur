@@ -8,10 +8,13 @@ instrument name or any strategy rule.
 from __future__ import annotations
 
 import asyncio
+import csv
 import json
 import time
 import logging
+from collections import deque
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any, Awaitable, Callable
 
 from .config import Settings
@@ -49,6 +52,9 @@ SNAPSHOT_MIN_INTERVAL_S = 0.1
 RESTART_PAUSE_S = 0.5
 
 MAX_BARS = 500
+# El chart puede mirar más atrás que la estrategia: 500 velas de 30m
+# necesitan 15.000 velas de 1m. Este buffer no viaja en el snapshot.
+CHART_MAX_BARS = 16_000
 WATCHDOG_INTERVAL_S = 30
 PENDING_ORDER_TTL_S = 120
 EXECUTION_REJECTIONS = {"below_min_notional", "gap_through_stop", "gap_through_target"}
@@ -104,6 +110,8 @@ class TradingEngine:
         self._bars: dict[str, list[Bar]] = {
             symbol: [] for symbol in settings.instruments.symbols
         }
+        self._chart_bars: list[Bar] = []
+        self._chart_symbol: str | None = None
         self._output: StrategyOutput | None = None
         self._subscribers: list[SnapshotHook] = []
         self._task: asyncio.Task[None] | None = None
@@ -121,6 +129,7 @@ class TradingEngine:
         # en un backtest de años solo quedaría el último día.
         self._rejection_totals: dict[str, int] = {}
         self._restore()
+        self._load_chart_seed()
         if self.state.session is None:
             primary = settings.instruments.primary
             self.state.session = session_for(
@@ -273,6 +282,8 @@ class TradingEngine:
         if next_feed is not None and self.feed is not None:
             self.feed = next_feed
             self._bars = {symbol: [] for symbol in settings.instruments.symbols}
+            self._chart_bars = []
+            self._chart_symbol = None
             self._previous_tick_ts = None
             self.state.bars_available = 0
             self.state.last_bar_ts = None
@@ -324,6 +335,8 @@ class TradingEngine:
                 # A looped demo replay starts the session again from scratch: the
                 # bars are rebuilt, the trades and the equity keep accumulating.
                 self._bars = {symbol: [] for symbol in self.settings.instruments.symbols}
+                self._chart_bars = []
+                self._chart_symbol = None
                 self._previous_tick_ts = None
                 self.state.bars_available = 0
                 self.state.last_bar_ts = None
@@ -441,6 +454,8 @@ class TradingEngine:
         # Cada consumidor empieza con historia vacía: un replay o backfill no
         # duplica velas que ya estaban en el chart.
         self._bars = {symbol: [] for symbol in self.settings.instruments.symbols}
+        self._chart_bars = []
+        self._chart_symbol = None
         self._previous_tick_ts = None
         if self.execution.position is not None:
             self._replay_barrier = self.execution.position.opened_ts
@@ -501,6 +516,12 @@ class TradingEngine:
             # Una estrategia con warmup mayor que el tope general nunca podría
             # salir de calentamiento. El límite crece solo lo que ella declara.
             del self._bars[symbol][:-bar_limit]
+            if symbol == primary:
+                if self._chart_symbol != primary:
+                    self._chart_bars = []
+                    self._chart_symbol = primary
+                self._chart_bars.append(bar)
+                del self._chart_bars[:-CHART_MAX_BARS]
 
         self.state.session = session
         self.state.last_bar_ts = tick.ts
@@ -920,6 +941,53 @@ class TradingEngine:
         )
 
     # --- persistence ------------------------------------------------------
+    def _load_chart_seed(self) -> None:
+        """Da contexto al gráfico aunque el paper esté parado.
+
+        El feed solo llena ``_bars`` cuando corre el motor; con el motor
+        detenido el dashboard se quedaba sin velas. Se usan las últimas velas
+        de 1m ya descargadas, solo como historial de chart: no se arranca el
+        feed ni el paper, y la calidad queda marcada como obsoleta.
+        """
+        if self.settings.feed.provider != "okx":
+            return
+        path = Path("data/recent_1m.csv")
+        if not path.is_file():
+            return
+        primary = self.settings.instruments.primary
+        bars: deque[Bar] = deque(maxlen=CHART_MAX_BARS)
+        try:
+            with path.open(newline="", encoding="utf-8") as handle:
+                for row in csv.DictReader(handle):
+                    if row.get("symbol") != primary:
+                        continue
+                    try:
+                        stamp = datetime.fromisoformat(
+                            str(row["ts"]).replace("Z", "+00:00")
+                        )
+                        bars.append(
+                            Bar(
+                                t=stamp,
+                                o=float(row["o"]),
+                                h=float(row["h"]),
+                                l=float(row["l"]),
+                                c=float(row["c"]),
+                                v=float(row["v"]),
+                            )
+                        )
+                    except (KeyError, TypeError, ValueError):
+                        continue
+        except OSError:
+            return
+        if not bars:
+            return
+        self._chart_bars = list(bars)
+        self._chart_symbol = primary
+        self._bars[primary] = self._chart_bars[-MAX_BARS:]
+        self.state.bars_available = len(self._bars[primary])
+        self.state.last_bar_ts = bars[-1].t
+        self.state.quality = "stale"
+
     def _restore(self) -> None:
         position_raw = self.store.kv_get("position")
         if position_raw:
@@ -1050,7 +1118,11 @@ class TradingEngine:
         """Resample the primary series into the requested timeframe."""
         primary = self.settings.instruments.primary
         minutes = _timeframe_minutes(timeframe)
-        bars = self._bars.get(primary, [])
+        bars = (
+            self._chart_bars
+            if self._chart_symbol == primary and self._chart_bars
+            else self._bars.get(primary, [])
+        )
         if minutes <= 1:
             return [bar.model_dump(mode="json") for bar in bars][-limit:]
         buckets: dict[int, dict[str, Any]] = {}
