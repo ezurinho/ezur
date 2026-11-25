@@ -235,7 +235,6 @@ def test_el_cli_promueve_con_las_tres_piezas(tmp_path, capsys):
 
 
 def test_una_evidencia_con_texto_no_tumba_la_puerta():
-    from server import promotion
 
     verdict = _evaluate(
         {
@@ -260,7 +259,6 @@ def test_una_evidencia_con_texto_no_tumba_la_puerta():
     assert verdict["reason"] == "sin PF fuera de muestra, o por debajo de 1"
 
 def test_la_puerta_avisa_si_la_corrida_termino_antes_del_corte():
-    from server import promotion
 
     verdict = _evaluate(
         {
@@ -279,7 +277,6 @@ def test_la_puerta_avisa_si_la_corrida_termino_antes_del_corte():
 
 
 def test_la_puerta_prioriza_la_muestra_cuando_es_numerica():
-    from server import promotion
 
     verdict = _evaluate(
         {
@@ -301,7 +298,6 @@ def test_la_puerta_prioriza_la_muestra_cuando_es_numerica():
 
 
 def test_la_puerta_no_usa_un_pbo_de_otro_marco():
-    from server import promotion
 
     verdict = _evaluate(
         {
@@ -343,7 +339,6 @@ def test_el_marco_del_dataset_se_lee_con_punto_o_guion_bajo():
 
 
 def test_la_puerta_no_acepta_un_ciclo_sin_marco():
-    from server import promotion
 
     verdict = _evaluate(EVIDENCE, STRESS, {"pbo": {"pbo": 0.01}})
 
@@ -352,7 +347,6 @@ def test_la_puerta_no_acepta_un_ciclo_sin_marco():
 
 
 def test_la_puerta_no_acepta_una_evidencia_sin_dataset():
-    from server import promotion
 
     evidence = {key: value for key, value in EVIDENCE.items() if key != "dataset"}
     verdict = _evaluate(evidence, STRESS, CYCLE)
@@ -362,7 +356,6 @@ def test_la_puerta_no_acepta_una_evidencia_sin_dataset():
 
 
 def test_un_pf_con_coste_duplicado_bajo_lo_dice():
-    from server import promotion
 
     verdict = _evaluate(
         EVIDENCE, {"split": {"out_of_sample": {"profit_factor": 0.9}}}, CYCLE
