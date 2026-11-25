@@ -212,6 +212,7 @@ export interface SnapshotData {
   risk: Risk;
   stats: Record<string, unknown>;
   day_stats: Record<string, unknown>;
+  rejections: Record<string, number>;
   settings: Record<string, unknown>;
   ui: UiHints;
 }
