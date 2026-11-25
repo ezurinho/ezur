@@ -16,6 +16,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from .resample import timeframe_minutes
+
 DEFAULT_CONFIG_PATH = Path("data/config.json")
 
 
@@ -114,7 +116,17 @@ class StrategyConfig(_Model):
     id: str = "null"
     enabled: bool = True
     version: str = "0.0.0"
+    # Lo que ve la estrategia. El motor sigue ejecutando sobre cada vela del
+    # feed; esto solo agrega las que lee el plugin. Cambiarlo sin volver a
+    # medir no cambia de sistema: los parametros estan en velas de este marco.
+    timeframe: str = "1m"
     params: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("timeframe")
+    @classmethod
+    def _known_timeframe(cls, value: str) -> str:
+        timeframe_minutes(value)
+        return value
 
 
 class RiskConfig(_Model):
