@@ -19,7 +19,9 @@ STRATEGY_LEAKS = re.compile(
 )
 
 SERVER_DIRS = [ROOT / "server"]
-EXCLUDED_FROM_SERVER = {"market"}  # adapters may name contract families
+# `strategy` es donde viven los conceptos de estrategia; tiene su propio guard
+# de imports y no es infraestructura.
+EXCLUDED_FROM_SERVER = {"market", "strategy"}  # adapters may name contract families
 FRONTEND = ROOT / "frontend" / "src"
 
 
