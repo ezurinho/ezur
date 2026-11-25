@@ -126,6 +126,7 @@ def test_snapshot_has_no_strategy_specific_keys(settings):
         "id",
         "name",
         "version",
+        "timeframe",  # marco del motor, no del plugin
         "state",
         "state_label",
         "phases",
