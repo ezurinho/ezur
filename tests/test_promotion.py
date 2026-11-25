@@ -18,7 +18,11 @@ EVIDENCE = {
     "cost_per_trade_r": 0.09,
 }
 STRESS = {"split": {"out_of_sample": {"trades": 169, "profit_factor": 1.03}}}
-CYCLE = {"pbo": {"pbo": 0.11}, "universe": [{"timeframe": "1h"}]}
+CYCLE = {
+    "pbo": {"pbo": 0.11},
+    "dsr": {"dsr": 0.97},
+    "universe": [{"timeframe": "1h"}],
+}
 
 EXECUTION = {
     "commission_per_unit_side": 0.62,
@@ -47,7 +51,7 @@ def test_una_configuracion_que_cumple_todo_se_promueve():
 
     assert verdict["passed"] is True
     assert verdict["reason"] == ""
-    assert len(verdict["checks"]) == 5
+    assert len(verdict["checks"]) == 6
 
 
 def test_un_pf_fuera_de_muestra_bajo_la_tumba():
@@ -109,7 +113,7 @@ def test_la_evidencia_de_la_estrategia_correcta_pasa():
     )
 
     assert verdict["passed"] is True
-    assert len(verdict["checks"]) == 6
+    assert len(verdict["checks"]) == 7
 
 
 def test_la_evidencia_tiene_que_ser_de_la_configuracion_medida():
@@ -144,7 +148,7 @@ def test_la_configuracion_medida_promueve():
     )
 
     assert verdict["passed"] is True
-    assert len(verdict["checks"]) == 7
+    assert len(verdict["checks"]) == 8
 
 
 def test_una_evidencia_sin_hash_no_se_puede_atribuir():
@@ -251,6 +255,7 @@ def test_una_evidencia_con_texto_no_tumba_la_puerta():
         "coste_por_operacion",
         "pf_con_coste_duplicado",
         "pbo_del_ciclo",
+        "dsr_del_ciclo",
     ]
     assert verdict["reason"] == "sin PF fuera de muestra, o por debajo de 1"
 
@@ -365,6 +370,41 @@ def test_un_pf_con_coste_duplicado_bajo_lo_dice():
 
     assert verdict["failed"] == ["pf_con_coste_duplicado"]
     assert verdict["reason"] == "PF con coste duplicado 0.9 ≤ 1"
+
+
+def test_un_dsr_bajo_no_promueve():
+    """El ciclo ya medía el DSR; la puerta lo ignoraba."""
+    verdict = _evaluate(EVIDENCE, STRESS, {**CYCLE, "dsr": {"dsr": 0.0933}})
+
+    assert verdict["passed"] is False
+    assert verdict["failed"] == ["dsr_del_ciclo"]
+    assert verdict["reason"].startswith("DSR 0.093 < 0.95")
+
+
+def test_un_ciclo_sin_dsr_no_se_puede_promover():
+    verdict = _evaluate(
+        EVIDENCE,
+        STRESS,
+        {"pbo": {"pbo": 0.01}, "universe": [{"timeframe": "1h"}]},
+    )
+
+    assert verdict["failed"] == ["dsr_del_ciclo"]
+    assert "no declara DSR" in verdict["reason"]
+
+
+def test_los_umbrales_de_seleccion_salen_del_contrato(tmp_path, monkeypatch):
+    from server import gates
+
+    documento = json.loads(gates.gates_path().read_text(encoding="utf-8"))
+    documento["research"]["max_pbo"] = 0.05
+    path = tmp_path / "gates.json"
+    path.write_text(json.dumps(documento), encoding="utf-8")
+    monkeypatch.setenv(gates.GATES_ENV, str(path))
+
+    verdict = _evaluate(EVIDENCE, STRESS, CYCLE)
+
+    assert verdict["failed"] == ["pbo_del_ciclo"]
+    assert "PBO 0.110 > 0.05" in verdict["reason"]
 
 
 def test_un_pbo_no_comparable_se_muestra_como_guion():
