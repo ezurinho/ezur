@@ -103,6 +103,42 @@ def portfolio() -> PortfolioState:
 
 
 @pytest.fixture
+def synthetic_csv(settings: Settings):
+    """Fábrica de una sesión sintética con la que el backtest sí opera."""
+
+    def build(path: Path, day: str = "2026-01-15", bars: int = 390) -> Path:
+        from datetime import date
+
+        from server.market import synthetic
+        from server.simulation import session_start_utc
+
+        series = synthetic.generate_session(
+            day,
+            settings.instruments.primary,
+            start=session_start_utc(settings, date.fromisoformat(day)),
+            bars=bars,
+        )
+        with path.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.writer(handle)
+            writer.writerow(["ts", "symbol", "o", "h", "l", "c", "v"])
+            for bar in series:
+                writer.writerow(
+                    [
+                        bar.t.isoformat(),
+                        settings.instruments.primary,
+                        bar.o,
+                        bar.h,
+                        bar.l,
+                        bar.c,
+                        bar.v,
+                    ]
+                )
+        return path
+
+    return build
+
+
+@pytest.fixture
 def dataset_path(tmp_path: Path, settings: Settings) -> Path:
     """Two aligned series, deterministic, valid for the validator."""
     path = tmp_path / "bars.csv"
