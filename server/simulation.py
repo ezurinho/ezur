@@ -10,9 +10,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import os
-from datetime import date, datetime, timedelta, timezone
-from itertools import islice
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from .config import Settings
@@ -247,11 +245,11 @@ def main() -> None:
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(result, indent=2, default=str), encoding="utf-8")
 
-    experiment_id = None
     if not args.no_ledger:
         from .experiments import record
 
-        experiment_id = record(
+        # El efecto buscado es la fila del ledger; este script no usa el id.
+        record(
             args.ledger,
             kind="simulation",
             strategy_id=settings.strategy.id,
@@ -261,7 +259,7 @@ def main() -> None:
             metrics={k: v for k, v in result.items() if k != "trades"},
             verdict=result["validation"]["verdict"],
             notes=f"sintético {args.days}d x {args.bars} velas",
-        )["experiment_id"]
+        )
 
     closed = result["closed"]
     print(
