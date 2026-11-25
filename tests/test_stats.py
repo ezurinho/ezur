@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
+import pytest
+
 from server.models import TradeRecord
 from server.stats import aggregate, by_dimension, compute_stats, equity_curve
 
@@ -35,6 +37,7 @@ def test_empty_stats_are_zeroed():
     assert stats["trades"] == 0
     assert stats["profit_factor"] == 0.0
     assert stats["max_drawdown"] == 0.0
+    assert stats["pnl_gross"] == 0.0
 
 
 def test_profit_factor_and_expectancy():
@@ -46,6 +49,9 @@ def test_profit_factor_and_expectancy():
     assert stats["win_rate"] == 0.5
     assert stats["profit_factor"] == 3.0
     assert stats["pnl_net"] == 40.0
+    # El bruto dice si la ventaja existe antes de pagar el peaje.
+    assert stats["pnl_gross"] == pytest.approx(44.96)
+    assert stats["pnl_gross"] - stats["fees"] == pytest.approx(stats["pnl_net"])
     assert stats["expectancy_r"] == (2.0 - 1.0 - 1.0 + 4.0) / 4
     assert stats["best_trade"] == 40.0
     assert stats["worst_trade"] == -10.0
