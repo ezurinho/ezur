@@ -72,11 +72,11 @@
   },
   "promotion": {
     "required": true,
-    "mode": "reduce",
+    "mode": "block",
     "size_factor": 0.25,
-    "evidence": "data/research/promotion/reference-1m-1x.json",
-    "stress_evidence": "data/research/promotion/reference-1m-2x.json",
-    "cycle": "data/research/cycles/CYCLE-BOT-1D.json"
+    "evidence": "data/research/promotion/reference-15m-paper-regime-rr10-stop10.json",
+    "stress_evidence": "data/research/promotion/reference-15m-paper-regime-rr10-stop10-2x.json",
+    "cycle": "data/research/cycles/CYCLE-BOT-15M.json"
   },
   "risk": {
     "close_at_session_end": false,
@@ -92,11 +92,12 @@
     "soft_brakes": false,
     "soft_brake_floor": 0.25,
     "soft_brake_halt_multiple": 2.0,
-    "max_stop_ticks": 40000,
+    "max_stop_ticks": 400000,
     "max_trades_per_day": 8,
     "max_units_per_trade": 300,
+    "min_stop_ticks": 0,
     "no_trade_after_consecutive_losses": 3,
-    "risk_per_trade_pct": 1.0,
+    "risk_per_trade_pct": 0.25,
     "session_close_time": "23:59",
     "trade_window_end": "23:59",
     "trade_window_start": "00:00"
@@ -107,10 +108,11 @@
     "params": {
       "atr_period": 14,
       "fast": 7,
-      "rr": 1.2,
+      "rr": 1.0,
       "slow": 21,
-      "stop_atr": 6.0
+      "stop_atr": 10.0
     },
+    "timeframe": "15m",
     "version": "0.1.0"
   },
   "ui": {
