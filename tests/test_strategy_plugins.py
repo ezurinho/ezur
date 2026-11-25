@@ -9,7 +9,9 @@ from server.models import Bar, SessionInfo
 from server.strategy.base import MarketData
 from server.strategy.donchian import DonchianParams, DonchianStrategy
 from server.strategy.fade import FadeParams, FadeStrategy
+from server.strategy.orb import ORBStrategy
 from server.strategy.reference import ReferenceStrategy
+from server.strategy.zscore import ZScoreStrategy
 from server.strategy.trend import TrendParams, TrendStrategy
 
 NOW = datetime(2026, 1, 15, 15, 0, tzinfo=timezone.utc)
@@ -278,3 +280,85 @@ def test_trend_publishes_the_tide_as_a_metric():
     output = strategy.evaluate(_market(_walk(80)))
     assert "trend" in output.metrics
     assert "distance" in output.metrics
+
+
+# --- ORB ------------------------------------------------------------------
+
+
+def test_orb_needs_warmup_before_measuring_the_range():
+    strategy = ORBStrategy({"range_bars": 5, "atr_period": 5})
+    output = strategy.evaluate(_market(_flat_bars(3)))
+    assert output.state == "warmup"
+    assert output.signal is None
+
+
+def test_orb_stays_scanning_inside_the_opening_range():
+    strategy = ORBStrategy({"range_bars": 5, "atr_period": 5})
+    output = strategy.evaluate(_market(_flat_bars(8)))
+    assert output.state == "scanning"
+    assert output.signal is None
+    assert output.zones[0].price_low == pytest.approx(99.5)
+    assert output.zones[0].price_high == pytest.approx(100.5)
+
+
+def test_orb_emits_a_long_signal_on_an_upside_breakout():
+    strategy = ORBStrategy({"range_bars": 5, "atr_period": 5, "stop_atr": 1.0, "rr": 2.0})
+    bars = _flat_bars(7) + _bars([(100.0, 106.0, 99.9, 105.5)])
+    output = strategy.evaluate(_market(bars))
+    assert output.signal is not None
+    assert output.signal.side == "long"
+    assert output.signal.stop_price < 105.5
+    assert output.signal.target_price > 105.5
+
+
+def test_orb_emits_a_short_signal_on_a_downside_breakout():
+    strategy = ORBStrategy({"range_bars": 5, "atr_period": 5})
+    bars = _flat_bars(7) + _bars([(100.0, 100.1, 95.0, 98.0)])
+    output = strategy.evaluate(_market(bars))
+    assert output.signal is not None
+    assert output.signal.side == "short"
+
+
+def test_orb_rejects_a_session_outside_hh_mm():
+    with pytest.raises(ValidationError):
+        ORBStrategy({"sessions": ["25:00"]})
+
+
+# --- Z-Score --------------------------------------------------------------
+
+
+def test_zscore_needs_warmup_before_computing_the_bands():
+    strategy = ZScoreStrategy({"N": 5, "atr_period": 5})
+    output = strategy.evaluate(_market(_oscillating_bars(3)))
+    assert output.state == "warmup"
+    assert output.signal is None
+
+
+def test_zscore_does_not_trade_a_flat_window():
+    strategy = ZScoreStrategy({"N": 5, "atr_period": 5})
+    output = strategy.evaluate(_market(_flat_bars(8)))
+    assert output.state == "warmup"
+    assert output.signal is None
+
+
+def test_zscore_fades_an_upward_deviation():
+    strategy = ZScoreStrategy({"N": 5, "atr_period": 5, "z": 2.0})
+    output = strategy.evaluate(_market(_oscillating_bars(10) + _bars([(101.0, 110.4, 100.6, 110.0)])))
+    assert output.signal is not None
+    assert output.signal.side == "short"
+    assert output.signal.stop_price > 110.0
+
+
+def test_zscore_buys_a_downward_deviation():
+    strategy = ZScoreStrategy({"N": 5, "atr_period": 5, "z": 2.0})
+    output = strategy.evaluate(_market(_oscillating_bars(10) + _bars([(99.0, 99.4, 90.0, 90.0)])))
+    assert output.signal is not None
+    assert output.signal.side == "long"
+    assert output.signal.target_price > 90.0
+
+
+def test_zscore_stays_scanning_inside_the_band():
+    strategy = ZScoreStrategy({"N": 5, "atr_period": 5, "z": 2.0})
+    output = strategy.evaluate(_market(_oscillating_bars(10) + _bars([(100.2, 100.6, 99.8, 100.2)])))
+    assert output.state == "scanning"
+    assert output.signal is None
