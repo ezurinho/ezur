@@ -1,7 +1,7 @@
 ---
 name: trading-validation-pipeline
-description: "Recorre la escalera de validación de ezur: dataset, backtest con puertas, walk-forward, holdout sellado, coste duplicado, promoción y dry-run. Úsala para decidir si una estrategia sirve, preparar evidencia de promoción, interpretar un veredicto o revisar un protocolo de backtest."
-version: 1.0.0
+description: "Recorre la escalera de validación de ezur: dataset, backtest con puertas, walk-forward, holdout sellado, coste duplicado, promoción y dry-run. Incluye la puerta por hash de configuración y el puente al motor IA de estrategias. Úsala para decidir si una estrategia sirve, preparar evidencia de promoción, interpretar un veredicto o revisar un protocolo de backtest."
+version: 1.1.0
 ---
 
 # Validación y promoción
@@ -13,6 +13,8 @@ cuando haya que interpretar `RECHAZADA`/`INCONCLUSO`/`APROBADA`; cuando se prepa
 JSON de evidencia para la puerta de promoción.
 
 Para escribir el plugin, usa `trading-strategy-plugin`. Para operar, `trading-bot-ops`.
+Para el motor de investigación con IA (spec, runner determinista, PBO/DSR/WFA), usa
+`trading-ai-strategy-engine`; sus números y puertas no son los del bot.
 
 ## La escalera
 
@@ -110,9 +112,12 @@ python -m server.promotion --config profiles/okx/config.json `
 | Coste medio por operación | < 0,25 R, recalculado con la comisión y el `tick_value` del perfil |
 | PF con coste duplicado | > 1,0 |
 | PBO del ciclo | <= 0,2 |
+| Hash de configuración | `config_hash` de la evidencia == `config_fingerprint(settings)` (16 hex) |
 
 `--config` es obligatorio: el coste se mide con el perfil que va a operar. Una
-evidencia que no declara su modelo de ejecución no pasa. El comando sale con 1 si no
+evidencia que no declara su modelo de ejecución no pasa. Además, `config_hash` debe
+coincidir con el fingerprint efectivo del perfil; una evidencia medida con otra
+configuración no promociona aunque su PF sea bueno. El comando sale con 1 si no
 está promovida; úsalo en CI o en un script, no lo ignores.
 
 En el perfil:
