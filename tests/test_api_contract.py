@@ -48,6 +48,7 @@ def test_status_returns_valid_snapshot(client):
     assert payload["type"] == "snapshot"
     assert payload["v"] == 1
     SnapshotData.model_validate(payload["data"])
+    assert isinstance(payload["data"]["rejections"], dict)
 
 
 def test_config_put_rejects_invalid(client):
