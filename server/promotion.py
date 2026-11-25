@@ -223,8 +223,8 @@ def evaluate(
                 found_hash or "?",
                 expected_hash,
                 found_hash == expected_hash,
-                "la evidencia no se midio con esta configuracion: "
-                "sus numeros describen otro perfil",
+                f"la evidencia declara {found_hash or 'sin hash'}, no "
+                f"{expected_hash}: se midio con otra configuracion",
             )
         )
 
