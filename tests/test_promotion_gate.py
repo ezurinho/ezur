@@ -37,7 +37,11 @@ EVIDENCE = {
     "config_hash": config_fingerprint(Settings.model_validate(GATE_CONFIG)),
 }
 STRESS = {"split": {"out_of_sample": {"trades": 169, "profit_factor": 1.03}}}
-CYCLE = {"pbo": {"pbo": 0.11}, "universe": [{"timeframe": "1h"}]}
+CYCLE = {
+    "pbo": {"pbo": 0.11},
+    "dsr": {"dsr": 0.97},
+    "universe": [{"timeframe": "1h"}],
+}
 
 
 def _write(path: Path, payload: dict) -> str:
