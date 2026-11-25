@@ -207,6 +207,9 @@ class RiskModel(_Model):
     blocked: bool = False
     block_reason: str | None = None
     block_count: int = 0
+    # Frase con las cifras que explican el bloqueo (hoy, ventaja contra coste).
+    block_detail: str | None = None
+    edge: dict[str, Any] | None = None
     limits: dict[str, float] = Field(default_factory=dict)
 
 
