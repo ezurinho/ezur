@@ -34,6 +34,7 @@ from .models import (
 )
 from .risk import RiskManager
 from .resample import BarAggregator, timeframe_minutes
+from .edge import EdgeGuard, measure_path
 from .snapshot import SnapshotBuilder
 from .stats import aggregate
 from .strategy.base import BaseStrategy, MarketData, Phase, StrategyOutput
@@ -111,6 +112,8 @@ class TradingEngine:
             provider=settings.feed.provider,
             equity=settings.risk.initial_capital,
         )
+        self.edge_guard: EdgeGuard | None = None
+        self._refresh_edge_guard()
         # Peak equity is what the trailing drawdown guard measures against.
         self.peak_equity = settings.risk.initial_capital
         self._bars: dict[str, list[Bar]] = {
@@ -157,6 +160,25 @@ class TradingEngine:
                 "equity no cuadra con el libro: %s",
                 ", ".join(self.equity_audit["issues"]),
             )
+
+    def _refresh_edge_guard(self) -> None:
+        """Mide la ventaja contra el coste una vez por arranque.
+
+        Solo paper/live: un backtest es la medición y no puede vetarse con su
+        propio resultado. Sin evidencia no hay guarda, no se inventa una.
+        """
+        guard = (
+            measure_path(self.settings.promotion.evidence, self.settings)
+            if self.mode in {"paper", "live"}
+            else None
+        )
+        self.edge_guard = guard
+        self.builder.edge_guard = guard
+        if self.state.block_reason == "edge_below_cost" and (
+            guard is None or guard.passes is not False
+        ):
+            self.state.block_reason = None
+            self.state.block_count = 0
 
     # --- lifecycle --------------------------------------------------------
     def _equity_snapshot(self) -> dict[str, Any]:
@@ -282,6 +304,7 @@ class TradingEngine:
             item.symbol: item for item in settings.instruments.items
         }
         self.builder.settings = settings
+        self._refresh_edge_guard()
         self.invalidate_stats()
         if next_strategy is not None:
             self.strategy = next_strategy
@@ -783,6 +806,13 @@ class TradingEngine:
             # entrada nueva. El feed puede seguir gestionando la posición.
             self.state.block_reason = "stale_data"
             self._note_rejection("stale_data", "el feed está obsoleto", tick.ts)
+            return
+        guard = self.edge_guard
+        if guard is not None and guard.passes is False:
+            # Sin ventaja medida por encima del coste no se abre nada: acertar
+            # más de lo que se pierde no basta si el peaje se come la ventaja.
+            self.state.block_reason = "edge_below_cost"
+            self._note_rejection("edge_below_cost", guard.detail(), tick.ts)
             return
         spec = self.settings.instruments.by_symbol(primary)
         template = self.settings.instruments.template_for(primary)
