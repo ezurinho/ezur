@@ -141,9 +141,7 @@ def test_ambiguous_trades_are_counted():
 def _timed_trade(closed_ts, pnl: float = 10.0):
     from datetime import timedelta
 
-    import pytest
-
-from server.models import TradeRecord
+    from server.models import TradeRecord
 
     return TradeRecord(
         symbol="PRIMARY",
