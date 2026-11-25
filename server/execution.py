@@ -196,14 +196,20 @@ class ExecutionEngine:
                     diagnostics = dict(hit.diagnostics)
                     if bar.t == self.position.opened_ts:
                         diagnostics["same_bar_exit"] = True
+                    price = hit.price
+                    if hit.reason == "stop":
+                        # Un stop es una orden a mercado; el objetivo, una
+                        # limite. Solo el primero paga slippage.
+                        price, slip = self._exit_slippage(self.position, price)
+                        diagnostics["exit_slippage"] = slip
                     events.append(
                         ExecutionEvent(
                             type="exit",
                             symbol=self.position.symbol,
-                            price=hit.price,
+                            price=price,
                             units=self.position.units,
                             reason=hit.reason,
-                            trade=self.close(hit.reason, hit.price, bar.t, diagnostics),
+                            trade=self.close(hit.reason, price, bar.t, diagnostics),
                             diagnostics=diagnostics,
                         )
                     )
@@ -275,6 +281,11 @@ class ExecutionEngine:
         position = self.position
         exit_price = price if price is not None else (self.last_price or position.entry_price)
         stamp = when or datetime.now(timezone.utc)
+        if price is None:
+            # Cierre a mercado (manual, fin de sesion): se paga slippage. Un
+            # precio explicito ya viene ajustado por quien lo decide.
+            exit_price, slip = self._exit_slippage(position, exit_price)
+            diagnostics = {**(diagnostics or {}), "exit_slippage": slip}
         pnl_gross = self._pnl(position.symbol, position.side, position.entry_price, exit_price, position.units)
         fees = self._fees(
             position.symbol, position.units, position.entry_price
@@ -306,6 +317,13 @@ class ExecutionEngine:
     def _risk_per_unit(self, position: Position) -> float:
         spec = self._instrument(position.symbol)
         return abs(position.entry_price - position.stop_price) / spec.tick_size * spec.tick_value
+
+    def _exit_slippage(self, position: Position, price: float) -> tuple[float, float]:
+        """Salida a mercado: siempre en contra, con el mismo tope que la entrada."""
+        spec = self._instrument(position.symbol)
+        ticks = min(self.config.slippage_ticks, self.config.max_slippage_ticks)
+        slip = ticks * spec.tick_size
+        return (price - slip if position.side == "long" else price + slip), slip
 
     def _fees(self, symbol: str, units: int, price: float) -> float:
         """Comision de un lado: porcentaje del nocional o importe por unidad."""
