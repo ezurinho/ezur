@@ -58,7 +58,12 @@ MAX_BARS = 500
 CHART_MAX_BARS = 16_000
 WATCHDOG_INTERVAL_S = 30
 PENDING_ORDER_TTL_S = 120
-EXECUTION_REJECTIONS = {"below_min_notional", "gap_through_stop", "gap_through_target"}
+EXECUTION_REJECTIONS = {
+    "below_min_notional",
+    "gap_through_stop",
+    "gap_through_target",
+    "risk_budget_exceeded",
+}
 
 SnapshotHook = Callable[[dict[str, Any]], Awaitable[None] | None]
 
@@ -796,12 +801,21 @@ class TradingEngine:
             has_pending_order=self.execution.has_pending(),
             last_price=last_price,
         )
+        # Peaje real de ida y vuelta por unidad. Riesgo lo compara con lo que se
+        # pierde en el stop: si la comisión se come una parte grande del riesgo,
+        # la señal no tiene edge aunque acierte.
+        fee_per_unit = (
+            self.execution.round_trip_fee_per_unit(primary, last_price)
+            if last_price
+            else 0.0
+        )
         decision = self.risk.evaluate(
             output.signal,
             portfolio,
             spec,
             clock=tick.ts,
             timezone_name=template.timezone,
+            fee_per_unit=fee_per_unit,
         )
         if not decision.approved:
             self.state.block_reason = decision.code
@@ -1021,7 +1035,13 @@ class TradingEngine:
         El feed solo llena ``_bars`` cuando corre el motor; con el motor
         detenido el dashboard se quedaba sin velas. Se usan las últimas velas
         de 1m ya descargadas, solo como historial de chart: no se arranca el
-        feed ni el paper, y la calidad queda marcada como obsoleta.
+        feed ni el paper.
+
+        El seed toca **solo** el gráfico. ``_bars`` es la entrada de la
+        estrategia y ``last_bar_ts`` es la salud del feed; sembrarlos con un CSV
+        viejo hacía que la terminal anunciara un mercado que llevaba semanas sin
+        llegar (y que la estrategia pudiera evaluar velas de octubre mezcladas
+        con las de hoy). Un historial de chart no es un tick.
         """
         if self.settings.feed.provider != "okx":
             return
@@ -1057,10 +1077,6 @@ class TradingEngine:
             return
         self._chart_bars = list(bars)
         self._chart_symbol = primary
-        self._bars[primary] = self._chart_bars[-MAX_BARS:]
-        self.state.bars_available = len(self._bars[primary])
-        self.state.last_bar_ts = bars[-1].t
-        self.state.quality = "stale"
 
     def _restore(self) -> None:
         position_raw = self.store.kv_get("position")
@@ -1245,11 +1261,16 @@ class TradingEngine:
 
     def snapshot(self, stats: dict[str, Any] | None = None) -> dict[str, Any]:
         primary = self.settings.instruments.primary
+        # Con el motor parado no hay velas de estrategia: el gráfico sigue
+        # mostrando el historial ya descargado, que es lo único que existe.
+        candles = self._bars.get(primary) or (
+            self._chart_bars[-MAX_BARS:] if self._chart_symbol == primary else []
+        )
         return self.builder.build(
             self.state,
             self._output,
             quotes=self.quotes(),
-            candles=self._bars.get(primary, []),
+            candles=candles,
             series=self.series(),
             stats=stats if stats is not None else self.stats(),
             rejections=self.rejection_totals(),
