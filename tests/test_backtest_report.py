@@ -5,6 +5,8 @@ import json
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
+import pytest
+
 from server.backtest import main, partition_by_split, run_backtest
 from server.strategy.null_strategy import NullStrategy
 
@@ -83,3 +85,34 @@ def test_el_cli_escribe_json_con_metricas_y_coste(settings, dataset_path, tmp_pa
     assert set(payload["split"]) == {"at", "in_sample", "out_of_sample"}
     assert "cost_per_trade_r" in payload
     assert isinstance(payload["diagnostics"]["rejections"], dict)
+
+
+def test_el_coste_del_json_se_mide_en_el_fuera_de_muestra(
+    settings, tmp_path, synthetic_csv, monkeypatch
+):
+    target = tmp_path / "split.json"
+    path = synthetic_csv(tmp_path / "split.csv")
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "backtest",
+            "--dataset",
+            str(path),
+            "--strategy",
+            "reference",
+            "--split",
+            "2026-01-15T15:30:00+00:00",
+            "--out",
+            str(target),
+        ],
+    )
+
+    main()
+
+    payload = json.loads(target.read_text(encoding="utf-8"))
+    assert payload["cost_scope"] == "out_of_sample"
+    assert payload["cost_trades"] == payload["split"]["out_of_sample"]["trades"]
+    assert 0 < payload["cost_trades"] < payload["metrics"]["trades"]
+    assert payload["cost_per_trade_r"] == pytest.approx(
+        payload["cost_per_trade_r_weighted"]
+    )
