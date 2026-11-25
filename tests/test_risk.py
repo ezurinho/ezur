@@ -162,6 +162,12 @@ def test_stop_too_wide_is_rejected(settings, signal_long):
     assert decision.code == "stop_too_wide"
 
 
+def test_zero_max_stop_ticks_means_no_cap(settings, signal_long):
+    settings.risk.max_stop_ticks = 0
+    decision = _evaluate(settings, signal_long, _portfolio(settings))
+    assert decision.approved is True
+
+
 def test_stop_too_tight_is_rejected(settings, signal_long):
     settings.risk.min_stop_ticks = 100
     decision = _evaluate(settings, signal_long, _portfolio(settings))
