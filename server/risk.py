@@ -126,7 +126,9 @@ class RiskManager:
             )
 
         stop_ticks = stop_distance / instrument.tick_size
-        if stop_ticks > cfg.max_stop_ticks:
+        # 0 es sin tope, igual que en min_stop_ticks: si no, subir el límite
+        # con --max-stop-ticks 0 rechazaba todas las señales.
+        if cfg.max_stop_ticks and stop_ticks > cfg.max_stop_ticks:
             return reject("stop_too_wide", f"stop de {stop_ticks:.0f} ticks supera el máximo")
         if cfg.min_stop_ticks and stop_ticks < cfg.min_stop_ticks:
             return reject(
