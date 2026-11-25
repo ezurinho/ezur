@@ -1,9 +1,9 @@
 """Watchdog del dashboard.
 
 Comprueba ``/health`` cada pocos segundos. Si el proceso deja de responder,
-mata solo el PID que ocupa el puerto 8765 y relanza ``run.py``. El perfil se
-carga con ``auto_start=false``: el watchdog nunca llama a ``/api/bot/start``,
-así que un reinicio no reanuda el paper.
+mata solo el PID que ocupa el puerto 8765 y relanza ``run.py`` con el perfil
+``okx``. El watchdog nunca llama a ``/api/bot/start``: el paper se reanuda o no
+según el ``auto_start`` del perfil, que en ``okx`` está en ``true``.
 """
 
 from __future__ import annotations
