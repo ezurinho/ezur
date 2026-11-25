@@ -10,7 +10,7 @@
 ## GitHub
 
 - El repositorio remoto es la fuente de verdad: trabajar siempre contra `origin/master`.
-- Después de cada cambio verificado, commit y push. No dejar commits solo en local.
+- Después de cada cambio verificado, commit y push **en la misma sesión**, sin esperar a que el usuario lo pida. No dejar commits solo en local ni cambios sin subir al terminar.
 
 ## Operación
 
