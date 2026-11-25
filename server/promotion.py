@@ -106,6 +106,45 @@ def _oos(evidence: dict[str, Any]) -> dict[str, Any]:
     return (evidence.get("split") or {}).get("out_of_sample") or {}
 
 
+def _stress_from_cycle(cycle: dict[str, Any] | None) -> dict[str, Any] | None:
+    """El estrés 2x que ya midió el ciclo, con la forma del fichero aparte.
+
+    El ciclo guarda una entrada por configuración; la puerta usa la que el
+    propio ciclo selecciona (`stress.selected`). Así la promoción no necesita
+    una segunda corrida con costes duplicados. El alcance es el ciclo completo,
+    no el tramo OOS del fichero: se reutiliza su forma para no duplicar el
+    contrato de la puerta.
+    """
+    block = (cycle or {}).get("stress")
+    if not isinstance(block, dict):
+        return None
+    configs = block.get("configs")
+    if not isinstance(configs, list) or not configs:
+        return None
+    selected = block.get("selected")
+    chosen = next(
+        (
+            item
+            for item in configs
+            if isinstance(item, dict) and item.get("name") == selected
+        ),
+        None,
+    )
+    if chosen is None:
+        return None
+    return {
+        "split": {
+            "out_of_sample": {
+                "profit_factor": chosen.get("pf_net"),
+                "trades": chosen.get("trades"),
+                "expectancy_r": chosen.get("exp_r"),
+            }
+        },
+        "multiplier": block.get("multiplier"),
+        "source": "cycle",
+    }
+
+
 def _execution_model(block: Any) -> dict[str, float] | None:
     """Comisión y tick_value de un modelo de ejecución, si están completos."""
     if not isinstance(block, dict):
@@ -402,21 +441,32 @@ def evaluate(
     cost_check["scope"] = evidence_doc.get("cost_scope")
     checks.append(cost_check)
 
+    cycle_stress = _stress_from_cycle(cycle)
+    stress_source = (
+        "ciclo"
+        if cycle_stress is not None
+        else ("fichero" if stress is not None else None)
+    )
+    if cycle_stress is not None:
+        stress = cycle_stress
     stressed_oos = _oos(stress or {})
     stressed_pf = stressed_oos.get("profit_factor")
     stressed_value = _number(stressed_pf)
     stress_reason = "falta la corrida con coste duplicado"
     if stressed_value is not None:
-        stress_reason = f"PF con coste duplicado {stressed_value:g} ≤ 1"
-    checks.append(
-        _check(
-            "pf_con_coste_duplicado",
-            stressed_pf,
-            f"> {MIN_OOS_PF}",
-            stressed_value is not None and stressed_value > MIN_OOS_PF,
-            stress_reason,
-        )
+        where = " (ciclo)" if stress_source == "ciclo" else ""
+        stress_reason = f"PF con coste duplicado{where} {stressed_value:g} ≤ 1"
+    stress_check = _check(
+        "pf_con_coste_duplicado",
+        stressed_pf,
+        f"> {MIN_OOS_PF}",
+        stressed_value is not None and stressed_value > MIN_OOS_PF,
+        stress_reason,
     )
+    stress_check["source"] = stress_source
+    stress_check["scope"] = stress_source or "ninguno"
+    stress_check["multiplier"] = (stress or {}).get("multiplier")
+    checks.append(stress_check)
 
     pbo = ((cycle or {}).get("pbo") or {}).get("pbo")
     evidence_tf = str((evidence or {}).get("timeframe") or "") or _timeframe((evidence or {}).get("dataset"))
@@ -693,7 +743,11 @@ def render(verdict: dict[str, Any]) -> str:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Regla de promoción antes de operar")
     parser.add_argument("--evidence", required=True, help="backtest con split IS/OOS")
-    parser.add_argument("--stress", default=None, help="el mismo backtest con coste duplicado")
+    parser.add_argument(
+        "--stress",
+        default=None,
+        help="backtest con coste duplicado; el ciclo con estrés tiene prioridad",
+    )
     parser.add_argument("--cycle", default=None, help="ciclo de selección (PBO)")
     parser.add_argument(
         "--strategy",
