@@ -77,8 +77,8 @@ def resample(source: Path | str, output: Path | str, rule: str = "1D") -> dict[s
         writer = csv.writer(fout)
         writer.writerow(HEADER)
         for key in ordered:
-            o, h, l, c, v = buckets[key]
-            writer.writerow([key[1], key[0], o, h, l, c, v])
+            o, h, low, c, v = buckets[key]
+            writer.writerow([key[1], key[0], o, h, low, c, v])
 
     first = ordered[0][1] if ordered else None
     last = ordered[-1][1] if ordered else None
