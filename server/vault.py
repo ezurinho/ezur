@@ -591,7 +591,7 @@ def lint_vault(out_dir: Path = VAULT) -> list[str]:
         return [f"vault vacío: {out_dir}"]
     linked: set[str] = set()
     problems: list[str] = []
-    for stem, path in notes.items():
+    for _stem, path in notes.items():
         text = path.read_text(encoding="utf-8")
         for target in _LINK.findall(text):
             key = target.strip().lower()
