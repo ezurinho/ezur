@@ -126,5 +126,5 @@ y de la configuración. Sin esa línea no hay evidencia, solo una anécdota.
 - Añadir un `if` con el nombre del instrumento. La terminal es agnóstica por
   diseño y hay un test que lo impone.
 - Emitir métricas con `format` inventados: se rechazan.
-- Suponer que la estrategia corre sola: el motor arranca detenido y alguien
-  tiene que pulsar Iniciar.
+- Suponer que la estrategia corre sola: con `auto_start: true` (lo normal) el
+  motor evalúa desde el arranque; con `false`, alguien tiene que pulsar Iniciar.
