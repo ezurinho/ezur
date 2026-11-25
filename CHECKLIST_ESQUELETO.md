@@ -7,7 +7,7 @@ Criterio de aceptación del esqueleto:
 | # | Criterio | Verificación |
 |---|---|---|
 | 1 | Arranca y sirve el dashboard | `python run.py` → `http://127.0.0.1:8765` responde |
-| 2 | Motor detenido, sin señal | Estado inicial `stopped`, `strategy.signal = null` |
+| 2 | Arranque automático configurable | Con `auto_start: true` (por defecto) queda `running`; con `false`, `idle`/`stopped`. Sin señal, `strategy.signal = null` |
 | 3 | Snapshot conforme al contrato v1 | `pytest -q` sobre test de contrato |
 | 4 | Persistencia operativa | Iniciar, generar eventos, reiniciar, estado restaurado |
 | 5 | Cero referencias a activos/estrategia en código de infra | `grep -rn` de tickers y nombres de estrategia = 0 resultados |
