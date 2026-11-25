@@ -221,6 +221,33 @@ def test_csv_feed_emits_multi_symbol_ticks_in_streaming(tmp_path):
     assert all(set(tick.bars) == {"AAA", "BBB"} for tick in ticks)
 
 
+def test_csv_feed_respeta_la_ventana_de_fechas(tmp_path):
+    start = datetime(2026, 1, 15, 14, 30, tzinfo=timezone.utc)
+    path = tmp_path / "ventana.csv"
+    _write_csv(
+        path,
+        [
+            [(start + timedelta(minutes=index)).isoformat(), "AAA", 100, 101, 99, 100.5, 1]
+            for index in range(5)
+        ],
+    )
+
+    ticks = list(
+        CSVFeed(
+            path,
+            ["AAA"],
+            start=start + timedelta(minutes=1),
+            end=start + timedelta(minutes=4),
+        ).iter_ticks()
+    )
+
+    assert [tick.ts for tick in ticks] == [
+        start + timedelta(minutes=1),
+        start + timedelta(minutes=2),
+        start + timedelta(minutes=3),
+    ]
+
+
 def test_csv_feed_rejects_an_unsorted_dataset(tmp_path):
     start = datetime(2026, 1, 15, 14, 30, tzinfo=timezone.utc)
     path = tmp_path / "desordenado.csv"
