@@ -56,6 +56,9 @@ class SnapshotBuilder:
         self.store = store
         # Lo fija el motor con la medición de ventaja contra coste del perfil.
         self.edge_guard = None
+        # La puerta se evalúa al leer el ciclo del perfil, no en cada vela:
+        # el motor la refresca al arrancar y al guardar la configuración.
+        self.promotion: dict[str, Any] | None = None
 
     # --- pieces -----------------------------------------------------------
     def _instruments(self) -> list[InstrumentModel]:
@@ -387,6 +390,7 @@ class SnapshotBuilder:
             position=self._position(state),
             orders=[OrderModel.model_validate(order.model_dump()) for order in state.orders],
             risk=self._risk(state),
+            promotion=self.promotion,
             stats=stats or {},
             day_stats=state.day_stats.model_dump(),
             rejections=dict(rejections or {}),
