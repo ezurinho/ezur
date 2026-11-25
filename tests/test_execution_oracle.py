@@ -17,6 +17,11 @@ def _engine(*, slippage: int = 0, commission: float = 0.0, model: str = "next_op
     settings.execution.max_slippage_ticks = slippage
     settings.execution.commission_per_unit_side = commission
     settings.execution.fill_model = model
+    # Estos oráculos aíslan el fill/precio; el coste de bolsa se prueba en
+    # test_execution.py con el modelo de costes completo.
+    settings.execution.fee_maker_bps = 0.0
+    settings.execution.fee_taker_bps = 0.0
+    settings.execution.half_spread_bps = 0.0
     return ExecutionEngine(
         settings.execution,
         {item.symbol: item for item in settings.instruments.items},
