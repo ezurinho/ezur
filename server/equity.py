@@ -203,7 +203,7 @@ def audit(db_path: Path, initial: float, mode: str | None = "paper") -> dict[str
     if len(points) != len(planned["curve"]):
         differences["curve_rows"] = len(points) - len(planned["curve"])
         issues.append("curve_rows")
-    for index, (got, want) in enumerate(zip(points, planned["curve"])):
+    for index, (got, want) in enumerate(zip(points, planned["curve"], strict=False)):
         if _instant(got["ts"]) != _instant(want["ts"]):
             differences[f"curve_ts_{index}"] = {
                 "stored": str(got["ts"]),
