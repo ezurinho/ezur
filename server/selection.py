@@ -44,8 +44,6 @@ import itertools
 import json
 import math
 import sys
-import urllib.error
-import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -53,11 +51,9 @@ import numpy as np
 import pandas as pd
 
 # Reuse the runner's backtest logic
-from .strategy.spec_schema import load_spec, StrategySpec
+from .strategy.spec_schema import StrategySpec
 from .strategy.registry import load_spec_file
-from .engine import TradingEngine
 from .config import Settings, InstrumentConfig, SessionTemplate
-from .db import Store
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "data" / "validation"
@@ -411,15 +407,6 @@ def run_universe(specs: list[StrategySpec], df5: pd.DataFrame, quiet: bool = Fal
     for spec in specs:
         name = spec.label
         tf = spec.timeframe_signal
-        from .strategy import resolve_strategy
-        from .market.feed import CSVFeed
-        from .resample import BarAggregator, timeframe_minutes
-
-        # Build the feed from df5
-        bars, _ = bars_for(df5, tf)
-
-        # Resolve strategy
-        strat = resolve_strategy(spec.id, spec.params.model_dump(exclude_none=True))
 
         # Create engine settings for this spec
         settings = Settings()
@@ -430,11 +417,7 @@ def run_universe(specs: list[StrategySpec], df5: pd.DataFrame, quiet: bool = Fal
         settings.execution = spec.execution if hasattr(spec, "execution") else None
         settings.risk = spec.risk if hasattr(spec, "risk") else None
 
-        # Run backtest
-        engine = TradingEngine(settings, Store(":memory:"), feed=CSVFeed("data/bars.csv", [spec.instrument]))
-        # Simplified: just run the strategy evaluate on bars
-        # For full backtest, we'd need the runner's run_trades
-        # For now, use the runner's logic
+        # Run backtest: el motor determinista es el mismo que mide el terminal.
         from .backtest import run_backtest
         result = run_backtest(settings, df5)
 
@@ -463,7 +446,6 @@ def bars_for(df5: pd.DataFrame, tf: str) -> tuple[pd.DataFrame, str]:
     if tf == "5m":
         return df5, "5m (native)"
     rule = tf
-    from .resample import BarAggregator
     # Simplified resample
     bars = df5.resample(rule).agg({
         "o": "first", "h": "max", "l": "min", "c": "last", "v": "sum"
@@ -475,26 +457,22 @@ def bars_for(df5: pd.DataFrame, tf: str) -> tuple[pd.DataFrame, str]:
 
 def run_backtest_for_spec(spec: StrategySpec, df5: pd.DataFrame, quiet: bool = False) -> tuple[pd.DataFrame, list, dict]:
     """Run backtest for a single spec using the deterministic engine.
-    
+
     Returns (trades_df, equity_curve, metrics_dict) or (empty_df, [], {}) if no trades.
     """
-    from .strategy import resolve_strategy
-    from .market.feed import CSVFeed
-    from .resample import timeframe_minutes
     from .backtest import run_backtest
     from .config import Settings
-    from .db import Store
-    
+
     tf = spec.timeframe_signal
     name = spec.label
-    
+
     # Build settings from spec
     settings = Settings()
     settings.strategy.id = spec.id
     settings.strategy.timeframe = tf
     settings.strategy.timeframe_signal = tf
     settings.strategy.params = spec.params.model_dump(exclude_none=True)
-    
+
     # Copy execution config from spec
     spec_exec = spec.execution if hasattr(spec, "execution") else None
     if spec_exec:
@@ -515,7 +493,7 @@ def run_backtest_for_spec(spec: StrategySpec, df5: pd.DataFrame, quiet: bool = F
         settings.execution.stop_floor_frac = 0.0
     else:
         settings.execution = Settings().execution
-    
+
     # Copy costs from spec
     spec_costs = spec.costs if hasattr(spec, "costs") else None
     if spec_costs:
@@ -526,7 +504,7 @@ def run_backtest_for_spec(spec: StrategySpec, df5: pd.DataFrame, quiet: bool = F
         settings.execution.assumed_fill = cost_dict.get("assumed_fill", "taker")
         settings.execution.impact_model = cost_dict.get("impact_model", "none")
         settings.execution.funding = cost_dict.get("funding", "none")
-    
+
     # Convert spec risk to Settings RiskConfig format
     spec_risk = spec.risk if hasattr(spec, "risk") else None
     if spec_risk:
@@ -558,7 +536,7 @@ def run_backtest_for_spec(spec: StrategySpec, df5: pd.DataFrame, quiet: bool = F
         settings.risk.max_mdd_budget = risk_dict.get("max_mdd_budget", 0.0)
     else:
         settings.risk = Settings().risk
-    
+
     settings.feed.provider = "csv"
     settings.instruments.primary = spec.instrument
     settings.instruments.items = [InstrumentConfig(
@@ -576,27 +554,27 @@ def run_backtest_for_spec(spec: StrategySpec, df5: pd.DataFrame, quiet: bool = F
         SessionTemplate(name='RTH', timezone='America/New_York', open='09:30', close='16:00', weekdays=[0,1,2,3,4]),
         SessionTemplate(name='24h', timezone='UTC', open='00:00', close='23:59', weekdays=[0,1,2,3,4,5,6])
     ]
-    
+
     # Write df5 to a temporary CSV for the backtest
     import tempfile
     with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
         df5.to_csv(f.name, index=False)
         csv_path = f.name
-    
+
     try:
         settings.feed.provider = "csv"
         settings.feed.csv_path = csv_path
-        
+
         # Run backtest using the existing backtest module
         result = run_backtest(settings, csv_path)
         trades = result.trades
         if not trades:
             return pd.DataFrame(), [], {}
-        
+
         # Convert trades to daily returns for the matrix
         from .stats import compute_stats
         metrics = compute_stats(trades, initial_equity=settings.risk.initial_capital, equity=result.equity)
-        
+
         # Build trade log DataFrame
         trade_rows = []
         for trade in trades:
@@ -609,16 +587,16 @@ def run_backtest_for_spec(spec: StrategySpec, df5: pd.DataFrame, quiet: bool = F
                 "pnl_net": trade.pnl_net,
                 "pnl_gross": trade.pnl_gross,
             })
-        
+
         trade_df = pd.DataFrame(trade_rows)
         if trade_df.empty:
             return pd.DataFrame(), [], {}
-        
+
         trade_df["ts"] = pd.to_datetime(trade_df["ts"], utc=True)
         trade_df = trade_df.sort_values("ts").reset_index(drop=True)
-        
+
         return trade_df, result.equity, metrics
-        
+
     except Exception as e:
         if not quiet:
             print(f"  {name:26s} ERROR: {e}")
@@ -628,7 +606,9 @@ def run_backtest_for_spec(spec: StrategySpec, df5: pd.DataFrame, quiet: bool = F
         import os
         try:
             os.unlink(csv_path)
-        except:
+        except OSError:
+            # El temporal ya no está (o nunca llegó a escribirse): limpiar no
+            # puede tumbar el ciclo.
             pass
 
 
@@ -660,11 +640,11 @@ def run_selection_cycle(
 
     if not quiet:
         print(f"Running backtests for {len(specs)} specs...")
-    
+
     for spec in specs:
         name = spec.label
         trade_df, equity, metrics = run_backtest_for_spec(spec, df5)
-        
+
         if trade_df.empty:
             if not quiet:
                 print(f"  {name:26s} sin trades")
@@ -674,9 +654,9 @@ def run_selection_cycle(
         trade_df["day"] = trade_df["ts"].dt.date
         daily_returns = trade_df.groupby("day")["r_net"].sum()
         daily[name] = daily_returns
-        
+
         trade_log[name] = trade_df
-        
+
         closed_metrics = metrics.get("closed", {})
         summary.append({
             "name": name,
@@ -688,13 +668,13 @@ def run_selection_cycle(
             "exp_r": closed_metrics.get("expectancy_r", 0.0),
             "days": int(daily_returns.size),
         })
-        
+
         if not quiet:
             print(f"  {name:26s} {len(trade_df):6d} trades  PF {summary[-1]['pf_net']:.3f}  "
                   f"exp {summary[-1]['exp_r']:+.3f} R")
 
     matrix = pd.DataFrame(daily).fillna(0.0).sort_index()
-    
+
     if matrix.empty or matrix.shape[1] < 3:
         raise SystemExit("universo insuficiente: se necesitan al menos 3 configuraciones con trades")
 
