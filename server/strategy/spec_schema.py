@@ -260,7 +260,14 @@ class StrategySpec(_StrictModel):
     def spec_hash(self) -> str:
         """Stable hash of the spec as executed (key order and whitespace independent)."""
         import hashlib
-        raw = self.model_dump_json(exclude_none=True, sort_keys=True).encode("utf-8")
+
+        # `model_dump_json` no ordena claves: el hash tenía que pasar por json
+        # para seguir siendo estable ante el orden del fichero.
+        raw = json.dumps(
+            self.model_dump(mode="json", exclude_none=True),
+            sort_keys=True,
+            ensure_ascii=False,
+        ).encode("utf-8")
         return "sha256:" + hashlib.sha256(raw).hexdigest()
 
     def validate_params_for_rule(self) -> None:
