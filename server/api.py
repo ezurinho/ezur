@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field
 from .config import Settings, apply_settings, save_settings
 from .promotion import effective_settings_and_verdict
 from .market.csv_data import validate_dataset
-from .models import DayStats, TradeRecord
+from .models import DayStats
 from .gates import evaluate_gates
 from .stats import aggregate
 from .strategy.registry import available, resolve_strategy, strategy_schema
