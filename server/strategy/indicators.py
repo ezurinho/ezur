@@ -51,3 +51,15 @@ def lowest(bars: list[Bar], period: int) -> float | None:
     if period <= 0 or len(bars) < period:
         return None
     return min(bar.l for bar in bars[-period:])
+
+
+def ema(values: list[float], period: int) -> float | None:
+    """Exponential Moving Average using the standard smoothing factor."""
+    if period <= 0 or len(values) < period:
+        return None
+    alpha = 2.0 / (period + 1)
+    # Start with SMA for the first period values
+    ema_val = sum(values[:period]) / period
+    for value in values[period:]:
+        ema_val = alpha * value + (1 - alpha) * ema_val
+    return ema_val

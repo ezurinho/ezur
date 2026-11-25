@@ -191,6 +191,9 @@ class StrategyConfig(_Model):
     # feed; esto solo agrega las que lee el plugin. Cambiarlo sin volver a
     # medir no cambia de sistema: los parametros estan en velas de este marco.
     timeframe: str = "1m"
+    # Timeframe que ve la estrategia (signal timeframe). Si no se especifica,
+    # usa timeframe. Permite ejecutar riesgo/ejecucion en 1m y estrategia en 1h/4h/1d.
+    timeframe_signal: str | None = None
     params: dict[str, Any] = Field(default_factory=dict)
     timeframe: str = "1m"
 
@@ -205,6 +208,13 @@ class StrategyConfig(_Model):
     @classmethod
     def _known_timeframe(cls, value: str) -> str:
         timeframe_minutes(value)
+        return value
+
+    @field_validator("timeframe_signal")
+    @classmethod
+    def _known_timeframe_signal(cls, value: str | None) -> str | None:
+        if value is not None:
+            timeframe_minutes(value)
         return value
 
 

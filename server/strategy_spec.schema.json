@@ -1,0 +1,261 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ezur.local/schemas/strategy_spec.schema.json",
+  "title": "strategy_spec",
+  "description": "Declarative, executable strategy specification. The runner is the only component allowed to turn a spec into performance numbers.",
+  "type": "object",
+  "required": [
+    "id", "name", "version", "family", "hypothesis", "instrument",
+    "timeframe_signal", "data_requirements", "entry", "exit", "params",
+    "risk", "costs", "execution", "validation"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^BTC-[A-Z0-9]+(-[A-Z0-9]+)*$",
+      "description": "Registry strategy id, e.g. BTC-TREND-1D."
+    },
+    "name": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 120
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "parent_version": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "Previous version this spec supersedes, if any."
+    },
+    "change": {
+      "type": "string",
+      "maxLength": 400,
+      "description": "One-line human description of what changed versus parent_version."
+    },
+    "label": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_.-]{1,48}$",
+      "description": "Run label inside the strategy, e.g. 1d_40. Part of the append-only run id."
+    },
+    "family": {
+      "type": "string",
+      "enum": ["trend", "breakout", "orb", "mean_reversion", "regime", "momentum"]
+    },
+    "hypothesis": {
+      "type": "string",
+      "minLength": 40,
+      "description": "Inefficiency, mechanism, falsifiable prediction and why cost does not eat the edge."
+    },
+    "instrument": {
+      "type": "string",
+      "enum": ["BTCUSDT_PERP", "BTCUSDT_SPOT"]
+    },
+    "timeframe_signal": {
+      "type": "string",
+      "enum": ["5m", "15m", "30m", "1h", "2h", "4h", "12h", "1d"]
+    },
+    "timeframe_context": {
+      "type": ["string", "null"],
+      "enum": ["5m", "15m", "30m", "1h", "2h", "4h", "12h", "1d", null]
+    },
+    "data_requirements": {
+      "type": "object",
+      "required": ["datasets", "min_coverage", "integrity"],
+      "additionalProperties": false,
+      "properties": {
+        "datasets": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "enum": ["klines_5m", "funding_rate"] }
+        },
+        "min_coverage": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}/[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "integrity": {
+          "type": "object",
+          "required": ["gaps", "duplicates", "timezone"],
+          "additionalProperties": false,
+          "properties": {
+            "gaps": { "type": "integer", "minimum": 0 },
+            "duplicates": { "type": "integer", "minimum": 0 },
+            "timezone": { "type": "string", "enum": ["UTC"] }
+          }
+        }
+      }
+    },
+    "entry": {
+      "type": "object",
+      "required": ["rule"],
+      "additionalProperties": false,
+      "properties": {
+        "rule": {
+          "type": "string",
+          "enum": ["donchian_breakout", "ema_state", "zscore_fade", "orb_session"],
+          "description": "Entry generator understood by the runner. Adding a rule is a code change and therefore a version bump."
+        },
+        "long": { "type": "string", "maxLength": 200 },
+        "short": { "type": "string", "maxLength": 200 },
+        "cooldown_bars": { "type": "integer", "minimum": 0, "default": 0 },
+        "sessions": {
+          "type": "array",
+          "description": "UTC session starts for orb_session, as HH:MM strings.",
+          "items": { "type": "string", "pattern": "^[0-2][0-9]:[0-5][0-9]$" }
+        }
+      }
+    },
+    "exit": {
+      "type": "object",
+      "required": ["stop", "target", "time_stop_bars"],
+      "additionalProperties": false,
+      "properties": {
+        "stop": { "type": "string", "maxLength": 120, "description": "Human form, e.g. '2.0 * ATR(14)[t]'." },
+        "target": { "type": "string", "maxLength": 120, "description": "Human form, e.g. '4.0 * R'." },
+        "time_stop_bars": { "type": "integer", "minimum": 1 },
+        "trailing": { "type": ["string", "null"] }
+      }
+    },
+    "params": {
+      "type": "object",
+      "description": "Numeric parameters actually executed by the runner. No undocumented knobs.",
+      "required": ["atr_k", "tp_r"],
+      "additionalProperties": {
+        "type": ["number", "integer", "string", "null"]
+      },
+      "properties": {
+        "atr_k": { "type": "number", "exclusiveMinimum": 0 },
+        "tp_r": { "type": "number", "exclusiveMinimum": 0 },
+        "N": { "type": "integer", "minimum": 2 },
+        "fast": { "type": "integer", "minimum": 2 },
+        "slow": { "type": "integer", "minimum": 3 },
+        "z": { "type": "number", "exclusiveMinimum": 0 },
+        "range_bars": { "type": "integer", "minimum": 1 },
+        "stop_floor_frac": { "type": "number", "minimum": 0, "maximum": 0.2 }
+      }
+    },
+    "risk": {
+      "type": "object",
+      "required": ["sizing", "risk_per_trade", "max_mdd_budget"],
+      "additionalProperties": false,
+      "properties": {
+        "sizing": { "type": "string", "enum": ["fixed_fractional", "vol_target", "kelly"] },
+        "risk_per_trade": { "type": "number", "exclusiveMinimum": 0, "maximum": 0.05 },
+        "target_vol_annual": { "type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 3 },
+        "kelly_fraction": { "type": ["number", "null"], "minimum": 0, "maximum": 0.5 },
+        "max_gross_leverage": { "type": ["number", "null"], "exclusiveMinimum": 0 },
+        "max_mdd_budget": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 }
+      }
+    },
+    "costs": {
+      "type": "object",
+      "required": ["fee_maker_bps", "fee_taker_bps", "assumed_fill", "half_spread_bps", "impact_model", "funding"],
+      "additionalProperties": false,
+      "properties": {
+        "fee_maker_bps": { "type": "number", "minimum": 0 },
+        "fee_taker_bps": { "type": "number", "minimum": 0 },
+        "assumed_fill": { "type": "string", "enum": ["taker", "maker", "mixed"] },
+        "half_spread_bps": { "type": "number", "minimum": 0 },
+        "impact_model": { "type": "string", "enum": ["none", "sqrt_law", "ofi"] },
+        "funding": { "type": "string", "enum": ["real_timestamps", "none"] }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "required": ["signal_bar", "fill", "intrabar_priority", "gap_fill"],
+      "additionalProperties": false,
+      "properties": {
+        "signal_bar": { "type": "string", "enum": ["closed"] },
+        "fill": { "type": "string", "enum": ["next_bar_open"] },
+        "intrabar_priority": { "type": "string", "enum": ["stop_first"] },
+        "gap_fill": { "type": "string", "enum": ["bar_open"] }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "required": ["trials_declared", "is_oos_split", "seed"],
+      "additionalProperties": false,
+      "properties": {
+        "trials_declared": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Every configuration the researcher looked at, including discarded ones."
+        },
+        "is_oos_split": {
+          "type": "string",
+          "pattern": "^0\\.[0-9]{2}/0\\.[0-9]{2}/0\\.[0-9]{2}$",
+          "description": "IS/OOS/reserve fractions, must sum to 1.00."
+        },
+        "wfa": {
+          "type": ["object", "null"],
+          "additionalProperties": true,
+          "properties": {
+            "train_years": { "type": "number", "exclusiveMinimum": 0 },
+            "test_months": { "type": "integer", "minimum": 1 },
+            "min_trades_per_fold": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "seed": { "type": "integer", "minimum": 0 },
+        "bootstrap": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "block": { "type": "integer", "minimum": 1 },
+            "reps": { "type": "integer", "minimum": 100 }
+          }
+        }
+      }
+    },
+    "portfolio": {
+      "type": ["object", "null"],
+      "description": "Run several parameterisations at once instead of picking one. The point is not diversification: it removes the parameter choice, which is the step that consumes degrees of freedom and inflates the PBO. Components must be every configuration the researcher looked at, not the ones that worked.",
+      "additionalProperties": false,
+      "required": ["components", "weighting", "rationale"],
+      "properties": {
+        "components": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "object",
+            "required": ["label", "params"],
+            "additionalProperties": false,
+            "properties": {
+              "label": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_.-]{1,32}$" },
+              "params": {
+                "type": "object",
+                "additionalProperties": { "type": ["number", "integer"] }
+              },
+              "weight": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 }
+            }
+          }
+        },
+        "weighting": {
+          "type": "string",
+          "enum": ["equal", "explicit"],
+          "description": "equal = 1/n each, fixed in advance; explicit = the weight field, still not optimised."
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 40,
+          "description": "Why these components and not others, and what was NOT selected."
+        }
+      }
+    },
+    "expected": {
+      "type": ["object", "null"],
+      "additionalProperties": true,
+      "properties": {
+        "turnover_per_year": { "type": ["number", "null"] },
+        "cost_R_per_trade": { "type": ["number", "null"] },
+        "capacity_usd": { "type": ["number", "null"] }
+      }
+    },
+    "failure_modes": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 10 }
+    }
+  }
+}

@@ -115,6 +115,11 @@ class TradingEngine:
         self._chart_symbol: str | None = None
         self._aggregated = self._aggregators_for(settings)
         self._aggregated_minutes = timeframe_minutes(settings.strategy.timeframe)
+        # Signal timeframe aggregators (what the strategy reads)
+        self._signal_aggregated = self._signal_aggregators_for(settings)
+        self._signal_minutes = timeframe_minutes(
+            settings.strategy.timeframe_signal or settings.strategy.timeframe
+        )
         self._output: StrategyOutput | None = None
         self._subscribers: list[SnapshotHook] = []
         self._task: asyncio.Task[None] | None = None
@@ -533,9 +538,14 @@ class TradingEngine:
                     self._chart_symbol = primary
                 self._chart_bars.append(bar)
                 del self._chart_bars[:-CHART_MAX_BARS]
+            # Execution timeframe aggregator
             aggregator = self._aggregated.get(symbol)
             if aggregator is not None:
                 aggregator.add(bar)
+            # Signal timeframe aggregator
+            sig_aggregator = self._signal_aggregated.get(symbol)
+            if sig_aggregator is not None:
+                sig_aggregator.add(bar)
 
         self.state.session = session
         self.state.last_bar_ts = tick.ts
@@ -632,8 +642,26 @@ class TradingEngine:
             for symbol in settings.instruments.symbols
         }
 
+    def _signal_aggregators_for(self, settings: Settings) -> dict[str, BarAggregator]:
+        minutes = timeframe_minutes(
+            settings.strategy.timeframe_signal or settings.strategy.timeframe
+        )
+        if minutes <= 1:
+            return {}
+        return {
+            symbol: BarAggregator(minutes, MAX_BARS)
+            for symbol in settings.instruments.symbols
+        }
+
     def _bar_source(self) -> dict[str, list[Bar]]:
-        """Lo que lee la estrategia: buckets cerrados o las velas del feed."""
+        """Lo que lee la estrategia: buckets cerrados del timeframe de señal."""
+        # Use signal timeframe aggregators if available
+        if self._signal_aggregated:
+            return {
+                symbol: aggregator.bars
+                for symbol, aggregator in self._signal_aggregated.items()
+            }
+        # Fall back to execution timeframe aggregators
         if self._aggregated:
             return {
                 symbol: aggregator.bars
