@@ -59,6 +59,21 @@ def test_drawdown_is_measured_on_closed_equity():
     assert stats["max_drawdown"] == 60.0
 
 
+def test_drawdown_uses_the_marked_curve_when_given():
+    trades = [_trade(0, 100.0)]
+    # El cierre gana 100, pero la curva llego a 940 antes de recuperar: el
+    # drawdown realizado seria 0.
+    stats = compute_stats(
+        trades, initial_equity=1000.0, equity=[1100.0, 940.0, 1100.0]
+    )
+    assert stats["max_drawdown"] == 160.0
+
+
+def test_an_open_loss_counts_without_closed_trades():
+    stats = compute_stats([], initial_equity=1000.0, equity=[980.0])
+    assert stats["max_drawdown"] == 20.0
+
+
 def test_by_dimension_splits_by_side_and_hour():
     trades = [_trade(0, 10.0, side="long"), _trade(1, -5.0, side="short"), _trade(2, 7.0, side="long")]
     by_side = by_dimension(trades, "side")

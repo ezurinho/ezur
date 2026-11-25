@@ -76,6 +76,25 @@ class ExecutionEngine:
             ticks = -ticks
         return ticks * spec.tick_value * units
 
+    def open_pnl(self, position: Position, price: float) -> float:
+        """Lo que dejaria la posicion si se cerrara ahora a `price`.
+
+        Cobra la comision de entrada ya pagada y la de salida: un
+        mark-to-market que solo mira el precio pinta un drawdown menor que el
+        que se llevaria la cuenta al cerrar.
+        """
+        return (
+            self._pnl(
+                position.symbol,
+                position.side,
+                position.entry_price,
+                price,
+                position.units,
+            )
+            - position.entry_fees
+            - self._fees(position.symbol, position.units, price)
+        )
+
     def has_pending(self) -> bool:
         return any(order.status == "pending" for order in self.orders)
 
