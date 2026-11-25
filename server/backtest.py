@@ -24,6 +24,7 @@ from .engine import TradingEngine
 from .market.csv_data import validate_dataset
 from .market.feed import CSVFeed
 from .models import TradeRecord
+from .promotion import cost_metrics, execution_model
 from .stats import compute_stats
 from .strategy.base import BaseStrategy
 from .strategy.registry import resolve_strategy
@@ -288,26 +289,28 @@ def _report_run(args, settings, result, stats, report) -> None:
     from .stats import aggregate
 
     closed = stats["closed"]
-    trades = closed.get("trades", 0)
     budget = settings.risk.initial_capital * settings.risk.risk_per_trade_pct / 100
-    primary = next(
-        (
-            item
-            for item in settings.instruments.items
-            if item.symbol == settings.instruments.primary
-        ),
-        None,
+    execution = execution_model(settings)
+    cut = None
+    inside: list[TradeRecord] = []
+    outside: list[TradeRecord] = []
+    if args.split:
+        cut = datetime.fromisoformat(args.split)
+        if cut.tzinfo is None:
+            cut = cut.replace(tzinfo=timezone.utc)
+        inside, outside = partition_by_split(result.trades, cut)
+    # La puerta mide PF y operaciones fuera de muestra: el coste tiene que
+    # medirse sobre la misma muestra, no sobre el total que mezcla IS y OOS.
+    cost_trades = outside if args.split else result.trades
+    cost = cost_metrics(
+        cost_trades,
+        execution,
+        budget=budget,
+        max_units=settings.risk.max_units_per_trade,
     )
-    execution = (
-        {
-            "commission_per_unit_side": settings.execution.commission_per_unit_side,
-            "tick_size": primary.tick_size,
-            "tick_value": primary.tick_value,
-        }
-        if primary is not None
-        else None
-    )
-    cost_r = (closed.get("fees", 0.0) / trades / budget) if trades and budget else None
+    cost_r = cost["cost_per_trade_r"]
+    cost_r_simple = cost["cost_per_trade_r_simple"]
+    cost_r_nominal = cost["cost_per_trade_r_nominal"]
 
     rejections = result.diagnostics.get("rejections") or {}
     if rejections:
@@ -323,7 +326,19 @@ def _report_run(args, settings, result, stats, report) -> None:
                 "un backtest de validación necesita config/okx-daily.json"
             )
     if cost_r is not None:
-        print(f"coste     {cost_r:.3f} R por operación (fees / ops / riesgo por trade)")
+        scope = "fuera de muestra" if args.split else "toda la corrida"
+        print(
+            f"coste     {cost_r:.3f} R ponderado (fees totales / riesgo total, {scope})"
+        )
+        if cost_r_simple is not None:
+            print(
+                f"  simple  {cost_r_simple:.3f} R (media por operación; distribución)"
+            )
+        if cost_r_nominal is not None:
+            print(
+                f"  nominal {cost_r_nominal:.3f} R "
+                f"(fees / ops / presupuesto {budget:.2f})"
+            )
 
     payload = {
         "dataset": str(args.dataset),
@@ -335,16 +350,31 @@ def _report_run(args, settings, result, stats, report) -> None:
         "execution": execution,
         "risk_budget": budget,
         "cost_per_trade_r": cost_r,
+        "cost_per_trade_r_weighted": cost["cost_per_trade_r_weighted"],
+        "cost_per_trade_r_simple": cost_r_simple,
+        "cost_per_trade_r_median": cost["cost_per_trade_r_median"],
+        "cost_per_trade_r_p90": cost["cost_per_trade_r_p90"],
+        "cost_per_trade_r_p99": cost["cost_per_trade_r_p99"],
+        "cost_above_1r": cost["cost_above_1r"],
+        "cost_above_1r_rate": cost["cost_above_1r_rate"],
+        "cost_min": cost["cost_min"],
+        "cost_max": cost["cost_max"],
+        "cost_per_trade_r_nominal": cost_r_nominal,
+        "cost_method": "real_risk" if cost_r is not None else None,
+        "cost_metric": "weighted" if cost_r is not None else None,
+        "cost_scope": "out_of_sample" if args.split else "all",
+        "cost_trades": cost["trades"],
+        "avg_risk_per_trade": cost["avg_risk_per_trade"],
+        "avg_stop_ticks": cost["avg_stop_ticks"],
+        "risk_budget_utilization": cost["risk_budget_utilization"],
+        "trades_at_cap": cost["trades_at_cap"],
+        "cap_rate": cost["cap_rate"],
         "gates": (
             {"verdict": report.verdict, "failed": report.failed} if report else None
         ),
     }
 
     if args.split:
-        cut = datetime.fromisoformat(args.split)
-        if cut.tzinfo is None:
-            cut = cut.replace(tzinfo=timezone.utc)
-        inside, outside = partition_by_split(result.trades, cut)
         zone = settings.instruments.template_for(settings.instruments.primary).timezone
         blocks = {}
         for name, subset in (("in_sample", inside), ("out_of_sample", outside)):
