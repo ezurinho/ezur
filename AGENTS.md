@@ -7,6 +7,11 @@
 - Un fichero por commit. Nunca `git add -A` ni `git add .`.
 - No reescribir historial ni forzar push sin que lo pida el usuario.
 
+## GitHub
+
+- El repositorio remoto es la fuente de verdad: trabajar siempre contra `origin/master`.
+- Después de cada cambio verificado, commit y push. No dejar commits solo en local.
+
 ## Operación
 
 - Paper trading únicamente: `live_enabled` se queda en `false`.
