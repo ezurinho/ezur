@@ -186,6 +186,14 @@ class StrategyConfig(_Model):
     enabled: bool = True
     version: str = "0.0.0"
     params: dict[str, Any] = Field(default_factory=dict)
+    timeframe: str = "1m"
+
+    @field_validator("timeframe")
+    @classmethod
+    def _timeframe_supported(cls, value: str) -> str:
+        if value not in {"1m", "5m", "15m", "30m"}:
+            raise ValueError("timeframe debe ser 1m, 5m, 15m o 30m")
+        return value
 
 
 class RiskConfig(_Model):

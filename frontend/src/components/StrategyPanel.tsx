@@ -18,6 +18,7 @@ export function StrategyPanel({ strategy }: Props) {
       </header>
       <p className="muted small">
         {strategy.name} · v{strategy.version} · {strategy.id}
+        {strategy.timeframe ? " · velas de " + strategy.timeframe : ""}
       </p>
       <PhaseTimeline phases={strategy.phases} emptyLabel="Sin fases definidas" />
       <KvPanel entries={strategy.metrics} emptyLabel="Sin métricas" />

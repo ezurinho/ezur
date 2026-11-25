@@ -94,6 +94,7 @@ def test_ws_snapshot_has_no_strategy_specific_keys(client):
         "id",
         "name",
         "version",
+        "timeframe",
         "state",
         "state_label",
         "phases",
@@ -104,6 +105,8 @@ def test_ws_snapshot_has_no_strategy_specific_keys(client):
     }
     assert data["strategy"]["phases"] == []
     assert data["strategy"]["metrics"] == {}
+    # El marco es del motor (agrupa el feed de 1 m), no un parámetro del plugin.
+    assert data["strategy"]["timeframe"] == "1m"
 
 
 def test_validation_reports_inconclusive_without_trades(client):

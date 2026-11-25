@@ -31,6 +31,15 @@ def test_defaults_match_spec():
     assert settings.instruments.items[0].contract_size is None
 
 
+def test_strategy_timeframe_defaults_to_one_minute():
+    assert Settings().strategy.timeframe == "1m"
+
+
+def test_strategy_timeframe_rejects_unknown():
+    with pytest.raises(ValidationError):
+        Settings.model_validate({"strategy": {"timeframe": "7m"}})
+
+
 def test_corrupt_config_is_archived_and_defaults_restored(tmp_path):
     path = tmp_path / "config.json"
     path.write_text("{not json", encoding="utf-8")

@@ -139,6 +139,10 @@ class StrategyBlock(_Model):
     id: str
     name: str
     version: str
+    # Marco de velas que consume la estrategia. No es el del gráfico: el feed
+    # llega en 1 m y se agrupa antes de evaluar, así que la interfaz tiene que
+    # poder decir «esta señal se pensó con velas de 15 m».
+    timeframe: str = "1m"
     state: str
     state_label: str
     phases: list[PhaseModel] = Field(default_factory=list)

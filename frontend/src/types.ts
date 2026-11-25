@@ -130,6 +130,8 @@ export interface StrategyBlock {
   id: string;
   name: string;
   version: string;
+  /** Marco de velas que consume la estrategia (no el del gráfico). */
+  timeframe?: string;
   state: string;
   state_label: string;
   phases: Phase[];

@@ -1021,6 +1021,35 @@ def test_history_resamples_open_high_low_close_volume(engine):
     assert second["c"] == 109.5
 
 
+def test_strategy_bars_resamples_and_drops_the_open_bucket(engine):
+    engine.settings.strategy.timeframe = "5m"
+    start = datetime(2026, 1, 15, 10, 0, tzinfo=timezone.utc)
+    for index in range(10):
+        engine._bars["PRIMARY"].append(
+            Bar(
+                t=start + timedelta(minutes=index),
+                o=100 + index,
+                h=101 + index,
+                l=99 + index,
+                c=100.5 + index,
+                v=10,
+            )
+        )
+    bars = engine._strategy_bars(start + timedelta(minutes=10))["PRIMARY"]
+    assert len(bars) == 2
+    first = bars[0]
+    assert first.t == start
+    assert first.o == 100
+    assert first.c == 104.5
+    assert first.h == 105
+    assert first.l == 99
+    assert first.v == 50
+    second = bars[1]
+    assert second.t == start + timedelta(minutes=5)
+    assert second.o == 105
+    assert second.c == 109.5
+
+
 def test_history_rejects_an_unknown_timeframe(engine):
     import pytest
 

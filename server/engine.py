@@ -11,7 +11,7 @@ import asyncio
 import json
 import time
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Awaitable, Callable
 
 from .config import Settings
@@ -574,15 +574,54 @@ class TradingEngine:
             self._persist()
         self._update_open_risk()
 
-    def _warmup_progress(self) -> tuple[bool, str]:
+    def _strategy_bars(self, clock: datetime) -> dict[str, list[Bar]]:
+        """Velas de la estrategia: agrega el feed al marco configurado.
+
+        OKX entrega 1m. Una estrategia de 15m no puede mirar la vela de 1m: se
+        agrupa por cubo UTC y se descarta el cubo todavía abierto, para que la
+        señal use el mismo cierre que el backtest.
+        """
+        minutes = _timeframe_minutes(self.settings.strategy.timeframe)
+        if minutes <= 1:
+            return {symbol: list(values) for symbol, values in self._bars.items()}
+        step = minutes * 60
+        result: dict[str, list[Bar]] = {}
+        for symbol, bars in self._bars.items():
+            buckets: dict[int, Bar] = {}
+            for bar in bars:
+                bucket = int(bar.t.timestamp()) // step
+                current = buckets.get(bucket)
+                if current is None:
+                    buckets[bucket] = Bar(
+                        t=datetime.fromtimestamp(bucket * step, tz=timezone.utc),
+                        o=bar.o,
+                        h=bar.h,
+                        l=bar.l,
+                        c=bar.c,
+                        v=bar.v,
+                    )
+                else:
+                    current.h = max(current.h, bar.h)
+                    current.l = min(current.l, bar.l)
+                    current.c = bar.c
+                    current.v += bar.v
+            result[symbol] = [
+                bar
+                for bar in buckets.values()
+                if bar.t + timedelta(minutes=minutes) <= clock
+            ]
+        return result
+
+    def _warmup_progress(self, clock: datetime) -> tuple[bool, str]:
         requirement = self.strategy.warmup_requirements()
         if not requirement.bars:
             return True, ""
+        bars = self._strategy_bars(clock)
         for symbol, needed in requirement.bars.items():
             targets = (
-                self._bars.values()
+                bars.values()
                 if symbol == "*"
-                else [self._bars.get(symbol, [])]
+                else [bars.get(symbol, [])]
             )
             have = min((len(values) for values in targets), default=0)
             if have < needed:
@@ -591,10 +630,10 @@ class TradingEngine:
 
     def _evaluate(self, tick: Tick, session: SessionInfo) -> None:
         primary = self.settings.instruments.primary
-        bars = {symbol: list(values) for symbol, values in self._bars.items()}
+        bars = self._strategy_bars(tick.ts)
         if not bars.get(primary):
             return
-        ready, detail = self._warmup_progress()
+        ready, detail = self._warmup_progress(tick.ts)
         if not ready:
             self._output = StrategyOutput(
                 state="warmup",
@@ -618,6 +657,7 @@ class TradingEngine:
             if self.state.block_reason in {
                 "risk_per_trade",
                 "stop_too_wide",
+                "stop_too_tight",
                 "invalid_stop",
                 "invalid_stop_side",
                 "invalid_target_side",
@@ -1109,10 +1149,11 @@ def _aware(value: datetime) -> datetime:
     return value if value.tzinfo is not None else value.replace(tzinfo=timezone.utc)
 
 
-def _strategy_key(settings: Settings) -> tuple[str, str]:
-    """Identity of the configured plugin: id plus its parameters, order-insensitive."""
+def _strategy_key(settings: Settings) -> tuple[str, str, str]:
+    """Identity of the configured plugin: id, timeframe and params."""
     return (
         settings.strategy.id,
+        settings.strategy.timeframe,
         json.dumps(settings.strategy.params, sort_keys=True, default=str),
     )
 
