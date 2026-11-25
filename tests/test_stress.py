@@ -23,6 +23,9 @@ def _stats(**closed) -> dict:
 def test_stressed_settings_doubles_costs(settings):
     clone = stressed_settings(settings, 2.0)
     assert clone.execution.commission_per_unit_side == settings.execution.commission_per_unit_side * 2
+    assert clone.execution.fee_taker_bps == settings.execution.fee_taker_bps * 2
+    assert clone.execution.fee_maker_bps == settings.execution.fee_maker_bps * 2
+    assert clone.execution.half_spread_bps == settings.execution.half_spread_bps * 2
     assert clone.execution.slippage_ticks == settings.execution.slippage_ticks * 2
     # The original is not mutated.
     assert settings.execution.slippage_ticks == 1

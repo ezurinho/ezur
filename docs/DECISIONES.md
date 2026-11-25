@@ -328,3 +328,24 @@ tiraba ese dato.
 **Consecuencia.** Un cierre que llegue dos veces (reinicio con backfill, reintento,
 replay) deja una fila y una suma, no dos. Coste: una consulta extra en el caso
 raro de la fila duplicada.
+
+## ADR 0.16 · La comisión de bolsa se cobra una vez
+
+**Contexto.** `_fees` sumaba la comisión explícita del perfil
+(`commission_per_unit_side` o `commission_pct_side`) y el modelo en puntos
+básicos del `strategy_spec` (`fee_taker_bps + half_spread_bps`). En el perfil de
+OKX la comisión explícita —0,049 USD por unidad, con unidad de 0,001 BTC— son
+los mismos 5 pb de bolsa que el modelo en pb volvía a cobrar: cada lado pagaba
+~10 pb. La evidencia se encarecía al medirla, no al ejecutarla.
+
+**Decisión.**
+- La comisión explícita (porcentaje del nocional o por unidad) sustituye al
+  modelo en pb; el modelo en pb sólo se aplica cuando no hay comisión explícita.
+- El medio spread y el impacto se suman siempre: no son la comisión de bolsa.
+- `stressed_settings` duplica también `fee_maker_bps`, `fee_taker_bps` y
+  `half_spread_bps`, para que el coste ×2 siga siéndolo aunque el perfil use el
+  modelo en pb.
+
+**Consecuencia.** El coste medido por lado vuelve a ser el declarado (5 pb +
+medio spread). Las mediciones anteriores con el perfil de OKX están
+sobrecargadas en ~5 pb por lado y hay que repetirlas antes de citarlas.
