@@ -38,10 +38,8 @@ def test_integrity_fails_when_the_hash_is_not_reproducible():
     assert "hash inestable" in outcome.detail
 
 
-def test_measure_integrity_on_a_real_file(settings, tmp_path):
-    from tests.test_backtest_golden import _synthetic_csv
-
-    path = _synthetic_csv(settings, tmp_path / "ok.csv", bars=30)
+def test_measure_integrity_on_a_real_file(settings, tmp_path, synthetic_csv):
+    path = synthetic_csv(tmp_path / "ok.csv", bars=30)
     assert measure_integrity(path, settings.instruments.symbols).status == "pass"
 
     broken = tmp_path / "broken.csv"
@@ -50,10 +48,8 @@ def test_measure_integrity_on_a_real_file(settings, tmp_path):
     assert outcome.status == "fail"
 
 
-def test_dataset_hash_is_stable(settings, tmp_path):
-    from tests.test_backtest_golden import _synthetic_csv
-
-    path = _synthetic_csv(settings, tmp_path / "ok.csv", bars=30)
+def test_dataset_hash_is_stable(settings, tmp_path, synthetic_csv):
+    path = synthetic_csv(tmp_path / "ok.csv", bars=30)
     first = Dataset.load(path, settings.instruments.symbols)
     second = Dataset.load(path, settings.instruments.symbols)
     assert first.dataset_id == second.dataset_id
