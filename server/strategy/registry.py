@@ -16,7 +16,7 @@ from .fade import FadeStrategy
 from .null_strategy import NullStrategy
 from .reference import ReferenceStrategy
 from .trend import TrendStrategy
-from .spec_schema import StrategySpec, load_spec, validate_spec, spec_path_display
+from .spec_schema import StrategySpec, load_spec, validate_spec
 
 # --------------------------------------------------------------------------- #
 # Plugin strategies (existing)
