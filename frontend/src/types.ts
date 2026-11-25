@@ -165,6 +165,8 @@ export interface Order {
   stop_price: number | null;
   target_price: number | null;
   signal_key: string;
+  /** Presupuesto de riesgo de la señal; el fill real puede reducirlo. */
+  risk_budget?: number;
 }
 
 export interface Risk {

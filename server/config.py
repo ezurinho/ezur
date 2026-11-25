@@ -221,6 +221,11 @@ class RiskConfig(_Model):
     max_units_per_trade: int = 5
     max_stop_ticks: int = 200
     min_stop_ticks: int = 0
+    # Peaje de ida y vuelta máximo, en fracción del riesgo de la señal (1 R).
+    # 0 lo apaga. Un perfil que opera de verdad lo fija en el límite del
+    # estudio (0,25 R); los escenarios sintéticos con costes irreales lo dejan
+    # apagado para seguir midiendo la infraestructura.
+    max_cost_r: float = 0.0
     trade_window_start: str = "09:00"
     trade_window_end: str = "15:30"
     entry_exclusion_start: str | None = None
@@ -295,6 +300,7 @@ class RiskConfig(_Model):
         "cooldown_minutes",
         "no_trade_after_consecutive_losses",
         "min_stop_ticks",
+        "max_cost_r",
     )
     @classmethod
     def _nonnegative_limit(cls, value: float | int) -> float | int:

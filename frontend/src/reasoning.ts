@@ -93,11 +93,23 @@ export function buildReasoning(snapshot: SnapshotData): Reasoning {
     {
       key: "data",
       label: "Datos",
-      status: data.quality === "ok" && data.bars_available > 0 ? "pass" : data.bars_available > 0 ? "warn" : "fail",
+      // Un motor detenido no tiene feed: eso no es un fallo de datos, es el
+      // estado que pidió el operador. El rojo se reserva para el motor vivo
+      // que se quedó sin mercado.
+      status:
+        status === "stopped" && data.bars_available === 0
+          ? "idle"
+          : data.quality === "ok" && data.bars_available > 0
+            ? "pass"
+            : data.bars_available > 0
+              ? "warn"
+              : "fail",
       detail:
         data.bars_available > 0
           ? `${data.provider} · ${data.bars_available} velas · última hace ${seconds(data.staleness_ms)} · calidad ${qualityLabel(data.quality)}`
-          : `${data.provider} · sin velas: no hay mercado que evaluar`,
+          : status === "stopped"
+            ? `${data.provider} · motor detenido: sin feed en vivo`
+            : `${data.provider} · sin velas: no hay mercado que evaluar`,
     },
     {
       key: "session",

@@ -41,6 +41,7 @@ class RiskManager:
         *,
         clock: datetime | None = None,
         timezone_name: str | None = None,
+        fee_per_unit: float = 0.0,
     ) -> RiskDecision:
         cfg = self.config
 
@@ -133,6 +134,19 @@ class RiskManager:
                 f"stop de {stop_ticks:.0f} ticks por debajo del mínimo",
             )
 
+        risk_per_unit = stop_distance / instrument.tick_size * instrument.tick_value
+        # El coste también es riesgo: una operación que paga 0,3 R de comisión
+        # necesita acertar tres de cada diez más solo para empatar. El peaje se
+        # mide contra la pérdida en el stop, que es el 1 R de la señal.
+        if cfg.max_cost_r and fee_per_unit > 0 and risk_per_unit > 0:
+            cost_r = fee_per_unit / risk_per_unit
+            if cost_r > cfg.max_cost_r:
+                return reject(
+                    "cost_above_budget",
+                    f"el peaje de ida y vuelta cuesta {cost_r:.3f} R y el máximo "
+                    f"es {cfg.max_cost_r:g} R: el stop es demasiado estrecho",
+                )
+
         if clock is not None and timezone_name is not None:
             window_code = self._outside_window(clock, timezone_name)
             if window_code:
@@ -159,7 +173,6 @@ class RiskManager:
             if 0 <= elapsed < cfg.cooldown_minutes:
                 return reject("cooldown_active", "cooldown tras la última salida")
 
-        risk_per_unit = stop_distance / instrument.tick_size * instrument.tick_value
         budget = portfolio.equity * cfg.risk_per_trade_pct / 100
         units = int(budget // risk_per_unit) if risk_per_unit > 0 else 0
         units = min(units, cfg.max_units_per_trade)
@@ -200,6 +213,7 @@ class RiskManager:
             ),
             units=units,
             risk_per_unit=risk_per_unit,
+            risk_budget=budget,
             size_factor=round(realized_factor, 4),
         )
 

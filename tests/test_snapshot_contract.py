@@ -168,10 +168,12 @@ def test_position_open_reason_survives_with_a_pending_order(settings):
             price=100.0,
             status="pending",
             created_ts=NOW,
+            risk_budget=250.0,
         )
     ]
     snapshot = SnapshotBuilder(settings).build(state, None)
     assert snapshot["data"]["risk"]["block_reason"] == "position_open"
+    assert snapshot["data"]["orders"][0]["risk_budget"] == 250.0
 
 
 def test_stale_max_trades_reason_is_dropped(settings):

@@ -85,7 +85,6 @@ class ORBStrategy(BaseStrategy):
 
         # Current session info
         session = md.session
-        template = md.params.get("session_template") if hasattr(md, "params") else None
         # For now, use a simple approach: check if we're in the first N bars of the session
         # In a real implementation, this would use session timing
 

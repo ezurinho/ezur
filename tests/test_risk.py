@@ -59,12 +59,49 @@ def test_rejection_codes(settings, signal_long, portfolio_kwargs, expected):
     assert decision.code == expected
 
 
+def test_el_peaje_de_ida_y_vuelta_no_puede_comerse_el_riesgo(settings, signal_long):
+    settings.risk.max_cost_r = 0.25
+    manager = RiskManager(settings.risk)
+    instrument = settings.instruments.by_symbol(settings.instruments.primary)
+
+    def decide(fee_per_unit: float):
+        return manager.evaluate(
+            signal_long,
+            _portfolio(settings),
+            instrument,
+            clock=NOW,
+            timezone_name=settings.instruments.template_for(instrument.symbol).timezone,
+            fee_per_unit=fee_per_unit,
+        )
+
+    # El stop arriesga 1,0 por unidad: 0,20 R de peaje cabe, 0,30 R no.
+    assert decide(0.20).approved is True
+    rejected = decide(0.30)
+    assert rejected.approved is False
+    assert rejected.code == "cost_above_budget"
+    assert "0.300 R" in rejected.message
+
+
+def test_el_tope_de_coste_se_puede_apagar(settings, signal_long):
+    decision = RiskManager(settings.risk).evaluate(
+        signal_long,
+        _portfolio(settings),
+        settings.instruments.by_symbol(settings.instruments.primary),
+        clock=NOW,
+        timezone_name="UTC",
+        fee_per_unit=10.0,
+    )
+
+    assert decision.approved is True
+
+
 def test_sizing_uses_instrument_spec(settings, signal_long):
     decision = _evaluate(settings, signal_long, _portfolio(settings))
     # 250 USD budget / 1.0 USD per unit = 250, capped at 5
     assert decision.approved is True
     assert decision.units == 5
     assert decision.risk_per_unit == pytest.approx(1.0)
+    assert decision.risk_budget == pytest.approx(250.0)
 
 
 def test_size_below_one_is_rejected(settings, signal_long):
