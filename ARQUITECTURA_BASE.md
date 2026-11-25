@@ -1,7 +1,7 @@
 # Arquitectura base (agnóstica de estrategia)
 
 **Plantilla:** terminal local de trading algorítmico, reutilizable para cualquier estrategia.
-**Estado:** esqueleto implementado y operativo. La estrategia real todavía no existe: su único punto de entrada sigue siendo el bloque final `# Aquí va la estrategia`. La estrategia de referencia (`reference`) existe solo para ejercitar el pipeline y está marcada como no validada.
+**Estado:** esqueleto implementado y operativo. La estrategia real todavía no existe: su único punto de entrada sigue siendo el bloque final `# Aquí va la estrategia`. El motor arranca con `null` (sin señal). Los plugins `reference`, `donchian`, `fade` y `trend` son ejemplos para ejercitar el pipeline: ninguno está validado ni es requisito del esqueleto, y se pueden borrar sin tocar el motor.
 
 **Invariante central:** todo lo descrito aquí funciona igual con cualquier estrategia, cualquier conjunto de instrumentos y cualquier temporalidad, porque ni el motor, ni el snapshot, ni React conocen nombres de activos, fases concretas ni reglas de entrada.
 
@@ -104,6 +104,9 @@ server/
     registry.py                resolve_strategy(id) + validación de params
     null_strategy.py           NullStrategy: no emite señal (placeholder del esqueleto)
     reference.py               referencia sin validar (cruce SMA + ATR)
+    donchian.py                ruptura de canal (ejemplo, sin validar)
+    fade.py                    reversión a la media (ejemplo, sin validar)
+    trend.py                   seguimiento de tendencia (ejemplo, sin validar)
   market/
     feed.py                    MarketFeed, SimulatedFeed, CSVFeed, LiveFeed
     csv_data.py                carga, alineación y validación multi-serie
