@@ -55,6 +55,8 @@ class Order(_Model):
     stop_price: float | None = None
     target_price: float | None = None
     signal_key: str = ""
+    # Presupuesto capturado al aprobar la señal; la ejecución lo reaplica al fill real.
+    risk_budget: float = 0.0
 
 
 class Position(_Model):
@@ -124,6 +126,8 @@ class RiskDecision(_Model):
     message: str = ""
     units: int = 0
     risk_per_unit: float = 0.0
+    # Pérdida máxima en el stop, en divisa de cotización, capturada al aprobar.
+    risk_budget: float = 0.0
     # 1.0 = tamaño completo; por debajo, el freno está operando a media máquina.
     size_factor: float = 1.0
 
