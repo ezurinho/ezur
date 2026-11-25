@@ -41,6 +41,8 @@ const WORDS: Record<string, string> = {
     "La señal pide el stop del lado equivocado: no protegería nada. Es un fallo de la estrategia, no del mercado.",
   invalid_target_side:
     "La señal pide el objetivo detrás de la entrada: se cerraría sola en la primera vela. Es un fallo de la estrategia.",
+  edge_below_cost:
+    "La esperanza medida del marco no supera el coste por operación: cada entrada pagaría más de lo que la ventaja aporta. El motor no abre hasta que la evidencia lo demuestre.",
 };
 
 /** Qué haría falta para desbloquearlo. Vacío = se desbloquea solo. */
@@ -64,6 +66,8 @@ const UNLOCK: Record<string, string> = {
   gap_through_stop: "se desbloquea con una nueva señal",
   gap_through_target: "se desbloquea con una nueva señal",
   stop_too_tight: "se desbloquea cuando la volatilidad dé un stop más ancho o se baje el mínimo del perfil",
+  edge_below_cost:
+    "requiere una evidencia nueva con esperanza medida por encima del coste por operación",
 };
 
 export interface ReasonContext {
