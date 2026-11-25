@@ -337,7 +337,7 @@ def test_min_stop_ticks_cannot_be_negative():
 
 def test_last_exit_survives_a_restart(tmp_path, settings, signal_long):
     """El reinicio no puede dejar la pausa de racha sin fecha."""
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     from server.db import Store
     from server.engine import TradingEngine
