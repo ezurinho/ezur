@@ -179,8 +179,8 @@ def build(
                 raise ValueError(f"{month}: no se pudo preparar el mes: {error}") from error
             downloaded += 1 if state == "downloaded" else 0
             count = 0
-            for stamp, o, h, l, c, v in rows(path):
-                writer.writerow([stamp, bot_symbol, o, h, l, c, v])
+            for stamp, o, h, low, c, v in rows(path):
+                writer.writerow([stamp, bot_symbol, o, h, low, c, v])
                 count += 1
                 first = first or stamp
                 last = stamp
