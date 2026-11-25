@@ -22,6 +22,7 @@ EMPTY_STATS: dict[str, Any] = {
     "win_rate": 0.0,
     "profit_factor": 0.0,
     "expectancy_r": 0.0,
+    "pnl_gross": 0.0,
     "pnl_net": 0.0,
     "fees": 0.0,
     "r_total": 0.0,
@@ -167,6 +168,9 @@ def compute_stats(
         if gross_loss
         else float(gross_win > 0),
         "expectancy_r": sum(trade.r_multiple for trade in records) / len(records),
+        # Sin el bruto no se distingue una estrategia sin ventaja de una con
+        # ventaja que se come el coste: las dos acaban en P&L negativo.
+        "pnl_gross": sum(trade.pnl_gross for trade in records),
         "pnl_net": pnl_net,
         "fees": sum(trade.fees for trade in records),
         "r_total": sum(trade.r_multiple for trade in records),

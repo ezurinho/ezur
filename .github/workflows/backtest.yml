@@ -1,0 +1,109 @@
+name: backtest
+
+on:
+  workflow_dispatch:
+    inputs:
+      symbol:
+        description: "Simbolo en Binance Vision"
+        default: BTCUSDT
+      bot_symbol:
+        description: "Simbolo del bot"
+        default: BTC
+      interval:
+        description: "Marco de las velas descargadas"
+        default: 1m
+      start:
+        description: "Primer mes (YYYY-MM)"
+        default: "2025-01"
+      end:
+        description: "Ultimo mes (YYYY-MM)"
+        default: "2025-12"
+      config:
+        description: "Perfil con el que se mide"
+        default: profiles/okx/config.json
+      split:
+        description: "Corte IS/OOS (YYYY-MM-DD). Vacio = sin corte"
+        default: "2025-07-01"
+      overrides:
+        description: 'JSON que se mezcla con el perfil, ej. {"execution":{"commission_pct_side":0.00082}}'
+        default: "{}"
+
+permissions:
+  contents: read
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Instalar dependencias
+        run: python -m pip install -r requirements.txt
+
+      # El dataset no vive en el repo: se reconstruye desde Binance Vision en
+      # cada corrida. Asi el informe es reproducible sin versionar 50 MB de
+      # velas y sin depender de un fichero que solo tiene una maquina.
+      - name: Descargar velas
+        env:
+          SYMBOL: ${{ inputs.symbol }}
+          BOT_SYMBOL: ${{ inputs.bot_symbol }}
+          INTERVAL: ${{ inputs.interval }}
+          START: ${{ inputs.start }}
+          END: ${{ inputs.end }}
+        run: |
+          python -m server.datasets vision \
+            --symbol "$SYMBOL" --bot-symbol "$BOT_SYMBOL" \
+            --interval "$INTERVAL" --start "$START" --end "$END" \
+            --out "$RUNNER_TEMP/dataset.csv" --cache "$RUNNER_TEMP/vision"
+
+      - name: Mezclar overrides
+        env:
+          CONFIG: ${{ inputs.config }}
+          OVERRIDES: ${{ inputs.overrides }}
+        run: |
+          jq --argjson extra "$OVERRIDES" '. * $extra' "$CONFIG" \
+            > "$RUNNER_TEMP/config.json"
+          cat "$RUNNER_TEMP/config.json" | head -c 400
+
+      - name: Backtest
+        env:
+          SPLIT: ${{ inputs.split }}
+        run: |
+          args=(--dataset "$RUNNER_TEMP/dataset.csv" \
+                --config "$RUNNER_TEMP/config.json" \
+                --json --out "$RUNNER_TEMP/backtest.json")
+          if [ -n "$SPLIT" ]; then args+=(--split "$SPLIT"); fi
+          python -m server.backtest "${args[@]}"
+
+      - name: Resumen
+        run: |
+          python - "$RUNNER_TEMP/backtest.json" <<'PY'
+          import json
+          import sys
+
+          doc = json.load(open(sys.argv[1], encoding="utf-8"))
+          keys = ("trades", "win_rate", "profit_factor", "expectancy_r",
+                  "pnl_gross", "pnl_net", "fees", "max_drawdown")
+
+          def block(name, data):
+              if not data:
+                  return
+              print(name, " ".join(f"{k}={data.get(k, 0):.4g}" for k in keys))
+
+          block("closed", doc.get("metrics") or {})
+          split = doc.get("split") or {}
+          block("is", split.get("in_sample") or {})
+          block("oos", split.get("out_of_sample") or {})
+          print("cost_r", doc.get("cost_per_trade_r"))
+          print("config_hash", doc.get("config_hash"))
+          print("diagnostics", json.dumps(doc.get("diagnostics") or {}, sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backtest
+          path: ${{ runner.temp }}/backtest.json
+          if-no-files-found: error
