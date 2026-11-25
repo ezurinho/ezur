@@ -92,9 +92,18 @@ class SimulatedFeed(MarketFeed):
 class CSVFeed(MarketFeed):
     name = "csv"
 
-    def __init__(self, path: str | Path, instruments: list[str]) -> None:
+    def __init__(
+        self,
+        path: str | Path,
+        instruments: list[str],
+        start: datetime | None = None,
+        end: datetime | None = None,
+    ) -> None:
         self.path = Path(path)
         self.instruments = list(instruments)
+        # Ventana opcional [start, end) para medir un tramo sin copiar el CSV.
+        self.start = start
+        self.end = end
 
     def iter_ticks(self) -> Iterator[Tick]:
         """Lee vela a vela, sin cargar el dataset entero en memoria.
@@ -114,6 +123,10 @@ class CSVFeed(MarketFeed):
                 if symbol not in self.instruments:
                     continue
                 stamp = _parse_ts(row["ts"])
+                if self.start is not None and stamp < self.start:
+                    continue
+                if self.end is not None and stamp >= self.end:
+                    break
                 if current_stamp is not None and stamp < current_stamp:
                     raise ValueError(
                         f"dataset no ordenado por ts: {stamp.isoformat()} "
