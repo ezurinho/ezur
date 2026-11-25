@@ -91,6 +91,8 @@ def run_backtest(
     strategy: BaseStrategy | None = None,
     *,
     run_group: str | None = None,
+    start: datetime | None = None,
+    end: datetime | None = None,
 ) -> BacktestResult:
     symbols = settings.instruments.symbols
     dataset = Dataset.load(dataset_path, symbols)
@@ -108,12 +110,12 @@ def run_backtest(
         engine = TradingEngine(
             settings,
             store,
-            feed=CSVFeed(dataset.path, symbols),
+            feed=CSVFeed(dataset.path, symbols, start=start, end=end),
             strategy=engine_strategy,
             mode="backtest",
         )
         engine.start()
-        for tick in CSVFeed(dataset.path, symbols).iter_ticks():
+        for tick in CSVFeed(dataset.path, symbols, start=start, end=end).iter_ticks():
             engine._process(tick)
         rows = list(reversed(store.list_trades(limit=1_000_000, mode="backtest")))
         equity = [point["equity"] for point in store.equity_curve(limit=1_000_000)]
@@ -213,7 +215,7 @@ def main() -> None:
         default=None,
         help=(
             "tope de stop en ticks para esta corrida; el perfil intradía rechaza "
-            "las señales de velas grandes por stop_too_wide"
+            "las señales de velas grandes por stop_too_wide (0 = sin tope)"
         ),
     )
     parser.add_argument(
@@ -224,6 +226,18 @@ def main() -> None:
             "mínimo de stop en ticks para esta corrida; recorta la cola de "
             "señales con coste alto (0 = sin filtro)"
         ),
+    )
+    parser.add_argument(
+        "--from",
+        dest="date_from",
+        default=None,
+        help="primer día ISO (AAAA-MM-DD), incluido; sin esto, desde el inicio",
+    )
+    parser.add_argument(
+        "--to",
+        dest="date_to",
+        default=None,
+        help="día ISO (AAAA-MM-DD) de corte, excluido; sin esto, hasta el final",
     )
     parser.add_argument("--json", action="store_true", help="imprime el resultado como JSON")
     parser.add_argument("--out", default=None, help="escribe ese JSON en una ruta")
@@ -241,7 +255,9 @@ def main() -> None:
     if args.min_stop_ticks is not None:
         settings.risk.min_stop_ticks = args.min_stop_ticks
 
-    result = run_backtest(settings, args.dataset)
+    start = _iso_day(args.date_from) if args.date_from else None
+    end = _iso_day(args.date_to) if args.date_to else None
+    result = run_backtest(settings, args.dataset, start=start, end=end)
     primary = settings.instruments.primary
     timezone_name = settings.instruments.template_for(primary).timezone
     stats = aggregate(
@@ -249,6 +265,12 @@ def main() -> None:
     )
     closed = stats["closed"]
     print(f"dataset   {args.dataset}")
+    if start or end:
+        print(
+            "ventana   {} -> {}".format(
+                start.date() if start else "inicio", end.date() if end else "fin"
+            )
+        )
     print(f"estrategia {result.strategy_id} v{result.strategy_version}")
     print(f"hash      {result.dataset_id[:16]}  config {result.config_hash}")
     print(
@@ -278,6 +300,12 @@ def main() -> None:
                 print(f"  {outcome.id}: {outcome.detail}")
 
     _report_run(args, settings, result, stats, report)
+
+
+def _iso_day(value: str) -> datetime:
+    """Fecha ISO del CLI; sin zona se asume UTC, como el resto del motor."""
+    parsed = datetime.fromisoformat(value)
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
 
 
 def _print_years(trades) -> None:
@@ -348,8 +376,9 @@ def _report_run(args, settings, result, stats, report) -> None:
         )
         if blockers:
             print(
-                "  aviso: el perfil bloqueó " f"{blockers} señales antes de operar; "
-                "un backtest de validación necesita config/okx-daily.json"
+                "  aviso: el perfil bloqueó "
+                f"{blockers} señales antes de operar; repite con --max-stop-ticks 0 "
+                "para medir sin el tope del perfil"
             )
     if cost_r is not None:
         scope = "fuera de muestra" if args.split else "toda la corrida"
@@ -368,6 +397,7 @@ def _report_run(args, settings, result, stats, report) -> None:
 
     payload = {
         "dataset": str(args.dataset),
+        "window": {"from": args.date_from, "to": args.date_to},
         "dataset_id": result.dataset_id,
         "config_hash": result.config_hash,
         "strategy": {"id": result.strategy_id, "version": result.strategy_version},
