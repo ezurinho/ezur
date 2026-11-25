@@ -462,11 +462,14 @@ def run_backtest_for_spec(
     df5: pd.DataFrame,
     quiet: bool = False,
     base: Settings | None = None,
+    cost_multiplier: float = 1.0,
 ) -> tuple[pd.DataFrame, list, dict]:
     """Run backtest for a single spec using the deterministic engine.
 
     Con `base`, mandan los límites y costes del perfil; la spec solo aporta la
     estrategia y sus parámetros. Sin `base` se usan los límites de investigación.
+    Con `cost_multiplier` se re-ejecuta el mismo backtest con comisión, fees,
+    medio spread y slippage multiplicados (el estrés de costes).
 
     Returns (trades_df, equity_curve, metrics_dict) or (empty_df, [], {}) if no trades.
     """
@@ -588,6 +591,11 @@ def run_backtest_for_spec(
         settings.instruments.items = [item]
         settings.instruments.primary = item.symbol
 
+    if cost_multiplier != 1.0:
+        from .stress import stressed_settings
+
+        settings = stressed_settings(settings, cost_multiplier)
+
     # Write df5 to a temporary CSV for the backtest
     import tempfile
     with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
@@ -680,11 +688,14 @@ def run_selection_cycle(
     end: datetime | None = None,
     base_settings: Settings | None = None,
     all_specs: bool = False,
+    stress_multiplier: float = 2.0,
 ) -> dict:
     """Run the full selection cycle and return the payload.
 
     Con `base_settings`, cada backtest usa los límites y costes de ese perfil en
     vez de los de investigación: el ciclo mide el bot que va a operar.
+    Con `stress_multiplier > 1`, cada configuración se re-ejecuta con los costes
+    multiplicados y el resultado queda en `payload["stress"]`.
     """
     if spec_dir is None:
         spec_dir = ROOT / "data" / "specs"
@@ -705,6 +716,7 @@ def run_selection_cycle(
     daily: dict[str, pd.Series] = {}
     trade_log: dict[str, pd.DataFrame] = {}
     summary = []
+    stress_summary: list[dict] = []
 
     if not quiet:
         print(f"Running backtests for {len(specs)} specs...")
@@ -736,6 +748,37 @@ def run_selection_cycle(
             "exp_r": closed_metrics.get("expectancy_r", 0.0),
             "days": int(daily_returns.size),
         })
+
+        if stress_multiplier and stress_multiplier > 1.0:
+            _, _, stress_metrics = run_backtest_for_spec(
+                spec,
+                df5,
+                base=base_settings,
+                cost_multiplier=stress_multiplier,
+            )
+            stressed_closed = stress_metrics.get("closed", {})
+            entry = {
+                "name": name,
+                "base_pf_net": summary[-1]["pf_net"],
+                "base_exp_r": summary[-1]["exp_r"],
+                "trades": stressed_closed.get("trades", 0),
+                "pf_net": stressed_closed.get("profit_factor", 0.0),
+                "exp_r": stressed_closed.get("expectancy_r", 0.0),
+                "pnl_net": stressed_closed.get("pnl_net", 0.0),
+                "survives": bool(
+                    stressed_closed.get("trades", 0) > 0
+                    and stressed_closed.get("profit_factor", 0.0) > 1.0
+                    and stressed_closed.get("expectancy_r", 0.0) > 0.0
+                ),
+            }
+            stress_summary.append(entry)
+            summary[-1]["stress"] = entry
+            if not quiet:
+                print(
+                    f"  {name:26s} x{stress_multiplier:g}  "
+                    f"PF {entry['pf_net']:.3f}  exp {entry['exp_r']:+.3f} R  "
+                    f"{'sobrevive' if entry['survives'] else 'no sobrevive'}"
+                )
 
         if not quiet:
             print(f"  {name:26s} {len(trade_df):6d} trades  PF {summary[-1]['pf_net']:.3f}  "
@@ -785,6 +828,24 @@ def run_selection_cycle(
     cp = cpcv(matrix, blocks=blocks, test_blocks=test_blocks, purge=purge)
     psr = probabilistic_sharpe(matrix[best].to_numpy())
 
+    stress_block = None
+    if stress_summary:
+        selected_stress = next(
+            (item for item in stress_summary if item["name"] == best), None
+        )
+        stress_block = {
+            "multiplier": stress_multiplier,
+            "method": "rerun",
+            "selected": best,
+            "selected_survives": bool(
+                selected_stress and selected_stress["survives"]
+            ),
+            "survivors": [
+                item["name"] for item in stress_summary if item["survives"]
+            ],
+            "configs": stress_summary,
+        }
+
     years = matrix.index.to_series().diff().dt.days.sum() / 365.25
 
     # Data hash
@@ -806,6 +867,7 @@ def run_selection_cycle(
             "daily_observations": int(matrix.shape[0]),
             "coverage_years": round(float(years), 2),
             "limits_source": "perfil" if base_settings is not None else "investigacion",
+            "stress_multiplier": stress_multiplier,
         },
         "universe": summary,
         "pbo": pbo,
@@ -817,6 +879,7 @@ def run_selection_cycle(
         "wfa": wfa,
         "cpcv": cp,
         "psr": psr,
+        "stress": stress_block,
         "caveats": [
             "PBO y DSR son propiedades de este universo, no de una configuración suelta.",
             "El DSR de la puerta se calcula dentro del grupo de variantes de cada "
@@ -833,6 +896,8 @@ def run_selection_cycle(
             "La puerta de meseta (±20%) es un heurístico, no un test calibrado: la "
             "literatura reciente encuentra que la geometría de la meseta es un diagnóstico "
             "débil frente al PSR (Plateaus, Peaks and the PBO, 2025).",
+            "El estrés de costes re-ejecuta cada configuración con comisión, fees, "
+            "medio spread y slippage multiplicados; no se estima desde el PnL base.",
         ],
     }
 
@@ -857,6 +922,12 @@ def main() -> None:
         "--all-specs",
         action="store_true",
         help="carga todos los .json del directorio, no solo el universo por defecto",
+    )
+    ap.add_argument(
+        "--stress-multiplier",
+        type=float,
+        default=2.0,
+        help="multiplicador de costes del estrés; 1 lo apaga",
     )
     ap.add_argument(
         "--from",
@@ -897,6 +968,7 @@ def main() -> None:
         end=_iso_day(args.date_to) if args.date_to else None,
         base_settings=base_settings,
         all_specs=args.all_specs,
+        stress_multiplier=args.stress_multiplier,
     )
 
     args.spec_dir = args.spec_dir or (ROOT / "data" / "specs")
