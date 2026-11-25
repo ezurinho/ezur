@@ -127,7 +127,10 @@ export function marketFreshness(
   if (ageSeconds <= 900) return { tone: "lag", label: `retrasado ${minutes} min` };
   return {
     tone: "stale",
-    label: minutes >= 60 ? `parado hace ${Math.round(minutes / 60)} h` : `parado hace ${minutes} min`,
+    label:
+      minutes >= 60
+        ? `última vela hace ${Math.round(minutes / 60)} h`
+        : `última vela hace ${minutes} min`,
   };
 }
 
