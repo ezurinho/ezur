@@ -182,7 +182,7 @@ function Shell() {
       })),
     ];
     return [...views, ...controls];
-  }, [available, control, isSimple, setMode, setTheme]);
+  }, [available, control, isSimple, push, setMode, setTheme]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
