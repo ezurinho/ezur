@@ -29,18 +29,22 @@ def decision() -> RiskDecision:
 
 
 def test_an_open_loss_is_marked_to_market(engine, decision, signal_long):
-    engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, NOW)
+    engine.execution.arm(decision, signal_long, "PRIMARY", 100.0, DAY_ONE)
     engine.start()
     engine._process(
         Tick(
-            ts=NOW,
-            bars={"PRIMARY": Bar(t=NOW, o=100.0, h=100.6, l=99.9, c=100.2, v=1)},
+            ts=DAY_ONE,
+            bars={
+                "PRIMARY": Bar(
+                    t=DAY_ONE, o=100.0, h=100.6, l=99.9, c=100.2, v=1
+                )
+            },
         )
     )
     assert engine.execution.position is not None
     assert engine.state.unrealized < 0
 
-    stamp = NOW + timedelta(minutes=1)
+    stamp = DAY_ONE + timedelta(minutes=1)
     engine._process(
         Tick(
             ts=stamp,
