@@ -7,8 +7,13 @@ que la descartó.
 
 Regla de lectura: **ninguna configuración se promueve** hasta cumplir, a la vez,
 PF fuera de muestra > 1 con 100+ operaciones, coste ponderado < 0,25 R
-(fees totales / riesgo total), PF > 1 con coste duplicado y PBO ≤ 0,2 en su
-ciclo.
+(fees totales / riesgo total), PF > 1 con coste duplicado, PBO ≤ 0,2 y
+DSR ≥ 0,95 en su ciclo. PBO y DSR salen de `config/gates.json`, el mismo
+fichero que lee el motor de estrategias.
+
+El perfil que opera aplica además `risk.max_cost_r = 0,25`: una señal cuyo peaje
+de ida y vuelta (comisión + spread) se coma más de un cuarto del riesgo no se
+abre, aunque el backtest la hubiera dado por buena.
 
 Las filas de 1 h y 1 d se midieron con el **coste nominal** de entonces
 (fees / operaciones / presupuesto), no con el ponderado por riesgo real que
@@ -131,7 +136,8 @@ La siguiente idea tendría que ser otra fuente de señal, no otra rejilla.
 `profiles/okx/config.json` opera `reference v0.1.0` con **velas de 15 m**: el
 feed de OKX llega en 1 m (`bar=1m`) y el motor lo agrupa antes de evaluar
 (`strategy.timeframe`). Ese perfil está **parado a propósito**: su candidato de
-15 m pasó todos los criterios de la puerta menos el PBO (0,441), así que
+15 m pasó todos los criterios de la puerta menos el PBO (0,441) y el DSR
+(0,093), así que
 `"promotion": {"required": true, "mode": "block"}` impide arrancarlo hasta que
 haya un candidato promovido. La medición con el perfil anterior de 1 minuto:
 
