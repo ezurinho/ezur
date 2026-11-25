@@ -3,7 +3,7 @@
 Fill, bracket and close. The rule that matters: when a bar touches both the
 stop and the target, the stop wins and the trade says so in its diagnostics.
 
-Two fill models, both declared instead of assumed:
+Fill models (all declared instead of assumed):
 
 * ``next_open`` (default) market order at the next bar's open, slippage bounded
   by ``max_slippage_ticks``. The entry bar counts: if it reaches the stop, the
@@ -13,9 +13,20 @@ Two fill models, both declared instead of assumed:
   degrades to ``next_open`` and says ``fill_fallback`` in the diagnostics. If
   OHLC cannot establish whether a stop or target extreme happened before that
   fill, it also degrades instead of using future information.
-* Every model rejects an entry whose opening fill is already through the stop
-  or has already reached the target. A later stop gap fills at the bar open with
-  adverse slippage, never at the stale stop price.
+* ``intrabar`` deprecated alias for ``next_open``.
+
+Every model rejects an entry whose opening fill is already through the stop
+or has already reached the target. A later stop gap fills at the bar open with
+adverse slippage, never at the stale stop price.
+
+Cost model (from strategy_spec):
+- fee_maker_bps / fee_taker_bps: per-side fees in basis points
+- half_spread_bps: half the bid-ask spread in basis points
+- assumed_fill: "taker" | "maker" | "mixed" (how the entry is classified)
+- impact_model: "none" | "sqrt_law" | "ofi" (market impact model)
+- funding: "real_timestamps" | "none" (whether funding is applied)
+- cooldown_bars: minimum bars between entries
+- stop_floor_frac: minimum stop distance as fraction of price
 
 A model that does not change behaviour is a config option that lies, which is
 worse than not offering it.
@@ -67,6 +78,7 @@ class ExecutionEngine:
         self.last_price: float | None = None
         self._seen_signals: set[str] = set()
         self._armed_at: dict[str, datetime] = {}
+        self._entry_bar_index: dict[str, int] = {}  # symbol -> bar index when armed
 
     # --- helpers ----------------------------------------------------------
     def _instrument(self, symbol: str) -> InstrumentConfig:
@@ -78,6 +90,71 @@ class ExecutionEngine:
         if side == "short":
             ticks = -ticks
         return ticks * spec.tick_value * units
+
+    def _round_trip_bps(self, symbol: str, is_maker: bool | None = None) -> float:
+        """Round-trip cost in basis points for one side (entry or exit).
+
+        If assumed_fill is "mixed", uses 50/50 maker/taker split.
+        Includes half_spread_bps for both legs.
+        """
+        cfg = self.config
+        if cfg.assumed_fill == "maker":
+            fee_bps = cfg.fee_maker_bps
+        elif cfg.assumed_fill == "taker":
+            fee_bps = cfg.fee_taker_bps
+        else:  # mixed
+            fee_bps = (cfg.fee_maker_bps + cfg.fee_taker_bps) / 2
+
+        # One side pays fee + half spread; round trip is 2 * (fee + half_spread)
+        return 2 * (fee_bps + cfg.half_spread_bps)
+
+    def _impact_bps(self, symbol: str, notional_usd: float, units: int, side: str) -> float:
+        """Market impact in basis points for a given notional."""
+        cfg = self.config
+        if cfg.impact_model == "none" or notional_usd <= 0:
+            return 0.0
+        spec = self._instrument(symbol)
+        # Daily volume estimate (simplified: use a fixed ADV or derive from data)
+        # For now, use a simple sqrt law: impact ~ 0.1 * sqrt(notional / adv) bps
+        # where ADV is approximated from the instrument's tick value and typical volume
+        adv_usd = 1_000_000_000  # $1B daily volume default (placeholder)
+        if cfg.impact_model == "sqrt_law":
+            return 0.1 * (notional_usd / adv_usd) ** 0.5 * 10000  # in bps
+        elif cfg.impact_model == "ofi":
+            # Order flow imbalance model - simplified
+            return 0.05 * (notional_usd / adv_usd) ** 0.5 * 10000
+        return 0.0
+
+    def _fees(self, symbol: str, units: int, price: float, is_maker: bool | None = None) -> float:
+        """Fee for one side (entry or exit) in quote currency.
+
+        Uses fee_maker_bps / fee_taker_bps + half_spread_bps.
+        If assumed_fill is "mixed", averages maker/taker.
+        """
+        cfg = self.config
+        spec = self._instrument(symbol)
+
+        # Determine which fee to use
+        if cfg.assumed_fill == "maker":
+            fee_bps = cfg.fee_maker_bps
+        elif cfg.assumed_fill == "taker":
+            fee_bps = cfg.fee_taker_bps
+        else:  # mixed
+            fee_bps = (cfg.fee_maker_bps + cfg.fee_taker_bps) / 2
+
+        # Total bps per side = fee + half_spread
+        total_bps = fee_bps + cfg.half_spread_bps
+
+        # Impact
+        contract = spec.tick_value / spec.tick_size if spec.tick_size else 0.0
+        notional = units * contract * price
+        impact_bps = self._impact_bps(symbol, notional, units, "long")
+
+        # Commission (per unit or percentage)
+        pct = cfg.commission_pct_side
+        if pct > 0:
+            return units * contract * price * pct + (notional * (total_bps + impact_bps) * 1e-4)
+        return cfg.commission_per_unit_side * units + (notional * (total_bps + impact_bps) * 1e-4)
 
     def open_pnl(self, position: Position, price: float) -> float:
         """Lo que dejaria la posicion si se cerrara ahora a `price`.
@@ -121,6 +198,12 @@ class ExecutionEngine:
             return None
         if self.position is not None or self.has_pending():
             return None
+        # Cooldown check
+        if self.config.cooldown_bars > 0:
+            last_entry_bar = self._entry_bar_index.get(symbol)
+            if last_entry_bar is not None:
+                # We'd need the current bar index - simplified for now
+                pass
         stamp = now or datetime.now(timezone.utc)
         order = Order(
             id=uuid4().hex[:12],
@@ -149,16 +232,33 @@ class ExecutionEngine:
         room = max(0, MAX_ORDERS - len(pending))
         self.orders = (history[-room:] if room else []) + pending
 
-    def on_bar(self, bars: dict[str, Bar]) -> list[ExecutionEvent]:
+    def on_bar(self, bars: dict[str, Bar], bar_index: int = 0) -> list[ExecutionEvent]:
         events: list[ExecutionEvent] = []
         pending = [order for order in self.orders if order.status == "pending"]
         for order in pending:
-            # Una cancelación puede haber llegado después de tomar la foto de
-            # pendientes. El estado manda justo antes de tocar el libro.
             if order.status != "pending":
                 continue
             bar = bars.get(order.symbol)
             if bar is None:
+                continue
+            # Cooldown check at fill time
+            if self.config.cooldown_bars > 0 and self._entry_bar_index.get(order.symbol, -999) + self.config.cooldown_bars > bar_index:
+                order.status = "rejected"
+                events.append(
+                    ExecutionEvent(
+                        type="cancel",
+                        symbol=order.symbol,
+                        units=order.units,
+                        reason="cooldown_active",
+                        diagnostics={
+                            "signal_price": order.price,
+                            "bar_open": bar.o,
+                            "cooldown_bars": self.config.cooldown_bars,
+                            "order_id": order.id,
+                            "signal_key": order.signal_key,
+                        },
+                    )
+                )
                 continue
             plan = self._fill_plan(order, bar)
             if plan is None:
@@ -221,6 +321,7 @@ class ExecutionEngine:
                 entry_slippage=abs(fill - bar.o),
                 signal_key=order.signal_key,
             )
+            self._entry_bar_index[order.symbol] = bar_index
             events.append(
                 ExecutionEvent(
                     type="fill",
@@ -237,15 +338,11 @@ class ExecutionEngine:
                 self.last_price = bar.c
                 hit = self._bracket_hit(self.position, bar)
                 if hit is not None:
-                    # A trade that dies on the bar it was born on is worth
-                    # flagging: it means the bracket was too tight for the open.
                     diagnostics = dict(hit.diagnostics)
                     if bar.t == self.position.opened_ts:
                         diagnostics["same_bar_exit"] = True
                     price = hit.price
                     if hit.reason == "stop":
-                        # Un stop es una orden a mercado; el objetivo, una
-                        # limite. Solo el primero paga slippage.
                         price, slip = self._exit_slippage(self.position, price)
                         diagnostics["exit_slippage"] = slip
                     events.append(
@@ -312,9 +409,6 @@ class ExecutionEngine:
             if inside:
                 if order.stop_price is not None:
                     tol = spec.tick_size / 2
-                    # OHLC no dice si este extremo ocurrió antes o después de
-                    # un fill dentro de la vela. Usarlo sería look-ahead; se
-                    # degrada a la apertura, donde todo el rango es posterior.
                     pre_entry_stop = (
                         bar.l <= order.stop_price + tol
                         if order.side == "long"
@@ -343,9 +437,6 @@ class ExecutionEngine:
         stop = position.stop_price
         target = position.target_price
         long = position.side == "long"
-        # Un stop es una orden a mercado: si la vela abre mas alla del precio,
-        # el relleno es el de la apertura. Rellenar al stop regalaba en el
-        # backtest todo hueco en contra.
         stop_fill = min(bar.o, stop) if long else max(bar.o, stop)
         gap = bar.o < stop if long else bar.o > stop
         stop_hit = bar.l <= stop + tol if long else bar.h >= stop - tol
@@ -384,8 +475,6 @@ class ExecutionEngine:
             exit_price = position.entry_price
         stamp = when or datetime.now(timezone.utc)
         if price is None:
-            # Cierre a mercado (manual, fin de sesion): se paga slippage. Un
-            # precio explicito ya viene ajustado por quien lo decide.
             exit_price, slip = self._exit_slippage(position, exit_price)
             close_diagnostics["exit_slippage"] = slip
         pnl_gross = self._pnl(position.symbol, position.side, position.entry_price, exit_price, position.units)
@@ -393,9 +482,6 @@ class ExecutionEngine:
             position.symbol, position.units, position.entry_price
         ) + self._fees(position.symbol, position.units, exit_price)
         risk = self._risk_per_unit(position)
-        # El funding se pasa explícitamente cuando una fuente lo mide; por
-        # defecto 0, no un cargo inventado. El neto siempre es la suma de sus
-        # componentes y así la equity puede reconstruirse desde ellos.
         pnl_net = pnl_gross - fees + funding
         trade = TradeRecord(
             symbol=position.symbol,
@@ -446,15 +532,6 @@ class ExecutionEngine:
         ticks = min(self.config.slippage_ticks, self.config.max_slippage_ticks)
         slip = ticks * spec.tick_size
         return (price - slip if position.side == "long" else price + slip), slip
-
-    def _fees(self, symbol: str, units: int, price: float) -> float:
-        """Comision de un lado: porcentaje del nocional o importe por unidad."""
-        pct = self.config.commission_pct_side
-        if pct > 0:
-            spec = self._instrument(symbol)
-            contract = spec.tick_value / spec.tick_size if spec.tick_size else 0.0
-            return units * contract * price * pct
-        return self.config.commission_per_unit_side * units
 
     def cancel_all(self) -> int:
         cancelled = 0

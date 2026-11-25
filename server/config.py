@@ -195,14 +195,6 @@ class StrategyConfig(_Model):
     # usa timeframe. Permite ejecutar riesgo/ejecucion en 1m y estrategia en 1h/4h/1d.
     timeframe_signal: str | None = None
     params: dict[str, Any] = Field(default_factory=dict)
-    timeframe: str = "1m"
-
-    @field_validator("timeframe")
-    @classmethod
-    def _timeframe_supported(cls, value: str) -> str:
-        if value not in {"1m", "5m", "15m", "30m"}:
-            raise ValueError("timeframe debe ser 1m, 5m, 15m o 30m")
-        return value
 
     @field_validator("timeframe")
     @classmethod
@@ -237,16 +229,15 @@ class RiskConfig(_Model):
     session_close_time: str = "15:55"
     cooldown_minutes: int = 0
     no_trade_after_consecutive_losses: int = 0
-    # 0 = la racha bloquea hasta la próxima sesión. Con minutos, el bloqueo se
-    # levanta solo tras ese tiempo desde la última salida: una parada de un día
-    # entero no protege más, solo deja de mirar el mercado.
     loss_streak_cooldown_min: int = 0
-    # Frenos que reducen tamaño en vez de cerrar la puerta entera. Un bot parado
-    # no aprende y deja el histórico sin muestra; el que opera a media máquina
-    # sigue midiendo y sigue protegido. Apagado se mantiene el corte histórico.
     soft_brakes: bool = False
     soft_brake_floor: float = 0.25
     soft_brake_halt_multiple: float = 2.0
+    # Vol targeting sizing (Barroso & Santa-Clara)
+    sizing: Literal["fixed_fractional", "vol_target", "kelly"] = "fixed_fractional"
+    target_vol_annual: float | None = Field(default=None, gt=0, le=3)
+    max_gross_leverage: float | None = Field(default=None, gt=0)
+    max_mdd_budget: float = 0.0
 
     @field_validator("soft_brake_floor")
     @classmethod
@@ -322,18 +313,45 @@ class RiskConfig(_Model):
             _parse_hhmm(value)
         return value
 
+    @field_validator("target_vol_annual")
+    @classmethod
+    def _vol_range(cls, value: float | None) -> float | None:
+        if value is not None and (value <= 0 or value > 3):
+            raise ValueError("target_vol_annual must be in (0, 3]")
+        return value
+
+    @field_validator("max_gross_leverage")
+    @classmethod
+    def _leverage_range(cls, value: float | None) -> float | None:
+        if value is not None and value <= 0:
+            raise ValueError("max_gross_leverage must be positive")
+        return value
+
+    @field_validator("max_mdd_budget")
+    @classmethod
+    def _mdd_budget_range(cls, value: float) -> float:
+        if not 0 <= value <= 1:
+            raise ValueError("max_mdd_budget must be in [0, 1]")
+        return value
+
 
 class ExecutionConfig(_Model):
     commission_per_unit_side: float = 0.62
-    # Alternativa porcentual sobre el nocional de cada lado. Cuando es mayor
-    # que cero sustituye a `commission_per_unit_side`: un importe fijo por
-    # unidad es un porcentaje distinto cada vez que cambia el precio.
     commission_pct_side: float = 0.0
     slippage_ticks: int = 1
     max_slippage_ticks: int = 4
-    fill_model: Literal["next_open", "signal_price"] = "next_open"
+    fill_model: Literal["next_open", "signal_price", "intrabar"] = "next_open"
     simulate_partial_fills: bool = False
     partial_fill_ratio: float = 0.6
+    # Cost model fields (from strategy_spec)
+    fee_maker_bps: float = 2.0
+    fee_taker_bps: float = 5.0
+    half_spread_bps: float = 0.07
+    assumed_fill: Literal["taker", "maker", "mixed"] = "taker"
+    impact_model: Literal["none", "sqrt_law", "ofi"] = "none"
+    funding: Literal["real_timestamps", "none"] = "none"
+    cooldown_bars: int = 0
+    stop_floor_frac: float = 0.0
 
     @field_validator("commission_per_unit_side")
     @classmethod
@@ -342,11 +360,11 @@ class ExecutionConfig(_Model):
             raise ValueError("commission cannot be negative")
         return value
 
-    @field_validator("slippage_ticks", "max_slippage_ticks")
+    @field_validator("slippage_ticks", "max_slippage_ticks", "cooldown_bars")
     @classmethod
     def _nonnegative_slippage(cls, value: int) -> int:
         if value < 0:
-            raise ValueError("slippage cannot be negative")
+            raise ValueError("slippage/cooldown cannot be negative")
         return value
 
     @field_validator("partial_fill_ratio")
@@ -354,6 +372,20 @@ class ExecutionConfig(_Model):
     def _fill_ratio(cls, value: float) -> float:
         if not 0 < value <= 1:
             raise ValueError("partial_fill_ratio must be in (0, 1]")
+        return value
+
+    @field_validator("stop_floor_frac")
+    @classmethod
+    def _stop_floor_range(cls, value: float) -> float:
+        if not 0 <= value <= 0.2:
+            raise ValueError("stop_floor_frac must be in [0, 0.2]")
+        return value
+
+    @field_validator("fee_maker_bps", "fee_taker_bps", "half_spread_bps")
+    @classmethod
+    def _nonnegative_cost(cls, value: float) -> float:
+        if value < 0:
+            raise ValueError("cost cannot be negative")
         return value
 
     @model_validator(mode="after")
