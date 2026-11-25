@@ -7,7 +7,7 @@
     "timeout_s": 5.0,
     "webhook_url": ""
   },
-  "auto_start": false,
+  "auto_start": true,
   "execution": {
     "commission_per_unit_side": 0.049,
     "fill_model": "next_open",
