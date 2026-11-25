@@ -98,6 +98,14 @@ def test_orb_solo_se_siembra_en_el_marco_que_el_motor_cierra():
     assert all(b["params"]["range_bars"] == 12 for b in orb)  # una hora de 5m
 
 
+def test_las_sesiones_de_una_semilla_viajan_como_dato():
+    docs = research.seed_documents({}, research.seed_blueprints())
+    orb = next(doc for doc in docs if doc["id"] == "BTC-ORB-5M")
+
+    assert orb["entry"]["sessions"] == ["00:00"]
+    assert all("sessions" not in doc["entry"] for doc in docs if doc is not orb)
+
+
 def test_las_variantes_declaran_los_intentos_de_verdad():
     spec = {
         "id": "BTC-X", "version": "1.0.0", "label": "x",
