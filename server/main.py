@@ -125,6 +125,7 @@ def create_app(
         app.state.notifier = notifier
         promoted = True
         if settings.promotion.required:
+            from .backtest import config_fingerprint
             from .promotion import evaluate_paths
 
             verdict = evaluate_paths(
@@ -132,6 +133,7 @@ def create_app(
                 settings.promotion.stress_evidence,
                 settings.promotion.cycle,
                 {"id": settings.strategy.id, "version": settings.strategy.version},
+                config_fingerprint(settings),
             )
             promoted = bool(verdict["passed"])
             if not promoted:
