@@ -154,6 +154,39 @@ class ExecutionEngine:
             return units * contract * price * pct + (notional * (total_bps + impact_bps) * 1e-4)
         return cfg.commission_per_unit_side * units + (notional * (total_bps + impact_bps) * 1e-4)
 
+    def round_trip_fee_per_unit(self, symbol: str, price: float) -> float:
+        """Comisión y spread de ida y vuelta por unidad, en divisa de cotización.
+
+        Es el peaje que paga una unidad de más. Riesgo lo compara con la
+        pérdida en el stop para no aceptar señales cuyo coste se coma el edge.
+        """
+        return 2 * self._fees(symbol, 1, price)
+
+    def _risk_capped_units(self, order: Order, fill: float) -> int:
+        """Unidades que mantienen la pérdida en el stop dentro del presupuesto.
+
+        El riesgo se decide con el precio de la señal; el fill puede quedar más
+        lejos del stop y la ida y vuelta paga comisiones y spread. Al conocer el
+        fill real se recalcula el tamaño para que el neto en el stop no supere
+        el presupuesto que aprobó riesgo.
+        """
+        if order.stop_price is None or order.risk_budget <= 0:
+            return order.units
+        spec = self._instrument(order.symbol)
+        risk_per_unit = abs(fill - order.stop_price) / spec.tick_size * spec.tick_value
+        fees_per_unit = self._fees(order.symbol, 1, fill) + self._fees(
+            order.symbol, 1, order.stop_price
+        )
+        total_per_unit = risk_per_unit + fees_per_unit
+        if total_per_unit <= 0:
+            return order.units
+        units = int(order.risk_budget // total_per_unit)
+        lot = spec.lot_size
+        if lot < 1:
+            raise ValueError("lot_size must be at least 1")
+        units = (units // lot) * lot
+        return min(order.units, units)
+
     def open_pnl(self, position: Position, price: float) -> float:
         """Lo que dejaria la posicion si se cerrara ahora a `price`.
 
@@ -215,6 +248,7 @@ class ExecutionEngine:
             stop_price=signal.stop_price,
             target_price=signal.target_price,
             signal_key=signal.key,
+            risk_budget=decision.risk_budget,
         )
         self.orders.append(order)
         self._armed_at[order.id] = armed_at or stamp
@@ -284,6 +318,28 @@ class ExecutionEngine:
                 )
                 continue
             fill, reason, fill_diagnostics = plan
+            units = self._risk_capped_units(order, fill)
+            if units < 1:
+                order.status = "rejected"
+                events.append(
+                    ExecutionEvent(
+                        type="cancel",
+                        symbol=order.symbol,
+                        units=order.units,
+                        reason="risk_budget_exceeded",
+                        diagnostics={
+                            "fill_price": fill,
+                            "signal_price": order.price,
+                            "stop_price": order.stop_price,
+                            "risk_budget": order.risk_budget,
+                            "fill_model": self.config.fill_model,
+                            "order_id": order.id,
+                            "signal_key": order.signal_key,
+                        },
+                    )
+                )
+                continue
+            order.units = units
             notional_rejection = self._notional_rejection(order, fill)
             if notional_rejection is not None:
                 order.status = "rejected"
