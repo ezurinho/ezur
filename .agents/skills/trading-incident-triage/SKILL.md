@@ -1,7 +1,7 @@
 ---
 name: trading-incident-triage
-description: "Diagnostica incidentes de ezur sin destruir evidencia: motor parado, feed stale, cero operaciones, equity descuadrada, trades duplicados, ledger roto, replay atascado o base bloqueada. Úsala cuando el bot no opera, los datos envejecen, los números no cuadran o hay que decidir si parar y cómo contener."
-version: 1.0.0
+description: "Diagnostica incidentes de ezur sin destruir evidencia: motor parado, liveness, feed stale, cero operaciones, equity descuadrada, trades duplicados, ledger roto, replay atascado o base bloqueada. Úsala cuando el bot no opera, los datos envejecen, los números no cuadran o hay que decidir si parar y cómo contener."
+version: 1.1.0
 ---
 
 # Triaje de incidentes
@@ -18,6 +18,7 @@ clavado. Para la rutina normal usa `trading-bot-ops`.
 2. Guarda el estado:
 
 ```powershell
+curl.exe -s http://127.0.0.1:8765/health | Tee-Object reports/incident-liveness.json
 curl.exe -s http://127.0.0.1:8765/api/health | Tee-Object reports/incident-health.json
 curl.exe -s http://127.0.0.1:8765/api/status | Tee-Object reports/incident-status.json
 curl.exe -s "http://127.0.0.1:8765/api/events?limit=200" | Tee-Object reports/incident-events.json
@@ -50,11 +51,17 @@ Copy-Item profiles/okx/terminal.db "backups/incident-$(Get-Date -Format yyyyMMdd
 ## 1. El motor no corre
 
 ```powershell
+curl.exe -s http://127.0.0.1:8765/health
 curl.exe -s http://127.0.0.1:8765/api/health
 Get-Content profiles/okx/config.json | Select-String 'auto_start|live_enabled|provider'
 ```
 
 - `auto_start: false` → `POST /api/bot/start`; no es un fallo.
+- `/health` 200 pero `engine.status` `stopped` → el proceso vive; mira perfil y
+  promoción; no es un cuelgue.
+- `/health` no responde → `scripts/watchdog.py` (cada 5 s) debería relanzar el
+  listener con `auto_start=false`; revisa `data/watchdog.log`. No llames a
+  `/api/bot/start` para “arreglar” un cuelgue.
 - `status: error` → mira el último evento `error` y el log del proceso.
 - El proceso no responde → comprueba que no hay otra instancia:
 
@@ -68,9 +75,10 @@ duplicado, no el que tiene la ventana correcta.
 
 ## 2. Feed stale o degraded
 
-El watchdog corre cada 30 s y **solo envejece la calidad y cancela órdenes pendientes**:
-no reinicia el feed. A los 180 s marca `degraded`; a los 900 s, `stale` y cancela
-pendientes. Si el proveedor no vuelve, el motor no se cura solo.
+El watchdog de frescura del motor corre cada 30 s y **solo envejece la calidad y
+cancela órdenes pendientes**: no reinicia el feed. A los 180 s marca `degraded`; a los
+900 s, `stale` y cancela pendientes. No lo confundas con `scripts/watchdog.py`, que
+vigila el proceso por `/health`. Si el proveedor no vuelve, el motor no se cura solo.
 
 ```powershell
 curl.exe -s http://127.0.0.1:8765/api/status | Select-String 'quality|last_bar_ts|staleness_ms'
