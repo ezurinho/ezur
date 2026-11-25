@@ -280,6 +280,11 @@ def create_app(
     app.add_middleware(LocalOriginMiddleware)
     app.include_router(router)
 
+    @app.get("/health", include_in_schema=False)
+    def health() -> dict[str, str]:
+        """Liveness del proceso: no depende del motor ni del paper."""
+        return {"status": "ok", "service": "ezur"}
+
     dist = Path("frontend/dist")
     if dist.is_dir():
         app.mount("/", StaticFiles(directory=str(dist), html=True), name="ui")
