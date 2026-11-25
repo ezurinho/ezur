@@ -292,9 +292,11 @@ def test_el_ciclo_completo_produce_pbo_dsr_y_wfa(tmp_path, monkeypatch):
     ).to_pickle(tmp_path / "data" / "btc_5m.pkl")
 
     specs = [_fake_spec(name) for name in ("a", "b", "c")]
-    monkeypatch.setattr(selection, "load_universe_specs", lambda spec_dir: specs)
+    monkeypatch.setattr(
+        selection, "load_universe_specs", lambda spec_dir, all_specs=False: specs
+    )
 
-    def fake_backtest(spec, df5, quiet=False):
+    def fake_backtest(spec, df5, quiet=False, base=None):
         stamps = pd.date_range("2024-01-02", periods=120, freq="D", tz="UTC")
         returns = rng.normal(0.05, 1.0, size=120)
         trades = pd.DataFrame(
