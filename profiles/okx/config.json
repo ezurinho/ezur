@@ -7,7 +7,7 @@
     "timeout_s": 5.0,
     "webhook_url": ""
   },
-  "auto_start": true,
+  "auto_start": false,
   "execution": {
     "commission_per_unit_side": 0.049,
     "fill_model": "next_open",
@@ -72,7 +72,7 @@
   },
   "promotion": {
     "required": true,
-    "mode": "reduce",
+    "mode": "block",
     "size_factor": 0.25,
     "evidence": "data/research/promotion/reference-1m-paper-regime.json",
     "stress_evidence": "data/research/promotion/reference-1m-paper-regime-2x.json",
