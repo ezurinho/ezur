@@ -87,7 +87,7 @@ describe("barra superior sin primer estado", () => {
 
   it("con estado recibido enseña el estado real y la ausencia de sesión", () => {
     renderBar(loaded());
-    expect(screen.getByText("running")).toBeInTheDocument();
+    expect(screen.getByText("corriendo")).toBeInTheDocument();
     expect(screen.getByText("paper")).toBeInTheDocument();
     expect(screen.getByText("sin sesión")).toBeInTheDocument();
   });
