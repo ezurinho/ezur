@@ -238,6 +238,8 @@ class RiskConfig(_Model):
     target_vol_annual: float | None = Field(default=None, gt=0, le=3)
     max_gross_leverage: float | None = Field(default=None, gt=0)
     max_mdd_budget: float = 0.0
+    # Kelly sizing
+    kelly_fraction: float = Field(default=0.5, ge=0.0, le=1.0, description="Fracción de Kelly a usar (0.5 = half-Kelly)")
 
     @field_validator("soft_brake_floor")
     @classmethod
