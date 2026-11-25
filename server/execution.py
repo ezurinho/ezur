@@ -115,7 +115,6 @@ class ExecutionEngine:
         cfg = self.config
         if cfg.impact_model == "none" or notional_usd <= 0:
             return 0.0
-        spec = self._instrument(symbol)
         # Daily volume estimate (simplified: use a fixed ADV or derive from data)
         # For now, use a simple sqrt law: impact ~ 0.1 * sqrt(notional / adv) bps
         # where ADV is approximated from the instrument's tick value and typical volume
@@ -492,7 +491,6 @@ class ExecutionEngine:
     def _bracket_hit(self, position: Position, bar: Bar) -> "_Hit | None":
         spec = self._instrument(position.symbol)
         tol = spec.tick_size / 2
-        slip = min(self.config.slippage_ticks, self.config.max_slippage_ticks) * spec.tick_size
         stop = position.stop_price
         target = position.target_price
         long = position.side == "long"
