@@ -17,9 +17,9 @@ from server.models import TradeRecord
 
 
 def _config(tmp_path: Path, auto_start: bool) -> Path:
-    payload = json.loads(Path("profiles/okx/config.json").read_text(encoding="utf-8"))
-    payload["auto_start"] = auto_start
-    payload["feed"]["provider"] = "simulated"
+    """Perfil mínimo propio, no una copia de `profiles/` (que muta con la operación)."""
+    payload = Settings(auto_start=auto_start).model_dump(mode="json")
+    payload["promotion"]["required"] = False
     path = tmp_path / "config.json"
     path.write_text(json.dumps(payload), encoding="utf-8")
     return path
