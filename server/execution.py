@@ -158,6 +158,7 @@ class ExecutionEngine:
 
         impact_bps = self._impact_bps(symbol, notional, units, "long")
         return commission + notional * (extra_bps + impact_bps) * 1e-4
+
     def open_pnl(self, position: Position, price: float) -> float:
         """Lo que dejaria la posicion si se cerrara ahora a `price`.
 
