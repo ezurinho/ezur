@@ -184,6 +184,10 @@ class RiskConfig(_Model):
 
 class ExecutionConfig(_Model):
     commission_per_unit_side: float = 0.62
+    # Alternativa porcentual sobre el nocional de cada lado. Cuando es mayor
+    # que cero sustituye a `commission_per_unit_side`: un importe fijo por
+    # unidad es un porcentaje distinto cada vez que cambia el precio.
+    commission_pct_side: float = 0.0
     slippage_ticks: int = 1
     max_slippage_ticks: int = 4
     fill_model: Literal["next_open", "signal_price", "intrabar"] = "next_open"

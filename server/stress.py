@@ -33,6 +33,9 @@ def stressed_settings(settings: Settings, multiplier: float = 2.0) -> Settings:
     clone.execution.commission_per_unit_side = (
         settings.execution.commission_per_unit_side * multiplier
     )
+    clone.execution.commission_pct_side = (
+        settings.execution.commission_pct_side * multiplier
+    )
     clone.execution.slippage_ticks = settings.execution.slippage_ticks * multiplier
     clone.execution.max_slippage_ticks = max(
         settings.execution.max_slippage_ticks,
