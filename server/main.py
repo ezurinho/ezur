@@ -231,6 +231,7 @@ def create_app(
             configured_settings.auto_start = False
         app.state.settings = settings
         app.state.configured_settings = configured_settings
+        app.state.promotion_verdict = promotion_verdict
         app.state.store = store
         app.state.engine = engine
         app.state.hub = hub
