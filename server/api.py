@@ -58,6 +58,16 @@ def _store(request: Request):
     return request.app.state.store
 
 
+def _refresh_promotion(request: Request, engine: Any) -> None:
+    """Recalcula la puerta al guardar el perfil, sin esperar al arranque."""
+    builder = getattr(engine, "builder", None)
+    if builder is None:
+        return
+    from .paper import promotion_state
+
+    builder.promotion = promotion_state(Path(request.app.state.config_path).parent)
+
+
 def _rebuild_notifier(request: Request, engine, alerts) -> None:
     from .alerts import build_notifier
     from .env import env
@@ -236,6 +246,7 @@ async def put_config(request: Request, body: ConfigPatch) -> dict[str, Any]:
     request.app.state.settings = effective
     request.app.state.configured_settings = updated
     request.app.state.promotion_verdict = verdict
+    _refresh_promotion(request, engine)
 
     # Activar alertas desde la interfaz tiene que activarlas de verdad: el
     # notifier se construye al arrancar, así que un cambio en `alerts` se
@@ -260,6 +271,7 @@ async def reset_config(request: Request) -> dict[str, Any]:
     request.app.state.settings = effective
     request.app.state.configured_settings = fresh
     request.app.state.promotion_verdict = verdict
+    _refresh_promotion(request, engine)
     _rebuild_notifier(request, engine, fresh.alerts)
     return fresh.model_dump(mode="json")
 
