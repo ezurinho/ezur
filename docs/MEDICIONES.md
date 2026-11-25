@@ -6,12 +6,20 @@ mediciones, incluidas las que pierden: si una idea se descarta, queda el número
 que la descartó.
 
 Regla de lectura: **ninguna configuración se promueve** hasta cumplir, a la vez,
-PF fuera de muestra > 1 con 100+ operaciones, coste < 0,25 R, PF > 1 con coste
-duplicado y PBO ≤ 0,2 en su ciclo.
+PF fuera de muestra > 1 con 100+ operaciones, coste ponderado < 0,25 R
+(fees totales / riesgo total), PF > 1 con coste duplicado y PBO ≤ 0,2 en su
+ciclo.
+
+Las filas de 1 h y 1 d se midieron con el **coste nominal** de entonces
+(fees / operaciones / presupuesto), no con el ponderado por riesgo real que
+aplica hoy la puerta. El nominal subestima el coste cuando el stop real es más
+estrecho que el presupuesto: 0,052 R nominal no es comparable con el 0,4635 R
+ponderado del perfil de papel. Las conclusiones de esta tabla sobre coste son
+históricas; para un veredicto actual hay que re-medir con `--split`.
 
 ## 1 h · BTC
 
-| estrategia | config | IS ops | IS PF | OOS ops | OOS PF | OOS esp. | coste |
+| estrategia | config | IS ops | IS PF | OOS ops | OOS PF | OOS esp. | coste nominal |
 |---|---|---|---|---|---|---|---|
 | donchian | ch40 · sa1.5 · rr2.0 (la que opera) | 694 | 0.666 | 521 | 0.979 | −0.012 R | 0.025 R |
 | donchian | ch20 · sa2.5 · rr1.5 | 675 | 0.701 | 508 | 1.014 | +0.018 R | 0.052 R |
@@ -24,7 +32,8 @@ duplicado y PBO ≤ 0,2 en su ciclo.
 | fade | p20 · s2.0 · sa1.5 | 1255 | 0.411 | 176 | 0.706 | −0.118 R | — |
 | fade | p20 · s2.5 · sa1.5 | 1126 | 0.435 | 180 | 0.586 | −0.222 R | — |
 
-El mejor candidato de 1 h (ch20 · sa2.5 · rr1.5) **no se promueve**:
+El mejor candidato de 1 h (ch20 · sa2.5 · rr1.5) **no se promueve**. Salida
+histórica de la puerta de entonces, que medía el coste nominal:
 
 ```
 pf_fuera_de_muestra             1.014          > 1.0  si
@@ -36,7 +45,7 @@ pbo_del_ciclo                   0.976         <= 0.2  NO
 
 ## 1 d · BTC
 
-| config | IS ops | IS PF | OOS ops | OOS PF | OOS esp. | coste |
+| config | IS ops | IS PF | OOS ops | OOS PF | OOS esp. | coste nominal |
 |---|---|---|---|---|---|---|
 | ch20 · sa1.5 · rr2.0 | 66 | 1.293 | 51 | 0.947 | −0.014 R | 0.030 R |
 | ch40 · sa1.5 · rr2.0 | 52 | 1.141 | 36 | **1.134** | +0.069 R | 0.028 R |
