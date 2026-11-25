@@ -87,6 +87,7 @@
     "loss_streak_cooldown_min": 45,
     "max_concurrent_positions": 1,
     "max_daily_loss_pct": 3.0,
+    "max_cost_r": 0.25,
     "max_daily_profit_pct": 0.0,
     "max_drawdown_pct": 100.0,
     "soft_brakes": false,
