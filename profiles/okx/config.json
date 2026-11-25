@@ -79,7 +79,7 @@
     "mode": "reduce",
     "required": true,
     "size_factor": 0.25,
-    "stress_evidence": "data/research/promotion/reference-15m-paper-regime-rr10-stop10-2x.json"
+    "stress_evidence": null
   },
   "risk": {
     "close_at_session_end": false,
