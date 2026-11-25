@@ -2,7 +2,7 @@ import type { ConnectionState } from "../api";
 import type { SnapshotData } from "../types";
 import { Logo } from "./Logo";
 import { useClock } from "./Sparkline";
-import { marketFreshness, phaseLabel, qualityLabel, sessionWindow } from "../utils";
+import { marketFreshness, phaseLabel, qualityLabel, sessionWindow, statusLabel } from "../utils";
 import { useUiMode } from "../mode";
 import { ThemePicker } from "./ThemePicker";
 import { VersionBadge } from "./VersionBadge";
@@ -74,7 +74,7 @@ export function TopBar({ snapshot, connection, onOpenPalette }: Props) {
 
         <div className="hud-group" title={loaded ? undefined : "Esperando el primer estado del motor"}>
           <span className={`led${loaded ? ` led-${status}` : ""}`} aria-hidden="true" />
-          <span className="hud-value">{loaded ? status : "—"}</span>
+          <span className="hud-value">{loaded ? statusLabel(status) : "—"}</span>
         </div>
 
         <span className="badge badge-mode" title={loaded ? `modo ${mode}` : "Esperando el primer estado del motor"}>
