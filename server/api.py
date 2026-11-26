@@ -463,6 +463,21 @@ def get_validation(request: Request) -> dict[str, Any]:
     return report.model_dump(mode="json")
 
 
+@router.get("/review/2025-15m")
+def get_review_2025() -> dict[str, Any]:
+    """Comparación 2025 leída de los artefactos de la review.
+
+    Es solo lectura: no recalcula operaciones. Si faltan los artefactos o el
+    dataset, la tarjeta debe poder decirlo sin inventar cifras.
+    """
+    from .review import ReviewUnavailable, review_2025
+
+    try:
+        return review_2025()
+    except ReviewUnavailable as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+
+
 @router.get("/chart/history")
 def chart_history(request: Request, tf: str = "1m", limit: int = Query(500, ge=1, le=500)) -> dict[str, Any]:
     engine = _engine(request)
