@@ -41,12 +41,14 @@ Usage (as library):
 from __future__ import annotations
 
 import argparse
+import hashlib
 import itertools
 import json
 import math
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -463,6 +465,7 @@ def run_backtest_for_spec(
     quiet: bool = False,
     base: Settings | None = None,
     cost_multiplier: float = 1.0,
+    diagnostics: dict[str, Any] | None = None,
 ) -> tuple[pd.DataFrame, list, dict]:
     """Run backtest for a single spec using the deterministic engine.
 
@@ -641,6 +644,8 @@ def run_backtest_for_spec(
         return trade_df, result.equity, metrics
 
     except Exception as e:
+        if diagnostics is not None:
+            diagnostics["error"] = str(e)
         if not quiet:
             print(f"  {name:26s} ERROR: {e}")
         return pd.DataFrame(), [], {}
@@ -676,6 +681,94 @@ def _window(
     return df.loc[keep].reset_index(drop=True)
 
 
+def _relative_path(path: Path, root: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(root.resolve()))
+    except ValueError:
+        return str(path)
+
+
+def _spec_sources(spec_dir: Path, root: Path) -> dict[str, str]:
+    """Map label -> source file so the ledger can cite the exact spec."""
+    sources: dict[str, str] = {}
+    for path in sorted(spec_dir.glob("*.json")):
+        try:
+            document = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        label = document.get("label") if isinstance(document, dict) else None
+        if isinstance(label, str) and label:
+            sources[label] = _relative_path(path, root)
+    return sources
+
+
+def _validation_value(spec: Any, key: str) -> Any:
+    validation = getattr(spec, "validation", None)
+    if isinstance(validation, dict):
+        return validation.get(key)
+    return getattr(validation, key, None)
+
+
+def _spec_payload(spec: Any, source: str | None) -> dict[str, Any]:
+    try:
+        document = spec.model_dump(mode="json")
+    except Exception:
+        document = {}
+    fingerprint = getattr(spec, "spec_hash", None)
+    if not isinstance(fingerprint, str):
+        fingerprint = "sha256:" + hashlib.sha256(
+            json.dumps(document, sort_keys=True, default=str).encode("utf-8")
+        ).hexdigest()
+    return {
+        "id": getattr(spec, "id", None),
+        "label": getattr(spec, "label", None),
+        "version": getattr(spec, "version", None),
+        "family": getattr(spec, "family", None),
+        "timeframe": getattr(spec, "timeframe_signal", None),
+        "group": getattr(spec, "_group", None) or getattr(spec, "id", None),
+        "seed": _validation_value(spec, "seed"),
+        "trials_declared": _validation_value(spec, "trials_declared"),
+        "source": source,
+        "fingerprint": fingerprint,
+        "document": document,
+    }
+
+
+def _dataset_payload(
+    root: Path,
+    source: Path,
+    df5: pd.DataFrame,
+    start: datetime | None,
+    end: datetime | None,
+) -> dict[str, Any]:
+    try:
+        file_hash = "sha256:" + hashlib.sha256(source.read_bytes()).hexdigest()
+    except OSError:
+        file_hash = None
+    stamps = pd.Series(
+        pd.to_datetime(df5["ts"] if "ts" in df5.columns else df5.index, utc=True)
+    )
+    return {
+        "path": _relative_path(source, root),
+        "sha256": file_hash,
+        "rows": int(len(df5)),
+        "columns": [str(column) for column in df5.columns],
+        "first_ts": stamps.iloc[0].isoformat() if len(stamps) else None,
+        "last_ts": stamps.iloc[-1].isoformat() if len(stamps) else None,
+        "window": {
+            "from": start.isoformat() if start is not None else None,
+            "to": end.isoformat() if end is not None else None,
+        },
+    }
+
+
+def _daily_points(series: pd.Series) -> list[dict[str, Any]]:
+    return [
+        {"date": str(day), "r_net": float(value)}
+        for day, value in series.sort_index().items()
+    ]
+
+
 def run_selection_cycle(
     cycle_id: str = "CYCLE-2026-11",
     blocks: int = 10,
@@ -689,6 +782,7 @@ def run_selection_cycle(
     base_settings: Settings | None = None,
     all_specs: bool = False,
     stress_multiplier: float = 2.0,
+    ledger_path: Path | str | None = None,
 ) -> dict:
     """Run the full selection cycle and return the payload.
 
@@ -697,10 +791,12 @@ def run_selection_cycle(
     Con `stress_multiplier > 1`, cada configuración se re-ejecuta con los costes
     multiplicados y el resultado queda en `payload["stress"]`.
     """
+    root = Path(ROOT)
     if spec_dir is None:
-        spec_dir = ROOT / "data" / "specs"
+        spec_dir = root / "data" / "specs"
 
-    df5 = pd.read_pickle(ROOT / "data" / "btc_5m.pkl") if (ROOT / "data" / "btc_5m.pkl").exists() else pd.DataFrame()
+    dataset_path = root / "data" / "btc_5m.pkl"
+    df5 = pd.read_pickle(dataset_path) if dataset_path.exists() else pd.DataFrame()
     if df5.empty:
         raise FileNotFoundError("Frozen 5m dataset not found at data/btc_5m.pkl")
     df5 = _window(df5, start, end)
@@ -711,6 +807,28 @@ def run_selection_cycle(
     if not specs:
         raise ValueError("No specs loaded")
 
+    spec_sources = _spec_sources(spec_dir, root)
+    specs_hash_raw = hashlib.sha256(
+        json.dumps(
+            [spec.model_dump(mode="json") for spec in specs], sort_keys=True
+        ).encode("utf-8")
+    ).hexdigest()
+    dataset_meta = _dataset_payload(root, dataset_path, df5, start, end)
+    target_ledger = (
+        Path(ledger_path)
+        if ledger_path is not None
+        else root / "data" / "validation" / f"{cycle_id}.trials.jsonl"
+    )
+    from .trial_ledger import TrialLedger, reconstruct_ledger
+
+    ledger = TrialLedger(
+        target_ledger,
+        cycle_id=cycle_id,
+        blocks=blocks,
+        dataset=dataset_meta,
+        specs_hash="sha256:" + specs_hash_raw,
+    )
+    discarded_trials: list[dict[str, Any]] = []
 
     # Run backtest for each spec
     daily: dict[str, pd.Series] = {}
@@ -723,9 +841,28 @@ def run_selection_cycle(
 
     for spec in specs:
         name = spec.label
-        trade_df, equity, metrics = run_backtest_for_spec(spec, df5, base=base_settings)
+        diagnostics: dict[str, Any] = {}
+        trade_df, equity, metrics = run_backtest_for_spec(
+            spec, df5, base=base_settings, diagnostics=diagnostics
+        )
+        spec_record = _spec_payload(spec, spec_sources.get(name))
+        seed = _validation_value(spec, "seed")
 
         if trade_df.empty:
+            reason = "error" if diagnostics.get("error") else "sin_trades"
+            ledger.record_trial(
+                spec=spec_record,
+                dataset=dataset_meta,
+                status="discarded",
+                seed=seed,
+                daily_returns=[],
+                metrics=None,
+                discard_reason=reason,
+                error=diagnostics.get("error"),
+            )
+            discarded_trials.append(
+                {"label": name, "reason": reason, "error": diagnostics.get("error")}
+            )
             if not quiet:
                 print(f"  {name:26s} sin trades")
             continue
@@ -749,15 +886,18 @@ def run_selection_cycle(
             "days": int(daily_returns.size),
         })
 
+        stress_entry = None
         if stress_multiplier and stress_multiplier > 1.0:
+            stress_diagnostics: dict[str, Any] = {}
             _, _, stress_metrics = run_backtest_for_spec(
                 spec,
                 df5,
                 base=base_settings,
                 cost_multiplier=stress_multiplier,
+                diagnostics=stress_diagnostics,
             )
             stressed_closed = stress_metrics.get("closed", {})
-            entry = {
+            stress_entry = {
                 "name": name,
                 "base_pf_net": summary[-1]["pf_net"],
                 "base_exp_r": summary[-1]["exp_r"],
@@ -770,15 +910,31 @@ def run_selection_cycle(
                     and stressed_closed.get("profit_factor", 0.0) > 1.0
                     and stressed_closed.get("expectancy_r", 0.0) > 0.0
                 ),
+                "status": "evaluated" if stressed_closed else "discarded",
             }
-            stress_summary.append(entry)
-            summary[-1]["stress"] = entry
+            if stress_diagnostics.get("error"):
+                stress_entry["discard_reason"] = "error"
+                stress_entry["error"] = stress_diagnostics["error"]
+            elif not stressed_closed:
+                stress_entry["discard_reason"] = "sin_trades"
+            stress_summary.append(stress_entry)
+            summary[-1]["stress"] = stress_entry
             if not quiet:
                 print(
                     f"  {name:26s} x{stress_multiplier:g}  "
-                    f"PF {entry['pf_net']:.3f}  exp {entry['exp_r']:+.3f} R  "
-                    f"{'sobrevive' if entry['survives'] else 'no sobrevive'}"
+                    f"PF {stress_entry['pf_net']:.3f}  exp {stress_entry['exp_r']:+.3f} R  "
+                    f"{'sobrevive' if stress_entry['survives'] else 'no sobrevive'}"
                 )
+
+        ledger.record_trial(
+            spec=spec_record,
+            dataset=dataset_meta,
+            status="evaluated",
+            seed=seed,
+            daily_returns=_daily_points(daily_returns),
+            metrics=dict(summary[-1]),
+            stress=stress_entry,
+        )
 
         if not quiet:
             print(f"  {name:26s} {len(trade_df):6d} trades  PF {summary[-1]['pf_net']:.3f}  "
@@ -787,6 +943,14 @@ def run_selection_cycle(
     matrix = pd.DataFrame(daily).fillna(0.0).sort_index()
 
     if matrix.empty or matrix.shape[1] < 3:
+        ledger.record_selection(
+            selected=None,
+            not_selected=list(daily),
+            discarded=discarded_trials,
+            pbo={"pbo": None},
+            dsr={"dsr": None},
+            dsr_config=None,
+        )
         raise SystemExit("universo insuficiente: se necesitan al menos 3 configuraciones con trades")
 
     if not quiet:
@@ -846,15 +1010,32 @@ def run_selection_cycle(
             "configs": stress_summary,
         }
 
+    not_selected = [label for label in matrix.columns if label != best]
+    reconstruction = reconstruct_ledger(ledger.path)
+    ledger.record_selection(
+        selected=best,
+        not_selected=not_selected,
+        discarded=discarded_trials,
+        pbo=pbo,
+        dsr=dsr,
+        dsr_config=best,
+    )
+    ledger_hash = "sha256:" + hashlib.sha256(ledger.path.read_bytes()).hexdigest()
+    reconstruction_matches = (
+        reconstruction["pbo"].get("pbo") == pbo.get("pbo")
+        and reconstruction["dsr"].get("dsr") == dsr.get("dsr")
+        and reconstruction["dsr_config"] == best
+        and reconstruction["matrix"]
+        == {"days": int(matrix.shape[0]), "columns": int(matrix.shape[1])}
+    )
+
     years = matrix.index.to_series().diff().dt.days.sum() / 365.25
 
     # Data hash
-    import hashlib
     import io
     buf = io.BytesIO()
     df5.to_pickle(buf, compression=None)
     data_hash = hashlib.sha256(buf.getvalue()).hexdigest()
-    specs_hash = hashlib.sha256(json.dumps([s.model_dump(mode="json") for s in specs], sort_keys=True).encode()).hexdigest()
 
     payload = {
         "cycle_id": cycle_id,
@@ -862,12 +1043,13 @@ def run_selection_cycle(
         "method_version": "1.0.0",
         "inputs": {
             "data_hash": "sha256:" + data_hash,
-            "specs_hash": "sha256:" + specs_hash,
+            "specs_hash": "sha256:" + specs_hash_raw,
             "universe_size": len(specs),
             "daily_observations": int(matrix.shape[0]),
             "coverage_years": round(float(years), 2),
             "limits_source": "perfil" if base_settings is not None else "investigacion",
             "stress_multiplier": stress_multiplier,
+            "dataset": dataset_meta,
         },
         "universe": summary,
         "pbo": pbo,
@@ -880,6 +1062,21 @@ def run_selection_cycle(
         "cpcv": cp,
         "psr": psr,
         "stress": stress_block,
+        "trial_ledger": {
+            "path": _relative_path(ledger.path, root),
+            "sha256": ledger_hash,
+            "trials": reconstruction["trials"],
+            "discarded": reconstruction["discarded"],
+            "selected": best,
+            "not_selected": not_selected,
+            "reconstruction": {
+                "pbo": reconstruction["pbo"].get("pbo"),
+                "dsr": reconstruction["dsr"].get("dsr"),
+                "dsr_config": reconstruction["dsr_config"],
+                "matrix": reconstruction["matrix"],
+                "matches": reconstruction_matches,
+            },
+        },
         "caveats": [
             "PBO y DSR son propiedades de este universo, no de una configuración suelta.",
             "El DSR de la puerta se calcula dentro del grupo de variantes de cada "
@@ -898,6 +1095,9 @@ def run_selection_cycle(
             "débil frente al PSR (Plateaus, Peaks and the PBO, 2025).",
             "El estrés de costes re-ejecuta cada configuración con comisión, fees, "
             "medio spread y slippage multiplicados; no se estima desde el PnL base.",
+            "El trial ledger guarda cada spec, dataset, semilla y descarte; su "
+            "reconstrucción vuelve a calcular PBO y DSR desde las series diarias y "
+            "debe coincidir con las cifras de este artefacto. No cambia ninguna puerta.",
         ],
     }
 
@@ -907,6 +1107,12 @@ def run_selection_cycle(
 def main() -> None:
     ap = argparse.ArgumentParser(description="Selection cycle: PBO, DSR, MinBTL, WFA")
     ap.add_argument("--cycle", default="CYCLE-2026-11")
+    ap.add_argument(
+        "--ledger",
+        type=Path,
+        default=None,
+        help="ruta del trial ledger; por defecto data/validation/<cycle>.trials.jsonl",
+    )
     ap.add_argument("--blocks", type=int, default=10, help="CSCV blocks S (even)")
     ap.add_argument("--folds", type=int, default=5, help="walk-forward folds")
     ap.add_argument("--test-blocks", type=int, default=2, help="CPCV blocks held out per path")
@@ -969,6 +1175,7 @@ def main() -> None:
         base_settings=base_settings,
         all_specs=args.all_specs,
         stress_multiplier=args.stress_multiplier,
+        ledger_path=args.ledger,
     )
 
     args.spec_dir = args.spec_dir or (ROOT / "data" / "specs")
@@ -979,6 +1186,9 @@ def main() -> None:
 
     if not args.quiet:
         print(f"Validation written to {path}")
+        trial_ledger = payload.get("trial_ledger") or {}
+        if trial_ledger.get("path"):
+            print(f"Trial ledger written to {trial_ledger['path']}")
 
 
 if __name__ == "__main__":
