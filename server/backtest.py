@@ -36,6 +36,9 @@ class BacktestResult(BaseModel):
     run_id: str
     dataset_id: str
     config_hash: str = ""
+    research_hash: str = ""
+    profile_hash: str = ""
+    brakes: dict[str, Any] = Field(default_factory=dict)
     run_group: str | None = None
     strategy_id: str
     strategy_version: str
@@ -83,6 +86,33 @@ def config_fingerprint(settings: Settings) -> str:
         payload.pop(section, None)
     payload.pop("auto_start", None)
     return canonical_hash(payload)[:16]
+
+
+# Lo que puede mover el resultado de una medición. El bloque `risk` no está
+# aquí a propósito: un drawdown más conservador cambia cuánto se arriesga, no
+# qué se mide. Meterlo obligaba a repetir once meses cada vez que se apretaba
+# un freno, y la puerta rechazaba por hash como si hubiera cambiado la estrategia.
+MEASUREMENT_SECTIONS = ("strategy", "instruments", "execution")
+
+
+def research_fingerprint(settings: Settings) -> str:
+    """Huella de la investigación: estrategia, instrumentos, coste y marco."""
+    from .confirmatory import canonical_hash
+
+    payload = settings.model_dump(mode="json")
+    return canonical_hash({name: payload[name] for name in MEASUREMENT_SECTIONS})[:16]
+
+
+def profile_fingerprint(settings: Settings) -> str:
+    """Huella de los frenos con los que se opera, separada de la medición."""
+    from .confirmatory import canonical_hash
+
+    return canonical_hash({"risk": settings.model_dump(mode="json")["risk"]})[:16]
+
+
+def risk_brakes(settings: Settings) -> dict[str, Any]:
+    """Los frenos tal cual, para que la evidencia diga con qué se midió."""
+    return settings.risk.model_dump(mode="json")
 
 
 def run_backtest(
@@ -135,6 +165,9 @@ def run_backtest(
         run_id=uuid.uuid4().hex[:12],
         dataset_id=dataset.dataset_id,
         config_hash=config_fingerprint(settings),
+        research_hash=research_fingerprint(settings),
+        profile_hash=profile_fingerprint(settings),
+        brakes=risk_brakes(settings),
         run_group=run_group,
         strategy_id=engine_strategy.id,
         strategy_version=engine_strategy.version,
@@ -402,6 +435,9 @@ def _report_run(args, settings, result, stats, report) -> None:
         "window": {"from": args.date_from, "to": args.date_to},
         "dataset_id": result.dataset_id,
         "config_hash": result.config_hash,
+        "research_hash": result.research_hash,
+        "profile_hash": result.profile_hash,
+        "brakes": result.brakes,
         "strategy": {"id": result.strategy_id, "version": result.strategy_version},
         "diagnostics": result.diagnostics,
         "metrics": closed,
