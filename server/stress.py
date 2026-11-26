@@ -9,6 +9,7 @@ measured by re-running, not by estimating.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -59,10 +60,18 @@ def run_stress(
     strategy: BaseStrategy | None = None,
     *,
     multiplier: float = 2.0,
+    start: datetime | None = None,
+    end: datetime | None = None,
 ) -> StressReport:
-    first = run_backtest(settings, dataset_path, strategy)
-    again = run_backtest(settings, dataset_path, strategy)
-    stressed = run_backtest(stressed_settings(settings, multiplier), dataset_path, strategy)
+    first = run_backtest(settings, dataset_path, strategy, start=start, end=end)
+    again = run_backtest(settings, dataset_path, strategy, start=start, end=end)
+    stressed = run_backtest(
+        stressed_settings(settings, multiplier),
+        dataset_path,
+        strategy,
+        start=start,
+        end=end,
+    )
     return StressReport(
         base=first.metrics,
         stressed=stressed.metrics,
@@ -108,11 +117,20 @@ def measure_gates(
     strategy: BaseStrategy | None = None,
     *,
     multiplier: float = 2.0,
+    start: datetime | None = None,
+    end: datetime | None = None,
 ) -> dict[str, GateOutcome]:
     """G8, G2 and G1/G3/G14 as real outcomes, ready to override the placeholders."""
     from .integrity import measure_integrity
 
-    report = run_stress(settings, dataset_path, strategy, multiplier=multiplier)
+    report = run_stress(
+        settings,
+        dataset_path,
+        strategy,
+        multiplier=multiplier,
+        start=start,
+        end=end,
+    )
     return {
         "G8": cost_outcome(report.base, report.stressed, multiplier),
         "G2": determinism_outcome(report.deterministic),
