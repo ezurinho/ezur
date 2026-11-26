@@ -135,6 +135,21 @@ el estrés 0,7606. El perfil usa
 `"mode": "reduce"` con `"size_factor": 0.25`, no `"mode": "block"`; el bot corre
 en paper con el riesgo reducido.
 
+### Tope de 4 operaciones diarias: no recorta la muestra
+
+`config/okx-validation.json` y el perfil de papel fijan `max_trades_per_day = 4`.
+La corrida de 15 m con ese perfil de validación da **109 operaciones OOS y
+`trades_at_cap: 0`**: ningún día llegó al tope, así que el límite no truncó la
+muestra ni explica su tamaño. Subirlo tampoco añade operaciones —con 8 al día
+salen las mismas 109— y bajarlo solo recortaría días que hoy no existen. Quien
+quiera mover este número debe traer una corrida que muestre días tocando el
+tope; hoy no hay ninguno.
+
+La comprobación queda también en el artefacto:
+`data/research/promotion/profile-15m-2025-2026-years.json` registra
+`trades_at_cap: 0` y `cap_rate: 0.0` sobre `data/BTC_15m_2025.csv`
+(`config_hash 6a599496fbf3a324`).
+
 La caída del PF OOS de **1,18198 a 1,06750** se explica por las 10 operaciones
 cerradas en noviembre: 3 ganadoras y 7 perdedoras, PF **0,3651**, esperanza
 **−0,4578 R**, P&L **−276,23** y DD local **277,49**. El DD máximo OOS no cambia
