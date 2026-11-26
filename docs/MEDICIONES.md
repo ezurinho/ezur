@@ -90,6 +90,32 @@ El perfil actual `profiles/okx/config.json` es `reference v0.1.0` en 15 m,
 `data/research/promotion/profile-15m-2026-11-24.json`; no es la corrida antigua
 de 105 operaciones.
 
+### Re-medida de la evidencia activa (2026-11-26)
+
+La evidencia que usa la puerta se regeneró con las huellas nuevas y el modelo
+de ejecución actualizado, sin promocionar nada:
+
+```
+python -m server.backtest --dataset data/BTC_15m_2025_20261124.csv \
+    --config profiles/okx/config.json --split 2026-01-01 --gates \
+    --out data/research/promotion/profile-15m-2026-11-26-remesa.json
+```
+
+- `research_hash 7e6a27e5d53e6fa5`, `profile_hash 01c86ce397b02642`,
+  `config_hash b63a4b792641f363`.
+- 241 operaciones totales, PF 1,024; **109 OOS, PF 1,053, esperanza +0,0347 R,
+  P&L +163,70, DD 440,66 y coste 0,047 R**. El PF OOS baja desde 1,068 por el
+  tick extra de slippage por tamaño, no por un cambio de estrategia.
+- La puerta ya no rechaza por formato (`evidencia_de_la_configuracion` deja de
+  fallar) y sigue **RECHAZADA** por rendimiento: PF con coste ×2 0,7606, PBO
+  0,782 y DSR 0,0006. Modo `reduce` y factor 0,25 intactos.
+- Cero rechazos por `max_trades_reached` y cero operaciones topadas por
+  unidades.
+
+El artefacto activo (`profile-15m-2026-11-24.json`) se sobrescribió con esta
+corrida; la versión anterior quedó en
+`.build/evidence-backup/profile-15m-2026-11-24.pre-remesa.json`.
+
 ### Modelo de ejecución: fees, spread, slippage por tamaño y funding
 
 El perfil de papel cobra `commission_per_unit_side = 0.049` por lado (taker),
@@ -144,7 +170,8 @@ existía. Su PBO 0,441 corresponde a una regeneración anterior del ciclo, no al
 0,782 que manda hoy.
 
 La evidencia activa del perfil (`profile-15m-2026-11-24.json`) tampoco está
-promovida: tiene 109 operaciones OOS, PF 1,068 y coste 0,047 R. Ya supera la
+promovida: tiene 109 operaciones OOS, PF 1,053 y coste 0,047 R (re-medida el
+2026-11-26). Ya supera la
 muestra mínima de 100, pero sigue rechazada por el PBO 0,782, el DSR 0,0006 y
 el estrés 0,7606. El perfil usa
 `"mode": "reduce"` con `"size_factor": 0.25`, no `"mode": "block"`; el bot corre
@@ -211,7 +238,8 @@ La siguiente idea tendría que ser otra fuente de señal, no otra rejilla.
 `profiles/okx/config.json` opera `reference v0.1.0` con **velas de 15 m**: el
 feed de OKX llega en 1 m (`bar=1m`) y el motor lo agrupa antes de evaluar
 (`strategy.timeframe`). El perfil **no está promovido**: su evidencia activa
-tiene 109 operaciones OOS, PF 1,068 y coste 0,047 R. Pasa la muestra mínima
+tiene 109 operaciones OOS, PF 1,053 y coste 0,047 R (re-medida el 2026-11-26
+con el modelo de ejecución actual). Pasa la muestra mínima
 de 100, pero falla el PBO 0,782, el DSR 0,0006 y el estrés 0,7606. Por eso usa
 `"mode": "reduce"` con `"size_factor": 0.25` y el bot corre en paper con el
 riesgo reducido; no está en `"mode": "block"`. La medición con el perfil
