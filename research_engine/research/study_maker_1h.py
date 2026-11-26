@@ -325,7 +325,7 @@ def _metrics(trades: pd.DataFrame, bars: pd.DataFrame) -> dict:
     sharpe = float(daily.mean() / sd * math.sqrt(365)) if sd and sd > 0 else 0.0
     years = (bars["ts"].iloc[-1] - bars["ts"].iloc[0]).days / 365.25
     occupied = np.zeros(len(bars), dtype=bool)
-    for entry_i, exit_i in zip(t["entry_i"].to_numpy(), t["exit_i"].to_numpy()):
+    for entry_i, exit_i in zip(t["entry_i"].to_numpy(), t["exit_i"].to_numpy(), strict=False):
         occupied[int(entry_i) : min(int(exit_i) + 1, len(bars))] = True
     r_net = t["r_net"].to_numpy()
     return {
