@@ -63,14 +63,18 @@ class RiskManager:
         if cfg.no_trade_after_consecutive_losses and (
             portfolio.consecutive_losses >= cfg.no_trade_after_consecutive_losses
         ) and not _cooldown_elapsed(cfg, portfolio, clock):
-            if cfg.soft_brakes:
-                factor *= max(cfg.soft_brake_floor, 0.5)
-                brakes.append(f"racha de {portfolio.consecutive_losses}")
-            elif cfg.loss_streak_cooldown_min:
+            # Una pausa declarada es una pausa: con minutos configurados se
+            # espera aunque los frenos suaves estén activos. Antes esta rama era
+            # inalcanzable con `soft_brakes` y el perfil anunciaba 240 minutos
+            # que nunca ocurrían; la racha solo recortaba el tamaño.
+            if cfg.loss_streak_cooldown_min:
                 return reject(
                     "consecutive_losses",
                     f"racha de pérdidas: {cfg.loss_streak_cooldown_min} min desde la última salida",
                 )
+            if cfg.soft_brakes:
+                factor *= max(cfg.soft_brake_floor, 0.5)
+                brakes.append(f"racha de {portfolio.consecutive_losses}")
             else:
                 return reject("consecutive_losses", "racha de pérdidas alcanzada")
         if cfg.max_drawdown_pct and portfolio.peak_equity > 0:
