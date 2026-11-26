@@ -75,7 +75,7 @@
   },
   "promotion": {
     "cycle": "data/research/cycles/CYCLE-BOT-15M.json",
-    "evidence": "data/research/promotion/profile-15m-review.json",
+    "evidence": "data/research/promotion/profile-15m-2026-11-24.json",
     "mode": "reduce",
     "required": true,
     "size_factor": 0.25,
