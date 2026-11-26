@@ -189,3 +189,12 @@ def test_live_requires_all_three_conditions():
     assert settings.live.can_start() is False
     settings.live.adapter_implemented = True
     assert settings.live.can_start() is True
+
+def test_funding_fails_instead_of_being_ignored():
+    with pytest.raises(ValidationError):
+        ExecutionConfig(funding="real_timestamps")
+
+
+def test_stop_floor_fails_instead_of_being_ignored():
+    with pytest.raises(ValidationError):
+        ExecutionConfig(stop_floor_frac=0.01)
