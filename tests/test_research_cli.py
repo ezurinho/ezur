@@ -180,6 +180,46 @@ def test_el_artefacto_con_el_hash_de_la_spec_vale(tmp_path):
     assert research._verdict_from_artifact(tmp_path, spec, 0.0) == "APPROVED"
 
 
+def test_el_artefacto_valido_entrega_las_huellas_del_ledger(tmp_path):
+    spec = {"id": "BTC-X", "version": "1.0.0"}
+    canonical = json.dumps(spec, sort_keys=True, separators=(",", ":"))
+    digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    (tmp_path / "BTC-X-v1.0.0.json").write_text(
+        json.dumps(
+            {
+                "verdict": "APPROVED",
+                "artifacts": {
+                    "spec_hash": f"sha256:{digest}",
+                    "data_hash": "sha256:datos",
+                    "code_sha": "sha256:codigo",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    evidence = research._artifact_evidence(tmp_path, spec, 0.0)
+
+    assert evidence["verdict"] == "APPROVED"
+    assert evidence["data_hash"] == "sha256:datos"
+    assert evidence["code_sha"] == "sha256:codigo"
+
+
+def test_un_artefacto_de_otra_spec_no_entrega_huellas(tmp_path):
+    spec = {"id": "BTC-X", "version": "1.0.0"}
+    (tmp_path / "BTC-X-v1.0.0.json").write_text(
+        json.dumps(
+            {
+                "verdict": "APPROVED",
+                "artifacts": {"spec_hash": "sha256:otro", "data_hash": "sha256:otro"},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert research._artifact_evidence(tmp_path, spec, 0.0) == {}
+
+
 def test_un_artefacto_roto_no_da_veredicto(tmp_path):
     artifact = tmp_path / "BTC-X-v1.0.0.json"
     artifact.write_text("{", encoding="utf-8")
@@ -213,6 +253,46 @@ def test_run_spec_registra_el_timeout(tmp_path, monkeypatch):
     assert record["returncode"] == -9
     assert "timeout" in record["error"]
     assert record["output"] == "parcial"
+
+
+def test_run_spec_copia_las_huellas_del_artefacto_al_ledger(tmp_path, monkeypatch):
+    document = {
+        "id": "BTC-X",
+        "version": "1.0.0",
+        "family": "trend",
+        "timeframe_signal": "1d",
+        "data_requirements": {"datasets": ["klines_1d"]},
+    }
+    home = _home(tmp_path, {"a": document})
+    spec = home / "runner" / "specs" / "a.json"
+    out = tmp_path / "out"
+    out.mkdir()
+    canonical = json.dumps(document, sort_keys=True, separators=(",", ":"))
+    digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    (out / "BTC-X-v1.0.0.json").write_text(
+        json.dumps(
+            {
+                "verdict": "APPROVED",
+                "artifacts": {
+                    "spec_hash": f"sha256:{digest}",
+                    "data_hash": "sha256:datos",
+                    "code_sha": "sha256:codigo",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    def fake_run(*args, **kwargs):
+        return subprocess.CompletedProcess(args[0], 0, stdout="", stderr="")
+
+    monkeypatch.setattr(research.subprocess, "run", fake_run)
+
+    record = research.run_spec(home, "python", spec, out_dir=out, timeout=5)
+
+    assert record["data_hash"] == "sha256:datos"
+    assert record["code_sha"] == "sha256:codigo"
+    assert record["datasets"] == ["klines_1d"]
 
 
 def test_run_cycle_registra_el_timeout_y_un_artefacto_ilegible(tmp_path, monkeypatch):
