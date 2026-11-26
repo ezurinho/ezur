@@ -31,8 +31,8 @@ import study_costs as sc  # noqa: E402
 def bars(closes, highs=None, lows=None, opens=None) -> pd.DataFrame:
     n = len(closes)
     opens = opens if opens is not None else closes
-    highs = highs if highs is not None else [max(o, c) for o, c in zip(opens, closes)]
-    lows = lows if lows is not None else [min(o, c) for o, c in zip(opens, closes)]
+    highs = highs if highs is not None else [max(o, c) for o, c in zip(opens, closes, strict=False)]
+    lows = lows if lows is not None else [min(o, c) for o, c in zip(opens, closes, strict=False)]
     return pd.DataFrame({
         "ts": pd.date_range("2024-01-01", periods=n, freq="5min", tz="UTC"),
         "open": opens, "high": highs, "low": lows, "close": closes,
