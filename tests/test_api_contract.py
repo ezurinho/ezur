@@ -4,6 +4,7 @@ from server.schemas import SnapshotData
 
 EXPECTED_PATHS = [
     "/api/health",
+    "/api/ready",
     "/api/status",
     "/api/config",
     "/api/bot/{action}",
@@ -34,6 +35,14 @@ def test_health_returns_ok(client):
     response = client.get("/api/health")
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
+
+
+def test_ready_reports_a_stopped_engine_as_not_ready(client):
+    response = client.get("/api/ready")
+    assert response.status_code == 503
+    body = response.json()
+    assert body["ready"] is False
+    assert "engine_stopped" in body["reasons"]
 
 
 def test_liveness_health_returns_ok(client):
