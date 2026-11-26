@@ -42,9 +42,9 @@ BARS_PER_DAY = 288
 def load() -> pd.DataFrame:
     df = pd.read_pickle(CACHE / "btc_5m.pkl")
     df = df.reset_index(drop=True)
-    h, l, c = df["high"], df["low"], df["close"]
+    h, low, c = df["high"], df["low"], df["close"]
     prev_c = c.shift(1)
-    tr = pd.concat([h - l, (h - prev_c).abs(), (l - prev_c).abs()], axis=1).max(axis=1)
+    tr = pd.concat([h - low, (h - prev_c).abs(), (low - prev_c).abs()], axis=1).max(axis=1)
     df["atr"] = tr.rolling(14).mean()
     df["ema12"] = c.ewm(span=12, adjust=False).mean()
     df["ema48"] = c.ewm(span=48, adjust=False).mean()
@@ -173,7 +173,7 @@ def orb_entries(df: pd.DataFrame, range_bars: int, sessions: tuple[tuple[int, in
         for k, (hh, mm) in enumerate(sessions):
             if key_min == hh * 60 + mm:
                 start_idx[(dates[i], k)] = i
-        for k, (hh, mm) in enumerate(sessions):
+        for k, (_hh, _mm) in enumerate(sessions):
             s = start_idx.get((dates[i], k))
             if s is None:
                 continue
@@ -280,8 +280,6 @@ def deflated_sharpe(sr_ann: float, trials: list[float], years: float, skew: floa
 # ------------------------------------------------------------------------- main
 def main() -> None:
     df = load()
-    span_is_end = int(len(df) * 0.60)
-    span_oos_start = int(len(df) * 0.80)
     configs: list[dict] = []
 
     def add(name, family, trades, exits, params):
