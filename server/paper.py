@@ -125,9 +125,17 @@ def promotion_state(profile: Path) -> dict[str, Any] | None:
         return None
     strategy = document.get("strategy") or {}
     try:
-        execution = execution_model(Settings.model_validate(document))
+        settings = Settings.model_validate(document)
     except ValueError:
+        settings = None
+    if settings is None:
         execution = None
+        config_hash = None
+    else:
+        from .backtest import config_fingerprint
+
+        execution = execution_model(settings)
+        config_hash = config_fingerprint(settings)
     verdict = evaluate_paths(
         block.get("evidence"),
         block.get("stress_evidence"),
@@ -135,6 +143,7 @@ def promotion_state(profile: Path) -> dict[str, Any] | None:
         {"id": strategy.get("id"), "version": strategy.get("version")}
         if strategy.get("id")
         else None,
+        config_hash=config_hash,
         execution=execution,
     )
     cycle = load(block.get("cycle"))
@@ -164,6 +173,9 @@ def promotion_state(profile: Path) -> dict[str, Any] | None:
         dsr_block = {}
     if not isinstance(wfa, dict):
         wfa = {}
+    stress_block = (cycle or {}).get("stress") or {}
+    if not isinstance(stress_block, dict):
+        stress_block = {}
     folds = wfa.get("folds") or []
     if not isinstance(folds, list):
         folds = []
@@ -197,6 +209,9 @@ def promotion_state(profile: Path) -> dict[str, Any] | None:
         "pbo_threshold": pbo_check.get("threshold"),
         "dsr": dsr_block.get("dsr"),
         "dsr_threshold": dsr_check.get("threshold"),
+        "candidate": (cycle or {}).get("candidate") or dsr_block.get("config"),
+        "stress_candidate": stress_block.get("selected"),
+        "config_hash": config_hash,
         "wfa_oos_trades": wfa_trades,
         "wfa_folds": wfa.get("evaluated_folds", len(folds)),
         "wfa_pf": wfa.get("oos_pf_aggregate"),
