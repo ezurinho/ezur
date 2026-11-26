@@ -650,15 +650,15 @@ class TradingEngine:
         self._record_equity_point(tick.ts)
 
     def _record_equity_point(self, stamp: datetime) -> None:
-        """Marca a mercado mientras hay posicion.
+        """Marca a mercado mientras hay posición.
 
-        Sin esto el equity solo cambia al cerrar: un drawdown abierto no
-        aparece ni en la curva ni en la puerta G6, que mide el peor momento de
-        la cuenta como si la cuenta solo existiera en los cierres.
+        Va a `equity_marks`, no a la curva auditada: esa curva tiene una fila
+        por operación cerrada. Mezclar marcas con cierres dejó 463 filas frente
+        a 14 trades, desvió el último punto y bloqueó el arranque.
         """
         if self.execution.position is None:
             return
-        self.store.append_equity(
+        self.store.append_equity_mark(
             self.state.equity + self.state.unrealized, stamp
         )
 
