@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 
 from .config import Settings, apply_settings, save_settings
@@ -161,6 +161,16 @@ def health(request: Request) -> dict[str, Any]:
         "session": getattr(engine.state, "session", None),
     }
     return payload
+
+
+@router.get("/ready")
+def ready(request: Request) -> JSONResponse:
+    """Readiness operativa: motor en marcha, latido y feed frescos."""
+    from .readiness import assess
+
+    engine = _engine(request)
+    payload = assess(engine, engine.store)
+    return JSONResponse(status_code=200 if payload["ready"] else 503, content=payload)
 
 
 @router.get("/alerts")
