@@ -349,3 +349,27 @@ los mismos 5 pb de bolsa que el modelo en pb volvía a cobrar: cada lado pagaba
 **Consecuencia.** El coste medido por lado vuelve a ser el declarado (5 pb +
 medio spread). Las mediciones anteriores con el perfil de OKX están
 sobrecargadas en ~5 pb por lado y hay que repetirlas antes de citarlas.
+
+## ADR 0.17 · La escalera de frenos recorta, no cierra; y la pausa por racha solo existe sin frenos suaves
+
+**Contexto.** Con `soft_brakes: true`, `risk.py` multiplica el tamaño en vez de
+rechazar: drawdown, pérdida diaria y racha recortan unidades, y solo el tope
+duro (`soft_brake_halt_multiple` veces el límite de drawdown) cierra la puerta.
+La rama de la racha tiene una consecuencia que no se ve leyendo el perfil: el
+`elif cfg.loss_streak_cooldown_min` solo se evalúa cuando `soft_brakes` es
+falso, así que con frenos suaves la pausa de minutos no se aplica nunca. El 23
+de noviembre, con 240 min configurados y racha de 5, el motor siguió operando a
+media máquina: −615,68 $ en un día, el 90 % del rojo acumulado.
+
+**Decisión.** La escalera se mantiene como está: recortar antes que cerrar es
+el contrato que fija `test_risk_ladder.py`, y un freno que corta la sesión
+entera por tres pérdidas seguidas es una decisión de producto, no un detalle de
+implementación. Lo que se fija por escrito es la semántica real: con
+`soft_brakes` activo, `loss_streak_cooldown_min` no pausa nada y quien quiera
+pausa dura tiene que apagar los frenos suaves.
+
+**Consecuencia.** El perfil puede declarar una pausa que no ocurre, y ese
+valor además entra en el hash de la config: cambiarlo para dejar de mentir
+invalidaría la evidencia de promoción. Mientras el hash firme el bloque
+`risk` entero, la pausa de 240 min se queda como está y se documenta aquí en
+lugar de tocarse a ciegas.
