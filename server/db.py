@@ -77,6 +77,10 @@ class _LockedConnection:
             setattr(self._conn, item, value)
 
 
+# Marcas intradía que alimentan el gráfico; no son la curva auditada.
+EQUITY_MARKS_RETENTION = 5000
+
+
 class Store:
     def __init__(self, db_path: str | Path = "data/terminal.db") -> None:
         path = Path(db_path)
@@ -320,6 +324,30 @@ class Store:
                 "INSERT INTO equity (ts, equity) VALUES (?, ?)",
                 (_iso(ts or datetime.now(timezone.utc)), equity),
             )
+
+    def append_equity_mark(self, equity: float, ts: datetime | None = None) -> None:
+        """Marca intradía a mercado, fuera de la curva auditada.
+
+        La curva `equity` tiene una fila por operación cerrada y es la que
+        compara `server.equity`. Estas marcas alimentan el gráfico sin
+        convertirse en filas que la auditoría tenga que explicar.
+        """
+        with self.conn:
+            self.conn.execute(
+                "INSERT INTO equity_marks (ts, equity) VALUES (?, ?)",
+                (_iso(ts or datetime.now(timezone.utc)), equity),
+            )
+            self.conn.execute(
+                "DELETE FROM equity_marks WHERE id NOT IN "
+                "(SELECT id FROM equity_marks ORDER BY id DESC LIMIT ?)",
+                (EQUITY_MARKS_RETENTION,),
+            )
+
+    def equity_marks(self, limit: int = 1000) -> list[dict[str, Any]]:
+        rows = self.conn.execute(
+            "SELECT ts, equity FROM equity_marks ORDER BY id DESC LIMIT ?", (limit,)
+        ).fetchall()
+        return [dict(row) for row in reversed(rows)]
 
     def equity_curve(self, limit: int = 1000) -> list[dict[str, Any]]:
         rows = self.conn.execute(
