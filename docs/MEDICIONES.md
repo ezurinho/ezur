@@ -90,6 +90,21 @@ El perfil actual `profiles/okx/config.json` es `reference v0.1.0` en 15 m,
 `data/research/promotion/profile-15m-2026-11-24.json`; no es la corrida antigua
 de 105 operaciones.
 
+### Modelo de ejecución: fees, spread, slippage por tamaño y funding
+
+El perfil de papel cobra `commission_per_unit_side = 0.049` por lado (taker),
+`half_spread_bps = 0.07` y un slippage de **1 tick base + 0.25 ticks por cada
+100 unidades**, con tope de 5 ticks (`slippage_ticks_per_100_units`). El
+impacto de libro (`impact_model`) sigue en `none`: sin profundidad medida,
+inventar una curva sería precisión falsa.
+
+El funding de perpetuos ya se modela (`funding_rate_bps_8h`, positivo = el largo
+paga) en cada frontera de 8 h UTC. El perfil activo es **spot**, así que
+`funding = "none"` y tasa 0: no se cobra un funding que el instrumento no
+tiene. Cuando se mida un perpetual, se activa sin tocar el resto. Los supuestos
+están en el hash de investigación: cambiar cualquiera exige re-medir, no
+re-interpretar.
+
 ### Histórico: 105 / 1,308 / 0,049 no es evidencia del perfil actual
 
 La tabla siguiente es histórica. Sale de
