@@ -15,7 +15,7 @@ def test_la_config_de_validacion_quita_el_freno_y_conserva_lo_demas():
     assert settings.execution.commission_per_unit_side == 0.049
     assert settings.risk.soft_brakes is False
     assert settings.risk.max_drawdown_pct >= 100
-    assert settings.risk.max_trades_per_day == 8
+    assert settings.risk.max_trades_per_day == 4
 
 
 def test_la_config_de_validacion_solo_cambia_el_freno():
