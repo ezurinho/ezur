@@ -39,17 +39,25 @@ def test_la_esperanza_que_supera_el_coste_pasa():
     assert "0.050" in guard.detail()
 
 
-def test_la_esperanza_que_no_supera_el_coste_no_pasa():
-    guard = measure(_evidence(0.03), _settings())
+def test_la_esperanza_neta_negativa_no_pasa():
+    guard = measure(_evidence(-0.01), _settings())
     assert guard.passes is False
     assert "no supera" in guard.detail()
-    assert "+0.030" in guard.detail()
+    assert "-0.010" in guard.detail()
     assert "0.050" in guard.detail()
 
 
 def test_empatar_no_es_superar():
-    guard = measure(_evidence(0.05), _settings())
+    guard = measure(_evidence(0.0), _settings())
     assert guard.passes is False
+
+
+def test_la_esperanza_neta_positiva_pasa_aunque_sea_menor_que_el_coste():
+    # `r_multiple` ya descuenta el coste: 0,03 R netos son 0,08 R brutos,
+    # por encima de los 0,05 R de peaje. Comparar 0,03 con 0,05 lo restaba dos veces.
+    guard = measure(_evidence(0.03, 0.05), _settings())
+    assert guard.passes is True
+    assert "bruta +0.080" in guard.detail()
 
 
 def test_sin_tramo_fuera_de_muestra_usa_la_global():
