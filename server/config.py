@@ -403,6 +403,18 @@ class ExecutionConfig(_Model):
             raise ValueError("los fills parciales aún no están implementados")
         return self
 
+    @model_validator(mode="after")
+    def _inert_options_are_not_silently_ignored(self) -> "ExecutionConfig":
+        # Ningún camino del motor lee estas dos. Aceptar un valor distinto del
+        # neutro sería prometer un comportamiento que no existe; fallan al
+        # cargar. Se conservan en el modelo porque forman parte del hash con el
+        # que la evidencia de promoción firma la configuración.
+        if self.funding != "none":
+            raise ValueError("funding no está implementado: solo se admite 'none'")
+        if self.stop_floor_frac != 0.0:
+            raise ValueError("stop_floor_frac no está implementado: solo se admite 0")
+        return self
+
 
 class FeedConfig(_Model):
     provider: Literal["simulated", "csv", "live", "okx"] = "simulated"
