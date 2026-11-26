@@ -75,7 +75,7 @@
   },
   "promotion": {
     "cycle": "data/research/cycles/CYCLE-BOT-15M.json",
-    "evidence": "data/research/promotion/reference-15m-paper-regime-rr10-stop10.json",
+    "evidence": "data/research/promotion/profile-15m-review.json",
     "mode": "reduce",
     "required": true,
     "size_factor": 0.25,
