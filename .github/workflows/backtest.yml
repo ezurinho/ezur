@@ -68,6 +68,35 @@ jobs:
             > "$RUNNER_TEMP/config.json"
           cat "$RUNNER_TEMP/config.json" | head -c 400
 
+      # El informe identifica los datos, pero no con que marco ni con que
+      # overrides se midio. Sin esto, dos corridas del mismo commit no se pueden
+      # comparar ni repetir: queda escrito junto al resultado.
+      - name: Registrar la corrida
+        env:
+          INPUT_SYMBOL: ${{ inputs.symbol }}
+          INPUT_BOT_SYMBOL: ${{ inputs.bot_symbol }}
+          INPUT_INTERVAL: ${{ inputs.interval }}
+          INPUT_START: ${{ inputs.start }}
+          INPUT_END: ${{ inputs.end }}
+          INPUT_CONFIG: ${{ inputs.config }}
+          INPUT_SPLIT: ${{ inputs.split }}
+          INPUT_OVERRIDES: ${{ inputs.overrides }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+
+          doc = {
+              key.removeprefix("INPUT_").lower(): value
+              for key, value in os.environ.items()
+              if key.startswith("INPUT_")
+          }
+          doc["commit"] = os.environ["GITHUB_SHA"]
+          doc["overrides"] = json.loads(doc.get("overrides") or "{}")
+          with open(os.environ["RUNNER_TEMP"] + "/meta.json", "w", encoding="utf-8") as handle:
+              json.dump(doc, handle, indent=2, sort_keys=True)
+          PY
+
       - name: Backtest
         env:
           SPLIT: ${{ inputs.split }}
@@ -105,5 +134,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: backtest
-          path: ${{ runner.temp }}/backtest.json
+          path: |
+            ${{ runner.temp }}/backtest.json
+            ${{ runner.temp }}/meta.json
           if-no-files-found: error
