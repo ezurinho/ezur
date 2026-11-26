@@ -131,11 +131,22 @@ def promotion_state(profile: Path) -> dict[str, Any] | None:
     if settings is None:
         execution = None
         config_hash = None
+        research_hash = None
+        profile_hash = None
+        brakes = None
     else:
-        from .backtest import config_fingerprint
+        from .backtest import (
+            config_fingerprint,
+            profile_fingerprint,
+            research_fingerprint,
+            risk_brakes,
+        )
 
         execution = execution_model(settings)
         config_hash = config_fingerprint(settings)
+        research_hash = research_fingerprint(settings)
+        profile_hash = profile_fingerprint(settings)
+        brakes = risk_brakes(settings)
     verdict = evaluate_paths(
         block.get("evidence"),
         block.get("stress_evidence"),
@@ -145,6 +156,9 @@ def promotion_state(profile: Path) -> dict[str, Any] | None:
         else None,
         config_hash=config_hash,
         execution=execution,
+        research_hash=research_hash,
+        profile_hash=profile_hash,
+        brakes=brakes,
     )
     cycle = load(block.get("cycle"))
     checks: list[dict[str, Any]] = []
