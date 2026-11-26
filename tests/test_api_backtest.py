@@ -13,20 +13,36 @@ from server.market import synthetic
 from server.simulation import session_start_utc
 
 
-def _dataset(path: Path, settings: Settings, symbols: list[str], bars: int = 120) -> Path:
-    day = date(2026, 11, 20)
-    start = session_start_utc(settings, day)
+def _dataset(
+    path: Path,
+    settings: Settings,
+    symbols: list[str],
+    bars: int = 120,
+    days: list[date] | None = None,
+) -> Path:
+    sessions = days or [date(2026, 11, 20)]
     series = {
-        symbol: synthetic.generate_session(day.isoformat(), symbol, start=start, bars=bars)
-        for symbol in symbols
+        day: {
+            symbol: synthetic.generate_session(
+                day.isoformat(),
+                symbol,
+                start=session_start_utc(settings, day),
+                bars=bars,
+            )
+            for symbol in symbols
+        }
+        for day in sessions
     }
     with path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
         writer.writerow(["ts", "symbol", "o", "h", "l", "c", "v"])
-        for index in range(bars):
-            for symbol in symbols:
-                bar = series[symbol][index]
-                writer.writerow([bar.t.isoformat(), symbol, bar.o, bar.h, bar.l, bar.c, bar.v])
+        for day in sessions:
+            for index in range(bars):
+                for symbol in symbols:
+                    bar = series[day][symbol][index]
+                    writer.writerow(
+                        [bar.t.isoformat(), symbol, bar.o, bar.h, bar.l, bar.c, bar.v]
+                    )
     return path
 
 
@@ -131,3 +147,62 @@ def test_backtest_run_can_skip_the_stress_runs(app_client):
     ).json()
     outcomes = {item["id"]: item["status"] for item in payload["validation"]["outcomes"]}
     assert outcomes["G8"] == "not_measured"
+
+
+def test_backtest_run_honours_the_requested_window(app_client):
+    client, tmp_path, settings = app_client
+    path = _dataset(
+        tmp_path / "two_days.csv",
+        settings,
+        ["PRIMARY", "CTX_A"],
+        days=[date(2026, 11, 19), date(2026, 11, 20)],
+    )
+
+    full = client.post(
+        "/api/backtest/run", json={"dataset_path": str(path), "stress": False}
+    ).json()
+    limited = client.post(
+        "/api/backtest/run",
+        json={
+            "dataset_path": str(path),
+            "stress": False,
+            "start": "2026-11-20",
+            "end": "2026-11-21",
+        },
+    ).json()
+
+    assert full["trades"] > 0
+    assert 0 < limited["trades"] < full["trades"]
+
+
+def test_backtest_run_rejects_an_empty_window(app_client):
+    client, tmp_path, settings = app_client
+    path = _dataset(tmp_path / "bars.csv", settings, ["PRIMARY", "CTX_A"])
+
+    response = client.post(
+        "/api/backtest/run",
+        json={
+            "dataset_path": str(path),
+            "start": "2026-11-21",
+            "end": "2026-11-20",
+        },
+    )
+    assert response.status_code == 422
+    assert response.json()["detail"] == "start debe ser anterior a end"
+
+
+def test_backtest_uses_the_saved_profile_not_the_reduced_effective_copy(app_client):
+    client, tmp_path, settings = app_client
+    path = _dataset(tmp_path / "bars.csv", settings, ["PRIMARY", "CTX_A"])
+    configured = client.app.state.configured_settings
+    client.app.state.engine.settings.risk.risk_per_trade_pct = (
+        configured.risk.risk_per_trade_pct / 2
+    )
+
+    payload = client.post(
+        "/api/backtest/run", json={"dataset_path": str(path), "stress": False}
+    ).json()
+
+    from server.backtest import config_fingerprint
+
+    assert payload["config_hash"] == config_fingerprint(configured)
