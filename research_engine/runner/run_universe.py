@@ -238,7 +238,6 @@ def main() -> int:
     gps, gls = r_stress[r_stress > 0].sum(), -r_stress[r_stress < 0].sum()
     corr = correlation_penalty(per_symbol, price_daily)
 
-    primary = args.symbols[0]
     agg = {
         "symbols": args.symbols,
         "assets_traded": k,
@@ -259,7 +258,6 @@ def main() -> int:
         "risk_scale_per_asset": round(scale, 4),
     }
 
-    plan_bps = 0.4
     payload = {
         "spec_id": spec["id"],
         "version": spec["version"],
