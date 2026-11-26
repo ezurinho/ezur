@@ -56,9 +56,11 @@ def test_an_open_loss_is_marked_to_market(engine, decision, signal_long):
 
     assert engine.execution.position is not None
     assert engine.state.unrealized < 0
-    curve = [point["equity"] for point in engine.store.equity_curve()]
-    assert curve[-1] == pytest.approx(engine.state.equity + engine.state.unrealized)
-    assert curve[-1] < curve[0]
+    marks = [point["equity"] for point in engine.store.equity_marks()]
+    assert marks[-1] == pytest.approx(engine.state.equity + engine.state.unrealized)
+    assert marks[-1] < marks[0]
+    # La curva auditada no recibe marcas: solo una fila por operación cerrada.
+    assert engine.store.equity_curve() == []
 
     position = engine.snapshot()["data"]["position"]
     assert position["unrealized"] == pytest.approx(engine.state.unrealized)
