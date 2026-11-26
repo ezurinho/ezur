@@ -34,3 +34,11 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm run test
+
+  workflows:
+    # Un workflow roto no falla: simplemente no corre, y el verde del resto de
+    # jobs tapa que esa mitad nunca se ejecuto. actionlint lo pone en rojo.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: raven-actions/actionlint@v2
