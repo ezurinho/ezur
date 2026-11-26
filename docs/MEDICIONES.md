@@ -74,6 +74,16 @@ El ciclo actual `CYCLE-BOT-15M` barre cinco variantes de `fast` (4, 5, 7, 10 y
 Fuente: `data/research/cycles/CYCLE-BOT-15M.json`. El PBO mide el universo; el
 DSR y el estrés del perfil se miden sobre su candidato fijo, `fast7`.
 
+### Ciclo extendido a 2026-11-24
+
+El 2026-11-26 se repitió el ciclo con `data/btc_5m.pkl` hasta 2026-11-24
+(`CYCLE-BOT-15M-2026-11-24`). El PBO baja a **0,7262** y el DSR de la mejor
+variante (`fast5`) sube a **0,0161**, pero sigue lejos de 0,20/0,95; el estrés
+2x de `fast5` es **0,8255**, el WFA agrega 501 operaciones OOS con PF **0,8581**
+y el CPCV deja **82,22 %** de caminos OOS negativos. No cambia el veredicto.
+Ese ciclo usa futuros (`btc_5m.pkl`) y su `candidate` es `null`; no debe
+sustituir al ciclo activo sin emparejar estrategia y fuente.
+
 El perfil actual `profiles/okx/config.json` es `reference v0.1.0` en 15 m,
 `fast7`/`slow21`, stop 10 ATR, `rr 1.0`, con
 `config_hash 6a599496fbf3a324`. Su evidencia activa es
@@ -101,10 +111,20 @@ Esa corrida antigua usaba `config/okx-15m-paper-regime.json`, no
 
 La evidencia activa del perfil (`profile-15m-2026-11-24.json`) tampoco está
 promovida: tiene 109 operaciones OOS, PF 1,068 y coste 0,047 R. Ya supera la
-muestra mínima de 100, pero sigue bloqueada por el PBO 0,782, el DSR 0,0006 y
+muestra mínima de 100, pero sigue rechazada por el PBO 0,782, el DSR 0,0006 y
 el estrés 0,7606. El perfil usa
 `"mode": "reduce"` con `"size_factor": 0.25`, no `"mode": "block"`; el bot corre
 en paper con el riesgo reducido.
+
+La caída del PF OOS de **1,18198 a 1,06750** se explica por las 10 operaciones
+cerradas en noviembre: 3 ganadoras y 7 perdedoras, PF **0,3651**, esperanza
+**−0,4578 R**, P&L **−276,23** y DD local **277,49**. El DD máximo OOS no cambia
+(**440,16**): el bloque nuevo diluye el PF, no empeora el drawdown. Detalle:
+`data/validation/profile-15m-2026-11-nov-trades.json`.
+
+La puerta de promoción falla estrés, PBO y DSR. En el bloque OOS también fallan
+G5, G9/G10 y G11. El G6 que aparece en el `gates` del artefacto es de la corrida
+completa (DD 947,26), no del OOS (DD 440,16).
 
 ## El stop mínimo, medido en 1 m
 
