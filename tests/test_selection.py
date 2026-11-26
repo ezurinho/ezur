@@ -11,6 +11,7 @@ import pandas as pd
 import pytest
 
 from server import selection
+from server.trial_ledger import reconstruct_ledger
 
 
 def _matrix(days: int = 240, configs: int = 5, seed: int = 7) -> pd.DataFrame:
@@ -291,12 +292,16 @@ def test_el_ciclo_completo_produce_pbo_dsr_y_wfa(tmp_path, monkeypatch):
         index=index,
     ).to_pickle(tmp_path / "data" / "btc_5m.pkl")
 
-    specs = [_fake_spec(name) for name in ("a", "b", "c")]
+    specs = [_fake_spec(name) for name in ("a", "b", "c", "empty")]
     monkeypatch.setattr(
         selection, "load_universe_specs", lambda spec_dir, all_specs=False: specs
     )
 
-    def fake_backtest(spec, df5, quiet=False, base=None, cost_multiplier=1.0):
+    def fake_backtest(
+        spec, df5, quiet=False, base=None, cost_multiplier=1.0, diagnostics=None
+    ):
+        if spec.label == "empty":
+            return pd.DataFrame(), [], {}
         stamps = pd.date_range("2024-01-02", periods=120, freq="D", tz="UTC")
         returns = rng.normal(0.05, 1.0, size=120)
         trades = pd.DataFrame(
@@ -317,7 +322,7 @@ def test_el_ciclo_completo_produce_pbo_dsr_y_wfa(tmp_path, monkeypatch):
 
     assert payload["cycle_id"] == "CYCLE-TEST"
     assert payload["pbo"]["n_splits"] == math.comb(10, 5)
-    assert payload["inputs"]["universe_size"] == 3
+    assert payload["inputs"]["universe_size"] == 4
     assert payload["inputs"]["stress_multiplier"] == 2.0
     assert payload["stress"]["multiplier"] == 2.0
     assert payload["stress"]["survivors"] == ["a"]
@@ -328,6 +333,26 @@ def test_el_ciclo_completo_produce_pbo_dsr_y_wfa(tmp_path, monkeypatch):
     assert payload["dsr"]["source"] == "grupo BTC-TREND-15M"
     assert payload["psr"]["observations"] == 120
     assert len(payload["caveats"]) >= 5
+
+    ledger_path = tmp_path / "data" / "validation" / "CYCLE-TEST.trials.jsonl"
+    assert ledger_path.is_file()
+    assert payload["trial_ledger"]["trials"] == 4
+    assert payload["trial_ledger"]["discarded"] == [
+        {"label": "empty", "reason": "sin_trades", "error": None}
+    ]
+    assert payload["trial_ledger"]["reconstruction"]["matrix"] == {
+        "days": 120,
+        "columns": 3,
+    }
+    assert payload["trial_ledger"]["reconstruction"]["matches"] is True
+    rebuilt = reconstruct_ledger(ledger_path)
+    assert rebuilt["evaluated"] == 3
+    assert rebuilt["discarded"] == [
+        {"label": "empty", "reason": "sin_trades", "error": None}
+    ]
+    assert rebuilt["pbo"]["pbo"] == payload["pbo"]["pbo"]
+    assert rebuilt["dsr"]["dsr"] == payload["dsr"]["dsr"]
+    assert rebuilt["dsr_config"] == payload["dsr_config"]
 
 
 def test_el_cli_escribe_el_json_del_ciclo(tmp_path, monkeypatch):
