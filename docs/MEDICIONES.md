@@ -109,6 +109,25 @@ Esa corrida antigua usaba `config/okx-15m-paper-regime.json`, no
 | fuera de muestra | 105 | — | 1,308 | +0,132 R | — | — | — | — |
 | fuera de muestra, coste ×2 | 105 | — | 1,184 | — | — | — | — | — |
 
+El histograma de resultados de esas 233 operaciones explica por qué el corte no
+basta: caen en dos barras, 132 cerca de +0,95 R y 101 cerca de −1,03 R. Es una
+apuesta 1:1 con un 56,7 % de acierto cuando el empate está en 52,6 % (coste
+incluido); con 233 tiradas la diferencia es z ≈ 1,4, y el IC80 de la esperanza
+(0,007 R) roza el cero. **No se distingue del ruido.**
+
+Se reprodujo con el motor de entonces:
+
+```
+python -m server.backtest --dataset data/BTC_15m_2025.csv \
+    --config config/okx-15m-paper-regime.json --split 2026-01-01 \
+    --out data/research/promotion/reference-15m-paper-regime-rr10-stop10.json
+```
+
+Ese ciclo de selección solo se pudo medir en su propio marco cuando `bars_for`
+aprendió a resamplear a 15 m (pandas 3 retiró el alias de minutos); antes no
+existía. Su PBO 0,441 corresponde a una regeneración anterior del ciclo, no al
+0,782 que manda hoy.
+
 La evidencia activa del perfil (`profile-15m-2026-11-24.json`) tampoco está
 promovida: tiene 109 operaciones OOS, PF 1,068 y coste 0,047 R. Ya supera la
 muestra mínima de 100, pero sigue rechazada por el PBO 0,782, el DSR 0,0006 y
@@ -184,6 +203,47 @@ el freno duro de drawdown necesitaba reiniciarse a mano con
 `python -m server.equity --profile profiles/okx --reset-peak` (con copia y
 evento), o el bot se quedaba parado para siempre en cuanto lo tocaba. El perfil
 actual ataca las dos causas por otra vía: `max_stop_ticks` a 400.000 (cuatro mil
-dólares, que ya escala con el precio), `min_stop_ticks` a 0 y `soft_brakes: true,
+dólares, que ya escala con el precio), `min_stop_ticks` a 0 y `soft_brakes: true`,
 que recorta el tamaño al tocar el drawdown (100 % → 25 % → parada dura al doble)
 en vez de cerrar la puerta tras la primera pérdida.
+
+## 2025 completo · el perfil de OKX, con la comisión cobrada una vez
+
+Las mediciones anteriores de este documento tienen dos defectos de método: el
+perfil de OKX pagaba la comisión de bolsa dos veces por lado (~10,6 pb en vez de
+~5,6, ver ADR 0.16) y las corridas no registraban el intervalo ni los overrides,
+así que no se podían repetir. Esta tabla se midió con el coste corregido y deja
+las entradas por escrito.
+
+Perfil `profiles/okx/config.json`, velas de Binance Vision 2025-01 → 2025-12,
+corte IS/OOS 2025-07-01 y `strategy.timeframe` fijado en los overrides. Lanzada
+con el workflow `backtest` el 25 nov 2026 sobre el commit `de56339b`.
+
+| marco | ops | PF | bruto | fees | neto | DD | coste | IS ops | IS PF | OOS ops | OOS PF |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1 m | 927 | 0,826 | +418,17 | 2.547,16 | −2.128,98 | 2.477,62 | 0,121 R | 490 | 0,867 | 437 | 0,724 |
+| 15 m | 132 | 1,030 | +361,84 | 254,22 | +107,61 | 947,26 | 0,037 R | 67 | 0,786 | 65 | 1,451 |
+| 1 h | 41 | 0,612 | −527,70 | 84,42 | −612,12 | 616,13 | 0,039 R | 19 | 0,691 | 22 | 0,544 |
+
+Identidad de los datos (`dataset_id` del informe): 1 m
+`4fbd7c9349d2e93f…`, 15 m `8b5808d2a4364da9…`, 1 h `46a740f54f7d8497…`.
+Filas: 525.600, 35.040 y 8.760; 365 sesiones en los tres casos.
+
+La comisión ya se cobra una vez: una unidad paga 0,0496 USD al entrar (0,049 de
+comisión más medio spread), 5,6 pb sobre un nocional de 88.300 USD por unidad.
+Antes pagaba 0,0941 USD, 10,6 pb.
+
+**Qué dicen estas filas.**
+
+- En 1 m las comisiones (2.547) multiplican por seis el bruto (418). Ningún
+  arreglo de infraestructura cambia el signo: ese marco no paga el peaje.
+- En 15 m el neto es positivo y el fuera de muestra también, pero son 65
+  operaciones fuera de muestra con un PF dentro de muestra de 0,786. Es una
+  corrida, no un candidato: faltan el PBO de su ciclo y el coste duplicado.
+- En 1 h la muestra (41 operaciones) no permite concluir nada. El PF 0,612
+  describe esta corrida.
+- **Ninguna fila es comparable con las de arriba.** Aquellas no registraron
+  overrides y el motor cambió desde entonces (tope de coste por operación,
+  presupuesto de riesgo reaplicado al fill real). Que el PF de 1 h pase de
+  1,183 a 0,612 no mide el efecto de la comisión: mide dos configuraciones
+  distintas.
