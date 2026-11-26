@@ -171,6 +171,20 @@ def _reprice_cost(
     )
 
 
+def daily_cap_rejections(rejections: Any) -> int:
+    """Señales rechazadas por el tope diario de operaciones.
+
+    No confundir con `trades_at_cap`/`cap_rate`: esos cuentan operaciones cuyo
+    **tamaño** tocó `max_units_per_trade`, no días que agotaron
+    `max_trades_per_day`. El tope diario se ve en el rechazo
+    `max_trades_reached`.
+    """
+    if not isinstance(rejections, dict):
+        return 0
+    value = rejections.get("max_trades_reached", 0)
+    return int(value) if isinstance(value, (int, float)) else 0
+
+
 def cost_metrics(
     trades: list[Any],
     execution: dict[str, Any] | None,
@@ -202,6 +216,7 @@ def cost_metrics(
         "cost_per_trade_r_nominal": None,
         "risk_budget_utilization": None,
         "trades_at_cap": 0,
+        "trades_at_units_cap": 0,
         "cap_rate": None,
     }
     model = _execution_model(execution)
@@ -271,7 +286,10 @@ def cost_metrics(
         "risk_budget_utilization": (
             total_risk / n / budget if budget and budget > 0 else None
         ),
+        # El tamaño tocó `max_units_per_trade`. El tope diario no se mide aquí:
+        # se ve en `diagnostics.rejections["max_trades_reached"]`.
         "trades_at_cap": at_cap,
+        "trades_at_units_cap": at_cap,
         "cap_rate": at_cap / n,
     }
 
