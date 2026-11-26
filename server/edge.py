@@ -1,10 +1,13 @@
 """Guarda de ventaja contra coste.
 
 La esperanza se mide fuera de muestra cuando la evidencia la trae; el coste
-sale del mismo modelo de ejecución que usa el perfil. Si la esperanza no
-supera el coste por operación, operar es pagar por una ventaja que no existe:
-el motor no abre y el panel enseña las dos cifras. Sin medición no hay guarda:
-no se inventa un número para bloquear.
+sale del mismo modelo de ejecución que usa el perfil. La esperanza del libro
+ya viene **neta** de comisiones (`r_multiple = pnl_net / riesgo`), así que la
+condición correcta es que sea positiva: si el neto supera cero, el bruto
+supera el coste. Comparar el neto con el coste otra vez bloquearía una
+estrategia rentable después de pagar el peaje. El coste se muestra para
+comprobar que se midió con el mismo modelo. Sin medición no hay guarda: no se
+inventa un número para bloquear.
 """
 
 from __future__ import annotations
@@ -36,10 +39,16 @@ class EdgeGuard:
 
     @property
     def passes(self) -> bool | None:
-        """True solo si hay las dos cifras y la esperanza supera el coste."""
+        """True si hay coste medido y la esperanza neta es positiva.
+
+        `expectancy_r` sale de `r_multiple`, que ya descuenta comisiones y
+        slippage. Exigir además que supere `cost_r` restaría el peaje dos
+        veces; el bruto se obtiene sumando el coste y es el que se compara
+        con él en el detalle.
+        """
         if self.expectancy_r is None or self.cost_r is None:
             return None
-        return self.expectancy_r > self.cost_r
+        return self.expectancy_r > 0.0
 
     def detail(self) -> str:
         frame = f" en {self.timeframe}" if self.timeframe else ""
@@ -49,10 +58,11 @@ class EdgeGuard:
                 f"{self.reason or 'faltan cifras'}"
             )
         relation = "supera" if self.passes else "no supera"
+        gross = self.expectancy_r + self.cost_r
         return (
-            f"la esperanza medida{frame} ({self.scope}, "
-            f"{self.expectancy_r:+.3f} R) {relation} el coste por operación "
-            f"({self.cost_r:.3f} R)"
+            f"la esperanza neta{frame} ({self.scope}, "
+            f"{self.expectancy_r:+.3f} R; bruta {gross:+.3f} R) {relation} "
+            f"el coste por operación ({self.cost_r:.3f} R)"
         )
 
     def as_dict(self) -> dict[str, Any]:
