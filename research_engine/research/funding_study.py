@@ -13,7 +13,6 @@ import json
 import math
 import urllib.request
 import zipfile
-from itertools import combinations
 from pathlib import Path
 
 import numpy as np
@@ -149,7 +148,7 @@ def main() -> None:
     agg = htf["1d"][0]
     grid = (10, 20, 40, 55, 100)
     trades = {n: sc.run_trades(agg, sc.trend_entries(agg, n), sc.Exit(2.0, 4.0, 90)) for n in grid}
-    for n, t in trades.items():
+    for _n, t in trades.items():
         t["r_net"] = t["r_gross"] - FEE_RT / t["stop_dist_frac"] - funding_in_R(t, agg, fund)
     start, end = agg.ts.iloc[0].tz_convert(None), agg.ts.iloc[-1].tz_convert(None)
     ts_all = pd.Series(agg["ts"]).dt.tz_convert(None)
