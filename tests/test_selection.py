@@ -3,7 +3,9 @@ from __future__ import annotations
 
 import json
 import math
+import shutil
 import sys
+from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
@@ -291,6 +293,10 @@ def test_el_ciclo_completo_produce_pbo_dsr_y_wfa(tmp_path, monkeypatch):
         {"o": price, "h": price + 0.2, "l": price - 0.2, "c": price, "v": 1.0},
         index=index,
     ).to_pickle(tmp_path / "data" / "btc_5m.pkl")
+    shutil.copyfile(
+        tmp_path / "data" / "btc_5m.pkl",
+        tmp_path / "data" / "btc_5m_spot.pkl",
+    )
 
     specs = [_fake_spec(name) for name in ("a", "b", "c", "empty")]
     monkeypatch.setattr(
@@ -317,10 +323,15 @@ def test_el_ciclo_completo_produce_pbo_dsr_y_wfa(tmp_path, monkeypatch):
     monkeypatch.setattr(selection, "run_backtest_for_spec", fake_backtest)
 
     payload = selection.run_selection_cycle(
-        cycle_id="CYCLE-TEST", blocks=10, folds=3, quiet=True
+        cycle_id="CYCLE-TEST",
+        blocks=10,
+        folds=3,
+        quiet=True,
+        dataset_path=tmp_path / "data" / "btc_5m_spot.pkl",
     )
 
     assert payload["cycle_id"] == "CYCLE-TEST"
+    assert payload["inputs"]["dataset"]["path"].endswith("btc_5m_spot.pkl")
     assert payload["pbo"]["n_splits"] == math.comb(10, 5)
     assert payload["inputs"]["universe_size"] == 4
     assert payload["inputs"]["stress_multiplier"] == 2.0
@@ -357,14 +368,29 @@ def test_el_ciclo_completo_produce_pbo_dsr_y_wfa(tmp_path, monkeypatch):
 
 def test_el_cli_escribe_el_json_del_ciclo(tmp_path, monkeypatch):
     monkeypatch.setattr(selection, "ROOT", tmp_path)
+    seen: dict = {}
+
+    def fake_cycle(**kwargs):
+        seen.update(kwargs)
+        return {"cycle_id": "CYCLE-TEST"}
+
+    monkeypatch.setattr(selection, "run_selection_cycle", fake_cycle)
     monkeypatch.setattr(
-        selection, "run_selection_cycle", lambda **kwargs: {"cycle_id": "CYCLE-TEST"}
-    )
-    monkeypatch.setattr(
-        sys, "argv", ["selection", "--cycle", "CYCLE-TEST", "--quiet"]
+        sys,
+        "argv",
+        [
+            "selection",
+            "--cycle",
+            "CYCLE-TEST",
+            "--dataset",
+            "data/btc_5m_spot.pkl",
+            "--quiet",
+        ],
     )
 
     selection.main()
+
+    assert seen["dataset_path"] == Path("data/btc_5m_spot.pkl")
 
     written = json.loads(
         (tmp_path / "data" / "validation" / "CYCLE-TEST.json").read_text(
