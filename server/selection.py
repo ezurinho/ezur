@@ -783,6 +783,7 @@ def run_selection_cycle(
     all_specs: bool = False,
     stress_multiplier: float = 2.0,
     ledger_path: Path | str | None = None,
+    dataset_path: Path | str | None = None,
 ) -> dict:
     """Run the full selection cycle and return the payload.
 
@@ -790,18 +791,26 @@ def run_selection_cycle(
     vez de los de investigación: el ciclo mide el bot que va a operar.
     Con `stress_multiplier > 1`, cada configuración se re-ejecuta con los costes
     multiplicados y el resultado queda en `payload["stress"]`.
+    Con `dataset_path`, el ciclo usa ese pickle de 5m en lugar del congelado; la
+    ruta y su hash quedan en el artefacto y en el trial ledger.
     """
     root = Path(ROOT)
     if spec_dir is None:
         spec_dir = root / "data" / "specs"
 
-    dataset_path = root / "data" / "btc_5m.pkl"
+    dataset_path = (
+        Path(dataset_path)
+        if dataset_path is not None
+        else root / "data" / "btc_5m.pkl"
+    )
     df5 = pd.read_pickle(dataset_path) if dataset_path.exists() else pd.DataFrame()
     if df5.empty:
-        raise FileNotFoundError("Frozen 5m dataset not found at data/btc_5m.pkl")
+        raise FileNotFoundError(
+            f"Frozen 5m dataset not found at {dataset_path}"
+        )
     df5 = _window(df5, start, end)
     if df5.empty:
-        raise ValueError("la ventana pedida no deja velas en data/btc_5m.pkl")
+        raise ValueError(f"la ventana pedida no deja velas en {dataset_path}")
 
     specs = load_universe_specs(spec_dir, all_specs=all_specs)
     if not specs:
@@ -1113,6 +1122,12 @@ def main() -> None:
         default=None,
         help="ruta del trial ledger; por defecto data/validation/<cycle>.trials.jsonl",
     )
+    ap.add_argument(
+        "--dataset",
+        type=Path,
+        default=None,
+        help="pickle de velas 5m; por defecto data/btc_5m.pkl",
+    )
     ap.add_argument("--blocks", type=int, default=10, help="CSCV blocks S (even)")
     ap.add_argument("--folds", type=int, default=5, help="walk-forward folds")
     ap.add_argument("--test-blocks", type=int, default=2, help="CPCV blocks held out per path")
@@ -1176,6 +1191,7 @@ def main() -> None:
         all_specs=args.all_specs,
         stress_multiplier=args.stress_multiplier,
         ledger_path=args.ledger,
+        dataset_path=args.dataset,
     )
 
     args.spec_dir = args.spec_dir or (ROOT / "data" / "specs")
