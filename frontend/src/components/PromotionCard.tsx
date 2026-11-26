@@ -84,7 +84,10 @@ export function PromotionCard({
       <header className="card-header">
         <div>
           <h3>Promoción</h3>
-          <span className="muted small">PBO · DSR · WFA del ciclo que usa el perfil</span>
+          <span className="muted small">
+            {promotion.candidate ? `Candidato ${promotion.candidate} · ` : ""}
+            PBO · DSR · WFA del ciclo que usa el perfil
+          </span>
         </div>
         <span className={badgeClass}>{status}</span>
       </header>
