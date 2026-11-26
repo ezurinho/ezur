@@ -252,6 +252,55 @@ export interface Promotion {
   cycle_id: string | null;
 }
 
+export interface ReviewOpenPosition {
+  kind: "trade" | "spot";
+  side: string;
+  units: number | null;
+  entry_price: number | null;
+  stop_price: number | null;
+  target_price: number | null;
+  opened_ts: string | null;
+  entry_fees: number | null;
+}
+
+export interface ReviewRow {
+  id: "profile" | "cost2x" | "btc_bh";
+  label: string;
+  source: string;
+  trades: number | null;
+  pnl_usd: number | null;
+  return_pct: number | null;
+  profit_factor: number | null;
+  fees: number | null;
+  drawdown_usd: number | null;
+  drawdown_pct: number | null;
+  open_position: ReviewOpenPosition | null;
+  note: string | null;
+}
+
+export interface Review2025 {
+  window: { from: string; to: string };
+  dataset: string;
+  config_hash: string | null;
+  cost2x_config_hash: string | null;
+  initial_capital: number;
+  capital_source: string;
+  benchmark: {
+    method: string;
+    dataset: string;
+    first_ts: string;
+    last_ts: string;
+    first_open: number;
+    last_close: number;
+    bars: number;
+    daily_closes: number;
+    return_pct: number | null;
+    drawdown_pct: number;
+  };
+  note: string;
+  rows: ReviewRow[];
+}
+
 export interface SnapshotData {
   status: EngineStatus;
   mode: RunMode;
