@@ -427,7 +427,7 @@ def _with_edge_evidence(settings, tmp_path, expectancy: float, cost: float = 0.0
 
 
 def test_la_guarda_de_ventaja_frena_la_entrada(settings, store, tmp_path):
-    _with_edge_evidence(settings, tmp_path, 0.03)
+    _with_edge_evidence(settings, tmp_path, -0.03)
     engine = TradingEngine(settings, store, feed=None, strategy=_AlwaysSignalStrategy())
     engine.start()
     engine._process(_tick(DAY_ONE))
