@@ -60,17 +60,38 @@ El diario reduce el coste a la mitad y el PF fuera de muestra mejora, pero
 lo rechaza por muestra, no por rentabilidad: para juntar 100 operaciones fuera
 de muestra en diario harían falta más de diez años.
 
-## 15 m · BTC · el candidato que más lejos llegó
+## 15 m · BTC · ciclo actual y candidato del perfil
 
-El cruce de la referencia con el marco cambiado a 15 m (`strategy.timeframe`) y
-el stop en 10 ATR con objetivo 1 R, medido sobre `data/BTC_15m_2025.csv`
-(64.224 velas de 15 m, 2025-01 → 2026-10), corte 2026-01-01, 5 pb por lado:
+El ciclo actual `CYCLE-BOT-15M` barre cinco variantes de `fast` (4, 5, 7, 10 y
+14) sobre el universo de 15 m. Sus cifras actuales son:
 
-```
-python -m server.backtest --dataset data/BTC_15m_2025.csv \
-    --config config/okx-15m-paper-regime.json --split 2026-01-01 \
-    --out data/research/promotion/reference-15m-paper-regime-rr10-stop10.json
-```
+- **PBO 0,782** para la selección sobre las cinco variantes.
+- **DSR 0,020** para la mejor variante del ciclo (`fast5`). El perfil que opera
+  es `fast7`, cuyo DSR específico es **0,0006**.
+- **Estrés 2x 0,827** para `fast5`; para `fast7` es **0,7606**. Ninguna de las
+  cinco variantes sobrevive al coste duplicado.
+
+Fuente: `data/research/cycles/CYCLE-BOT-15M.json`. El PBO mide el universo; el
+DSR y el estrés del perfil se miden sobre su candidato fijo, `fast7`.
+
+El perfil actual `profiles/okx/config.json` es `reference v0.1.0` en 15 m,
+`fast7`/`slow21`, stop 10 ATR, `rr 1.0`, con
+`config_hash 6a599496fbf3a324`. Su evidencia activa es
+`data/research/promotion/profile-15m-review.json`; no es la corrida antigua de
+105 operaciones.
+
+### Histórico: 105 / 1,308 / 0,049 no es evidencia del perfil actual
+
+La tabla siguiente es histórica. Sale de
+`data/research/promotion/reference-15m-paper-regime-rr10-stop10.json`, medido
+con el hash **`5b125857cfeb46f2`**, no con el perfil actual
+(**`6a599496fbf3a324`**). La puerta evalúa
+`evidencia_de_la_configuracion` y la rechaza por ese hash: **105 operaciones,
+PF 1,308 y coste 0,049 R no son válidos para justificar el perfil actual** y no
+se usan para promoverlo. Tampoco son la evidencia activa del panel.
+
+Esa corrida antigua usaba `config/okx-15m-paper-regime.json`, no
+`profiles/okx/config.json`:
 
 | corrida | ops | acierto | PF | esperanza | P&L neto | P&L bruto | fees | DD |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -78,32 +99,11 @@ python -m server.backtest --dataset data/BTC_15m_2025.csv \
 | fuera de muestra | 105 | — | 1,308 | +0,132 R | — | — | — | — |
 | fuera de muestra, coste ×2 | 105 | — | 1,184 | — | — | — | — | — |
 
-Las puertas completas dan **RECHAZADA**: G5 pide PF ≥ 1,25 y esperanza ≥ 0,10 R
-y el candidato se queda en 1,204 y 0,092 R. Fuera de muestra sí pasa el corte,
-con coste ponderado 0,049 R.
-
-El histograma de resultados explica por qué no basta: las 233 operaciones caen
-en dos barras, 132 cerca de +0,95 R y 101 cerca de −1,03 R. Es una apuesta 1:1
-con un 56,7 % de acierto cuando el empate está en 52,6 % (coste incluido).
-Con 233 tiradas, la diferencia es z ≈ 1,4: **no se distingue del ruido**, y eso
-coincide con el IC80 de la esperanza (0,007 R, roza el cero) y con el PBO.
-
-La puerta de promoción, con un ciclo de selección medido **en su propio marco**
-(antes no existía: `bars_for` no sabía resamplear a 15 m porque pandas 3 retiró
-el alias de minutos), dice:
-
-```
-pf_fuera_de_muestra             1.308          > 1.0  si
-operaciones_fuera_de_muestra        105         >= 100  si
-coste_por_operacion             0.049       < 0.25 R  si
-pf_con_coste_duplicado          1.184          > 1.0  si
-pbo_del_ciclo                   0.441         <= 0.2  NO
-```
-
-`CYCLE-BOT-15M` barre `fast` con cinco vecinos y sale PBO 0,441, DSR 0,093. El
-mejor de la vecindad se elige después de ver el resultado; que el corte fuera de
-muestra salga positivo no lo salva. **No se promueve**, y el perfil queda con
-`"mode": "block"` y sin arranque automático.
+La evidencia activa del perfil (`profile-15m-review.json`) tampoco está
+promovida: tiene 99 operaciones OOS, PF 1,182 y coste 0,048 R, y falla la
+muestra mínima de 100 además del PBO, el DSR y el estrés. El perfil usa
+`"mode": "reduce"` con `"size_factor": 0.25`, no `"mode": "block"`; el bot corre
+en paper con el riesgo reducido.
 
 ## El stop mínimo, medido en 1 m
 
@@ -135,11 +135,12 @@ La siguiente idea tendría que ser otra fuente de señal, no otra rejilla.
 
 `profiles/okx/config.json` opera `reference v0.1.0` con **velas de 15 m**: el
 feed de OKX llega en 1 m (`bar=1m`) y el motor lo agrupa antes de evaluar
-(`strategy.timeframe`). Ese perfil está **parado a propósito**: su candidato de
-15 m pasó todos los criterios de la puerta menos el PBO (0,441) y el DSR
-(0,093), así que
-`"promotion": {"required": true, "mode": "block"}` impide arrancarlo hasta que
-haya un candidato promovido. La medición con el perfil anterior de 1 minuto:
+(`strategy.timeframe`). El perfil **no está promovido**: su evidencia activa
+tiene 99 operaciones OOS, PF 1,182 y coste 0,048 R, y falla la muestra mínima
+de 100, el PBO 0,782, el DSR 0,0006 y el estrés 0,7606. Por eso usa
+`"mode": "reduce"` con `"size_factor": 0.25` y el bot corre en paper con el
+riesgo reducido; no está en `"mode": "block"`. La medición con el perfil
+anterior de 1 minuto:
 
 | dataset | IS ops | IS PF | OOS ops | OOS PF | coste |
 |---|---|---|---|---|---|
