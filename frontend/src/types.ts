@@ -235,6 +235,9 @@ export interface Promotion {
   pbo_threshold: string | null;
   dsr: number | null;
   dsr_threshold: string | null;
+  candidate: string | null;
+  stress_candidate: string | null;
+  config_hash: string | null;
   wfa_oos_trades: number | null;
   wfa_folds: number | null;
   wfa_pf: number | null;
