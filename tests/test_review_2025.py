@@ -38,11 +38,11 @@ def _artifact(*, pnl: float, drawdown: float, units: int, config_hash: str) -> d
 def _write_fixture(tmp_path: Path) -> None:
     promotion = tmp_path / "data" / "research" / "promotion"
     promotion.mkdir(parents=True)
-    (promotion / "profile-15m-2025.json").write_text(
+    (promotion / "profile-15m-2025-spot-gates.json").write_text(
         json.dumps(_artifact(pnl=1_000.0, drawdown=500.0, units=21, config_hash="profile-hash")),
         encoding="utf-8",
     )
-    (promotion / "profile-15m-2025-cost2x.json").write_text(
+    (promotion / "profile-15m-2025-spot-cost2x.json").write_text(
         json.dumps(_artifact(pnl=-500.0, drawdown=1_000.0, units=20, config_hash="cost-hash")),
         encoding="utf-8",
     )
@@ -98,13 +98,13 @@ def test_compare_perfil_coste_y_btc(tmp_path: Path) -> None:
 
 
 def test_faltan_artefactos_no_se_inventa_la_vista(tmp_path: Path) -> None:
-    with pytest.raises(ReviewUnavailable, match="profile-15m-2025.json"):
+    with pytest.raises(ReviewUnavailable, match="profile-15m-2025-spot-gates.json"):
         review_2025(tmp_path)
 
 
 def test_ventanas_distintas_se_rechazan(tmp_path: Path) -> None:
     _write_fixture(tmp_path)
-    cost_path = tmp_path / "data" / "research" / "promotion" / "profile-15m-2025-cost2x.json"
+    cost_path = tmp_path / "data" / "research" / "promotion" / "profile-15m-2025-spot-cost2x.json"
     cost = json.loads(cost_path.read_text(encoding="utf-8"))
     cost["window"] = {"from": "2025-01-01", "to": "2025-01-04"}
     cost_path.write_text(json.dumps(cost), encoding="utf-8")
