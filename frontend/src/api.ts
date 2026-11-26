@@ -1,4 +1,4 @@
-import type { SnapshotData, SnapshotMessage } from "./types";
+import type { Review2025, SnapshotData, SnapshotMessage } from "./types";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
@@ -123,6 +123,7 @@ export const api = {
     return request<Record<string, unknown>[]>(`/api/events?${params.toString()}`);
   },
   stats: () => request<Record<string, unknown>>("/api/stats"),
+  review2025: () => request<Review2025>("/api/review/2025-15m"),
   validation: () =>
     request<{
       verdict: string;
