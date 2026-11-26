@@ -16,8 +16,8 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 
-PROFILE_ARTIFACT = "data/research/promotion/profile-15m-2025.json"
-COST2X_ARTIFACT = "data/research/promotion/profile-15m-2025-cost2x.json"
+PROFILE_ARTIFACT = "data/research/promotion/profile-15m-2025-spot-gates.json"
+COST2X_ARTIFACT = "data/research/promotion/profile-15m-2025-spot-cost2x.json"
 REVIEW_INITIAL_CAPITAL = 25_000.0
 CAPITAL_SOURCE = "capital inicial del perfil en la review (25.000 $)"
 
