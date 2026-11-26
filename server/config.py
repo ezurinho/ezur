@@ -356,6 +356,12 @@ class ExecutionConfig(_Model):
     fee_maker_bps: float = 2.0
     fee_taker_bps: float = 5.0
     half_spread_bps: float = 0.07
+    # Funding de perpetuos cada 8 h, en bps sobre el nocional. Positivo = el
+    # largo paga. El perfil spot lo deja en 0; sin tasa no se inventa un cargo.
+    funding_rate_bps_8h: float = 0.0
+    # Impacto por tamaño: ticks extra por cada 100 unidades, con tope en
+    # `max_slippage_ticks`. Sin profundidad medida se queda en 0.
+    slippage_ticks_per_100_units: float = 0.0
     assumed_fill: Literal["taker", "maker", "mixed"] = "taker"
     impact_model: Literal["none", "sqrt_law", "ofi"] = "none"
     funding: Literal["real_timestamps", "none"] = "none"
@@ -390,7 +396,10 @@ class ExecutionConfig(_Model):
             raise ValueError("stop_floor_frac must be in [0, 0.2]")
         return value
 
-    @field_validator("fee_maker_bps", "fee_taker_bps", "half_spread_bps")
+    @field_validator(
+        "fee_maker_bps", "fee_taker_bps", "half_spread_bps",
+        "slippage_ticks_per_100_units",
+    )
     @classmethod
     def _nonnegative_cost(cls, value: float) -> float:
         if value < 0:
@@ -405,12 +414,8 @@ class ExecutionConfig(_Model):
 
     @model_validator(mode="after")
     def _inert_options_are_not_silently_ignored(self) -> "ExecutionConfig":
-        # Ningún camino del motor lee estas dos. Aceptar un valor distinto del
-        # neutro sería prometer un comportamiento que no existe; fallan al
-        # cargar. Se conservan en el modelo porque forman parte del hash con el
-        # que la evidencia de promoción firma la configuración.
-        if self.funding != "none":
-            raise ValueError("funding no está implementado: solo se admite 'none'")
+        # `funding` y `slippage_ticks_per_100_units` ya cambian los fills; el
+        # único neutro que sigue sin implementarse es el suelo de stop.
         if self.stop_floor_frac != 0.0:
             raise ValueError("stop_floor_frac no está implementado: solo se admite 0")
         return self
