@@ -139,16 +139,21 @@ en paper con el riesgo reducido.
 
 `config/okx-validation.json` y el perfil de papel fijan `max_trades_per_day = 4`.
 La corrida de 15 m con ese perfil de validación da **109 operaciones OOS y
-`trades_at_cap: 0`**: ningún día llegó al tope, así que el límite no truncó la
-muestra ni explica su tamaño. Subirlo tampoco añade operaciones —con 8 al día
-salen las mismas 109— y bajarlo solo recortaría días que hoy no existen. Quien
-quiera mover este número debe traer una corrida que muestre días tocando el
-tope; hoy no hay ninguno.
+ningún rechazo `max_trades_reached`** en `diagnostics.rejections`: ninguna señal
+se quedó fuera por el tope diario, así que el límite no truncó la muestra ni
+explica su tamaño. Subirlo tampoco añade operaciones —con 8 al día salen las
+mismas 109— y bajarlo solo recortaría días que hoy no existen. Quien quiera
+mover este número debe traer una corrida que muestre rechazos por ese código;
+hoy no hay ninguno.
 
-La comprobación queda también en el artefacto:
-`data/research/promotion/profile-15m-2025-2026-years.json` registra
-`trades_at_cap: 0` y `cap_rate: 0.0` sobre `data/BTC_15m_2025.csv`
-(`config_hash 6a599496fbf3a324`).
+Cuidado con el nombre: `trades_at_cap: 0`/`cap_rate: 0.0` **no** miden el tope
+diario, sino las operaciones cuyo tamaño tocó `max_units_per_trade` (300
+unidades). El artefacto de referencia
+(`data/research/promotion/profile-15m-2025-2026-years.json`, `config_hash
+6a599496fbf3a324`, sobre `data/BTC_15m_2025.csv`) también los deja en 0, pero eso
+habla del tope de tamaño. El tope diario se expone como
+`trades_blocked_by_daily_cap` y su cómputo se prueba con rechazos sintéticos,
+sin depender de `data/`.
 
 La caída del PF OOS de **1,18198 a 1,06750** se explica por las 10 operaciones
 cerradas en noviembre: 3 ganadoras y 7 perdedoras, PF **0,3651**, esperanza
