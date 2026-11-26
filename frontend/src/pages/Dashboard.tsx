@@ -4,6 +4,7 @@ import { DispatchButton } from "../components/Controls";
 import { Gauge } from "../components/Gauge";
 import { BlockedBanner } from "../components/BlockedBanner";
 import { PromotionCard } from "../components/PromotionCard";
+import { Review2025Card } from "../components/Review2025Card";
 import { Reasoning } from "../components/Reasoning";
 import { Sparkline } from "../components/Sparkline";
 import { useStore } from "../store";
@@ -181,6 +182,8 @@ export function DashboardPage() {
       </div>
 
       <PromotionCard promotion={snapshot.promotion ?? null} />
+
+      <Review2025Card />
 
       <div className="grid-two">
         <StrategyPanel strategy={strategy} />
