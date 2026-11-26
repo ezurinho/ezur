@@ -4,6 +4,8 @@ from __future__ import annotations
 import json
 
 from server import paper
+from server.backtest import config_fingerprint
+from server.config import Settings
 
 SUMMARY = {
     "closed": {
@@ -288,6 +290,71 @@ def test_la_puerta_del_perfil_se_evalua(tmp_path):
     assert state["passed"] is False
     assert state["mode"] == "reduce"
     assert state["size_factor"] == 0.25
+
+
+def test_el_panel_usa_el_hash_del_perfil(tmp_path):
+    profile = tmp_path / "perfil"
+    profile.mkdir()
+    evidence_path = tmp_path / "bt.json"
+    stress_path = tmp_path / "bt2x.json"
+    cycle_path = tmp_path / "ciclo.json"
+    config = {
+        "strategy": {"id": "null", "version": "0.0.0"},
+        "promotion": {
+            "required": True,
+            "mode": "reduce",
+            "size_factor": 0.25,
+            "evidence": str(evidence_path),
+            "stress_evidence": str(stress_path),
+            "cycle": str(cycle_path),
+        },
+    }
+    expected_hash = config_fingerprint(Settings.model_validate(config))
+    evidence = {
+        "strategy": {"id": "null", "version": "0.0.0"},
+        "dataset": "data/BTC_1h_binance.csv",
+        "split": {"out_of_sample": {"trades": 169, "profit_factor": 1.12}},
+        "metrics": {"trades": 169},
+        "risk_budget": 250.0,
+        "execution": {
+            "commission_per_unit_side": 0.62,
+            "tick_size": 0.25,
+            "tick_value": 0.5,
+        },
+        "cost_per_trade_r": 0.09,
+        "config_hash": "0" * 16,
+    }
+    evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
+    stress_path.write_text(
+        json.dumps({"split": {"out_of_sample": {"trades": 169, "profit_factor": 1.03}}}),
+        encoding="utf-8",
+    )
+    cycle_path.write_text(
+        json.dumps(
+            {
+                "pbo": {"pbo": 0.11},
+                "dsr": {"dsr": 0.97},
+                "universe": [{"timeframe": "1h"}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    (profile / "config.json").write_text(json.dumps(config), encoding="utf-8")
+
+    state = paper.promotion_state(profile)
+
+    assert state is not None
+    assert state["config_hash"] == expected_hash
+    checks = {check["name"]: check for check in state["checks"]}
+    assert "evidencia_de_la_configuracion" in checks
+    assert checks["evidencia_de_la_configuracion"]["passed"] is False
+
+    evidence["config_hash"] = expected_hash
+    evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
+    state = paper.promotion_state(profile)
+
+    checks = {check["name"]: check for check in state["checks"]}
+    assert checks["evidencia_de_la_configuracion"]["passed"] is True
 
 
 def test_el_informe_dice_el_estado_del_bot():
