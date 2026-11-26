@@ -116,3 +116,10 @@ def test_el_coste_del_json_se_mide_en_el_fuera_de_muestra(
     assert payload["cost_per_trade_r"] == pytest.approx(
         payload["cost_per_trade_r_weighted"]
     )
+
+def test_el_informe_declara_la_curva_marcada_a_mercado(settings, dataset_path):
+    # El motor anota equity + P&L no realizado en cada vela con posicion. Si el
+    # informe dijera lo contrario, el drawdown de una posicion abierta se leeria
+    # como si la cuenta solo existiera en los cierres.
+    result = run_backtest(settings, dataset_path, NullStrategy())
+    assert result.diagnostics["marked_to_market"] is True
