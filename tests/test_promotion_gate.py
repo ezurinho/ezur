@@ -8,7 +8,12 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from server import main as server_main
-from server.backtest import config_fingerprint
+from server.backtest import (
+    config_fingerprint,
+    profile_fingerprint,
+    research_fingerprint,
+    risk_brakes,
+)
 from server.config import Settings
 from server.engine import TradingEngine
 from server.promotion import evaluate
@@ -367,3 +372,84 @@ def test_cambiar_el_riesgo_configurado_reduce_sobre_el_nuevo_valor(tmp_path, mon
     assert saved["risk"]["risk_per_trade_pct"] == 2.0
     assert status == 0.5
     assert app.state.engine.risk.config.risk_per_trade_pct == 0.5
+
+
+# --- huella de investigación vs huella del perfil ---------------------------
+
+
+def test_ajustar_un_freno_no_cambia_la_huella_de_investigacion():
+    base = Settings.model_validate(GATE_CONFIG)
+    apretado = Settings.model_validate(
+        {
+            **GATE_CONFIG,
+            "risk": {"max_drawdown_pct": 2.5, "max_trades_per_day": 4},
+        }
+    )
+
+    assert research_fingerprint(base) == research_fingerprint(apretado)
+    assert profile_fingerprint(base) != profile_fingerprint(apretado)
+
+
+def test_la_puerta_exige_la_investigacion_y_deja_escritos_los_frenos():
+    settings = Settings.model_validate(
+        {
+            **GATE_CONFIG,
+            "risk": {"max_drawdown_pct": 2.5, "max_trades_per_day": 4},
+        }
+    )
+    medido = {"max_drawdown_pct": 5.0, "max_trades_per_day": 8}
+    eviden = {
+        **EVIDENCE,
+        # La huella vieja ya no manda: si la investigación coincide, el ajuste
+        # de frenos no invalida la evidencia.
+        "config_hash": "0" * 16,
+        "research_hash": research_fingerprint(settings),
+        "profile_hash": "f" * 16,
+        "brakes": medido,
+    }
+
+    verdict = evaluate(
+        eviden,
+        None,
+        _cycle_with_stress(1.03),
+        {"id": "null", "version": "0.0.0"},
+        config_hash=config_fingerprint(settings),
+        execution=EVIDENCE["execution"],
+        research_hash=research_fingerprint(settings),
+        profile_hash=profile_fingerprint(settings),
+        brakes=risk_brakes(settings),
+    )
+
+    check = next(
+        item
+        for item in verdict["checks"]
+        if item["name"] == "evidencia_de_la_configuracion"
+    )
+    assert check["pass"] is True
+    assert verdict["source"]["brakes"] == medido
+    assert verdict["source"]["profile_hash"] == "f" * 16
+    assert verdict["source"]["brakes_current"]["max_drawdown_pct"] == 2.5
+
+
+def test_la_evidencia_vieja_sigue_comparando_la_huella_completa():
+    settings = Settings.model_validate(GATE_CONFIG)
+
+    verdict = evaluate(
+        EVIDENCE,
+        None,
+        _cycle_with_stress(1.03),
+        {"id": "null", "version": "0.0.0"},
+        config_hash="0" * 16,
+        execution=EVIDENCE["execution"],
+        research_hash=research_fingerprint(settings),
+        profile_hash=profile_fingerprint(settings),
+        brakes=risk_brakes(settings),
+    )
+
+    check = next(
+        item
+        for item in verdict["checks"]
+        if item["name"] == "evidencia_de_la_configuracion"
+    )
+    assert check["pass"] is False
+    assert "anterior a la separación" in check["reason"]
