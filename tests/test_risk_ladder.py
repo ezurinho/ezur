@@ -79,7 +79,9 @@ def test_el_tope_duro_sigue_parando():
 
 
 def test_la_racha_de_perdidas_recorta_en_vez_de_bloquear():
-    decision = RiskManager(_config()).evaluate(
+    # Sin minutos de pausa, la escalera recorta: es el comportamiento que queda
+    # cuando el perfil no declara una pausa explicita.
+    decision = RiskManager(_config(loss_streak_cooldown_min=0)).evaluate(
         _signal(),
         _portfolio(PEAK, consecutive_losses=3, last_exit_ts=STAMP - timedelta(minutes=10)),
         _instrument(),
@@ -88,6 +90,19 @@ def test_la_racha_de_perdidas_recorta_en_vez_de_bloquear():
 
     assert decision.approved
     assert decision.size_factor == pytest.approx(0.5)
+
+
+def test_la_racha_pausa_de_verdad_aunque_los_frenos_sean_suaves():
+    decision = RiskManager(_config()).evaluate(
+        _signal(),
+        _portfolio(PEAK, consecutive_losses=3, last_exit_ts=STAMP - timedelta(minutes=10)),
+        _instrument(),
+        clock=STAMP,
+    )
+
+    assert not decision.approved
+    assert decision.code == "consecutive_losses"
+    assert "45 min" in decision.message
 
 
 def test_la_racha_sigue_bloqueando_sin_soft_brakes():
