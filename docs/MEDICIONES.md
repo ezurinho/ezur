@@ -77,8 +77,8 @@ DSR y el estrés del perfil se miden sobre su candidato fijo, `fast7`.
 El perfil actual `profiles/okx/config.json` es `reference v0.1.0` en 15 m,
 `fast7`/`slow21`, stop 10 ATR, `rr 1.0`, con
 `config_hash 6a599496fbf3a324`. Su evidencia activa es
-`data/research/promotion/profile-15m-review.json`; no es la corrida antigua de
-105 operaciones.
+`data/research/promotion/profile-15m-2026-11-24.json`; no es la corrida antigua
+de 105 operaciones.
 
 ### Histórico: 105 / 1,308 / 0,049 no es evidencia del perfil actual
 
@@ -99,9 +99,10 @@ Esa corrida antigua usaba `config/okx-15m-paper-regime.json`, no
 | fuera de muestra | 105 | — | 1,308 | +0,132 R | — | — | — | — |
 | fuera de muestra, coste ×2 | 105 | — | 1,184 | — | — | — | — | — |
 
-La evidencia activa del perfil (`profile-15m-review.json`) tampoco está
-promovida: tiene 99 operaciones OOS, PF 1,182 y coste 0,048 R, y falla la
-muestra mínima de 100 además del PBO, el DSR y el estrés. El perfil usa
+La evidencia activa del perfil (`profile-15m-2026-11-24.json`) tampoco está
+promovida: tiene 109 operaciones OOS, PF 1,068 y coste 0,047 R. Ya supera la
+muestra mínima de 100, pero sigue bloqueada por el PBO 0,782, el DSR 0,0006 y
+el estrés 0,7606. El perfil usa
 `"mode": "reduce"` con `"size_factor": 0.25`, no `"mode": "block"`; el bot corre
 en paper con el riesgo reducido.
 
@@ -136,8 +137,8 @@ La siguiente idea tendría que ser otra fuente de señal, no otra rejilla.
 `profiles/okx/config.json` opera `reference v0.1.0` con **velas de 15 m**: el
 feed de OKX llega en 1 m (`bar=1m`) y el motor lo agrupa antes de evaluar
 (`strategy.timeframe`). El perfil **no está promovido**: su evidencia activa
-tiene 99 operaciones OOS, PF 1,182 y coste 0,048 R, y falla la muestra mínima
-de 100, el PBO 0,782, el DSR 0,0006 y el estrés 0,7606. Por eso usa
+tiene 109 operaciones OOS, PF 1,068 y coste 0,047 R. Pasa la muestra mínima
+de 100, pero falla el PBO 0,782, el DSR 0,0006 y el estrés 0,7606. Por eso usa
 `"mode": "reduce"` con `"size_factor": 0.25` y el bot corre en paper con el
 riesgo reducido; no está en `"mode": "block"`. La medición con el perfil
 anterior de 1 minuto:
