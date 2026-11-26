@@ -4,6 +4,8 @@ from __future__ import annotations
 import json
 
 from server import promotion
+from server.backtest import config_fingerprint
+from server.config import Settings
 
 EVIDENCE = {
     "dataset": "data/BTC_1h_binance.csv",
@@ -44,6 +46,12 @@ def _profile(tmp_path) -> str:
         encoding="utf-8",
     )
     return str(path)
+
+
+def _profile_hash() -> str:
+    return config_fingerprint(
+        Settings.model_validate({"execution": {"commission_per_unit_side": 0.62}})
+    )
 
 
 def test_una_configuracion_que_cumple_todo_se_promueve():
@@ -212,7 +220,8 @@ def test_el_cli_sale_con_uno_si_no_esta_promovida(tmp_path, capsys):
 
 def test_el_cli_promueve_con_las_tres_piezas(tmp_path, capsys):
     paths = {}
-    for name, payload in (("bt", EVIDENCE), ("bt2x", STRESS), ("ciclo", CYCLE)):
+    measured = {**EVIDENCE, "config_hash": _profile_hash()}
+    for name, payload in (("bt", measured), ("bt2x", STRESS), ("ciclo", CYCLE)):
         path = tmp_path / f"{name}.json"
         path.write_text(json.dumps(payload), encoding="utf-8")
         paths[name] = path
@@ -232,6 +241,73 @@ def test_el_cli_promueve_con_las_tres_piezas(tmp_path, capsys):
 
     assert code == 0
     assert "promovida" in capsys.readouterr().out
+
+
+def test_el_cli_no_oculta_la_evidencia_de_otra_configuracion(tmp_path, capsys):
+    evidencia = {
+        **EVIDENCE,
+        "strategy": {"id": "reference", "version": "0.1.0"},
+        "config_hash": "0" * 16,
+    }
+    path = tmp_path / "bt-ajena.json"
+    path.write_text(json.dumps(evidencia), encoding="utf-8")
+
+    code = promotion.main(
+        [
+            "--config",
+            _profile(tmp_path),
+            "--evidence",
+            str(path),
+            "--strategy",
+            "reference@0.1.0",
+        ]
+    )
+
+    assert code == 1
+    out = capsys.readouterr().out
+    assert "evidencia_de_la_configuracion" in out
+    assert "se midio con otra configuracion" in out
+
+
+def test_el_estres_del_ciclo_sigue_al_candidato_declarado():
+    cycle = {
+        **CYCLE,
+        "candidate": "15m_7_21_a10_fast7",
+        "stress": {
+            "multiplier": 2.0,
+            "method": "rerun",
+            "selected": "15m_7_21_a10_fast5",
+            "selected_survives": True,
+            "survivors": ["15m_7_21_a10_fast5"],
+            "configs": [
+                {
+                    "name": "15m_7_21_a10_fast5",
+                    "trades": 169,
+                    "pf_net": 1.2,
+                    "exp_r": 0.03,
+                    "survives": True,
+                },
+                {
+                    "name": "15m_7_21_a10_fast7",
+                    "trades": 169,
+                    "pf_net": 0.91,
+                    "exp_r": -0.01,
+                    "survives": False,
+                },
+            ],
+        },
+    }
+
+    verdict = _evaluate(EVIDENCE, None, cycle)
+    stress = next(
+        check
+        for check in verdict["checks"]
+        if check["name"] == "pf_con_coste_duplicado"
+    )
+
+    assert stress["value"] == 0.91
+    assert stress["pass"] is False
+    assert "coste duplicado (ciclo)" in stress["reason"]
 
 
 def test_una_evidencia_con_texto_no_tumba_la_puerta():
