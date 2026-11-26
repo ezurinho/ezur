@@ -190,9 +190,10 @@ def test_live_requires_all_three_conditions():
     settings.live.adapter_implemented = True
     assert settings.live.can_start() is True
 
-def test_funding_fails_instead_of_being_ignored():
-    with pytest.raises(ValidationError):
-        ExecutionConfig(funding="real_timestamps")
+def test_funding_se_acepta_porque_ya_mueve_el_pnl():
+    config = ExecutionConfig(funding="real_timestamps", funding_rate_bps_8h=1.0)
+    assert config.funding == "real_timestamps"
+    assert config.funding_rate_bps_8h == 1.0
 
 
 def test_stop_floor_fails_instead_of_being_ignored():
