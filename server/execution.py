@@ -34,7 +34,7 @@ worse than not offering it.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Literal
 from uuid import uuid4
 
@@ -107,6 +107,42 @@ class ExecutionEngine:
             # Order flow imbalance model - simplified
             return 0.05 * (notional_usd / adv_usd) ** 0.5 * 10000
         return 0.0
+
+    def _slippage_ticks(self, units: int) -> float:
+        """Ticks de slippage: base más impacto lineal por tamaño, con tope."""
+        cfg = self.config
+        ticks = cfg.slippage_ticks + cfg.slippage_ticks_per_100_units * max(units, 0) / 100.0
+        return min(ticks, float(cfg.max_slippage_ticks))
+
+    def _funding(self, position: Position, when: datetime, price: float) -> float:
+        """Funding acumulado de la posición, en divisa de cotización.
+
+        Se cobra/paga en cada frontera de 8 h UTC (00, 08, 16) que la posición
+        cruza abierta. Tasa positiva = el largo paga; el corto cobra. Sin
+        `real_timestamps` o sin tasa, devuelve 0: no se inventa un cargo.
+        """
+        cfg = self.config
+        if cfg.funding != "real_timestamps" or cfg.funding_rate_bps_8h == 0:
+            return 0.0
+        opened = position.opened_ts
+        opened = opened if opened.tzinfo else opened.replace(tzinfo=timezone.utc)
+        closed = when if when.tzinfo else when.replace(tzinfo=timezone.utc)
+        base = opened.replace(minute=0, second=0, microsecond=0)
+        hours = 8 - (base.hour % 8)
+        if hours == 0:
+            hours = 8
+        boundary = base + timedelta(hours=hours)
+        periods = 0
+        while boundary <= closed and periods < 10_000:
+            periods += 1
+            boundary += timedelta(hours=8)
+        if periods == 0:
+            return 0.0
+        spec = self._instrument(position.symbol)
+        contract = spec.tick_value / spec.tick_size if spec.tick_size else 0.0
+        notional = position.units * contract * price
+        sign = 1.0 if position.side == "long" else -1.0
+        return -sign * notional * cfg.funding_rate_bps_8h * 1e-4 * periods
 
     def _fees(self, symbol: str, units: int, price: float, is_maker: bool | None = None) -> float:
         """Fee for one side (entry or exit) in quote currency.
@@ -282,7 +318,7 @@ class ExecutionEngine:
             if plan is None:
                 order.status = "rejected"
                 spec = self._instrument(order.symbol)
-                slip = min(self.config.slippage_ticks, self.config.max_slippage_ticks) * spec.tick_size
+                slip = self._slippage_ticks(order.units) * spec.tick_size
                 candidate_fill = bar.o + slip if order.side == "long" else bar.o - slip
                 events.append(
                     ExecutionEvent(
@@ -435,8 +471,7 @@ class ExecutionEngine:
     ) -> tuple[float, str, dict[str, Any]] | None:
         """Price, reason and diagnostics for one pending order, or None to reject."""
         spec = self._instrument(order.symbol)
-        ticks = min(self.config.slippage_ticks, self.config.max_slippage_ticks)
-        slip = ticks * spec.tick_size
+        slip = self._slippage_ticks(order.units) * spec.tick_size
         slipped = bar.o + slip if order.side == "long" else bar.o - slip
         model = self.config.fill_model
 
@@ -500,7 +535,7 @@ class ExecutionEngine:
         price: float | None = None,
         when: datetime | None = None,
         diagnostics: dict[str, Any] | None = None,
-        funding: float = 0.0,
+        funding: float | None = None,
     ) -> TradeRecord | None:
         if self.position is None:
             return None
@@ -513,6 +548,8 @@ class ExecutionEngine:
         else:
             exit_price = position.entry_price
         stamp = when or datetime.now(timezone.utc)
+        if funding is None:
+            funding = self._funding(position, stamp, exit_price)
         if price is None:
             exit_price, slip = self._exit_slippage(position, exit_price)
             close_diagnostics["exit_slippage"] = slip
@@ -568,8 +605,7 @@ class ExecutionEngine:
     def _exit_slippage(self, position: Position, price: float) -> tuple[float, float]:
         """Salida a mercado: siempre en contra, con el mismo tope que la entrada."""
         spec = self._instrument(position.symbol)
-        ticks = min(self.config.slippage_ticks, self.config.max_slippage_ticks)
-        slip = ticks * spec.tick_size
+        slip = self._slippage_ticks(position.units) * spec.tick_size
         return (price - slip if position.side == "long" else price + slip), slip
 
     def cancel_all(self) -> int:
