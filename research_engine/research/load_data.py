@@ -13,7 +13,6 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 BASE = "https://data.binance.vision/data/futures/um/monthly/klines/BTCUSDT/5m"
@@ -71,7 +70,7 @@ def main() -> None:
 
     print(f"rows={len(data):,}  span={data.ts.min()} -> {data.ts.max()}  dupes={dup}")
     print(f"expected_bars={int((data.ts.max() - data.ts.min()) / step) + 1:,}  missing_bars={missing:,}")
-    print("gaps>5m:", [(str(t), str(g)) for t, g in zip(data.loc[big.index, 'ts'].head(10), big.head(10))])
+    print("gaps>5m:", [(str(t), str(g)) for t, g in zip(data.loc[big.index, 'ts'].head(10), big.head(10), strict=False)])
     print(f"price_last={data.close.iloc[-1]:,.2f}  price_min={data.low.min():,.2f}  price_max={data.high.max():,.2f}")
     data.to_pickle(out)
     print("saved", out)
