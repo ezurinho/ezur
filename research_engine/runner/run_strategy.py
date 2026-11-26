@@ -28,7 +28,6 @@ import re
 import sys
 import urllib.error
 import urllib.request
-from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -521,7 +520,7 @@ def metrics_block(trades: pd.DataFrame, bars: pd.DataFrame, r_net: np.ndarray,
     # Union, not sum: with a five-component ensemble the bars overlap, and adding
     # each component's holding time would report 100% exposure by construction.
     occupied = np.zeros(len(bars), dtype=bool)
-    for a, b in zip(entry_i, exit_i):
+    for a, b in zip(entry_i, exit_i, strict=False):
         occupied[int(a):min(int(b) + 1, len(bars))] = True
     exposure = float(occupied.mean())
     return {
@@ -907,7 +906,6 @@ def main() -> None:
     elif not args.quiet:
         print("aviso: sin artefacto de validación; PBO/DSR/WFA quedan sin dato", file=sys.stderr)
 
-    entries = build_entries(bars, spec)
     trades, weights = run_portfolio(bars, spec, trades_of=run_trades, entries_of=build_entries)
     if trades.empty:
         raise SystemExit("sin trades: la spec no opera en este dataset")
