@@ -8,6 +8,7 @@ import { MarketPulse } from "../components/MarketPulse";
 import { TradeRange } from "../components/TradeRange";
 import { Onboarding } from "../components/Onboarding";
 import { PromotionCard } from "../components/PromotionCard";
+import { Review2025Card } from "../components/Review2025Card";
 import { dominantRejection, plainReason, unblockHint } from "../reasons";
 import type { Candle } from "../types";
 import { useUiMode } from "../mode";
@@ -408,6 +409,8 @@ export function SimpleDashboard() {
       </div>
 
       <PromotionCard promotion={snapshot.promotion ?? null} compact />
+
+      <Review2025Card compact />
 
       <section className="card simple-pulse">
         <header className="card-header">
