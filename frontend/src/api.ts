@@ -148,13 +148,18 @@ export const api = {
       body: JSON.stringify({ path }),
     }),
   datasets: () => request<string[]>("/api/datasets"),
-  runBacktest: (datasetPath: string, options: { stress?: boolean; save?: boolean } = {}) =>
+  runBacktest: (
+    datasetPath: string,
+    options: { stress?: boolean; save?: boolean; start?: string; end?: string } = {},
+  ) =>
     request<BacktestRunResponse>("/api/backtest/run", {
       method: "POST",
       body: JSON.stringify({
         dataset_path: datasetPath,
         stress: options.stress ?? true,
         save: options.save ?? true,
+        ...(options.start ? { start: options.start } : {}),
+        ...(options.end ? { end: options.end } : {}),
       }),
     }),
   backtestStrategies: () =>
@@ -220,6 +225,7 @@ export interface BacktestRunResponse {
   run_group: string | null;
   trades: number;
   metrics: Record<string, number>;
+  metrics_closed?: Record<string, number>;
   diagnostics?: {
     rejections?: Record<string, number>;
     rows?: number;
