@@ -155,6 +155,7 @@ sintéticos no validan rentabilidad.
 | `python -m pytest` | Suite del backend |
 | `python -m server.paper --profile profiles/okx` | Cuenta de papel: gana o pierde, sin arrancar el servidor |
 | `docs/ESTUDIO-2026-11-24.md` | Qué dice la evidencia sobre bots de trading con LLM, medida propia y calificación |
+| `docs/REVIEW-2026-11-26.md` | Review integral: evidencia, calificación, comparación externa y mejoras priorizadas |
 | `cd frontend && npm run test` | Suite de componentes |
 | `cd frontend && npm run build` | `tsc --noEmit` + build de Vite |
 | `python -m server.simulation --days 20` | Simulación multi-sesión |
@@ -263,7 +264,7 @@ del perfil.
 | Pipeline completo con trades reales | `reports/backtest/simulation-180d.json` |
 | Ninguna rejilla de parámetros se salva | `reports/backtest/walkforward-reference.json` (6 combinaciones × 3 ventanas, todas negativas) |
 | Estrategia de referencia rentable | **No.** Veredicto automático: RECHAZADA |
-| Candidato de 15 m (stop 10 ATR) | Fuera de muestra PF 1,308; rechazado por PBO 0,441 (`CYCLE-BOT-15M`) |
+| Perfil 15 m activo (`reference`, stop 10 ATR) | 109 ops OOS, PF 1,068, coste 0,047 R; rechazado por PBO 0,782, DSR 0,0006 y estrés 0,7606 (`CYCLE-BOT-15M`) |
 | Veredicto reproducible | `GET /api/validation` evalúa G4–G13 y nombra lo no medible |
 | Costes, determinismo e integridad medidos | G8, G2 y G1/G3/G14 se re-ejecutan, no se estiman |
 | Única puerta abierta en un backtest | H1-H5 (holdout sellado), por diseño |
@@ -389,9 +390,10 @@ La puerta lo rechaza por dos sitios: G5 (PF < 1,25 y esperanza < 0,10 R) y el
 PBO de su ciclo en 15 m (0,441 > 0,2). El histograma lo explica: todo el
 resultado son dos barras, +0,95 R y −1,03 R, o sea una apuesta 1:1 con 56,7 % de
 acierto cuando el empate está en 52,6 %. Con 233 tiradas eso es z ≈ 1,4, no una
-ventaja. `config/okx-15m-paper-regime.json` guarda el candidato medido y
-`profiles/okx/config.json` lo conserva **bloqueado**: el perfil no arranca sin
-promoción.
+ventaja. `config/okx-15m-paper-regime.json` guarda esa corrida histórica. El
+perfil activo ya no usa esa evidencia: su corrida de 109 OOS tiene PF 1,068 y
+sigue rechazada por PBO 0,782, DSR 0,0006 y estrés 0,7606. No está bloqueado:
+usa `"mode": "reduce"` y arranca en paper al 25 % del riesgo (0,0625 %).
 
 El otro freno nuevo, `risk.min_stop_ticks`, rechaza señales con el stop pegado a
 la entrada. En 1 m sube el PF de 0,476 a 0,512 y recorta la peor racha de 27 a
