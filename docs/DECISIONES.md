@@ -373,3 +373,22 @@ valor además entra en el hash de la config: cambiarlo para dejar de mentir
 invalidaría la evidencia de promoción. Mientras el hash firme el bloque
 `risk` entero, la pausa de 240 min se queda como está y se documenta aquí en
 lugar de tocarse a ciegas.
+
+## ADR 0.18 · La pausa por racha vuelve a pausar
+
+**Contexto.** El ADR 0.17 dejó escrito que, con `soft_brakes` activo, el
+`loss_streak_cooldown_min` no se aplicaba nunca: la racha solo recortaba el
+tamaño. El perfil anunciaba 240 minutos de pausa y no ocurrían. Con la huella
+de investigación separada del perfil, tocar los frenos ya no invalida la
+evidencia, así que cumplir lo declarado deja de costar una re-medida.
+
+**Decisión.** Si el perfil declara `loss_streak_cooldown_min > 0`, la racha
+rechaza la entrada hasta que pase la pausa, con o sin frenos suaves. El
+recorte a media máquina queda solo para perfiles que alcanzan la racha sin
+declarar minutos. No se toca ningún límite de riesgo ni se relaja ninguna
+puerta: es la misma racha, ahora sí esperando lo que dice el fichero.
+
+**Consecuencia.** Tras tres pérdidas seguidas el motor deja de abrir durante
+240 minutos en el perfil de OKX. El `block_reason` resultante caduca por tiempo
+y el motor ya sabía expirarlo (`engine._expire_blocks`), así que no hace falta
+otro estado.
