@@ -9,7 +9,7 @@ from __future__ import annotations
 import asyncio
 import csv
 import io
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -108,6 +108,23 @@ class BacktestRequest(BaseModel):
     save: bool = True
     stress: bool = True
     run_group: str | None = None
+    # La ventana es parte del experimento: el mismo CSV puede contener años y
+    # un backtest de 2025 no debe arrastrar 2026 solo porque esta en el archivo.
+    start: str | None = None
+    end: str | None = None
+
+
+def _day_bound(value: str | None, field: str) -> datetime | None:
+    """Convierte AAAA-MM-DD a medianoche UTC; el corte es exclusivo."""
+    if value is None or not value.strip():
+        return None
+    try:
+        parsed = date.fromisoformat(value)
+    except ValueError as error:
+        raise HTTPException(
+            status_code=422, detail=f"{field} debe ser una fecha AAAA-MM-DD"
+        ) from error
+    return datetime(parsed.year, parsed.month, parsed.day, tzinfo=timezone.utc)
 
 
 class CompareRequest(BaseModel):
@@ -541,10 +558,23 @@ def post_backtest(request: Request, body: BacktestRequest) -> dict[str, Any]:
     from .stress import measure_gates
 
     engine = _engine(request)
-    settings = engine.settings
+    # El backtest reproduce el perfil guardado, no la copia efectiva a la que
+    # la promocion le redujo el riesgo: el CLI parte del archivo de config y
+    # este boton debe dar la misma corrida que ese comando.
+    settings = getattr(request.app.state, "configured_settings", None) or engine.settings
     initial = settings.risk.initial_capital
+    start = _day_bound(body.start, "start")
+    end = _day_bound(body.end, "end")
+    if start is not None and end is not None and start >= end:
+        raise HTTPException(status_code=422, detail="start debe ser anterior a end")
     try:
-        result = run_backtest(settings, body.dataset_path, run_group=body.run_group)
+        result = run_backtest(
+            settings,
+            body.dataset_path,
+            run_group=body.run_group,
+            start=start,
+            end=end,
+        )
     except (ValueError, FileNotFoundError) as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
     if body.save:
@@ -560,7 +590,7 @@ def post_backtest(request: Request, body: BacktestRequest) -> dict[str, Any]:
     measured = {}
     if body.stress:
         # G8 and G2 need a second and third run: do them, do not estimate them.
-        measured = measure_gates(settings, body.dataset_path)
+        measured = measure_gates(settings, body.dataset_path, start=start, end=end)
     report = evaluate_gates(
         stats,
         initial_capital=initial,
@@ -585,6 +615,11 @@ def post_backtest(request: Request, body: BacktestRequest) -> dict[str, Any]:
         "config_hash": result.config_hash,
         "run_group": result.run_group,
         "metrics": result.metrics,
+        # El DD de `result.metrics` es pico-valle sobre la curva marcada a
+        # mercado; G6 y el informe del CLI usan las operaciones cerradas. Se
+        # devuelven ambos para que la tarjeta no enseñe un DD que la puerta no
+        # está midiendo.
+        "metrics_closed": stats["closed"],
         "trades": len(result.trades),
         # Sin esto, una corrida de 0 operaciones parece una estrategia muda
         # cuando en realidad puede haber descartado cien señales.
