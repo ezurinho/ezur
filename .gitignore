@@ -14,6 +14,14 @@ htmlcov/
 data/*
 # El laboratorio necesita al menos un dataset para no abrir vacío.
 !data/BTC_1m.csv
+# La nota de promoción viaja con el repo; el resto de data/research (ledger,
+# artefactos, specs) sigue fuera. La cadena hace falta entera: git no entra en
+# un directorio ignorado, así que negar solo el fichero no lo rescata.
+!data/research/
+data/research/*
+!data/research/promotion/
+data/research/promotion/*
+!data/research/promotion/README.md
 backups/
 reports/backtest/*
 !reports/backtest/.gitkeep
