@@ -371,6 +371,9 @@ def evaluate(
     strategy: dict[str, Any] | None = None,
     config_hash: str | None = None,
     execution: dict[str, Any] | None = None,
+    research_hash: str | None = None,
+    profile_hash: str | None = None,
+    brakes: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     checks: list[dict[str, Any]] = []
     if execution is None and config_hash:
@@ -568,7 +571,37 @@ def evaluate(
         )
 
     expected_hash = str(config_hash or "")
-    if expected_hash:
+    expected_research = str(research_hash or "")
+    if expected_research:
+        found_research = str((evidence or {}).get("research_hash") or "")
+        found_hash = str((evidence or {}).get("config_hash") or "")
+        if found_research:
+            matches = found_research == expected_research
+            detail = (
+                f"la evidencia se midió con otra configuración de investigación: "
+                f"{found_research}, no {expected_research}"
+            )
+            found_value, expected_value = found_research, expected_research
+        else:
+            # Evidencia anterior a la separación de huellas: se compara como
+            # antes en vez de darla por buena sin comprobar nada.
+            matches = bool(expected_hash) and found_hash == expected_hash
+            detail = (
+                "la evidencia es anterior a la separación de huellas y declara "
+                f"{found_hash or 'sin hash'}, no {expected_hash or expected_research}"
+            )
+            found_value = found_hash or "?"
+            expected_value = expected_hash or expected_research
+        checks.append(
+            _check(
+                "evidencia_de_la_configuracion",
+                found_value,
+                expected_value,
+                matches,
+                detail,
+            )
+        )
+    elif expected_hash:
         found_hash = str((evidence or {}).get("config_hash") or "")
         checks.append(
             _check(
@@ -607,6 +640,14 @@ def evaluate(
             "dataset": (evidence or {}).get("dataset"),
             "split_at": ((evidence or {}).get("split") or {}).get("at"),
             "oos_trades": trades,
+            # Con qué frenos se midió, no con los que opera el perfil ahora: la
+            # puerta exige la huella de investigación, pero deja constancia del
+            # perfil de medición para que la diferencia no sea invisible.
+            "research_hash": (evidence or {}).get("research_hash"),
+            "profile_hash": (evidence or {}).get("profile_hash"),
+            "brakes": (evidence or {}).get("brakes"),
+            "profile_hash_current": profile_hash,
+            "brakes_current": brakes,
         },
     }
 
@@ -631,6 +672,9 @@ def evaluate_paths(
     strategy: dict[str, Any] | None = None,
     config_hash: str | None = None,
     execution: dict[str, Any] | None = None,
+    research_hash: str | None = None,
+    profile_hash: str | None = None,
+    brakes: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return evaluate(
         load(evidence_path),
@@ -639,6 +683,9 @@ def evaluate_paths(
         strategy,
         config_hash,
         execution,
+        research_hash,
+        profile_hash,
+        brakes,
     )
 
 
@@ -678,6 +725,8 @@ def effective_settings_and_verdict(
     """
     if not settings.promotion.required:
         return settings, None
+    from .backtest import profile_fingerprint, research_fingerprint, risk_brakes
+
     execution = execution_model(settings)
     verdict = evaluate_paths(
         settings.promotion.evidence,
@@ -686,6 +735,9 @@ def effective_settings_and_verdict(
         {"id": settings.strategy.id, "version": settings.strategy.version},
         config_hash=config_hash,
         execution=execution,
+        research_hash=research_fingerprint(settings),
+        profile_hash=profile_fingerprint(settings),
+        brakes=risk_brakes(settings),
     )
     if verdict["passed"] or settings.promotion.mode != "reduce":
         return settings, verdict
