@@ -179,7 +179,8 @@ def run_backtest(
             "rows": report.rows,
             "rejections": engine.rejection_totals(),
             # La curva se marca a mercado: mientras hay posicion abierta, cada
-            # vela anota equity + P&L no realizado (engine._record_equity_point)
+            # vela anota una marca intradía (engine._record_equity_point); la
+            # curva auditada solo recibe una fila al cerrar cada operación.
             # y cada cierre anota el realizado. Se declara para que nadie lea un
             # drawdown abierto como si la cuenta solo existiera en los cierres.
             "open_position": open_position.model_dump(mode="json") if open_position else None,
