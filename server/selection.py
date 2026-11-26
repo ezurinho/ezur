@@ -224,10 +224,15 @@ def min_backtest_length(n_trials: int, sr_annual: float) -> dict:
 
 def walk_forward(trade_log: dict[str, pd.DataFrame], folds: int = 5,
                  min_is_trades: int = 3, warmup: float = 0.30) -> dict:
-    """Expanding-window walk-forward over the same universe.
+    """Expanding-window walk-forward with the winner frozen per fold.
 
     The first `warmup` share of the sample is in-sample only, so every
     out-of-sample fold has history behind it and no fold is empty by design.
+    The config is chosen **only** with in-sample trades and is not re-touched
+    during its OOS window. On top of the fold table, the chosen OOS trades are
+    stitched into one series and PBO/DSR are reported on that union: the fold
+    PBO is the share of folds where the frozen winner lands at or below the
+    median of the universe, and the CSCV PBO uses the OOS daily matrix.
     """
     valid = [t for t in trade_log.values() if not t.empty]
     if not valid:
@@ -239,6 +244,7 @@ def walk_forward(trade_log: dict[str, pd.DataFrame], folds: int = 5,
 
     out = []
     oos_all: list[pd.DataFrame] = []
+    frozen_pbo: list[bool] = []
     for k in range(folds):
         lo, hi = edges[k], edges[k + 1]
         best, best_pf, best_n = None, -1.0, 0
@@ -256,28 +262,78 @@ def walk_forward(trade_log: dict[str, pd.DataFrame], folds: int = 5,
         oos_t = trade_log[best][(trade_log[best]["ts"] >= lo) & (trade_log[best]["ts"] < hi)]
         if not oos_t.empty:
             oos_all.append(oos_t)
+        rank_pct = None
+        scores: dict[str, float] = {}
+        for name, candidate in trade_log.items():
+            slice_oos = candidate[(candidate["ts"] >= lo) & (candidate["ts"] < hi)]
+            if not slice_oos.empty:
+                scores[name] = pf(slice_oos["r_net"].to_numpy())
+        if len(scores) >= 2:
+            chosen_score = scores.get(best)
+            if chosen_score is not None:
+                rank_pct = sum(1 for value in scores.values() if value <= chosen_score) / len(scores)
+                frozen_pbo.append(rank_pct <= 0.5)
         out.append({
             "fold": k + 1,
             "is_end": str(lo.date()),
             "oos": [str(lo.date()), str(hi.date())],
             "chosen": best,
+            "chosen_frozen": True,
             "is_trades": best_n,
             "is_pf": round(float(best_pf), 4),
             "oos_trades": int(len(oos_t)),
             "oos_pf": round(float(pf(oos_t["r_net"].to_numpy())), 4) if not oos_t.empty else None,
+            "oos_rank_pct": None if rank_pct is None else round(float(rank_pct), 4),
         })
 
     counts = [f["oos_trades"] for f in out if f["chosen"]]
     agg = pd.concat(oos_all, ignore_index=True) if oos_all else pd.DataFrame(columns=["r_net"])
+
+    # Serie OOS unida: cada día suma el r_net del config congelado en ese fold.
+    daily_by_config = {}
+    for name, table in trade_log.items():
+        if table.empty:
+            continue
+        sliced = table[table["ts"] >= first_oos]
+        if sliced.empty:
+            continue
+        daily_by_config[name] = sliced.groupby(sliced["ts"].dt.normalize())["r_net"].sum()
+    daily = pd.DataFrame(daily_by_config).sort_index().fillna(0.0) if daily_by_config else pd.DataFrame()
+
+    dsr: dict = {"dsr": None, "reason": "sin serie OOS unida"}
+    if len(daily) >= 30 and len(daily.columns) >= 2 and not agg.empty:
+        best_daily = (
+            agg.groupby(agg["ts"].dt.normalize())["r_net"]
+            .sum()
+            .reindex(daily.index)
+            .fillna(0.0)
+        )
+        all_sr_daily = np.array(
+            [sharpe_daily(daily[name].to_numpy()) for name in daily.columns]
+        )
+        dsr = deflated_sharpe(best_daily.to_numpy(), all_sr_daily)
+
+    pbo_oos: dict = {"pbo": None, "reason": "serie OOS demasiado corta", "n_splits": 0}
+    if len(daily) >= 8 and len(daily.columns) >= 3:
+        blocks = 10
+        while blocks > 2 and len(daily) < blocks * 4:
+            blocks //= 2
+        pbo_oos = cscv_pbo(daily, blocks=blocks)
+
     return {
         "folds": out,
         "folds_requested": folds,
         "warmup_share": warmup,
+        "frozen_selection": True,
         "evaluated_folds": len(counts),
         "min_trades_per_fold": int(min(counts)) if counts else 0,
         "total_oos_trades": int(sum(counts)),
         "oos_pf_aggregate": round(float(pf(agg["r_net"].to_numpy())), 4) if len(agg) else None,
         "distinct_configs_chosen": len({f["chosen"] for f in out if f["chosen"]}),
+        "pbo_folds": round(float(sum(frozen_pbo) / len(frozen_pbo)), 4) if frozen_pbo else None,
+        "pbo_oos_matrix": pbo_oos,
+        "dsr_oos": dsr,
+        "oos_daily_days": int(len(daily)),
     }
 
 
