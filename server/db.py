@@ -106,6 +106,16 @@ class Store:
             self.conn.backup(destination)
         finally:
             destination.close()
+        # Un respaldo que no abre no es un respaldo. Se comprueba ahora, cuando
+        # fallar solo cuesta un fichero, y no el día que haga falta restaurarlo.
+        check = sqlite3.connect(str(path))
+        try:
+            verdict = check.execute("PRAGMA integrity_check").fetchone()[0]
+        finally:
+            check.close()
+        if verdict != "ok":
+            path.unlink(missing_ok=True)
+            raise RuntimeError(f"la copia de seguridad no pasa integrity_check: {verdict}")
         return path
 
     # --- schema -----------------------------------------------------------
