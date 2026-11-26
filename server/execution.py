@@ -26,9 +26,7 @@ the impact are always added: they are not the exchange fee.
 - half_spread_bps: half the bid-ask spread in basis points
 - assumed_fill: "taker" | "maker" | "mixed" (how the entry is classified)
 - impact_model: "none" | "sqrt_law" | "ofi" (market impact model)
-- funding: "real_timestamps" | "none" (whether funding is applied)
 - cooldown_bars: minimum bars between entries
-- stop_floor_frac: minimum stop distance as fraction of price
 
 A model that does not change behaviour is a config option that lies, which is
 worse than not offering it.
@@ -93,22 +91,6 @@ class ExecutionEngine:
             ticks = -ticks
         return ticks * spec.tick_value * units
 
-    def _round_trip_bps(self, symbol: str, is_maker: bool | None = None) -> float:
-        """Round-trip cost in basis points for one side (entry or exit).
-
-        If assumed_fill is "mixed", uses 50/50 maker/taker split.
-        Includes half_spread_bps for both legs.
-        """
-        cfg = self.config
-        if cfg.assumed_fill == "maker":
-            fee_bps = cfg.fee_maker_bps
-        elif cfg.assumed_fill == "taker":
-            fee_bps = cfg.fee_taker_bps
-        else:  # mixed
-            fee_bps = (cfg.fee_maker_bps + cfg.fee_taker_bps) / 2
-
-        # One side pays fee + half spread; round trip is 2 * (fee + half_spread)
-        return 2 * (fee_bps + cfg.half_spread_bps)
 
     def _impact_bps(self, symbol: str, notional_usd: float, units: int, side: str) -> float:
         """Market impact in basis points for a given notional."""
