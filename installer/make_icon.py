@@ -84,7 +84,7 @@ def write_ico(path: Path, frames: list[Image.Image]) -> None:
     header = struct.pack("<HHH", 0, 1, len(frames))
     offset = len(header) + 16 * len(frames)
     entries = bytearray()
-    for frame, blob in zip(frames, blobs):
+    for frame, blob in zip(frames, blobs, strict=False):
         side = frame.width
         entries += struct.pack(
             "<BBBBHHII",
