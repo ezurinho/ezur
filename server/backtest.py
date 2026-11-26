@@ -24,7 +24,7 @@ from .engine import TradingEngine
 from .market.csv_data import validate_dataset
 from .market.feed import CSVFeed
 from .models import TradeRecord
-from .promotion import cost_metrics, execution_model
+from .promotion import cost_metrics, daily_cap_rejections, execution_model
 from .stats import compute_stats
 from .strategy.base import BaseStrategy
 from .strategy.registry import resolve_strategy
@@ -462,6 +462,10 @@ def _report_run(args, settings, result, stats, report) -> None:
         "avg_stop_ticks": cost["avg_stop_ticks"],
         "risk_budget_utilization": cost["risk_budget_utilization"],
         "trades_at_cap": cost["trades_at_cap"],
+        "trades_at_units_cap": cost["trades_at_units_cap"],
+        "trades_blocked_by_daily_cap": daily_cap_rejections(
+            result.diagnostics.get("rejections")
+        ),
         "cap_rate": cost["cap_rate"],
         "gates": (
             {"verdict": report.verdict, "failed": report.failed} if report else None
