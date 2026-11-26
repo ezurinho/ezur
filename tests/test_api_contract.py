@@ -16,6 +16,7 @@ EXPECTED_PATHS = [
     "/api/events",
     "/api/stats",
     "/api/validation",
+    "/api/review/2025-15m",
     "/api/chart/history",
     "/api/strategy/schema",
     "/api/data/validate",
