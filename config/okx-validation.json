@@ -14,7 +14,8 @@
     "max_slippage_ticks": 5,
     "partial_fill_ratio": 0.6,
     "simulate_partial_fills": false,
-    "slippage_ticks": 1
+    "slippage_ticks": 1,
+    "slippage_ticks_per_100_units": 0.25
   },
   "feed": {
     "backfill_bars": 240,
