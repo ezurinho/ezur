@@ -672,6 +672,126 @@ a {
   }
 }
 
+/* ------------------------------------------------------------- review --- */
+
+.review-card {
+  margin-top: 16px;
+}
+
+.review-card.compact {
+  margin-top: 0;
+}
+
+.review-table-wrap {
+  overflow-x: auto;
+}
+
+.review-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 0.74rem;
+}
+
+.review-table th {
+  padding: 0 8px 7px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-align: right;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.review-table th:first-child,
+.review-table th:last-child,
+.review-table td:first-child,
+.review-table td:last-child {
+  text-align: left;
+}
+
+.review-table td {
+  padding: 10px 8px;
+  border-top: 1px solid var(--line-soft);
+  vertical-align: top;
+}
+
+.review-table tbody tr:first-child td {
+  border-top: 0;
+}
+
+.review-table .num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.review-run {
+  display: block;
+  font-weight: 600;
+}
+
+.review-source {
+  display: block;
+  max-width: 230px;
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+}
+
+.review-value {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.review-foot {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.6rem;
+  white-space: nowrap;
+}
+
+.review-position {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 220px;
+}
+
+.review-position strong {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.review-position span {
+  color: var(--muted);
+  font-size: 0.62rem;
+}
+
+.review-position.muted {
+  color: var(--muted);
+}
+
+.review-meta {
+  margin: 10px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--line-soft);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
 .kpi {
   position: relative;
   display: flex;
