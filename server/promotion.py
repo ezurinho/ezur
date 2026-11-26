@@ -109,11 +109,13 @@ def _oos(evidence: dict[str, Any]) -> dict[str, Any]:
 def _stress_from_cycle(cycle: dict[str, Any] | None) -> dict[str, Any] | None:
     """El estrés 2x que ya midió el ciclo, con la forma del fichero aparte.
 
-    El ciclo guarda una entrada por configuración; la puerta usa la que el
-    propio ciclo selecciona (`stress.selected`). Así la promoción no necesita
-    una segunda corrida con costes duplicados. El alcance es el ciclo completo,
-    no el tramo OOS del fichero: se reutiliza su forma para no duplicar el
-    contrato de la puerta.
+    El ciclo guarda una entrada por configuración. Si declara el candidato que
+    opera el perfil (`candidate`), la puerta usa ese; si no, usa el que el
+    propio ciclo selecciona (`stress.selected`). Así el estrés no puede quedar
+    en una variante distinta a la del perfil cuando el ciclo ya la declara. La
+    promoción no necesita una segunda corrida con costes duplicados. El alcance
+    es el ciclo completo, no el tramo OOS del fichero: se reutiliza su forma
+    para no duplicar el contrato de la puerta.
     """
     block = (cycle or {}).get("stress")
     if not isinstance(block, dict):
@@ -121,7 +123,9 @@ def _stress_from_cycle(cycle: dict[str, Any] | None) -> dict[str, Any] | None:
     configs = block.get("configs")
     if not isinstance(configs, list) or not configs:
         return None
-    selected = block.get("selected")
+    selected = str((cycle or {}).get("candidate") or "").strip() or block.get(
+        "selected"
+    )
     chosen = next(
         (
             item
@@ -784,8 +788,16 @@ def main(argv: list[str] | None = None) -> int:
         print(f"perfil inválido en {args.config}: {error}", flush=True)
         return 1
     execution = execution_model(profile)
+    from .backtest import config_fingerprint
+
+    config_hash = config_fingerprint(profile)
     verdict = evaluate_paths(
-        args.evidence, args.stress, args.cycle, expected, execution=execution
+        args.evidence,
+        args.stress,
+        args.cycle,
+        expected,
+        config_hash=config_hash,
+        execution=execution,
     )
     if args.json:
         print(json.dumps(verdict, indent=2, ensure_ascii=False))
