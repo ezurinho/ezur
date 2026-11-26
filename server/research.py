@@ -297,30 +297,47 @@ def _artifact_path(out_dir: Path, spec: dict[str, Any]) -> Path:
     return Path(out_dir).resolve() / f"{spec.get('id')}-v{spec.get('version')}.json"
 
 
-def _verdict_from_artifact(
+def _artifact_evidence(
     out_dir: Path, spec: dict[str, Any], started_at: float
-) -> str | None:
-    """El veredicto es un dato del resultado, no una línea de log.
+) -> dict[str, Any]:
+    """El veredicto y las huellas son datos del resultado, no líneas de log.
 
-    Leerlo del JSON evita depender de que stdout llegue completo; el parseo de
+    Leerlos del JSON evita depender de que stdout llegue completo; el parseo de
     la línea `VERDICT` queda solo como red de seguridad para artefactos viejos.
     Un artefacto de otra spec o anterior a esta ejecución no vale como evidencia.
+
+    Las huellas de datos y código viajan con el veredicto porque sin ellas el
+    ledger no puede decir sobre qué se midió, y dos corridas que parecen iguales
+    no lo son: es el mismo agujero que dejó filas incomparables en MEDICIONES.
     """
     path = _artifact_path(out_dir, spec)
     try:
         document = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
-        return None
+        return {}
     canonical = json.dumps(spec, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     expected = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
     declared = str((document.get("artifacts") or {}).get("spec_hash") or "")
     if declared:
         if declared.removeprefix("sha256:") != expected:
-            return None
+            return {}
     elif path.stat().st_mtime < started_at:
-        return None
+        return {}
+    artifacts = document.get("artifacts") or {}
+    evidence: dict[str, Any] = {
+        "data_hash": artifacts.get("data_hash"),
+        "code_sha": artifacts.get("code_sha"),
+    }
     verdict = document.get("verdict")
-    return verdict if isinstance(verdict, str) and verdict else None
+    if isinstance(verdict, str) and verdict:
+        evidence["verdict"] = verdict
+    return evidence
+
+
+def _verdict_from_artifact(
+    out_dir: Path, spec: dict[str, Any], started_at: float
+) -> str | None:
+    return _artifact_evidence(out_dir, spec, started_at).get("verdict")
 
 
 def run_spec(
@@ -359,9 +376,13 @@ def run_spec(
         error = f"timeout tras {timeout:.0f}s"
         code = -9
 
+    evidence: dict[str, Any] = {}
     verdict = None
     if code == 0:
-        verdict = _verdict_from_artifact(out_dir, spec_doc, started) or _parse_verdict(output)
+        evidence = _artifact_evidence(out_dir, spec_doc, started)
+        verdict = evidence.get("verdict") or _parse_verdict(output)
+    requirements = spec_doc.get("data_requirements") or {}
+    datasets = requirements.get("datasets") if isinstance(requirements, dict) else None
     return {
         "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "spec": str(spec.relative_to(home)) if spec.is_relative_to(home) else str(spec),
@@ -369,6 +390,9 @@ def run_spec(
         "family": spec_doc.get("family"),
         "timeframe": spec_doc.get("timeframe_signal"),
         "fingerprint": fingerprint(spec_doc),
+        "datasets": datasets,
+        "data_hash": evidence.get("data_hash"),
+        "code_sha": evidence.get("code_sha"),
         "verdict": verdict,
         "returncode": code,
         "seconds": round(time.time() - started, 1),
