@@ -145,11 +145,13 @@ def run_backtest(
             "dataset_sessions": report.sessions,
             "rows": report.rows,
             "rejections": engine.rejection_totals(),
-            # La curva es realizada. Si el dataset termina con exposición, el
-            # informe lo dice en vez de presentar el último cierre como el final.
+            # La curva se marca a mercado: mientras hay posicion abierta, cada
+            # vela anota equity + P&L no realizado (engine._record_equity_point)
+            # y cada cierre anota el realizado. Se declara para que nadie lea un
+            # drawdown abierto como si la cuenta solo existiera en los cierres.
             "open_position": open_position.model_dump(mode="json") if open_position else None,
             "pending_orders": pending_count,
-            "marked_to_market": False,
+            "marked_to_market": True,
         },
     )
 
