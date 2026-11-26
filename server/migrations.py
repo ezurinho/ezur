@@ -10,7 +10,7 @@ from __future__ import annotations
 import sqlite3
 from datetime import datetime, timezone
 
-CURRENT_VERSION = 4
+CURRENT_VERSION = 5
 
 MIGRATIONS: dict[int, list[str]] = {
     1: [
@@ -164,6 +164,20 @@ MIGRATIONS[3] = [
 # lo registró. No se inventa un cargo que el motor de papel no haya medido.
 MIGRATIONS[4] = [
     "ALTER TABLE trades ADD COLUMN funding REAL NOT NULL DEFAULT 0",
+]
+
+# v5: la curva auditada es una fila por operación cerrada. Las marcas intradía
+# van a su propia tabla: mezclarlas hacía que la auditoría contara cientos de
+# filas contra 14 operaciones y bloqueara el arranque del motor.
+MIGRATIONS[5] = [
+    """
+    CREATE TABLE IF NOT EXISTS equity_marks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ts TEXT NOT NULL,
+        equity REAL NOT NULL
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS idx_equity_marks_ts ON equity_marks(ts)",
 ]
 
 DUPLICATE_QUERY = """
