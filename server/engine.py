@@ -130,6 +130,7 @@ class TradingEngine:
                     settings.strategy.timeframe_signal or settings.strategy.timeframe
         )
         self._bar_index = 0
+        self._last_signal_ts: datetime | None = None
         self._output: StrategyOutput | None = None
         self._subscribers: list[SnapshotHook] = []
         self._task: asyncio.Task[None] | None = None
@@ -812,6 +813,12 @@ class TradingEngine:
         bars = {symbol: list(values) for symbol, values in self._bar_source().items()}
         if not bars.get(primary):
             return
+        # Una vela de senal nueva por evaluacion: con ejecucion de 5 m, la misma
+        # vela de 1 h llegaba doce veces y repetia la entrada y el trailing.
+        signal_ts = bars[primary][-1].t
+        if signal_ts == self._last_signal_ts:
+            return
+        self._last_signal_ts = signal_ts
         ready, detail = self._warmup_progress(tick.ts)
         if not ready:
             self._output = StrategyOutput(
