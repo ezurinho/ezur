@@ -94,9 +94,15 @@ def load_panels(
 
 
 def _score_frame(
-    spot: pd.DataFrame, perp: pd.DataFrame, funding: pd.DataFrame, lookback: int
+    spot: pd.DataFrame,
+    perp: pd.DataFrame,
+    funding: pd.DataFrame,
+    lookback: int,
+    basis_override: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    basis = perp / spot - 1.0
+    """Score pre-registrado. `basis_override` existe sólo para tests de nulidad:
+    sustituye el basis observado en la señal y deja intactos precio y ejecución."""
+    basis = basis_override if basis_override is not None else perp / spot - 1.0
     minimum = max(2, math.ceil(lookback * 0.8))
     basis_mean = basis.rolling(lookback, min_periods=minimum).mean()
     funding_mean = funding.rolling(lookback, min_periods=minimum).mean()
@@ -156,6 +162,7 @@ def run_basis_carry(
     assets: tuple[str, ...] = ASSETS,
     cost_per_leg_side: float = COST_PER_LEG_SIDE,
     capital: float = CAPITAL,
+    basis_override: pd.DataFrame | None = None,
 ) -> BasisResult:
     assets = tuple(assets)
     if not assets:
@@ -163,7 +170,9 @@ def run_basis_carry(
     spot = spot.reindex(columns=list(assets)).sort_index()
     perp = perp.reindex(columns=list(assets)).sort_index()
     funding = funding.reindex(columns=list(assets)).sort_index()
-    scores = _score_frame(spot, perp, funding, lookback)
+    if basis_override is not None:
+        basis_override = basis_override.reindex(columns=list(assets)).sort_index()
+    scores = _score_frame(spot, perp, funding, lookback, basis_override)
 
     start_ts = pd.Timestamp(start, tz="UTC") if start is not None else spot.index.min()
     end_ts = pd.Timestamp(end, tz="UTC") if end is not None else spot.index.max()

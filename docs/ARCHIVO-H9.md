@@ -102,26 +102,35 @@ pre-registra otra familia hasta cerrarla. La puerta dura de investigación del
 
 ## Nulidad por permutación (2026-11-27)
 
-`python scripts/permutation_families.py --family H9` baraja el funding de cada
-símbolo (50 permutaciones, semilla 20261127). La señal de H9 suma basis y
-funding, y el basis queda intacto, así que esta nulidad aísla el componente de
-funding; para la pata de basis se corre además el motor con `perp = spot` (basis
-exactamente cero).
+`python scripts/permutation_families.py --family H9` permuta **los dos
+componentes del score** (50 permutaciones, semilla 20261127): baraja el funding de
+cada símbolo y, a través del gancho `basis_override` del motor, el basis que entra
+en la señal. Precio, ejecución y payoff siguen siendo los reales. El gancho es
+opcional: con su valor por defecto el motor reproduce exactamente las cifras
+archivadas. Para la pata de carry se corre además `perp = spot` (basis cero).
 
 | | Episodios | Esperanza | PF |
 |---|---:|---:|---:|
 | Observado (C7-Q20-W-25) | 22 | −0,0047 R | 0,1356 |
-| Nulidad, mediana | — | −0,0152 R | — |
-| Nulidad, p5 / p95 | — | −0,0203 / −0,0117 R | — |
+| Nulidad basis+funding, mediana | 96 | −0,0104 R | — |
+| Nulidad basis+funding, p5 / p95 | — | −0,0121 / −0,0095 R | — |
+| Nulidad sólo funding, mediana | — | −0,0161 R | — |
 | Sólo funding (basis = 0) | 40 | +0,0004 R | 1,0681 |
 
-El observado es **mejor que las 50 permutaciones**: la señal completa pierde unos
-0,010 R menos por episodio que una en la que el funding es aleatorio, así que la
-ordenación de la señal tiene información y no es ruido. Y la pata aislada de carry queda en cero
-(+0,0004 R, PF 1,07): el carry no es negativo, está comprimido. El veredicto no
-cambia —22 episodios, PF 0,1356, BNB en 13 de 22 y 28 pb de coste de ida y
-vuelta— pero el fracaso no es ignorancia: hay información en la señal y aun así
-no paga.
+El observado supera a las **50** permutaciones completas (p unilateral 0,02, el
+mínimo alcanzable con 50): el score real pierde 0,006 R menos por episodio que
+uno con los dos componentes barajados, así que la ordenación no es ruido. La pata
+aislada de carry queda en cero (+0,0004 R, PF 1,07): el carry no es negativo, está
+comprimido.
+
+Dos avisos para no leer de más. **El null no es una cartera del mismo tamaño:**
+el score aleatorio cruza el umbral mucho más a menudo (96 episodios de mediana
+frente a 22), así que la comparación vale por episodio y no como atribución entre
+componentes —con sólo el funding barajado el null es más negativo (−0,0161), pero
+con otra estructura de cartera—. Y **la muestra sigue siendo 22 episodios**: el
+test dice que la señal ordena mejor que el azar, no que la estrategia tenga edge
+que desplegar. El veredicto no cambia —PF 0,1356, BNB en 13 de 22, 28 pb de coste
+de ida y vuelta— y se sostiene en las puertas, no en esta permutación.
 
 ## Artefactos
 

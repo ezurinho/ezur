@@ -94,12 +94,13 @@ def run_h7(ratio, close, notional, funding) -> dict:
                             signal_days=3, hold=3, quantile=0.2).summary(years=YEARS))
 
 
-def run_h9(spot, perp, funding) -> dict:
+def run_h9(spot, perp, funding, basis_override=None) -> dict:
     return metrics(run_basis_carry(spot, perp, funding,
                                    start=START.strftime("%Y-%m-%d"),
                                    end=END.strftime("%Y-%m-%d"),
                                    lookback=7, rebalance="W", quantile=0.2,
-                                   entry=0.00025, exit=0.00010).summary(years=YEARS))
+                                   entry=0.00025, exit=0.00010,
+                                   basis_override=basis_override).summary(years=YEARS))
 
 
 def summarise(name: str, observed: dict, null: list[float]) -> dict:
@@ -161,14 +162,27 @@ def main() -> int:
         spot, perp, funding = load_basis(ROOT / "data" / "basis" / "spot_daily.csv",
                                          ROOT / "data" / "basis" / "perp_daily.csv",
                                          ROOT / "data" / "basis" / "funding_daily.csv")
+        basis = perp / spot - 1.0
         observed = run_h9(spot, perp, funding)
         isolated = run_h9(spot, spot, funding)
-        null = [run_h9(spot, perp, shuffle_columns(funding, rng))["esperanza_R"]
-                for _ in range(args.permutations)]
+        null_funding = [run_h9(spot, perp, shuffle_columns(funding, rng))["esperanza_R"]
+                        for _ in range(args.permutations)]
+        full_runs = [run_h9(spot, perp, shuffle_columns(funding, rng),
+                            shuffle_columns(basis, rng))
+                     for _ in range(args.permutations)]
+        null = [run["esperanza_R"] for run in full_runs]
         results["H9"] = summarise("H9", observed, null)
+        results["H9"]["nulidad"]["episodios_mediana"] = int(np.median(
+            [run["episodios"] for run in full_runs]))
+        results["H9"]["nulidad_solo_funding"] = summarise(
+            "H9", observed, null_funding)["nulidad"]
+        results["H9"]["p_valor_solo_funding"] = summarise(
+            "H9", observed, null_funding)["p_valor_dos_colas"]
         results["H9"]["solo_funding"] = isolated
         print(f"H9 observado {observed['esperanza_R']} R · sólo funding "
-              f"{isolated['esperanza_R']} R · p = {results['H9']['p_valor_dos_colas']}")
+              f"{isolated['esperanza_R']} R · p (basis+funding) = "
+              f"{results['H9']['p_valor_dos_colas']} · p (sólo funding) = "
+              f"{results['H9']['p_valor_solo_funding']}")
 
     print(json.dumps(results, indent=2, ensure_ascii=False))
     target = Path(args.json)
