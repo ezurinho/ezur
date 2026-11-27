@@ -64,8 +64,10 @@ nuevo tenga datos; el histórico de velas en memoria se descarta.
 | POST | `/stats/reset` | `{include_backtests: bool}` |
 
 `/stats` devuelve `closed`, `by_hour`, `by_weekday`, `by_month`, `by_side`,
-`by_day` y `equity`. Los desgloses usan la zona horaria de la sesión, y `closed`
-incluye `r_median` y `r_distribution` con buckets fijos de R.
+`by_day`, `equity` y `equity_marks`. `equity` son los cierres auditados;
+`equity_marks` son marcas intradía y viajan como serie aparte, sin sumarse a la
+curva. Los desgloses usan la zona horaria de la sesión, y `closed` incluye
+`r_median` y `r_distribution` con buckets fijos de R.
 
 ## Datos y backtesting
 
