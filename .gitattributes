@@ -6,3 +6,5 @@ bin/** text eol=lf
 skills/** text eol=lf
 BRAIN.md text eol=lf
 CLAUDE.md text eol=lf
+# El hook se ejecuta con sh: un shebang con CRLF no arranca en Windows.
+.githooks/** text eol=lf
