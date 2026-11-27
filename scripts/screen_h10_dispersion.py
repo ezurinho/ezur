@@ -106,18 +106,32 @@ def panels(funding: pd.DataFrame, perp: pd.DataFrame):
     return rate, close, quote
 
 
+def signal_frame(rate: pd.DataFrame) -> pd.DataFrame:
+    """Señal estandarizada con datos hasta t-1, aislada para poder auditarla.
+
+    Los tres `shift(1)` son la única defensa contra el look-ahead y se prueban
+    con `scripts/validation_suite.py`: si el frame cambia al envenenar la fila
+    del día t, la señal está leyendo el presente.
+    """
+    signal = rate.rolling(WINDOW, min_periods=5).mean().shift(1)
+    mean90 = rate.rolling(LOOKBACK, min_periods=60).mean().shift(1)
+    std90 = rate.rolling(LOOKBACK, min_periods=60).std().shift(1)
+    return (signal - mean90) / std90.where(std90 > 1e-12)
+
+
 def screen(rate: pd.DataFrame, close: pd.DataFrame, quote: pd.DataFrame,
            max_per_side: int = DEFAULT_MAX_PER_SIDE,
-           start: str | None = None, end: str | None = None) -> dict:
+           start: str | None = None, end: str | None = None,
+           payoff: pd.DataFrame | None = None) -> dict:
     # Todo con datos hasta t-1: se desplaza un día antes de usarlo como filtro.
     adv = quote.rolling(30, min_periods=20).median().shift(1)
     history = close.notna().cumsum().shift(1)
     funding_days = rate.notna().cumsum().shift(1)
 
-    signal = rate.rolling(WINDOW, min_periods=5).mean().shift(1)
-    mean90 = rate.rolling(LOOKBACK, min_periods=60).mean().shift(1)
-    std90 = rate.rolling(LOOKBACK, min_periods=60).std().shift(1)
-    zscore = (signal - mean90) / std90.where(std90 > 1e-12)
+    zscore = signal_frame(rate)
+    # `payoff` permite romper el emparejamiento señal-pago sin tocar la señal:
+    # es el baseline nulo de los tests de permutación.
+    payoff_frame = rate if payoff is None else payoff
 
     dates = close.index
     monday = [d for d in dates if d.weekday() == 0
@@ -149,8 +163,8 @@ def screen(rate: pd.DataFrame, close: pd.DataFrame, quote: pd.DataFrame,
         horizon = dates[(dates >= date) & (dates < date + pd.Timedelta(days=WINDOW))]
         if len(horizon) < WINDOW - 1:
             continue
-        short_mean = rate.loc[horizon, shorts].mean(axis=1)
-        long_mean = rate.loc[horizon, longs].mean(axis=1)
+        short_mean = payoff_frame.loc[horizon, shorts].mean(axis=1)
+        long_mean = payoff_frame.loc[horizon, longs].mean(axis=1)
         daily = (short_mean - long_mean).dropna()
         if len(daily) < WINDOW - 2:
             continue
@@ -220,6 +234,9 @@ def screen(rate: pd.DataFrame, close: pd.DataFrame, quote: pd.DataFrame,
         "median_eligible": median_eligible,
         "min_eligible": int(min(eligible_counts)) if eligible_counts else 0,
         "by_year": by_year,
+        "series": [{"date": w["date"], "captured_bp": w["captured_bp"],
+                    "k_per_side": w["k_per_side"], "bar_bp": w["bar_bp"]}
+                   for w in windows],
         "passed": bool(np.median(margins) >= 0 and median_eligible >= MIN_ELIGIBLE),
         "sample": windows[:5] + windows[-3:],
     }

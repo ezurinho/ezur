@@ -134,6 +134,12 @@ falló por poco en un mercado representativo, falló en un mercado que ya la
 favorecía. Un carry que sólo paga en el 55,8 % de las ventanas de un año
 excepcional no es desplegable con la confianza de que seguirá.
 
+El monitor pre-registrado de ese régimen (`docs/PRE-REGISTRO-MONITOR-REGIMEN.md`)
+cerró **INACTIVE** al corte del 2026-11-30: mediana de 13 semanas de 160,82 pb,
+última semana 119,69 pb. Estuvo activo 31 semanas desde el 19-ene-2026 y se apagó
+antes de que este informe se escribiera. El régimen del que dependía la familia
+ya no estaba.
+
 ## 6. Decisión
 
 **No se despliega nada.** `live_enabled=false`, cero capital, cero operaciones
@@ -193,3 +199,29 @@ descartadas con números es más de lo que tiene la mayoría.
 
 Todo lo publicado se midió sobre datos con hash y se commiteó con su pre-registro
 antes de ver el resultado. Ningún número de este informe se ajustó después.
+
+## 9. Contraste externo
+
+Después de escribir el informe se contrastó el archivo contra la literatura y la
+industria (`docs/DEEP-RESEARCH-2026-11.md`). **No cambia ningún veredicto**, y sí
+la lectura de por qué:
+
+- El carry de majors se ha comprimido a un T-bill: BTC pagó **+1,7 % en los ocho
+  primeros meses de 2026** y el basis a 30 días llegó a **1,17 %** frente a un
+  breakeven del 5 %. Nuestro H2 (+2,35 % anual con 4 episodios) estaba en el
+  nivel de la literatura, no por debajo.
+- El basis institucional se está desmontando: **−89 % de shorts netos en CME**
+  desde diciembre de 2024. La dispersión de 2026 es la prima residual de ese
+  desmontaje, no un régimen nuevo y estable.
+- El arbitraje de funding entre venues da **8 carteras rentables de 20 y un
+  Sharpe medio de −7,40** en el mejor estudio disponible (MDPI 2026): H8 no es un
+  outlier, es la forma que tiene ese trade.
+- La única corrección de lectura es sobre H5: el carry está **repartido en 9
+  nombres** (top-5 = 61,6 % del diferencial), así que lo que falló no fue el
+  funding sino la pata de precio.
+- Binance reformuló el funding el 18-sep-2025 (`F = [P + clamp]/(8/N)`), lo que
+  confirma que el cash diario es la única medida válida y que la dispersión de
+  2026 no es un artefacto de intervalo.
+
+El contraste tampoco ofrece una familia que no hayamos medido: ofrece una razón
+externa para que la puerta siga cerrada.
