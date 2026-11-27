@@ -688,6 +688,14 @@ def run_backtest_for_spec(
                 "side": trade.side,
                 "pnl_net": trade.pnl_net,
                 "pnl_gross": trade.pnl_gross,
+                "opened_ts": trade.opened_ts,
+                "entry_price": trade.entry_price,
+                "exit_price": trade.exit_price,
+                "stop_price": trade.stop_price,
+                "target_price": trade.target_price,
+                "units": trade.units,
+                "fees": trade.fees,
+                "exit_reason": trade.exit_reason,
             })
 
         trade_df = pd.DataFrame(trade_rows)
@@ -720,6 +728,46 @@ def _iso_day(value: str) -> datetime:
     """Fecha ISO del CLI; sin zona se asume UTC, como el resto del motor."""
     parsed = datetime.fromisoformat(value)
     return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+
+
+def _bars_for_benchmark(df5: pd.DataFrame, timeframe: str) -> pd.DataFrame:
+    """Velas del marco de señal para el benchmark de entradas aleatorias."""
+    frame = df5.copy()
+    stamps = (
+        pd.to_datetime(frame["ts"], utc=True)
+        if "ts" in frame.columns
+        else pd.to_datetime(frame.index, utc=True)
+    )
+    frame.index = pd.DatetimeIndex(stamps)
+    frame = frame[["o", "h", "l", "c", "v"]].sort_index()
+    if timeframe in ("", "5m"):
+        return frame
+    rule = f"{timeframe[:-1]}min" if timeframe.endswith("m") else timeframe
+    bars = frame.resample(rule).agg(
+        {"o": "first", "h": "max", "l": "min", "c": "last", "v": "sum"}
+    )
+    return bars.dropna()
+
+
+def _profile_spec(specs: list[StrategySpec], base: Settings | None) -> StrategySpec | None:
+    """Spec del ciclo que coincide con la configuración que opera el perfil."""
+    if base is None:
+        return None
+    params = base.strategy.params or {}
+    fast = params.get("fast")
+    slow = params.get("slow")
+    if fast is None or slow is None:
+        return None
+    timeframe = base.strategy.timeframe or base.strategy.timeframe_signal
+    for spec in specs:
+        values = spec.params.model_dump(exclude_none=True)
+        if (
+            spec.timeframe_signal == timeframe
+            and values.get("fast") == fast
+            and values.get("slow") == slow
+        ):
+            return spec
+    return None
 
 
 def _window(
@@ -840,6 +888,7 @@ def run_selection_cycle(
     stress_multiplier: float = 2.0,
     ledger_path: Path | str | None = None,
     dataset_path: Path | str | None = None,
+    random_iterations: int = 200,
 ) -> dict:
     """Run the full selection cycle and return the payload.
 
@@ -849,6 +898,8 @@ def run_selection_cycle(
     multiplicados y el resultado queda en `payload["stress"]`.
     Con `dataset_path`, el ciclo usa ese pickle de 5m en lugar del congelado; la
     ruta y su hash quedan en el artefacto y en el trial ledger.
+    Con `random_iterations`, el bloque `random_entries` compara al candidato con
+    entradas aleatorias que conservan stop, objetivo, tamaño y filtros de entrada.
     """
     root = Path(ROOT)
     if spec_dir is None:
@@ -1057,6 +1108,105 @@ def run_selection_cycle(
     cp = cpcv(matrix, blocks=blocks, test_blocks=test_blocks, purge=purge)
     psr = probabilistic_sharpe(matrix[best].to_numpy())
 
+    # El benchmark sigue al candidato del perfil si el ciclo se lanzó con sus
+    # límites; sin perfil, sigue al ganador del universo por Sharpe.
+    random_spec = _profile_spec(specs, base_settings) or next(
+        (spec for spec in specs if spec.label == best), None
+    )
+    random_label = random_spec.label if random_spec and random_spec.label in trade_log else best
+    random_block: dict[str, Any]
+    if random_spec is None or random_label not in trade_log:
+        random_block = {
+            "available": False,
+            "reason": "no hay una configuración con operaciones detalladas para el benchmark",
+        }
+    else:
+        from .random_entries import random_entry_benchmark
+
+        target_trades = trade_log[random_label]
+        missing = {
+            "opened_ts",
+            "entry_price",
+            "stop_price",
+            "target_price",
+            "units",
+            "fees",
+            "pnl_net",
+            "side",
+        } - set(target_trades.columns)
+        if missing:
+            random_block = {
+                "available": False,
+                "reason": "faltan columnas de operación: " + ", ".join(sorted(missing)),
+            }
+        else:
+            benchmark_risk = (
+                base_settings.risk if base_settings is not None else Settings().risk
+            )
+            benchmark_exec = (
+                base_settings.execution
+                if base_settings is not None
+                else Settings().execution
+            )
+            benchmark_instruments = (
+                base_settings.instruments if base_settings is not None else Settings().instruments
+            )
+            primary = next(
+                (
+                    item
+                    for item in benchmark_instruments.items
+                    if item.symbol == random_spec.instrument
+                ),
+                None,
+            )
+            if primary is None:
+                primary = next(
+                    (
+                        item
+                        for item in benchmark_instruments.items
+                        if item.symbol == benchmark_instruments.primary
+                    ),
+                    None,
+                )
+            exit_config = getattr(random_spec, "exit", None)
+            time_stop_bars = int(getattr(exit_config, "time_stop_bars", 240))
+            try:
+                random_block = random_entry_benchmark(
+                    target_trades,
+                    _bars_for_benchmark(df5, random_spec.timeframe_signal),
+                    config=random_label,
+                    iterations=random_iterations,
+                    seed=int(_validation_value(random_spec, "seed") or 7),
+                    time_stop_bars=time_stop_bars,
+                    warmup_bars=max(
+                        14,
+                        int(getattr(random_spec.params, "slow", 0) or 0),
+                        int(getattr(random_spec.params, "atr_period", 0) or 0),
+                    ),
+                    max_trades_per_day=benchmark_risk.max_trades_per_day,
+                    cooldown_minutes=benchmark_risk.cooldown_minutes,
+                    trade_window_start=benchmark_risk.trade_window_start,
+                    trade_window_end=benchmark_risk.trade_window_end,
+                    max_units_per_trade=benchmark_risk.max_units_per_trade,
+                    max_stop_ticks=benchmark_risk.max_stop_ticks,
+                    min_stop_ticks=benchmark_risk.min_stop_ticks,
+                    max_cost_r=benchmark_risk.max_cost_r,
+                    tick_size=(
+                        float(primary.tick_size)
+                        if primary is not None
+                        else 0.01
+                    ),
+                    fee_taker_bps=benchmark_exec.fee_taker_bps,
+                    half_spread_bps=benchmark_exec.half_spread_bps,
+                    commission_per_unit_side=benchmark_exec.commission_per_unit_side,
+                )
+            except Exception as error:  # un benchmark opcional no puede tumbar el ciclo
+                random_block = {
+                    "available": False,
+                    "reason": f"el benchmark falló: {error}",
+                }
+    random_block["scope"] = "perfil" if base_settings is not None else "seleccion"
+
     stress_block = None
     if stress_summary:
         selected_stress = next(
@@ -1105,7 +1255,7 @@ def run_selection_cycle(
     payload = {
         "cycle_id": cycle_id,
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "method_version": "1.0.0",
+        "method_version": "1.1.0",
         "inputs": {
             "data_hash": "sha256:" + data_hash,
             "specs_hash": "sha256:" + specs_hash_raw,
@@ -1122,6 +1272,7 @@ def run_selection_cycle(
         "dsr_pooled": dsr_pooled,
         "dsr_by_group": dsr_by_group,
         "dsr_config": best,
+        "random_entries": random_block,
         "minbtl": mbtl,
         "wfa": wfa,
         "cpcv": cp,
@@ -1163,6 +1314,9 @@ def run_selection_cycle(
             "El trial ledger guarda cada spec, dataset, semilla y descarte; su "
             "reconstrucción vuelve a calcular PBO y DSR desde las series diarias y "
             "debe coincidir con las cifras de este artefacto. No cambia ninguna puerta.",
+            "La prueba de entradas aleatorias conserva stop, objetivo, unidades, número "
+            "de operaciones y filtros de entrada; no simula los frenos de cuenta, que "
+            "dependen de la secuencia. Es un contraste descriptivo, no una puerta.",
         ],
     }
 
@@ -1207,6 +1361,12 @@ def main() -> None:
         help="multiplicador de costes del estrés; 1 lo apaga",
     )
     ap.add_argument(
+        "--random-iterations",
+        type=int,
+        default=200,
+        help="iteraciones del benchmark de entradas aleatorias",
+    )
+    ap.add_argument(
         "--from",
         dest="date_from",
         default=None,
@@ -1248,6 +1408,7 @@ def main() -> None:
         stress_multiplier=args.stress_multiplier,
         ledger_path=args.ledger,
         dataset_path=args.dataset,
+        random_iterations=args.random_iterations,
     )
 
     args.spec_dir = args.spec_dir or (ROOT / "data" / "specs")
@@ -1261,6 +1422,19 @@ def main() -> None:
         trial_ledger = payload.get("trial_ledger") or {}
         if trial_ledger.get("path"):
             print(f"Trial ledger written to {trial_ledger['path']}")
+        pbo = (payload.get("pbo") or {}).get("pbo")
+        dsr = (payload.get("dsr") or {}).get("dsr")
+        print(f"PBO {pbo if pbo is not None else '—'} · DSR {dsr if dsr is not None else '—'}")
+        random = payload.get("random_entries") or {}
+        if random.get("available"):
+            print(
+                "entradas aleatorias "
+                f"{random.get('config')}: PF real {random.get('actual_pf')} vs "
+                f"mediana {random.get('random_pf_median')} "
+                f"(p={random.get('p_value')}, n={random.get('trades')})"
+            )
+        else:
+            print(f"entradas aleatorias: no disponibles ({random.get('reason', 'sin datos')})")
 
 
 if __name__ == "__main__":
