@@ -1,10 +1,11 @@
-<img src="frontend/public/logo.svg" width="56" height="56" alt="ezur" align="left" hspace="12" vspace="2" />
+<img src="frontend/public/logo.svg" width="56" height="56" alt="ezur bot" align="left" hspace="12" vspace="2" />
 
-# ezur
+# ezur bot
 
 **Terminal de trading algorítmico con validación honesta.** Motor determinista,
 riesgo medido, puertas de validación versionadas y una interfaz que no inventa
-nada. El nombre viene de *ezur*; el resto del repositorio sigue igual de serio.
+nada. El nombre visible es **ezur bot**; el prefijo técnico `EZUR_*` se mantiene
+para no romper perfiles, variables de entorno ni tareas ya instaladas.
 
 
 Terminal local de trading algorítmico: motor determinista, gestión de riesgo,
