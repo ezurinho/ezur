@@ -1,0 +1,49 @@
+{
+  "familia": "H11 · extremo del panel con tamaño fijo",
+  "congelado": "2026-11-27T23:37:11.084069+00:00",
+  "base": {
+    "panel": "data/h10ext",
+    "periodo": {
+      "start": "2020-01-01",
+      "end": "2026-10-31"
+    },
+    "simbolos": 899,
+    "filas_funding": 601450,
+    "filas_perp": 642189,
+    "funding_sha256": "dac6ad41fcb197d1f17a0c698c6027a65d6cb00e4ebc71f9b2ea8b282c0afbb4",
+    "perp_sha256": "c2a74f508149e3ac5b8840252771f25ce64ef91be98b55389fbec046d9723ab3",
+    "manifiesto": "data/h10ext/freeze.json",
+    "fuente": "data.binance.vision futures/um monthly fundingRate",
+    "universo": "perpetuos USD-M en USDT fuera de los 20 mayores de H5"
+  },
+  "construccion_sha256": {
+    "fetch_h10_data.py": "0d30d4dc8ae7fa322c50dd083bb49311a7792dad58225f1a2edf20da60a37d6a",
+    "extend_panel_2020.py": "67e4ec42b62e1942ebb02f64261f5c233f1aea8d9700a150caae52c88fdb6e05",
+    "validate_h5_engine.py": "7fa5ab728971bdd9a8094c5d6e3f95f01d5aa91fe764105fcb2655240184db07"
+  },
+  "contrato_sha256": {
+    "PRE-REGISTRO-H11.md": "f9951f3b9efe71bd290ae899df3917c223e147f7227c6fb0ceaab3f9e4ce1865",
+    "PRE-REGISTRO-H10.md": "c43d8bf0837dcbbc5fdbc2cac3260340501c4a5585ec15406eed7bb879b7b0dc"
+  },
+  "config": {
+    "k_por_lado": 4,
+    "bruto_usd": 25000.0,
+    "nocional_por_posicion_usd": 3125.0,
+    "coste_pb_por_lado": 10.0,
+    "min_elegibles": 20,
+    "min_adv_usd": 5000000.0,
+    "senal": "media de funding de 7 días, z-score de 90 días, shift(1)",
+    "rebalanceo": "lunes al cierre UTC, posición persistente"
+  },
+  "ventana": {
+    "pre_registro": "2027-06-01/2028-05-31",
+    "holdout_sellado": "2026-12-01/2027-05-31",
+    "primera_senal_sin_holdout": "2027-08-30",
+    "nota": "el motor exige 90 filas de historia; usar el holdout como calentamiento sería usarlo. La ventana efectiva empieza en la primera señal, no el 2027-06-01."
+  },
+  "rebanada_evaluacion": {
+    "estado": "pendiente",
+    "nota": "se descarga con fetch_h10_data.py al abrir la ventana y se hashea en este manifiesto antes de la primera lectura"
+  },
+  "ensayos": "no añade; H11 es el ensayo 54 y se lee una vez"
+}

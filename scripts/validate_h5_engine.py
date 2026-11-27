@@ -64,7 +64,14 @@ def load_h10(min_adv: float = 0.0, folder: str = "h10",
 
 
 def signal_at(funding: pd.DataFrame, date: pd.Timestamp, lookback: int = 90,
-              strict: bool = True, min_periods: int = 60) -> pd.Series:
+              strict: bool = True, min_periods: int = 60,
+              min_week_coverage: float | None = None) -> pd.Series:
+    """Señal de funding con la historia estrictamente anterior.
+
+    `min_week_coverage` implementa la regla de H11: un símbolo sólo entra si al
+    menos esa fracción de los últimos 7 días tiene funding. Con `None` (el
+    defecto, y lo que usan H5 y H10) se promedian los días no nulos.
+    """
     history = funding[funding.index < date]
     window = history.tail(lookback)
     if strict:
@@ -72,7 +79,11 @@ def signal_at(funding: pd.DataFrame, date: pd.Timestamp, lookback: int = 90,
             return pd.Series(dtype=float)
     elif len(window) < min_periods:
         return pd.Series(dtype=float)
-    last_week = window.tail(7).mean()
+    week = window.tail(7)
+    last_week = week.mean()
+    if min_week_coverage is not None:
+        coverage = week.notna().mean()
+        last_week = last_week[coverage >= min_week_coverage]
     mean = window.mean()
     std = window.std().where(lambda value: value > 1e-12)
     return ((last_week - mean) / std).dropna()
@@ -82,7 +93,9 @@ def replay(funding: pd.DataFrame, prices: pd.DataFrame, *, persistent: bool,
            ffill: bool, strict: bool, quantile: float = 0.2,
            per_side: int | None = None, min_eligible: int = 10,
            close_on_missing: bool = True, adv: pd.DataFrame | None = None,
-           min_adv: float = 0.0, daily_out: bool = False) -> dict:
+           min_adv: float = 0.0, daily_out: bool = False,
+           cost_side: float = COST_SIDE,
+           min_week_coverage: float | None = None) -> dict:
     frame = prices.ffill() if ffill else prices
     dates = list(prices.index)
     positions: dict[str, dict] = {}
@@ -93,7 +106,7 @@ def replay(funding: pd.DataFrame, prices: pd.DataFrame, *, persistent: bool,
     def close(symbol: str, date: pd.Timestamp, price: float) -> None:
         # El precio ya se devengó día a día; aquí sólo se paga el coste de salida.
         position = positions.pop(symbol)
-        cost = COST_SIDE * position["notional"]
+        cost = cost_side * position["notional"]
         position["costs"] += cost
         daily.at[date] -= cost / CAPITAL
         episodes.append({
@@ -130,7 +143,8 @@ def replay(funding: pd.DataFrame, prices: pd.DataFrame, *, persistent: bool,
         if date.weekday() != 0:
             continue
 
-        signal = signal_at(funding, date, strict=strict)
+        signal = signal_at(funding, date, strict=strict,
+                           min_week_coverage=min_week_coverage)
         available = [s for s in signal.index if np.isfinite(frame.at[date, s]) and frame.at[date, s] > 0]
         if min_adv > 0 and adv is not None:
             available = [s for s in available if np.isfinite(adv.at[date, s]) and adv.at[date, s] >= min_adv]
@@ -158,9 +172,9 @@ def replay(funding: pd.DataFrame, prices: pd.DataFrame, *, persistent: bool,
             price = float(frame.at[date, symbol])
             positions[symbol] = {
                 "sign": sign, "notional": notional, "entry": date, "entry_price": price,
-                "last_price": price, "price": 0.0, "funding": 0.0, "costs": COST_SIDE * notional,
+                "last_price": price, "price": 0.0, "funding": 0.0, "costs": cost_side * notional,
             }
-            daily.iloc[index] -= COST_SIDE * notional / CAPITAL
+            daily.iloc[index] -= cost_side * notional / CAPITAL
 
     # Cierre final: lo que quede abierto se liquida al último precio disponible.
     for symbol in list(positions):
@@ -204,6 +218,31 @@ def replay(funding: pd.DataFrame, prices: pd.DataFrame, *, persistent: bool,
     }
 
 
+# Control publicado de H5 sobre los 20 majors: si el motor deja de reproducirlo,
+# ninguna cifra derivada vale. `neto` es la suma de patas y `neto_compuesto` la
+# curva capitalizada; el documento publica las dos.
+CONTROL_H5 = {
+    "episodios": (400, 0.0),
+    "operaciones": (800, 0.0),
+    "pf": (1.1114, 5e-4),
+    "esperanza_R": (0.0301, 5e-5),
+    "precio": (6672.63, 0.01),
+    "funding": (856.80, 0.01),
+    "neto": (6029.43, 0.01),
+    "neto_compuesto": (6086.46, 0.02),
+}
+
+
+def check_control(result: dict) -> tuple[bool, list[str]]:
+    """Compara una corrida con el control publicado de H5."""
+    wrong = []
+    for field, (expected, tolerance) in CONTROL_H5.items():
+        value = result.get(field)
+        if value is None or abs(float(value) - expected) > tolerance:
+            wrong.append(f"{field}: {value} (esperado {expected})")
+    return not wrong, wrong
+
+
 def main() -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -234,6 +273,32 @@ def main() -> int:
         print(f"\n{label}")
         print(json.dumps(results[label], ensure_ascii=False))
 
+    control_ok, mismatches = check_control(results["A · convenciones de H5 (persistente, ffill, 90 estricto)"])
+    print(f"\nCONTROL H5 a 6 pb: {'PASA' if control_ok else 'FALLA'}"
+          + ("" if control_ok else " · " + "; ".join(mismatches)))
+
+    # El coste es un parámetro: a 10 pb el precio y el funding no se mueven, los
+    # episodios tampoco, y los costes suben de 1.500 a 2.500 USD (800 operaciones
+    # × 3,125 USD). Si esto falla, el parámetro no llega al motor.
+    cost10 = replay(funding, prices, persistent=True, ffill=True, strict=True,
+                    cost_side=0.001)
+    cost_ok = (cost10["episodios"] == 400 and cost10["operaciones"] == 800
+               and abs(cost10["precio"] - 6672.63) < 0.01
+               and abs(cost10["funding"] - 856.80) < 0.01
+               and abs(cost10["costes"] - 2500.0) < 0.01)
+    print(f"CONTROL H5 a 10 pb: {'PASA' if cost_ok else 'FALLA'} · "
+          f"costes {cost10['costes']} (esperado 2.500) · "
+          f"neto patas {cost10['neto']} (esperado 5.029,43)")
+
+    # El filtro de cobertura de H11 tiene que estar cableado sin alterar a los
+    # majors, que tienen funding todos los días: mismo control con el filtro.
+    coverage = replay(funding, prices, persistent=True, ffill=True, strict=True,
+                      min_week_coverage=0.8)
+    coverage_ok = (coverage["episodios"] == 400 and coverage["operaciones"] == 800
+                   and abs(coverage["neto"] - 6029.43) < 0.01)
+    print(f"CONTROL H5 con cobertura 80 %: {'PASA' if coverage_ok else 'FALLA'} · "
+          f"episodios {coverage['episodios']} (esperado 400)")
+
     # El motor validado, sobre el panel de H10.
     rate, close, quote, _ = load_h10()
     adv = quote.rolling(30, min_periods=20).median().shift(1)
@@ -250,7 +315,7 @@ def main() -> int:
     target.write_text(json.dumps({"majors": results, "h10_persistente": h10}, indent=2,
                                  ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"\nescrito {target}")
-    return 0
+    return 0 if (control_ok and cost_ok and coverage_ok) else 1
 
 
 if __name__ == "__main__":
