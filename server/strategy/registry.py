@@ -95,6 +95,8 @@ def _build_strategy_from_spec(spec: StrategySpec, params: dict[str, Any] | None 
         return spec_driven.DonchianBreakoutStrategy(merged_params)
     if rule == "ema_state":
         return spec_driven.EMAStateStrategy(merged_params)
+    if rule == "sma_state":
+        return spec_driven.SMAStateStrategy(merged_params)
     if rule == "orb_session":
         return spec_driven.ORBSessionStrategy(merged_params)
     if rule == "zscore_fade":
