@@ -141,8 +141,14 @@ def main() -> int:
         null = [run_h6(shuffle_returns(prices, rng))["esperanza_R"]
                 for _ in range(args.permutations)]
         results["H6"] = summarise("H6", observed, null)
-        print(f"H6 observado {observed['esperanza_R']} R · "
-              f"p = {results['H6']['p_valor_dos_colas']}")
+        values = np.array(null, dtype=float)
+        results["H6"]["p_unilateral_mejor"] = round(
+            (1 + int((values <= observed["esperanza_R"]).sum())) / (len(values) + 1), 4)
+        results["H6"]["diferencia_observado_nulo_R"] = round(
+            float(observed["esperanza_R"] - values.mean()), 4)
+        print(f"H6 observado {observed['esperanza_R']} R · p mejor = "
+              f"{results['H6']['p_unilateral_mejor']} · diferencia vs nulidad "
+              f"{results['H6']['diferencia_observado_nulo_R']} R")
 
     if args.family in ("all", "H7"):
         ratio, close, notional, funding = load_flow(
