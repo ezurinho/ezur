@@ -186,6 +186,138 @@ class DonchianBreakoutStrategy(BaseStrategy):
 
 
 # --------------------------------------------------------------------------- #
+# Donchian Trend long-only (spec-driven)
+# --------------------------------------------------------------------------- #
+
+class DonchianTrendParams(BaseModel):
+    """Parameters for the long-only trend rule (H1)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    N: int = Field(ge=2, le=300, description="Velas del canal")
+    trend_sma: int = Field(default=200, ge=10, le=2000, description="Filtro de tendencia")
+    atr_period: int = Field(default=14, ge=2, le=200, description="Periodo del ATR")
+    atr_k: float = Field(gt=0, le=10, description="Stop inicial en ATR")
+    trail_atr_k: float = Field(gt=0, le=10, description="Trailing en ATR")
+    tp_r: float = Field(default=100.0, gt=0, le=1000, description="Objetivo en R; alto = desactivado")
+    stop_floor_frac: float = Field(default=0.0, ge=0, le=0.2)
+
+
+class DonchianTrendStrategy(BaseStrategy):
+    """Ruptura de canal con filtro de tendencia y salida por trailing.
+
+    Long-only: el spot no se vende en corto. El trailing lo aplica el motor al
+    cerrar cada vela, con el máximo desde la entrada; la señal solo fija el
+    stop inicial y un objetivo tan lejano que no interviene.
+    """
+
+    id = "donchian_trend"
+    name = "Donchian Trend long-only (spec-driven)"
+    version = "1.0.0"
+    params_model = DonchianTrendParams
+
+    def __init__(self, params: dict | None = None) -> None:
+        # El registro fusiona los params de la spec con los de la llamada y
+        # deja en None los campos de otras reglas; se descartan antes de validar.
+        clean = {key: value for key, value in (params or {}).items() if value is not None}
+        self.params = DonchianTrendParams.model_validate(clean)
+
+    def warmup_requirements(self) -> Warmup:
+        needed = max(self.params.N, self.params.trend_sma, self.params.atr_period) + 2
+        return Warmup(bars={"*": needed}, session_ready=False)
+
+    def evaluate(self, md: MarketData) -> StrategyOutput:
+        bars = md.bars.get(md.primary, [])
+        needed = max(self.params.N, self.params.trend_sma, self.params.atr_period) + 2
+        phases = [
+            Phase(
+                key="warmup",
+                label="Calentamiento",
+                status="done" if len(bars) >= needed else "active",
+                ts=bars[-1].t if bars else None,
+                detail=f"{len(bars)}/{needed} velas",
+            )
+        ]
+        if len(bars) < needed:
+            return StrategyOutput(
+                state="warmup",
+                state_label="Calentando",
+                phases=phases,
+                metrics={"bars": Metric(label="Velas", value=len(bars), format="number", unit="barras")},
+            )
+
+        last = bars[-1]
+        history = bars[:-1]
+        upper = highest(history, self.params.N)
+        trend = sma([bar.c for bar in history], self.params.trend_sma)
+        volatility = atr(bars, self.params.atr_period)
+        if upper is None or trend is None or volatility is None or volatility <= 0:
+            return StrategyOutput(state="warmup", state_label="Calentando", phases=phases)
+
+        touched = last.c > upper
+        aligned = last.c > trend
+        side = "long" if touched and aligned else None
+
+        phases.append(
+            Phase(
+                key="channel",
+                label="Canal Donchian",
+                status="done",
+                ts=last.t,
+                detail=f"{upper:.2f} superior · SMA{self.params.trend_sma} {trend:.2f}",
+            )
+        )
+        phases.append(
+            Phase(
+                key="trigger",
+                label="Ruptura con tendencia",
+                status="active" if side else "pending",
+                ts=last.t,
+                detail="larga" if side else ("sin tendencia" if touched else "sin ruptura"),
+            )
+        )
+        metrics = {
+            "upper": Metric(label="Banda superior", value=round(upper, 4), format="price"),
+            "trend": Metric(label=f"SMA({self.params.trend_sma})", value=round(trend, 4), format="price"),
+            "atr": Metric(label=f"ATR({self.params.atr_period})", value=round(volatility, 4), format="price"),
+        }
+        output = StrategyOutput(
+            state="armed" if side else "scanning",
+            state_label="Ruptura con tendencia" if side else "Esperando ruptura",
+            phases=phases,
+            metrics=metrics,
+        )
+        if side is None:
+            return output
+
+        distance = volatility * self.params.atr_k
+        floor = self.params.stop_floor_frac * last.c if self.params.stop_floor_frac else 0
+        distance = max(distance, floor)
+        stop_price = last.c - distance
+        target_price = last.c + distance * self.params.tp_r
+        output.signal = Signal(
+            key=f"{md.session.id}:{side}:{_stamp(last.t)}",
+            side=side,
+            reason=f"ruptura canal {self.params.N} con SMA{self.params.trend_sma}",
+            ts=last.t,
+            stop_price=round(stop_price, 4),
+            target_price=round(target_price, 4),
+            strength=min(1.0, (last.c - upper) / volatility),
+        )
+        output.markers.append(
+            Marker(
+                id=f"marker-{_stamp(last.t)}",
+                ts=last.t,
+                price=last.c,
+                kind="entry",
+                side=side,
+                label="Ruptura con tendencia",
+            )
+        )
+        return output
+
+
+# --------------------------------------------------------------------------- #
 # EMA State (spec-driven)
 # --------------------------------------------------------------------------- #
 
