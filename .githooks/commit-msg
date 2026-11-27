@@ -1,0 +1,16 @@
+#!/bin/sh
+# Rechaza commits con Co-Authored-By de Codebuff (AGENTS.md, sección Commits).
+# Se activa con: git config core.hooksPath .githooks
+root=$(git rev-parse --show-toplevel) || exit 1
+for candidate in python3 python; do
+  if command -v "$candidate" >/dev/null 2>&1 &&
+    "$candidate" -c "import sys" >/dev/null 2>&1; then
+    python=$candidate
+    break
+  fi
+done
+if [ -z "$python" ]; then
+  echo "commit-msg: no hay Python; el job de CI seguirá revisando la atribución." >&2
+  exit 0
+fi
+exec "$python" "$root/scripts/check_attribution.py" --message-file "$1"
