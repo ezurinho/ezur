@@ -299,7 +299,7 @@ pata y lado el coste por posición sería 9,375 USD y el umbral 43,75 USD = 140 
 El coste declarado no se revisa después de ver los fills de un backtest.
 
 **Resultado del cribado (2026-11-27).** Se ejecutó sobre el panel congelado y
-**no pasó**: 187 ventanas, mediana **80,51 pb**, p25 21,01, p75 187,61, 39,6 % de
+**no pasó**: 187 ventanas, mediana **80,51 pb**, p25 21,01, p75 187,61, 20,3 % de
 ventanas por encima de la barra de su geometría (240 pb), margen mediano de
 −159 pb. La media (149,30) sí pasaba, que es exactamente el
 motivo por el que el criterio es la mediana. H10 quedó archivada sin backtest en
