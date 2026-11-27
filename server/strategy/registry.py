@@ -93,6 +93,8 @@ def _build_strategy_from_spec(spec: StrategySpec, params: dict[str, Any] | None 
 
     if rule == "donchian_breakout":
         return spec_driven.DonchianBreakoutStrategy(merged_params)
+    if rule == "donchian_trend":
+        return spec_driven.DonchianTrendStrategy(merged_params)
     if rule == "ema_state":
         return spec_driven.EMAStateStrategy(merged_params)
     if rule == "sma_state":
