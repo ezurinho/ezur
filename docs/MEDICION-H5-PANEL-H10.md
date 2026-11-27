@@ -82,11 +82,18 @@ informativo.
 
 ## 3. Resultados, con el motor validado
 
-| Configuración | Por lado | Nocional | Ops | Neto | PF | Esperanza | Coste | Sin top-5 |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| Quintil sin filtro de liquidez | 127 | 98 USD | 19.946 | +12.781 | 1,1427 | 0,0026 R | 0,0003 R | +9.388 |
-| **Quintil con el filtro del panel** | **9** | **1.389 USD** | **9.404** | **+15.594** | **1,1575** | **0,0066 R** | 0,0006 R | +9.378 |
-| k = 4 sobre el panel filtrado | 4 | 3.125 USD | 1.168 | +38.870 | 1,2409 | 0,1331 R | 0,0075 R | +2.077 |
+| Configuración | Por lado | Nocional | Ops | Neto (patas) | Compuesto | PF | Esperanza | Coste | Sin top-5 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Quintil sin filtro de liquidez | 127 | 98 USD | 19.946 | +12.781 | +16.130 | 1,1427 | 0,0026 R | 0,0003 R | +9.388 |
+| **Quintil con el filtro del panel** | **9** | **1.389 USD** | **9.404** | **+15.594** | **+20.260** | **1,1575** | **0,0066 R** | 0,0006 R | +9.378 |
+| k = 4 sobre el panel filtrado | 4 | 3.125 USD | 1.168 | +38.870 | +24.590 | 1,2409 | 0,1331 R | 0,0075 R | +2.077 |
+
+**Neto (patas)** es precio + funding − costes y sirve para atribuir de dónde sale
+el resultado; **compuesto** es la curva diaria capitalizada, la única cifra
+contable del laboratorio. Las puertas se miden en R por operación, así que no
+dependen de esta columna. La diferencia no va siempre en la misma dirección: en
+el quintil el compuesto supera a las patas y en k = 4 se queda muy por debajo
+(24.590 frente a 38.870), que es el arrastre de una cartera de 8 posiciones.
 
 | Puerta | Umbral | Sin filtro | **Filtro del panel** | k = 4 |
 |---|---:|---|---|---|
@@ -122,7 +129,7 @@ Con 4 posiciones por lado de 3.125 USD sobre el panel filtrado, H5 pasa PF
 versión decía que fallaba top-5 con −7.161: eso era el motor semanal, y era
 erróneo. Con el motor validado el agregado pasa, pero al desglosarlo por año:
 
-| Año | Neto | Sin top-5 | Precio | Funding |
+| Año | Neto (patas) | Sin top-5 | Precio | Funding |
 |---|---:|---:|---:|---:|
 | 2025 | +30.074 | **−2.463** | +22.015 | +9.165 |
 | 2026 | +8.796 | **−9.237** | −14.849 | +24.729 |
@@ -140,9 +147,11 @@ llegaba, sobre una ventana ya gastada.
 ## 6. Lo que sí cambia con el panel
 
 - **El sesgo de supervivencia no era la causa del fallo.** Corregido, el quintil
-  amplio gana más dólares en total (+15.594 frente a los +6.086 de H5 en su OOS,
-  ambos con el mismo criterio de neto del motor: la ventaja baja de 9.565 a 9.508
-  USD) y sigue sin llegar a la puerta por operación.
+  amplio gana más dólares en total: **20.260 compuesto** frente a los 6.086 de H5
+  en su OOS (o 15.594 de patas frente a 6.029), una ventaja de 14.174 USD con el
+  criterio contable del laboratorio. La versión anterior de esta frase restaba
+  15.594 de patas a 6.086 compuesto y publicaba 9.508: eran unidades distintas.
+  Con cualquiera de las dos medidas, sigue sin llegar a la puerta por operación.
 - **En el tramo largo el funding manda.** En la configuración concentrada el
   funding aporta 33.894 USD y el precio 7.166 (83 % del bruto), cuando en H5 el
   precio era el 89 %. En **esa** configuración el diagnóstico «no es carry, es
