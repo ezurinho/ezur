@@ -38,6 +38,7 @@ from .edge import EdgeGuard, measure_path
 from .snapshot import SnapshotBuilder
 from .stats import aggregate
 from .strategy.base import BaseStrategy, MarketData, Phase, StrategyOutput
+from .strategy.indicators import atr
 from .strategy.registry import resolve_strategy
 from .timeutil import now_utc, parse_hhmm, same_session, session_for, to_zone
 
@@ -628,6 +629,8 @@ class TradingEngine:
             self.state.block_reason = None
             self.state.block_count = 0
 
+        self._update_trailing_stop()
+
         if self.execution.position is not None and self.settings.risk.close_at_session_end:
             self._maybe_close_at_session_end(tick)
         self.state.position = self.execution.position
@@ -661,6 +664,60 @@ class TradingEngine:
         self.store.append_equity_mark(
             self.state.equity + self.state.unrealized, stamp
         )
+
+    def _update_trailing_stop(self) -> None:
+        """Sube el stop de la posición abierta con el máximo desde la entrada.
+
+        Solo actúa si la spec declara `trail_atr_k`; sin esa clave el motor no
+        toca el stop. Se ejecuta después de procesar la vela, así que el nivel
+        nuevo rige desde la siguiente y nunca usa el recorrido de la vela que
+        todavía se está evaluando.
+        """
+        position = self.execution.position
+        if position is None:
+            return
+        params = self.settings.strategy.params or {}
+        raw_k = params.get("trail_atr_k")
+        if raw_k is None:
+            return
+        try:
+            trail_k = float(raw_k)
+            period = int(params.get("atr_period", 14) or 14)
+        except (TypeError, ValueError):
+            return
+        if trail_k <= 0 or period <= 0:
+            return
+        bars = self._bar_source().get(position.symbol, [])
+        if len(bars) < period + 1:
+            return
+        start = next(
+            (index for index, bar in enumerate(bars) if bar.t >= position.opened_ts),
+            None,
+        )
+        if start is None:
+            return
+        since = bars[start:]
+        if not since:
+            return
+        volatility = atr(bars, period)
+        if volatility is None or volatility <= 0:
+            return
+        tick_size = self.settings.instruments.by_symbol(position.symbol).tick_size
+        last_close = since[-1].c
+        if position.side == "long":
+            candidate = min(
+                max(bar.h for bar in since) - trail_k * volatility,
+                last_close - tick_size,
+            )
+            if candidate > position.stop_price:
+                position.stop_price = round(candidate, 10)
+        else:
+            candidate = max(
+                min(bar.l for bar in since) + trail_k * volatility,
+                last_close + tick_size,
+            )
+            if candidate < position.stop_price:
+                position.stop_price = round(candidate, 10)
 
     def _aggregators_for(self, settings: Settings) -> dict[str, BarAggregator]:
         minutes = timeframe_minutes(settings.strategy.timeframe)
