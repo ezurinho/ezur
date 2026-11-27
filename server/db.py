@@ -333,15 +333,17 @@ class Store:
         convertirse en filas que la auditoría tenga que explicar.
         """
         with self.conn:
-            self.conn.execute(
+            cursor = self.conn.execute(
                 "INSERT INTO equity_marks (ts, equity) VALUES (?, ?)",
                 (_iso(ts or datetime.now(timezone.utc)), equity),
             )
-            self.conn.execute(
-                "DELETE FROM equity_marks WHERE id NOT IN "
-                "(SELECT id FROM equity_marks ORDER BY id DESC LIMIT ?)",
-                (EQUITY_MARKS_RETENTION,),
-            )
+            # `id` es AUTOINCREMENT y solo crece: el corte por el último id
+            # insertado conserva las mismas N últimas filas que el NOT IN
+            # anterior, pero en O(1). El NOT IN materializaba 5000 ids en cada
+            # vela y convertía cada backtest en O(velas x 5000).
+            cutoff = int(cursor.lastrowid or 0) - EQUITY_MARKS_RETENTION
+            if cutoff > 0:
+                self.conn.execute("DELETE FROM equity_marks WHERE id <= ?", (cutoff,))
 
     def equity_marks(self, limit: int = 1000) -> list[dict[str, Any]]:
         rows = self.conn.execute(
