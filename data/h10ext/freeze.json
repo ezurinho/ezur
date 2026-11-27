@@ -1,0 +1,29 @@
+{
+  "source": "data.binance.vision futures/um monthly fundingRate",
+  "universe": "perpetuos USD-M en USDT fuera de los 20 mayores de H5",
+  "period": {
+    "start": "2020-01-01",
+    "end": "2026-10-31"
+  },
+  "symbols": 899,
+  "rows": 601450,
+  "events": 2706024,
+  "funding_sha256": "dac6ad41fcb197d1f17a0c698c6027a65d6cb00e4ebc71f9b2ea8b282c0afbb4",
+  "events_per_year": {
+    "2020": 28849,
+    "2021": 102454,
+    "2022": 134503,
+    "2023": 205558,
+    "2024": 418029,
+    "2025": 860486,
+    "2026": 956145
+  },
+  "fetch_stats": {
+    "downloaded": 2989,
+    "cached": 0,
+    "missing": 29375,
+    "badsum": 0,
+    "error": 0
+  },
+  "generated_at": "2026-11-27T19:54:23.046681+00:00"
+}
