@@ -86,11 +86,15 @@ def replay(funding: pd.DataFrame, prices: pd.DataFrame, *, persistent: bool,
     dates = list(prices.index)
     positions: dict[str, dict] = {}
     episodes: list[dict] = []
+    # Curva diaria para el neto compuesto (la convención de funding_xs).
+    daily = pd.Series(0.0, index=dates)
 
     def close(symbol: str, date: pd.Timestamp, price: float) -> None:
         # El precio ya se devengó día a día; aquí sólo se paga el coste de salida.
         position = positions.pop(symbol)
-        position["costs"] += COST_SIDE * position["notional"]
+        cost = COST_SIDE * position["notional"]
+        position["costs"] += cost
+        daily.at[date] -= cost / CAPITAL
         episodes.append({
             "symbol": symbol,
             "net": position["price"] + position["funding"] - position["costs"],
@@ -113,10 +117,14 @@ def replay(funding: pd.DataFrame, prices: pd.DataFrame, *, persistent: bool,
                     if len(last) >= 2:
                         close(symbol, last.index[-1], float(last.iloc[-1]))
                 continue
-            position["price"] += position["sign"] * (price / previous - 1.0) * position["notional"]
+            move = position["sign"] * (price / previous - 1.0) * position["notional"]
+            position["price"] += move
+            daily.iloc[index] += move / CAPITAL
             funded = funding.at[date, symbol] if symbol in funding.columns else np.nan
             if np.isfinite(funded) and position["entry"] < date:
-                position["funding"] += -position["sign"] * float(funded) * position["notional"]
+                payment = -position["sign"] * float(funded) * position["notional"]
+                position["funding"] += payment
+                daily.iloc[index] += payment / CAPITAL
 
         if date.weekday() != 0:
             continue
@@ -151,6 +159,7 @@ def replay(funding: pd.DataFrame, prices: pd.DataFrame, *, persistent: bool,
                 "sign": sign, "notional": notional, "entry": date, "entry_price": price,
                 "last_price": price, "price": 0.0, "funding": 0.0, "costs": COST_SIDE * notional,
             }
+            daily.iloc[index] -= COST_SIDE * notional / CAPITAL
 
     # Cierre final: lo que quede abierto se liquida al último precio disponible.
     for symbol in list(positions):
@@ -181,6 +190,7 @@ def replay(funding: pd.DataFrame, prices: pd.DataFrame, *, persistent: bool,
         "episodios": int(len(frame_eps)),
         "operaciones": int(operations),
         "neto": round(net, 2),
+        "neto_compuesto": round(float((1.0 + daily).prod() - 1.0) * CAPITAL, 2),
         "pf": round(wins / losses, 4) if losses > 0 else None,
         "esperanza_R": round(net / operations / R_USD, 4),
         "coste_R": round(float(frame_eps["costs"].sum()) / operations / R_USD, 5),

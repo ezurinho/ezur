@@ -92,13 +92,18 @@ diaria compuesta— H5 candidata cierra en **6.086,46 USD** y H5 raw en **9.063,
 la diferencia con los 6.029 y 8.343 de la tabla es sólo composición (57,03 y 720,63
 USD).
 
-**Netos compuestos reejecutados (2026-11-27).** Sobre sus paneles congelados y la
-misma ventana OOS (`python -m server.funding_spread` y `python -m server.basis_carry`):
-H8 candidata **80,17 USD** (suma de patas 80,10), H9 candidata **−51,73** (suma
-−51,74) y H5 **6.086,46** (suma 6.029,43). En H8 y H9 la composición apenas mueve
-nada porque el retorno del periodo es del 0,2-0,3 %; en H5 mueve 57 USD porque el
-neto es del 24 %. H10 sigue sin reejecutar: su neto compuesto exigiría correr el
-motor sobre el panel de 899 símbolos.
+**Netos compuestos reejecutados (2026-11-27).** Sobre los paneles congelados y la
+misma ventana: H5 **6.086,46 USD** (patas 6.029,43), H8 **80,17** (80,10), H9
+**−51,73** (−51,74) y, sobre el panel de H10 con el motor validado, quintil con
+filtro **20.259,96** (patas 15.594,43), quintil sin filtro **16.129,71**
+(12.781,40) y k = 4 **24.589,97** (38.870,12). En H5, H8 y H9 la composición mueve
+entre 0,01 y 57 USD porque el retorno del periodo es pequeño; en H10 mueve miles
+de dólares y cambia de signo según la geometría: la cartera de ~250 posiciones
+tiene volatilidad diaria suficiente para que el arrastre pese, y en k = 4 (8
+posiciones concentradas) juega en contra. Control del método: la configuración
+fiel de H5 da 6.029,43 de patas y 6.086,46 compuesto, exactamente la cifra que
+publica su motor; el motor de H10 no tenía curva diaria y se le añadió para este
+cálculo (`scripts/validate_h5_engine.py`, clave `neto_compuesto`).
 
 **Por qué el neto medido de H10 quintil sólo sube 413 USD.** En esa configuración
 el coste se cobra **por rebalanceo sobre los 25.000 USD de bruto** —unos 60
