@@ -16,8 +16,8 @@ transferir colateral entre venues tarda, cuesta y añade riesgo de contraparte; 
 es una ley de precios única. Lau (2026, SSRN 6993978) encuentra 14,7 % anualizado
 en 2024 y 4,6 % en 2025 con t HAC 4-8 y 4-5 folds walk-forward.
 
-**Dato nuevo:** funding y precios del mismo activo en **Binance, OKX y
-Hyperliquid**, no otra transformación de precio/funding de un solo venue.
+**Dato nuevo:** funding y precios del mismo activo en **Binance y Hyperliquid**,
+no otra transformación de precio/funding de un solo venue.
 
 ## Datos y ventanas
 
@@ -29,16 +29,29 @@ Hyperliquid**, no otra transformación de precio/funding de un solo venue.
 | Holdout | 2026-12-01 / 2027-05-31 | sellado, no se abre |
 
 - **Activos:** BTC, ETH, SOL, XRP, DOGE.
-- **Venues:** Binance USD-M (`BTCUSDT`), OKX USDT swap (`BTC-USDT-SWAP`),
-  Hyperliquid (`BTC`).
+- **Venues:** Binance USD-M (`BTCUSDT`) y Hyperliquid (`BTC`).
 - **Funding:** suma diaria UTC de los eventos de cada venue. Hyperliquid paga cada
   hora; Binance y OKX cada 8 h. Se guardan tasas por evento y agregados diarios.
 - **Precios:** cierre diario UTC de cada venue. Si falta el cierre de entrada o
   salida, no se abre/cierra esa posición.
 - **Bybit:** excluido por bloqueo geográfico de su API; no se elude.
+- **OKX:** descargado y excluido antes de medir: su API pública solo conserva 67
+  días de funding (2026-08-26/2026-10-31). No se usa un tramo parcial.
 - **Hash:** `data/funding_spread/freeze.json` guarda SHA-256 de los CSV y el
-  conteo de eventos. Se completa antes de ejecutar el simulador; las reglas de
-  este documento no cambian después.
+  conteo de eventos. Funding `6dec74d1…`, precios `e594cd7e…`, eventos
+  `1169e72f…`. El panel tiene 168.144 eventos, 12.653 filas diarias de funding y
+  12.690 cierres. Se completa antes de ejecutar el simulador; las reglas de este
+  documento no cambian después.
+
+## Enmienda de cobertura (previa a la medida)
+
+El pre-registro original preveía tres venues. Al comprobar la cobertura, OKX
+resultó inutilizable para 2023-2026: su endpoint público devuelve solo 67 días y
+una consulta directa a 2025 devuelve vacío. Se excluye **antes de ejecutar el
+simulador y sin haber visto P&L**. La hipótesis, las reglas, las cinco variantes
+y las puertas no cambian; el panel usado es Binance + Hyperliquid. La evidencia
+de Lau compara Hyperliquid contra Binance/Bybit, así que el par Binance-HL sigue
+siendo el núcleo de la hipótesis, con menos diversificación de venue.
 
 ## Reglas exactas
 
@@ -51,7 +64,7 @@ Hyperliquid**, no otra transformación de precio/funding de un solo venue.
 | Salida | spread < `exit`, cambio de venue extremo, o `max_hold` cumplido |
 | Momento | señal con funding hasta t-1; ejecución al cierre de t |
 | Rebalanceo | semanal (lunes) o diario, según variante |
-| Tamaño | 25.000 USD de bruto; 5.000 USD por activo (2.500 por pata) |
+| Tamaño | 25.000 USD de bruto; 5.000 USD por activo (2.500 por pata); en BTC-only, 25.000 USD en BTC |
 | Posiciones | máximo una por activo, máximo cinco |
 | Capital | 25.000 USD; sin apalancamiento; colateral preposicionado |
 | Costes | 7 pb por pata y lado (6 pb taker/slippage + 1 pb transferencia/colateral) |
@@ -112,6 +125,9 @@ estrés 2×, CPCV, aleatorias y benchmark. No se cambia ningún umbral.
 
 - Los cinco activos son los mayores y líquidos de 2023-2026; no incluye venues ni
   tokens deslistados. El sesgo de supervivencia favorece al test.
+- Solo dos venues: el spread es un único par por activo, sin elección
+  cross-sectional de venues. El resultado depende de Binance y Hyperliquid, no
+  de un consenso de tres bolsas.
 - Hyperliquid tiene menos profundidad fuera de BTC/ETH; el tamaño de 5.000 USD por
   activo es pequeño, pero no prueba capacidad institucional.
 - No se modela el riesgo de quiebra, congelación de retiradas ni cambio de reglas

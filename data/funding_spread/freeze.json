@@ -1,0 +1,140 @@
+{
+  "source": "Binance Vision (panel H5), OKX public API, Hyperliquid public API",
+  "bybit": "excluido: bloqueo CloudFront para esta regi\u00f3n; no se elude",
+  "okx": "excluido antes de medir: la API p\u00fablica solo conserva 67 d\u00edas de funding",
+  "assets": [
+    "BTC",
+    "ETH",
+    "SOL",
+    "XRP",
+    "DOGE"
+  ],
+  "venues": [
+    "binance",
+    "hyperliquid"
+  ],
+  "period": {
+    "start": "2023-05-12",
+    "end": "2026-11-01",
+    "end_exclusive": true
+  },
+  "funding_events": 168144,
+  "funding_daily_rows": 12653,
+  "price_rows": 12690,
+  "funding_sha256": "6dec74d16119f02fc764d21bb92265407123b6b12c5c825890a17a93f29ca401",
+  "prices_sha256": "e594cd7e334a1a27ff2f2e86de3352ba207faadf39b45fb9f9ae0ee756bab911",
+  "events_sha256": "1169e72f05e5bca97aba33a1b1b71418447d8867e3ffce76a785461ce34c1b57",
+  "coverage": {
+    "BTC": {
+      "binance": {
+        "funding_days": 1269,
+        "funding_rows": 1269,
+        "funding_start": "2023-05-12",
+        "funding_end": "2026-10-31",
+        "funding_events": 3807,
+        "price_days": 1269,
+        "price_start": "2023-05-12",
+        "price_end": "2026-10-31"
+      },
+      "hyperliquid": {
+        "funding_days": 1269,
+        "funding_rows": 1269,
+        "funding_start": "2023-05-12",
+        "funding_end": "2026-10-31",
+        "funding_events": 29886,
+        "price_days": 1269,
+        "price_start": "2023-05-12",
+        "price_end": "2026-10-31"
+      }
+    },
+    "ETH": {
+      "binance": {
+        "funding_days": 1269,
+        "funding_rows": 1269,
+        "funding_start": "2023-05-12",
+        "funding_end": "2026-10-31",
+        "funding_events": 3807,
+        "price_days": 1269,
+        "price_start": "2023-05-12",
+        "price_end": "2026-10-31"
+      },
+      "hyperliquid": {
+        "funding_days": 1269,
+        "funding_rows": 1269,
+        "funding_start": "2023-05-12",
+        "funding_end": "2026-10-31",
+        "funding_events": 29886,
+        "price_days": 1269,
+        "price_start": "2023-05-12",
+        "price_end": "2026-10-31"
+      }
+    },
+    "SOL": {
+      "binance": {
+        "funding_days": 1269,
+        "funding_rows": 1269,
+        "funding_start": "2023-05-12",
+        "funding_end": "2026-10-31",
+        "funding_events": 3807,
+        "price_days": 1269,
+        "price_start": "2023-05-12",
+        "price_end": "2026-10-31"
+      },
+      "hyperliquid": {
+        "funding_days": 1269,
+        "funding_rows": 1269,
+        "funding_start": "2023-05-12",
+        "funding_end": "2026-10-31",
+        "funding_events": 29886,
+        "price_days": 1269,
+        "price_start": "2023-05-12",
+        "price_end": "2026-10-31"
+      }
+    },
+    "XRP": {
+      "binance": {
+        "funding_days": 1269,
+        "funding_rows": 1269,
+        "funding_start": "2023-05-12",
+        "funding_end": "2026-10-31",
+        "funding_events": 3807,
+        "price_days": 1269,
+        "price_start": "2023-05-12",
+        "price_end": "2026-10-31"
+      },
+      "hyperliquid": {
+        "funding_days": 1232,
+        "funding_rows": 1232,
+        "funding_start": "2023-06-18",
+        "funding_end": "2026-10-31",
+        "funding_events": 29565,
+        "price_days": 1269,
+        "price_start": "2023-05-12",
+        "price_end": "2026-10-31"
+      }
+    },
+    "DOGE": {
+      "binance": {
+        "funding_days": 1269,
+        "funding_rows": 1269,
+        "funding_start": "2023-05-12",
+        "funding_end": "2026-10-31",
+        "funding_events": 3807,
+        "price_days": 1269,
+        "price_start": "2023-05-12",
+        "price_end": "2026-10-31"
+      },
+      "hyperliquid": {
+        "funding_days": 1269,
+        "funding_rows": 1269,
+        "funding_start": "2023-05-12",
+        "funding_end": "2026-10-31",
+        "funding_events": 29886,
+        "price_days": 1269,
+        "price_start": "2023-05-12",
+        "price_end": "2026-10-31"
+      }
+    }
+  },
+  "generated_at": "2026-11-27T15:57:40.962232+00:00"
+}

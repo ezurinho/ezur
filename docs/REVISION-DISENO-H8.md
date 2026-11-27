@@ -2,7 +2,7 @@
 
 **Fecha:** 2026-11-27  
 **Adelanta** la revisión prevista para el 2026-12-04.  
-**Decisión:** H8 es el spread de funding del mismo activo entre Binance, OKX e
+**Decisión:** H8 es el spread de funding del mismo activo entre Binance y
 Hyperliquid. No se eligen opciones ni on-chain en esta ronda.
 
 ## Por qué H8
@@ -35,9 +35,11 @@ ejecución, no riesgo de precio.
 
 - **Binance USD-M:** funding y cierres diarios ya congelados en
   `data/funding_xs/` para 20 símbolos.
-- **OKX USDT swap:** funding de 8 h y velas diarias por API pública, paginadas.
 - **Hyperliquid:** funding horario y velas diarias por API pública. El endpoint
   devuelve como máximo 500 eventos por llamada; se pagina por `startTime`.
+- **OKX queda fuera:** se descargó, pero su API pública solo conserva 67 días de
+  funding (2026-08-26/2026-10-31), insuficiente para 2023-2026. Se excluye antes
+  de medir, sin usar un tramo parcial.
 - **Bybit queda fuera:** su API devuelve un bloqueo de CloudFront para esta
   región. No se intenta eludir el bloqueo ni se usa un proxy. La ausencia se
   declara como límite de cobertura, no como resultado.
@@ -52,6 +54,8 @@ validación hasta 2026-11-01. El holdout 2026-12-01/2027-05-31 no se toca.
 - El spread de 2025-2026 puede estar comprimido por debajo de los costes, como
   sugiere Talos. Si es así, se archiva; no se baja el umbral para rescatarlo.
 - Hyperliquid fuera de BTC/ETH tiene menos profundidad y riesgo de capacidad.
+- Solo hay dos venues: el spread es un único par por activo, sin una tercera
+  referencia que diversifique el riesgo de contraparte.
 - Los intervalos de funding no coinciden (1 h frente a 8 h); se suman a diario,
   pero el instante de pago y el mark de cada venue introducen ruido.
 - El riesgo de venue no es observable en un backtest: una quiebra o una retirada
