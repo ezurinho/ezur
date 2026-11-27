@@ -90,8 +90,15 @@ curva compuesta: el ejercicio cambia el coste sin reejecutar el motor, así que 
 puede recalcular la composición. Con el criterio del laboratorio —neto = curva
 diaria compuesta— H5 candidata cierra en **6.086,46 USD** y H5 raw en **9.063,13**;
 la diferencia con los 6.029 y 8.343 de la tabla es sólo composición (57,03 y 720,63
-USD). Para H8, H9 y H10 el neto compuesto exigiría reejecutar sus motores y aquí
-sólo se compara coste.
+USD).
+
+**Netos compuestos reejecutados (2026-11-27).** Sobre sus paneles congelados y la
+misma ventana OOS (`python -m server.funding_spread` y `python -m server.basis_carry`):
+H8 candidata **80,17 USD** (suma de patas 80,10), H9 candidata **−51,73** (suma
+−51,74) y H5 **6.086,46** (suma 6.029,43). En H8 y H9 la composición apenas mueve
+nada porque el retorno del periodo es del 0,2-0,3 %; en H5 mueve 57 USD porque el
+neto es del 24 %. H10 sigue sin reejecutar: su neto compuesto exigiría correr el
+motor sobre el panel de 899 símbolos.
 
 **Por qué el neto medido de H10 quintil sólo sube 413 USD.** En esa configuración
 el coste se cobra **por rebalanceo sobre los 25.000 USD de bruto** —unos 60
