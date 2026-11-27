@@ -95,7 +95,7 @@
       "properties": {
         "rule": {
           "type": "string",
-          "enum": ["donchian_breakout", "ema_state", "sma_state", "zscore_fade", "orb_session"],
+          "enum": ["donchian_breakout", "donchian_trend", "ema_state", "sma_state", "zscore_fade", "orb_session"],
           "description": "Entry generator understood by the runner. Adding a rule is a code change and therefore a version bump."
         },
         "long": { "type": "string", "maxLength": 200 },
