@@ -47,3 +47,6 @@ research_engine/app/registry.db
 # Archivo del chat: capturas y repos de referencia. Mete un clon anidado
 # y ~97 MB; no es código del bot y no debe viajar con el repo.
 _chat_archivo/
+
+!data/specs_h1/
+!data/specs_h1/*.json
