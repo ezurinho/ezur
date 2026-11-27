@@ -353,6 +353,11 @@ def test_el_ciclo_completo_produce_pbo_dsr_y_wfa(tmp_path, monkeypatch):
 
     assert payload["cycle_id"] == "CYCLE-TEST"
     assert payload["inputs"]["dataset"]["path"].endswith("btc_5m_spot.pkl")
+    assert payload["inputs"]["dataset"]["dataset_id"]
+    assert payload["strategy"]["id"] == base.strategy.id
+    assert payload["candidate"] in {"a", "b", "c"}
+    assert payload["candidate_source"] == "perfil"
+    assert payload["method_version"] == "1.2.0"
     assert payload["pbo"]["n_splits"] == math.comb(10, 5)
     assert payload["inputs"]["universe_size"] == 4
     assert payload["inputs"]["stress_multiplier"] == 2.0
