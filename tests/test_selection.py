@@ -13,6 +13,7 @@ import pandas as pd
 import pytest
 
 from server import selection
+from server.config import Settings
 from server.trial_ledger import reconstruct_ledger
 
 
@@ -277,7 +278,10 @@ def _fake_spec(name: str) -> SimpleNamespace:
     return SimpleNamespace(
         label=name,
         id="BTC-TREND-15M",
+        instrument="BTC",
         timeframe_signal="15m",
+        params=SimpleNamespace(slow=1, atr_period=1),
+        exit=SimpleNamespace(time_stop_bars=96),
         _group="BTC-TREND-15M",
         model_dump=lambda mode="json": {"id": name},
     )
@@ -311,7 +315,19 @@ def test_el_ciclo_completo_produce_pbo_dsr_y_wfa(tmp_path, monkeypatch):
         stamps = pd.date_range("2024-01-02", periods=120, freq="D", tz="UTC")
         returns = rng.normal(0.05, 1.0, size=120)
         trades = pd.DataFrame(
-            {"ts": stamps, "r_net": returns, "pnl_net": returns, "pnl_gross": returns}
+            {
+                "ts": stamps,
+                "r_net": returns,
+                "pnl_net": returns,
+                "pnl_gross": returns,
+                "opened_ts": stamps,
+                "entry_price": 100.0,
+                "stop_price": 99.0,
+                "target_price": 101.0,
+                "units": 1,
+                "fees": 0.1,
+                "side": "buy",
+            }
         )
         stressed = cost_multiplier != 1.0
         pf = 1.2 if not stressed else (1.05 if spec.label == "a" else 0.9)
@@ -322,12 +338,17 @@ def test_el_ciclo_completo_produce_pbo_dsr_y_wfa(tmp_path, monkeypatch):
 
     monkeypatch.setattr(selection, "run_backtest_for_spec", fake_backtest)
 
+    base = Settings()
+    base.risk.trade_window_start = "00:00"
+    base.risk.trade_window_end = "23:59"
     payload = selection.run_selection_cycle(
         cycle_id="CYCLE-TEST",
         blocks=10,
         folds=3,
         quiet=True,
+        base_settings=base,
         dataset_path=tmp_path / "data" / "btc_5m_spot.pkl",
+        random_iterations=5,
     )
 
     assert payload["cycle_id"] == "CYCLE-TEST"
@@ -343,6 +364,9 @@ def test_el_ciclo_completo_produce_pbo_dsr_y_wfa(tmp_path, monkeypatch):
     assert payload["wfa"]["folds_requested"] == 3
     assert payload["dsr"]["source"] == "grupo BTC-TREND-15M"
     assert payload["psr"]["observations"] == 120
+    assert payload["random_entries"]["available"] is True, payload["random_entries"]
+    assert payload["random_entries"]["trades"] == 120
+    assert payload["random_entries"]["random_trades"] == 120
     assert len(payload["caveats"]) >= 5
 
     ledger_path = tmp_path / "data" / "validation" / "CYCLE-TEST.trials.jsonl"
