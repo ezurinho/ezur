@@ -277,6 +277,14 @@ def main() -> None:
     )
     parser.add_argument("--json", action="store_true", help="imprime el resultado como JSON")
     parser.add_argument("--out", default=None, help="escribe ese JSON en una ruta")
+    parser.add_argument(
+        "--audit-candles",
+        default=None,
+        help=(
+            "CSV de velas de 1 m para comprobar que cada fill cae dentro de su "
+            "vela; úsalo con una corrida de 1 m para que el timestamp coincida"
+        ),
+    )
     args = parser.parse_args()
 
     settings = load_settings(args.config).model_copy(deep=True)
@@ -296,6 +304,30 @@ def main() -> None:
     result = run_backtest(settings, args.dataset, start=start, end=end)
     primary = settings.instruments.primary
     timezone_name = settings.instruments.template_for(primary).timezone
+
+    fill_audit = None
+    if args.audit_candles:
+        from .fill_audit import audit_fills, load_candles, needed_candles
+
+        candles = load_candles(args.audit_candles, needed_candles(result.trades))
+        fill_audit = audit_fills(
+            result.trades,
+            candles,
+            tick_size=settings.instruments.by_symbol(primary).tick_size,
+            tolerance_ticks=float(settings.execution.max_slippage_ticks),
+        )
+        print(
+            "fills     {checked}/{fills} comprobados · imposibles {impossible} · "
+            "trades fuera {removed} · PF {before:.3f} -> {after:.3f} ({drop:+.3f})".format(
+                checked=fill_audit["checked_fills"],
+                fills=fill_audit["fills"],
+                impossible=fill_audit["impossible_fills"],
+                removed=fill_audit["trades_removed"],
+                before=fill_audit["pf_before"],
+                after=fill_audit["pf_after"],
+                drop=fill_audit["pf_drop"],
+            )
+        )
     stats = aggregate(
         result.trades, settings.risk.initial_capital, timezone_name=timezone_name
     )
@@ -335,7 +367,7 @@ def main() -> None:
             if outcome.status == "fail":
                 print(f"  {outcome.id}: {outcome.detail}")
 
-    _report_run(args, settings, result, stats, report)
+    _report_run(args, settings, result, stats, report, fill_audit)
 
 
 def _iso_day(value: str) -> datetime:
@@ -369,7 +401,14 @@ def partition_by_split(trades, cut):
     return inside, outside
 
 
-def _report_run(args, settings, result, stats, report) -> None:
+def _report_run(
+    args,
+    settings,
+    result,
+    stats,
+    report,
+    fill_audit: dict[str, object] | None = None,
+) -> None:
     """Lo que hace falta para juzgar una corrida: rechazos, coste real y IS/OOS.
 
     Sin esto, una corrida con un stop que rechaza 180 de 181 señales se lee como
@@ -442,6 +481,7 @@ def _report_run(args, settings, result, stats, report) -> None:
         "strategy": {"id": result.strategy_id, "version": result.strategy_version},
         "diagnostics": result.diagnostics,
         "metrics": closed,
+        "fill_audit": fill_audit,
         "execution": execution,
         "risk_budget": budget,
         "cost_per_trade_r": cost_r,
