@@ -216,9 +216,12 @@ la lectura de por qué:
 - El arbitraje de funding entre venues da **8 carteras rentables de 20 y un
   Sharpe medio de −7,40** en el mejor estudio disponible (MDPI 2026): H8 no es un
   outlier, es la forma que tiene ese trade.
-- La única corrección de lectura es sobre H5: el carry está **repartido en 9
-  nombres** (top-5 = 61,6 % del diferencial), así que lo que falló no fue el
-  funding sino la pata de precio.
+- La corrección de lectura sobre H5 es más dura de lo que decía este informe:
+  con los precios constantes, su pata de funding da **−0,0032 R y PF 0,6301**
+  (el carry no cubre los 1.500 USD de costes) y los 6.029 USD de neto salen del
+  precio. Además, la prueba de permutación sobre el motor deja el resultado en
+  **p = 0,0784** (percentil 94 de 50 barajados): no distinguible del ruido. H5
+  no era un carry; era una apuesta de precio con sesgo de funding.
 - Binance reformuló el funding el 18-sep-2025 (`F = [P + clamp]/(8/N)`), lo que
   confirma que el cash diario es la única medida válida y que la dispersión de
   2026 no es un artefacto de intervalo.

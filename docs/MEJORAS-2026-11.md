@@ -44,6 +44,13 @@ El primer intento de canario dio «falla» y era el test el que estaba mal escri
 los lunes anteriores de su ventana—. Queda escrito porque el episodio es la
 lección: un canario que falla hay que desmontarlo antes de creerlo.
 
+**También sobre el motor de H5** (`scripts/engine_validation.py`): la señal del
+día de rebalanceo no cambia al envenenarlo (0,0), la del día siguiente sí (2,33)
+y los episodios cerrados antes del veneno son idénticos al céntimo. La nulidad de
+50 permutaciones deja el resultado de H5 en **p = 0,0784** (percentil 94) y, con
+los precios constantes, la pata de funding da **−0,0032 R**: el carry no cubre
+los costes y todo el neto es precio. Ver `docs/ARCHIVO-H5.md`.
+
 ## 3. Denominador del DSR
 
 `docs/TRIALS.md` → `data/lab_ledger.jsonl` con **cadena de hash**: 11 familias,

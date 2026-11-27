@@ -92,6 +92,37 @@ que funcione en la ventana completa y se rompa por subperiodos.
 - Sesgo de supervivencia: 20 nombres vivos. La corrección probablemente empeora
   el resultado, no lo mejora.
 
+## Nulidad por permutación (2026-11-27, después de archivar)
+
+Se pasó al motor la prueba que ya tenía el cribado (`scripts/engine_validation.py`,
+50 permutaciones del funding por símbolo, ventana OOS 2025-01/2026-11).
+
+| | Esperanza |
+|---|---:|
+| Observado (Q20-Z90-W) | **+0,0301 R** |
+| Nulidad: mediana | −0,0034 R |
+| Nulidad: p95 | +0,0326 R |
+| Nulidad: máximo de 50 | +0,0676 R |
+| Percentil del observado | **94** (p = 0,0784) |
+
+**El resultado no sobrevive.** Cuatro de cada cincuenta barajados del funding
+producen una esperanza igual o mejor, y el p95 de la nulidad (+0,0326) está por
+encima del observado (+0,0301). No es distinguible del ruido.
+
+**Y el motivo es el que el diagnóstico de precio ya apuntaba.** Aislando la pata
+de funding —precios constantes, mismo funding y mismos costes— el resultado es
+**−643,20 USD, −0,0032 R, PF 0,6301**: el carry por sí solo **no cubre los
+costes**, que son 1.500 USD. Los 6.029,43 USD de neto salen íntegramente de la
+pata de precio (+6.672,63).
+
+Consecuencia: H5 no era un carry con exposición de precio; era una **apuesta de
+precio transversal** con un sesgo de funding, y el sesgo no pagaba. El archivo se
+refuerza y la etiqueta cambia.
+
+Canarios del motor: la señal de un día de rebalanceo no cambia al envenenar su
+fila (diferencia 0,0), la del día siguiente sí (2,33), y los episodios cerrados
+antes del veneno son idénticos hasta el céntimo (1.626,79 USD).
+
 ## Artefactos
 
 - Pre-registro: `docs/PRE-REGISTRO-H5.md`.
