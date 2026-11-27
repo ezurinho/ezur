@@ -126,6 +126,14 @@ def test_run_backtest_for_spec_devuelve_operaciones_y_metricas(tmp_path, monkeyp
         "side",
         "pnl_net",
         "pnl_gross",
+        "opened_ts",
+        "entry_price",
+        "exit_price",
+        "stop_price",
+        "target_price",
+        "units",
+        "fees",
+        "exit_reason",
     ]
     assert trades["ts"].is_monotonic_increasing
     assert str(trades["ts"].dt.tz) == "UTC"
