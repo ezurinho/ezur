@@ -1,0 +1,27 @@
+{
+ "source": "Binance Vision UM monthly klines 1d",
+ "symbols": [
+  "BTCUSDT",
+  "ETHUSDT",
+  "BNBUSDT",
+  "SOLUSDT",
+  "XRPUSDT",
+  "ADAUSDT",
+  "DOGEUSDT",
+  "AVAXUSDT",
+  "LINKUSDT",
+  "DOTUSDT",
+  "LTCUSDT",
+  "BCHUSDT",
+  "TRXUSDT",
+  "ATOMUSDT",
+  "NEARUSDT",
+  "ETCUSDT",
+  "FILUSDT",
+  "UNIUSDT",
+  "AAVEUSDT",
+  "SANDUSDT"
+ ],
+ "rows": 47255,
+ "sha256": "baa1a7bda1c662a3ab8cc315a05402aecb02d61235bd5f9ae6bc16f746ee75a4"
+}
