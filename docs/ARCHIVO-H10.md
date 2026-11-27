@@ -2,8 +2,9 @@
 
 **Veredicto:** archivada el 2026-11-27, el mismo día del cribado y **sin
 backtest**. La dispersión mediana de funding fue **80,51 pb por posición y
-episodio** frente a los **120 pb** que exige la regla 10. No se ejecutó el
-simulador, no hay P&L que discutir y el holdout no se abrió.
+episodio** frente a los **240 pb** que la regla 10 exige con la geometría
+empleada; 120 pb es la barra de 4 posiciones por lado, no la del cribado. No se
+ejecutó el simulador, no hay P&L que discutir y el holdout no se abrió.
 
 ## Qué se construyó
 
@@ -41,22 +42,23 @@ Ventanas no solapadas de 7 días desde cada lunes, con la misma elegibilidad que
 la cartera, los 8 nombres de funding más alto menos los 8 más bajo (ver el límite
 del tope más abajo), sólo funding y sin precios.
 
-| Métrica | Valor | Umbral |
+| Métrica | Valor | Barra |
 |---|---:|---:|
 | Ventanas medidas | 187 | — |
-| **Mediana** | **80,51 pb** | ≥ 120 pb |
+| **Mediana** | **80,51 pb** | ≥ 240 pb (k = 8) |
 | Media | 149,30 pb | — |
 | p25 | 21,01 pb | — |
 | p75 | 187,61 pb | — |
-| Ventanas ≥ 120 pb | 39,6 % | — |
+| Margen mediano | −159,49 pb | — |
+| Ventanas ≥ su barra | 20,3 % | — |
 | Elegibles (mediana) | 183 | ≥ 20 |
 
-| Año | Ventanas | Mediana | ≥ 120 pb |
-|---|---:|---:|---:|
-| 2023 | 39 | 32,11 pb | 20,5 % |
-| 2024 | 53 | 29,43 pb | 15,1 % |
-| 2025 | 52 | 114,82 pb | 48,1 % |
-| 2026 | 43 | 309,42 pb | 76,7 % |
+| Año | Ventanas | Mediana | ≥ barra | Margen mediano |
+|---|---:|---:|---:|---:|
+| 2023 | 39 | 32,11 pb | 7,7 % | −207,89 pb |
+| 2024 | 53 | 29,43 pb | 1,9 % | −210,57 pb |
+| 2025 | 52 | 114,82 pb | 19,2 % | −125,18 pb |
+| 2026 | 43 | 309,42 pb | 55,8 % | +69,42 pb |
 
 ## Límite del cribado: el tope de 8 posiciones por lado
 
@@ -107,9 +109,12 @@ que es el lado equivocado para fallar.
   en 2024, 115 en 2025 y 309 en 2026. El criterio declarado es la ventana
   completa; quedarse con 2025-2026 ahora sería elegir la muestra después de ver
   el resultado, que es justo lo que la regla prohíbe.
-- **El déficit es de un tercio.** Con 80,5 pb la cartera no cubre 0,1 R + 2 ×
-  coste por posición; necesitaba 120. Ni el funding ni el filtro de liquidez
-  estaban mal: la magnitud no llega.
+- **El déficit es de dos tercios.** Con 80,5 pb la cartera no cubre 0,1 R + 2 ×
+  coste por posición: con 8 por lado necesitaba 240 pb y se quedó en un tercio de
+  esa cifra, un margen mediano de −159 pb. Incluso 2026, el único año con
+  dispersión alta, sólo supera la barra en el 55,8 % de sus ventanas y su margen
+  mediano (+69 pb) es el único positivo de la muestra. Ni el funding ni el filtro
+  de liquidez estaban mal: la magnitud no llega.
 - **No hay P&L que interpretar.** El cribado usa sólo funding y elegibilidad
   sobre el panel congelado; no hay precio relativo, coste ni retorno. El resultado
   no depende de un modelo de ejecución.
@@ -142,7 +147,9 @@ del 2027-02-26 se resuelve con el informe de cierre, no con otra medida.
 - Pre-registro: `docs/PRE-REGISTRO-H10.md`.
 - Revisión de diseño: `docs/REVISION-DISENO-H10.md` (§7.1, regla 10).
 - Descarga: `scripts/fetch_h10_data.py`.
-- Cribado: `scripts/screen_h10_dispersion.py`.
+- Cribado: `scripts/screen_h10_dispersion.py`. La barra se deriva de la
+  geometría (`30 × k` pb), no es una constante, y el JSON publica la geometría,
+  la barra aplicada y el margen por ventana.
 - Datos: `data/h10/funding_daily.csv`, `perp_daily.csv`, `freeze.json` y
   `screen.json`. Los CSV no se trackean; `freeze.json` sí, por los hashes.
 - Sensibilidad del tope: `data/h10/screen_k4.json` y `screen_k37.json`
