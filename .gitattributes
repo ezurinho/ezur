@@ -1,0 +1,8 @@
+# El parser de frontmatter del brain CLI compara la linea "---" exacta: con
+# finales CRLF no reconoce el bloque y las paginas quedan sin titulo ni
+# categoria. Estos archivos se guardan y se hacen checkout siempre en LF.
+brain/** text eol=lf
+bin/** text eol=lf
+skills/** text eol=lf
+BRAIN.md text eol=lf
+CLAUDE.md text eol=lf
