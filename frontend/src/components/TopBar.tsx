@@ -64,7 +64,7 @@ export function TopBar({ snapshot, connection, onOpenPalette }: Props) {
       <div className="top-bar-left">
         <div className="brand">
           <span className="brand-mark">
-            <Logo size={26} />
+            <Logo size={30} />
           </span>
           <span className="brand-text">
             <span className="brand-name">ezur bot</span>
@@ -72,7 +72,7 @@ export function TopBar({ snapshot, connection, onOpenPalette }: Props) {
           </span>
         </div>
 
-        <div className="hud-group" title={loaded ? undefined : "Esperando el primer estado del motor"}>
+        <div className="hud-group status-group" title={loaded ? undefined : "Esperando el primer estado del motor"}>
           <span className={`led${loaded ? ` led-${status}` : ""}`} aria-hidden="true" />
           <span className="hud-value">{loaded ? statusLabel(status) : "—"}</span>
         </div>

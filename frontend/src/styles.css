@@ -1,6 +1,6 @@
 /* ============================================================================
    Design system — "mission control" HUD
-   One accent. Numbers in tabular mono. Hairlines, not shadows.
+   Carbon glass, one accent, tabular mono. The Wraith theme is the default.
    ========================================================================== */
 
 :root {
@@ -34,26 +34,27 @@
   --glow-bad: 0 0 0 1px #ff5c6c33, 0 0 22px -6px #ff5c6c77;
 
   /* themed surfaces: the light theme has to override these, not every rule */
-  --glow-1: var(--glow-1);
-  --glow-2: var(--glow-2);
+  --glow-1: #0f9e8f24;
+  --glow-2: #6ea8ff1a;
   --bg-wash: #0a0f16;
-  --grid: var(--grid);
-  --surface-1: var(--surface-1);
-  --surface-2: var(--surface-2);
-  --surface-3: var(--surface-3);
-  --surface-4: var(--surface-4);
-  --surface-5: var(--surface-5);
+  --grid: #ffffff06;
+  --surface-1: #0a1018;
+  --surface-2: #0d141e;
+  --surface-3: #111a26;
+  --surface-4: #0c131c;
+  --surface-5: #0e1721;
   --sheen: #ffffff12;
   --shadow-pop: 0 24px 60px -20px #000000cc;
-  --radius: 10px;
-  --radius-sm: 6px;
+  --shadow-panel: 0 22px 44px -20px #000000cc, inset 0 1px 0 #ffffff0a;
+  --radius: 14px;
+  --radius-sm: 9px;
 
   --font-ui: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
   --font-display: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "Cascadia Mono", "SFMono-Regular", ui-monospace, Consolas, monospace;
 
-  --rail: 232px;
-  --topbar: 58px;
+  --rail: 244px;
+  --topbar: 64px;
 }
 
 * {
@@ -140,7 +141,7 @@ a {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  --bracket: #37e0d0;
+  --bracket: var(--accent);
 }
 
 .app-body {
@@ -202,10 +203,11 @@ a {
   justify-content: space-between;
   gap: 18px;
   min-height: var(--topbar);
-  padding: 0 18px;
-  border-bottom: 1px solid var(--line);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--panel-2) 95%, transparent), color-mix(in srgb, var(--bg) 92%, transparent));
-  backdrop-filter: blur(14px) saturate(120%);
+  padding: 0 22px;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 12%, var(--line));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--panel-2) 88%, transparent), color-mix(in srgb, var(--bg) 94%, transparent));
+  box-shadow: 0 16px 34px -30px #000000e6;
+  backdrop-filter: blur(18px) saturate(125%);
 }
 
 .top-bar::after {
@@ -216,7 +218,7 @@ a {
   bottom: -1px;
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--accent), transparent);
-  opacity: 0.45;
+  opacity: 0.6;
 }
 
 .top-bar-left,
@@ -289,11 +291,11 @@ a {
 .brand-mark {
   display: grid;
   place-items: center;
-  border-radius: 9px;
+  border-radius: 10px;
   /* La placa la dibuja el propio SVG: aquí solo se decide con qué color se
      recortan las barras (el del fondo), para que la E se lea como un hueco. */
   --logo-cut: var(--optical-cut);
-  box-shadow: 0 0 20px -12px var(--accent);
+  box-shadow: 0 0 24px -10px color-mix(in srgb, var(--accent) 70%, transparent);
 }
 
 .brand-text {
@@ -305,10 +307,11 @@ a {
 
 .brand-name {
   font-family: var(--font-display);
-  font-size: 1.02rem;
+  font-size: 1.12rem;
   font-weight: 750;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.03em;
   text-transform: lowercase;
+  text-shadow: 0 0 24px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 .brand-sub {
@@ -365,9 +368,10 @@ a {
   align-items: center;
   gap: 8px;
   padding: 4px 10px;
-  border: 1px solid var(--line);
+  border: 1px solid color-mix(in srgb, var(--accent) 10%, var(--line));
   border-radius: 999px;
-  background: var(--surface-2);
+  background: color-mix(in srgb, var(--surface-2) 76%, transparent);
+  box-shadow: inset 0 1px 0 #ffffff08;
 }
 
 .hud-label {
@@ -417,7 +421,8 @@ a {
   height: calc(100vh - var(--topbar));
   padding: 16px 12px 18px;
   border-right: 1px solid var(--line);
-  background: linear-gradient(180deg, var(--surface-2), var(--bg));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--panel) 88%, transparent), color-mix(in srgb, var(--bg) 96%, transparent));
+  backdrop-filter: blur(14px);
 }
 
 .sidebar-title {
@@ -440,34 +445,43 @@ a {
   background: transparent;
   color: var(--text-dim);
   font-family: var(--font-ui);
-  font-size: 0.82rem;
-  letter-spacing: 0.02em;
+  font-size: 0.84rem;
+  letter-spacing: 0.01em;
   text-align: left;
   cursor: pointer;
-  transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
 }
 
 .nav-item svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   flex: none;
-  opacity: 0.75;
+  opacity: 0.72;
+  filter: drop-shadow(0 0 6px transparent);
+  transition: filter 160ms ease, opacity 160ms ease;
 }
 
 .nav-item:hover {
-  background: var(--surface-3);
+  background: color-mix(in srgb, var(--surface-3) 72%, transparent);
   color: var(--text);
+  transform: translateX(2px);
 }
 
 .nav-item.active {
   color: var(--text);
-  background: linear-gradient(90deg, #37e0d01f, #37e0d008 60%, transparent);
-  border-color: #37e0d03d;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 14%, transparent), color-mix(in srgb, var(--accent) 4%, transparent) 60%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 26%, transparent);
+  box-shadow: inset 0 1px 0 #ffffff08;
 }
 
 .nav-item.active svg {
   opacity: 1;
   color: var(--accent);
+  filter: drop-shadow(0 0 7px color-mix(in srgb, var(--accent) 65%, transparent));
 }
 
 .nav-item.active::before {
@@ -509,12 +523,13 @@ a {
 
 .card {
   position: relative;
-  padding: 16px 18px;
-  border: 1px solid var(--line);
+  padding: 18px 20px;
+  border: 1px solid color-mix(in srgb, var(--accent) 11%, var(--line));
   border-radius: var(--radius);
   background:
-    linear-gradient(180deg, #ffffff06, transparent 42%),
-    linear-gradient(180deg, var(--panel), var(--surface-1));
+    linear-gradient(180deg, #ffffff08, transparent 42%),
+    linear-gradient(180deg, color-mix(in srgb, var(--panel-2) 92%, transparent), color-mix(in srgb, var(--panel) 96%, transparent));
+  box-shadow: var(--shadow-panel);
   overflow: hidden;
 }
 
@@ -524,7 +539,7 @@ a {
   position: absolute;
   inset: 0 0 auto 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, #37e0d066, transparent);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 42%, transparent), transparent);
 }
 
 .card-header {
@@ -548,8 +563,31 @@ a {
 
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
+}
+
+.kpi-index {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  color: color-mix(in srgb, var(--accent) 38%, var(--muted));
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  pointer-events: none;
+}
+
+@media (max-width: 1180px) {
+  .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* --------------------------------------------------------- promotion --- */
@@ -876,12 +914,22 @@ a {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 14px 16px 12px;
-  border: 1px solid var(--line);
+  gap: 7px;
+  padding: 18px 20px 16px;
+  border: 1px solid color-mix(in srgb, var(--accent) 15%, var(--line));
   border-radius: var(--radius);
-  background: linear-gradient(180deg, var(--panel-2), var(--surface-1));
+  background:
+    linear-gradient(180deg, #ffffff09, transparent 46%),
+    linear-gradient(180deg, color-mix(in srgb, var(--panel-2) 96%, transparent), color-mix(in srgb, var(--panel) 98%, transparent));
+  box-shadow: var(--shadow-panel);
   overflow: hidden;
+  transition: transform 220ms ease, border-color 220ms ease, box-shadow 260ms ease;
+}
+
+.kpi:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--line));
+  box-shadow: 0 26px 54px -24px #000000e6, inset 0 1px 0 #ffffff12;
 }
 
 .kpi::after {
@@ -892,7 +940,7 @@ a {
   width: 90px;
   height: 90px;
   border-radius: 50%;
-  background: radial-gradient(circle, #37e0d01a, transparent 68%);
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 13%, transparent), transparent 68%);
   pointer-events: none;
 }
 
@@ -906,7 +954,7 @@ a {
 
 .kpi-value {
   font-family: var(--font-mono);
-  font-size: 1.5rem;
+  font-size: clamp(1.45rem, 2vw, 1.9rem);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
@@ -1012,17 +1060,17 @@ a {
 }
 
 .badge-mode {
-  border-color: #6ea8ff33;
+  border-color: color-mix(in srgb, var(--accent-2) 22%, transparent);
   color: var(--accent-2);
-  background: #6ea8ff14;
+  background: color-mix(in srgb, var(--accent-2) 8%, transparent);
 }
 
 .badge-quality-ok,
 .badge-connection-open,
 .badge-connection-connected {
   color: var(--accent);
-  border-color: #37e0d044;
-  background: #37e0d014;
+  border-color: color-mix(in srgb, var(--accent) 27%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
 .badge-quality-degraded,
@@ -1091,8 +1139,8 @@ a {
 .btn.active,
 .btn[aria-pressed="true"] {
   color: var(--accent);
-  border-color: #37e0d05a;
-  background: #37e0d014;
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
   box-shadow: inset 0 0 18px -10px var(--accent);
 }
 
@@ -1250,8 +1298,8 @@ a {
 }
 
 .phase-active {
-  border-color: #37e0d05a;
-  background: #37e0d012;
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
   box-shadow: 0 0 20px -12px var(--accent);
 }
 
@@ -1314,9 +1362,9 @@ a {
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  border: 1px solid #37e0d044;
+  border: 1px solid color-mix(in srgb, var(--accent) 27%, transparent);
   border-radius: var(--radius-sm);
-  background: #37e0d00f;
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
   font-family: var(--font-mono);
   font-size: 0.76rem;
 }
@@ -1344,7 +1392,7 @@ a {
   position: absolute;
   inset: 6px;
   pointer-events: none;
-  --c: #37e0d0aa;
+  --c: color-mix(in srgb, var(--accent) 68%, transparent);
   background:
     linear-gradient(var(--c), var(--c)) left top / 14px 1px no-repeat,
     linear-gradient(var(--c), var(--c)) left top / 1px 14px no-repeat,
@@ -1358,18 +1406,18 @@ a {
 }
 
 .kpi:hover {
-  border-color: #37e0d03d;
+  border-color: color-mix(in srgb, var(--accent) 24%, transparent);
 }
 
 .kpi-value {
-  text-shadow: 0 0 28px #37e0d01f;
+  text-shadow: 0 0 28px color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
 .chart-canvas {
   width: 100%;
   min-height: 260px;
   border-radius: var(--radius-sm);
-  background: radial-gradient(120% 90% at 50% 0%, #0e1826, #080d14);
+  background: radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--panel-3) 92%, transparent), var(--bg-deep));
 }
 
 .chart-canvas canvas {
@@ -1530,8 +1578,8 @@ input:focus,
 select:focus,
 textarea:focus {
   outline: none;
-  border-color: #37e0d066;
-  box-shadow: 0 0 0 3px #37e0d01a;
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 label {
@@ -1618,7 +1666,7 @@ label {
   display: block;
   height: 0.6rem;
   border-radius: 2px;
-  background: linear-gradient(90deg, #37e0d0, #37e0d055);
+  background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 33%, transparent));
   box-shadow: 0 0 14px -6px var(--accent);
 }
 
@@ -1823,7 +1871,7 @@ label {
 .mode-option.active {
   background: color-mix(in srgb, var(--accent) 16%, var(--bg));
   color: var(--accent);
-  box-shadow: inset 0 0 0 1px #37e0d044;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 27%, transparent);
 }
 
 .mode-option:focus-visible {
@@ -1851,12 +1899,13 @@ label {
   justify-content: space-between;
   gap: 22px;
   flex-wrap: wrap;
-  padding: 22px 24px;
-  border: 1px solid var(--line);
-  border-radius: 16px;
+  padding: 24px 26px;
+  border: 1px solid color-mix(in srgb, var(--accent) 16%, var(--line));
+  border-radius: 18px;
   background:
-    radial-gradient(120% 160% at 0% 0%, #37e0d014, transparent 60%),
-    linear-gradient(180deg, var(--panel-2), var(--surface-1));
+    radial-gradient(120% 160% at 0% 0%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 60%),
+    linear-gradient(180deg, color-mix(in srgb, var(--panel-2) 92%, transparent), color-mix(in srgb, var(--panel) 96%, transparent));
+  box-shadow: var(--shadow-panel);
   overflow: hidden;
 }
 
@@ -2008,9 +2057,12 @@ label {
   flex-direction: column;
   gap: 7px;
   padding: 18px 20px 20px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: linear-gradient(180deg, var(--panel-2), var(--surface-1));
+  border: 1px solid color-mix(in srgb, var(--accent) 10%, var(--line));
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, #ffffff06, transparent 46%),
+    linear-gradient(180deg, color-mix(in srgb, var(--panel-2) 92%, transparent), color-mix(in srgb, var(--panel) 96%, transparent));
+  box-shadow: var(--shadow-panel);
 }
 
 .simple-label {
@@ -2174,7 +2226,7 @@ label {
   width: 100%;
   height: 4px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #37e0d044, #37e0d014);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 27%, transparent), color-mix(in srgb, var(--accent) 8%, transparent));
   outline: none;
 }
 
@@ -2184,7 +2236,7 @@ label {
   height: 16px;
   border-radius: 50%;
   background: var(--accent);
-  box-shadow: 0 0 0 4px #37e0d022, 0 0 12px #37e0d066;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 13%, transparent), 0 0 12px color-mix(in srgb, var(--accent) 40%, transparent);
   cursor: pointer;
 }
 
@@ -2194,7 +2246,7 @@ label {
   border: 0;
   border-radius: 50%;
   background: var(--accent);
-  box-shadow: 0 0 0 4px #37e0d022;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 13%, transparent);
   cursor: pointer;
 }
 
@@ -2248,6 +2300,43 @@ label {
    ánimo. Todo lo que brilla, bordea o escribe pasa por estas variables.
    ========================================================================== */
 
+[data-theme="wraith"] {
+  color-scheme: dark;
+  --bg: #050a07;
+  --bg-deep: #020504;
+  --bg-wash: #07110b;
+  --glow-1: #1bd97b33;
+  --glow-2: #0f8a5228;
+  --panel: #0a140e;
+  --panel-2: #101d15;
+  --panel-3: #17281d;
+  --optical-cut: #060e09;
+  --line: #24382b;
+  --line-soft: #18281d;
+  --text: #edf9f1;
+  --text-dim: #a8c0b1;
+  --muted: #7a9385;
+  --accent: #35ea86;
+  --accent-2: #9bf7c5;
+  --violet: #8fd6ff;
+  --good: #3ddc84;
+  --bad: #ff5c6c;
+  --warn: #ffb547;
+  --surface-1: #08110b;
+  --surface-2: #0c1710;
+  --surface-3: #112018;
+  --surface-4: #0a140e;
+  --surface-5: #0e1b13;
+  --grid: #b6ffd70c;
+  --sheen: #eafff314;
+  --shadow-pop: 0 28px 64px -24px #000000e6;
+  --shadow-panel: 0 22px 44px -20px #000000cc, inset 0 1px 0 #ffffff0d;
+  --glow-accent: 0 0 0 1px #35ea8633, 0 0 26px -6px #35ea8699;
+  --glow-bad: 0 0 0 1px #ff5c6c33, 0 0 22px -6px #ff5c6c77;
+  --radius: 15px;
+  --radius-sm: 10px;
+}
+
 [data-theme="aurora"] {
   color-scheme: dark;
   --bg: #08060f;
@@ -2269,6 +2358,11 @@ label {
   --good: #4ce0a8;
   --bad: #ff5c8a;
   --warn: #ffb86b;
+  --surface-1: #0b0712;
+  --surface-2: #0f0b1a;
+  --surface-3: #151024;
+  --surface-4: #0c0815;
+  --surface-5: #100c1d;
   --grid: #ffffff06;
   --glow-accent: 0 0 0 1px #b07bff33, 0 0 24px -6px #b07bff88;
   --glow-bad: 0 0 0 1px #ff5c8a33, 0 0 22px -6px #ff5c8a88;
@@ -2295,6 +2389,11 @@ label {
   --good: #8fd66b;
   --bad: #ff5f5f;
   --warn: #ffd166;
+  --surface-1: #100b07;
+  --surface-2: #15100a;
+  --surface-3: #1c150e;
+  --surface-4: #100b08;
+  --surface-5: #17110b;
   --grid: #ffffff06;
   --glow-accent: 0 0 0 1px #ff9f4533, 0 0 24px -6px #ff9f4588;
   --glow-bad: 0 0 0 1px #ff5f5f33, 0 0 22px -6px #ff5f5f88;
@@ -2321,6 +2420,11 @@ label {
   --good: #34d399;
   --bad: #ff6b81;
   --warn: #fbbf24;
+  --surface-1: #060d09;
+  --surface-2: #09130d;
+  --surface-3: #0d1b12;
+  --surface-4: #070f0a;
+  --surface-5: #0a1610;
   --grid: #ffffff06;
   --glow-accent: 0 0 0 1px #a3e63533, 0 0 24px -6px #a3e63588;
   --glow-bad: 0 0 0 1px #ff6b8133, 0 0 22px -6px #ff6b8188;
@@ -2355,6 +2459,7 @@ label {
   --grid: #0e172208;
   --sheen: #ffffff80;
   --shadow-pop: 0 18px 44px -18px #1b2a3f4d;
+  --shadow-panel: 0 16px 34px -24px #1b2a3f40, inset 0 1px 0 #ffffff;
   --glow-accent: 0 0 0 1px #0f9e8f33, 0 0 20px -8px #0f9e8f66;
   --glow-bad: 0 0 0 1px #d92d3f26, 0 0 20px -8px #d92d3f55;
 }
@@ -3359,8 +3464,21 @@ label {
 
 .page-title {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
+  font-size: 1.75rem;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+}
+
+.page-title::before {
+  content: "";
+  flex: none;
+  width: 3px;
+  height: 1.15em;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--accent-2), var(--accent) 48%, transparent);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 60%, transparent);
 }
 
 .page-sub {
@@ -4274,14 +4392,14 @@ label {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(46% 38% at 78% 10%, var(--mood-a, #37e0d012), transparent 70%),
-    radial-gradient(42% 36% at 10% 90%, var(--mood-b, #6ea8ff0a), transparent 72%);
+    radial-gradient(46% 38% at 78% 10%, var(--mood-a, color-mix(in srgb, var(--accent) 7%, transparent)), transparent 70%),
+    radial-gradient(42% 36% at 10% 90%, var(--mood-b, color-mix(in srgb, var(--accent-2) 4%, transparent)), transparent 72%);
   animation: ambient-drift 38s ease-in-out infinite alternate;
 }
 
 .app-shell[data-mood="gain"] {
-  --mood-a: #3ddc8418;
-  --mood-b: #37e0d00d;
+  --mood-a: color-mix(in srgb, var(--good) 9%, transparent);
+  --mood-b: color-mix(in srgb, var(--accent) 5%, transparent);
 }
 
 .app-shell[data-mood="loss"] {
@@ -4541,7 +4659,7 @@ label {
   pointer-events: none;
   border-radius: 32px;
   background:
-    radial-gradient(42% 60% at 20% 0%, var(--mood-a, #37e0d012), transparent 70%),
+    radial-gradient(42% 60% at 20% 0%, var(--mood-a, color-mix(in srgb, var(--accent) 7%, transparent)), transparent 70%),
     radial-gradient(
       34% 48% at 82% 4%,
       color-mix(in srgb, var(--accent) 8%, transparent),
@@ -4585,4 +4703,1134 @@ label {
     animation: none !important;
     stroke-dashoffset: 0;
   }
+}
+
+/* ==========================================================================
+   Wraith 2.0 — capa de acabado
+   --------------------------------------------------------------------------
+   La estructura ya estaba: aquí se afina la luz, la jerarquía y los detalles
+   de la cabina. Todo sale de tokens para que los demás temas sigan vivos.
+   ========================================================================== */
+
+/* Viñeta y haz diagonal: separan el panel del fondo sin ensuciar la lectura. */
+[data-theme="wraith"] body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(115deg, transparent 0 49.6%, #35ea8609 50%, transparent 50.4%),
+    radial-gradient(120% 92% at 50% 0%, transparent 42%, #02050480 100%);
+}
+
+/* ---- barra superior ------------------------------------------------------ */
+
+.top-bar {
+  border-bottom-color: color-mix(in srgb, var(--accent) 18%, var(--line));
+  box-shadow:
+    0 18px 44px -34px #000000,
+    inset 0 -1px 0 #ffffff08;
+}
+
+.brand {
+  gap: 12px;
+  padding-right: 16px;
+  margin-right: 6px;
+}
+
+.brand-mark {
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--panel) 72%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent),
+    0 0 28px -8px color-mix(in srgb, var(--accent) 80%, transparent);
+}
+
+.brand-sub {
+  color: color-mix(in srgb, var(--accent) 46%, var(--muted));
+  letter-spacing: 0.34em;
+}
+
+.hud-group {
+  background: color-mix(in srgb, var(--surface-2) 82%, transparent);
+  box-shadow:
+    inset 0 1px 0 #ffffff08,
+    0 8px 18px -18px #000000;
+  backdrop-filter: blur(10px);
+}
+
+.badge {
+  border-radius: 7px;
+  font-size: 0.58rem;
+  letter-spacing: 0.13em;
+}
+
+.led-running {
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--good) 14%, transparent),
+    0 0 16px var(--good);
+}
+
+/* ---- rail lateral -------------------------------------------------------- */
+
+.sidebar {
+  padding: 20px 14px 18px;
+  gap: 3px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--panel) 88%, transparent), color-mix(in srgb, var(--bg) 96%, transparent)),
+    radial-gradient(120% 40% at 0% 0%, color-mix(in srgb, var(--accent) 5%, transparent), transparent 70%);
+}
+
+.sidebar::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -1px;
+  bottom: 0;
+  width: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    color-mix(in srgb, var(--accent) 36%, transparent) 22%,
+    transparent 62%
+  );
+}
+
+.sidebar-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px 10px;
+  color: color-mix(in srgb, var(--accent) 52%, var(--muted));
+}
+
+.sidebar-title::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+.nav-item {
+  margin-bottom: 2px;
+  border-radius: 11px;
+}
+
+.nav-item:hover {
+  background: color-mix(in srgb, var(--surface-3) 78%, transparent);
+}
+
+.nav-item.active {
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--accent) 17%, transparent), color-mix(in srgb, var(--accent) 4%, transparent) 70%, transparent),
+    color-mix(in srgb, var(--panel-2) 72%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+  box-shadow:
+    inset 0 1px 0 #ffffff0a,
+    0 12px 26px -24px color-mix(in srgb, var(--accent) 80%, transparent);
+}
+
+.nav-item.active::before {
+  left: -14px;
+  width: 3px;
+  background: linear-gradient(180deg, var(--accent-2), var(--accent));
+  box-shadow: 0 0 16px var(--accent);
+}
+
+.nav-key {
+  border-color: color-mix(in srgb, var(--accent) 16%, var(--line));
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--surface-1) 70%, transparent);
+}
+
+.sidebar-foot {
+  position: relative;
+  padding: 13px 12px;
+  border-color: color-mix(in srgb, var(--accent) 15%, var(--line));
+  background:
+    linear-gradient(180deg, #ffffff05, transparent),
+    color-mix(in srgb, var(--panel) 78%, transparent);
+  box-shadow: var(--shadow-panel);
+  overflow: hidden;
+}
+
+.sidebar-foot::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 8px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+  opacity: 0.5;
+}
+
+/* ---- títulos y controles ------------------------------------------------- */
+
+.page-title {
+  padding-bottom: 2px;
+  font-size: clamp(1.6rem, 2.4vw, 2rem);
+  font-weight: 650;
+  letter-spacing: -0.04em;
+}
+
+
+
+.page-sub {
+  color: color-mix(in srgb, var(--accent) 50%, var(--muted));
+  letter-spacing: 0.06em;
+}
+
+.page-title-action {
+  padding: 7px 14px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+/* ---- historia: una sola barra de filtros, no dos filas sueltas ----------- */
+
+.history-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  width: fit-content;
+  max-width: 100%;
+  padding: 5px;
+  border: 1px solid color-mix(in srgb, var(--accent) 15%, var(--line));
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, #ffffff07, transparent 55%),
+    color-mix(in srgb, var(--panel) 84%, transparent);
+  box-shadow: var(--shadow-panel);
+  backdrop-filter: blur(12px);
+}
+
+.history-controls .button-row {
+  gap: 2px;
+}
+
+.history-controls .btn {
+  padding: 6px 12px;
+  border-color: transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.history-controls .btn:hover {
+  background: color-mix(in srgb, var(--surface-3) 70%, transparent);
+  color: var(--text);
+}
+
+.history-controls .btn.active {
+  border-color: color-mix(in srgb, var(--accent) 28%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 16%, transparent), color-mix(in srgb, var(--accent) 7%, transparent));
+  color: var(--accent-2);
+  box-shadow:
+    inset 0 1px 0 #ffffff10,
+    0 6px 16px -12px var(--accent);
+}
+
+.history-divider {
+  width: 1px;
+  height: 22px;
+  background: var(--line);
+}
+
+.history-controls a.btn {
+  margin-left: 4px;
+  border-left-color: var(--line);
+}
+
+/* ---- reparto del periodo ------------------------------------------------- */
+
+.summary-balance {
+  display: grid;
+  gap: 10px;
+  padding: 18px 20px;
+  border: 1px solid color-mix(in srgb, var(--accent) 12%, var(--line));
+  border-radius: var(--radius);
+  background:
+    linear-gradient(180deg, #ffffff07, transparent 55%),
+    linear-gradient(180deg, color-mix(in srgb, var(--panel-2) 92%, transparent), color-mix(in srgb, var(--panel) 96%, transparent));
+  box-shadow: var(--shadow-panel);
+}
+
+.summary-balance-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.summary-balance-title {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.summary-balance-track {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bad) 18%, var(--surface-1));
+  box-shadow: inset 0 1px 3px #00000080;
+  overflow: hidden;
+}
+
+.summary-balance-track::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 calc(10% - 1px),
+    #02050466 calc(10% - 1px) 10%
+  );
+  opacity: 0.55;
+}
+
+.summary-balance-win {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #149a55, var(--good));
+  box-shadow: 0 0 18px -4px var(--good);
+  transition: width 620ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.summary-balance-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.04em;
+}
+
+/* ---- hero del modo básico ------------------------------------------------ */
+
+.simple-hero {
+  min-height: 218px;
+  padding: 30px 32px;
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--line));
+  border-radius: 20px;
+  background:
+    radial-gradient(90% 130% at 0% 0%, color-mix(in srgb, var(--accent) 13%, transparent), transparent 58%),
+    linear-gradient(118deg, color-mix(in srgb, var(--panel-3) 42%, transparent), color-mix(in srgb, var(--panel) 96%, transparent) 54%);
+  box-shadow:
+    0 32px 64px -34px #000000,
+    inset 0 1px 0 #ffffff0f;
+}
+
+.simple-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(115deg, transparent 0 57.8%, color-mix(in srgb, var(--accent) 6%, transparent) 58%, transparent 58.2%),
+    repeating-linear-gradient(90deg, transparent 0 79px, color-mix(in srgb, var(--accent) 4%, transparent) 80px);
+  mask: linear-gradient(90deg, transparent 20%, #000 72%);
+  opacity: 0.9;
+}
+
+.simple-hero h2 {
+  max-width: 18ch;
+  margin-bottom: 10px;
+  font-size: clamp(2rem, 4vw, 2.9rem);
+  font-weight: 650;
+  line-height: 1.02;
+  letter-spacing: -0.05em;
+  text-wrap: balance;
+  text-shadow: 0 0 42px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.simple-hero p {
+  max-width: 54ch;
+  font-size: 0.93rem;
+  line-height: 1.55;
+}
+
+.simple-hero-side {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  min-width: 132px;
+}
+
+.hero-core {
+  position: relative;
+  display: grid;
+  width: 104px;
+  height: 104px;
+  place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--hero-glow) 12%, transparent), transparent 68%);
+}
+
+.hero-core::before {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  border: 1px solid color-mix(in srgb, var(--hero-glow) 34%, transparent);
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 26px color-mix(in srgb, var(--hero-glow) 12%, transparent),
+    0 0 26px -16px var(--hero-glow);
+}
+
+.hero-core::after {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border: 1px dashed color-mix(in srgb, var(--hero-glow) 24%, transparent);
+  border-radius: 50%;
+  animation: core-spin 30s linear infinite;
+}
+
+.hero-core-ring {
+  position: absolute;
+  border: 1px solid color-mix(in srgb, var(--hero-glow) 20%, transparent);
+  border-radius: 50%;
+}
+
+.hero-core-ring:nth-child(1) {
+  width: 72px;
+  height: 72px;
+  border-style: dotted;
+  opacity: 0.7;
+}
+
+.hero-core-ring:nth-child(2) {
+  width: 50px;
+  height: 50px;
+  border-color: color-mix(in srgb, var(--hero-glow) 30%, transparent);
+}
+
+.hero-core-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--hero-glow);
+  box-shadow:
+    0 0 0 5px color-mix(in srgb, var(--hero-glow) 12%, transparent),
+    0 0 24px var(--hero-glow);
+  animation: core-pulse 2.4s ease-in-out infinite;
+}
+
+.simple-hero-actions .btn {
+  min-height: 40px;
+  padding: 0 18px;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--panel-2) 80%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+@keyframes core-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes core-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.62;
+    transform: scale(0.82);
+  }
+}
+
+/* ---- onboarding: briefing, no folleto ----------------------------------- */
+
+.onboarding {
+  position: relative;
+  padding: 16px 18px 16px 22px;
+  border: 1px solid color-mix(in srgb, var(--accent) 16%, var(--line));
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, #ffffff06, transparent 60%),
+    color-mix(in srgb, var(--panel) 80%, transparent);
+  box-shadow: var(--shadow-panel);
+  overflow: hidden;
+}
+
+.onboarding::before {
+  content: "";
+  position: absolute;
+  top: 14px;
+  bottom: 14px;
+  left: 0;
+  width: 2px;
+  background: linear-gradient(180deg, transparent, var(--accent), transparent);
+  box-shadow: 0 0 14px var(--accent);
+}
+
+.onboarding-steps {
+  gap: 0;
+}
+
+.onboarding-steps > div {
+  grid-template-columns: 26px 1fr;
+  gap: 3px 10px;
+  padding: 2px 16px 2px 0;
+  border-right: 1px solid var(--line-soft);
+}
+
+.onboarding-steps > div:last-child {
+  border-right: 0;
+}
+
+.onboarding-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  box-shadow: inset 0 1px 0 #ffffff0a;
+}
+
+.onboarding-steps b {
+  font-size: 0.86rem;
+  letter-spacing: -0.01em;
+}
+
+.onboarding-steps p {
+  font-size: 0.77rem;
+  line-height: 1.5;
+}
+
+/* ---- tarjetas del modo básico ------------------------------------------- */
+
+.simple-cards {
+  gap: 16px;
+  margin: 18px 0;
+}
+
+.simple-card {
+  padding: 22px 22px 21px;
+  border-radius: 18px;
+  border-color: color-mix(in srgb, var(--accent) 14%, var(--line));
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--accent) 7%, transparent), transparent 42%),
+    linear-gradient(180deg, color-mix(in srgb, var(--panel-2) 96%, transparent), color-mix(in srgb, var(--panel) 98%, transparent));
+  box-shadow:
+    0 26px 54px -30px #000000,
+    inset 0 1px 0 #ffffff0d;
+}
+
+.simple-card-index {
+  position: absolute;
+  top: 20px;
+  right: 22px;
+  color: color-mix(in srgb, var(--accent) 42%, var(--muted));
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  pointer-events: none;
+}
+
+.simple-label {
+  color: color-mix(in srgb, var(--accent) 38%, var(--muted));
+  font-size: 0.64rem;
+  letter-spacing: 0.22em;
+}
+
+.simple-big {
+  font-size: clamp(2rem, 3.2vw, 2.6rem);
+  letter-spacing: -0.045em;
+}
+
+.simple-bar {
+  position: relative;
+  height: 5px;
+  margin: 4px 0;
+  background: color-mix(in srgb, var(--bad) 14%, var(--surface-1));
+  box-shadow: inset 0 1px 2px #00000090;
+}
+
+.simple-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 calc(10% - 1px),
+    #02050466 calc(10% - 1px) 10%
+  );
+  opacity: 0.55;
+}
+
+.simple-pulse,
+.simple-history {
+  border-radius: 18px;
+}
+
+/* ---- paneles, tablas y gráfico ------------------------------------------ */
+
+.card-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: 0.19em;
+}
+
+.card-header h3::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 1px;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+.dynamic-table thead th,
+.symbols-table thead th {
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.dynamic-table tbody tr,
+.symbols-table tbody tr {
+  transition: background 150ms ease, box-shadow 150ms ease;
+}
+
+.dynamic-table tbody tr:hover,
+.symbols-table tbody tr:hover {
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface-2));
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.chart-canvas {
+  height: clamp(440px, calc(100vh - 310px), 840px);
+  min-height: 440px;
+  background:
+    radial-gradient(90% 70% at 50% 0%, color-mix(in srgb, var(--accent) 5%, transparent), transparent 65%),
+    color-mix(in srgb, var(--bg-deep) 92%, transparent);
+}
+
+.chart-card {
+  border-color: color-mix(in srgb, var(--accent) 20%, var(--line));
+  box-shadow:
+    0 30px 70px -38px #000000,
+    inset 0 1px 0 #ffffff0c;
+}
+
+/* La rejilla del gráfico no debe competir con la línea de precio. */
+.chart-card::after {
+  opacity: 0.38;
+}
+
+/* ---- responsive ---------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .simple-hero {
+    padding: 24px;
+  }
+
+  .simple-hero h2 {
+    font-size: clamp(1.8rem, 7vw, 2.4rem);
+  }
+}
+
+@media (max-width: 720px) {
+  .simple-hero-side {
+    width: 100%;
+    flex-direction: row-reverse;
+    justify-content: space-between;
+  }
+
+  .hero-core {
+    width: 82px;
+    height: 82px;
+  }
+
+  .history-controls {
+    width: 100%;
+  }
+
+  .history-divider {
+    display: none;
+  }
+
+  .onboarding-steps > div {
+    border-right: 0;
+  }
+}
+
+/* En pantallas de portátil la cabina no se parte en dos filas: se retiran
+   accesos secundarios antes que romper la altura fija del rail. */
+@media (max-width: 1200px) {
+  .palette-trigger,
+  .top-bar [data-version],
+  .top-bar .fresh-chip {
+    display: none;
+  }
+
+  /* La altura del rail es fija: la cabecera nunca se parte en dos filas. */
+  .top-bar {
+    flex-wrap: nowrap;
+  }
+}
+
+@media (max-width: 960px) {
+  .session-group {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .sidebar-title {
+    display: none;
+  }
+
+  .top-bar-left .hud-sep,
+  .top-bar-left .status-group {
+    display: none;
+  }
+
+  .brand {
+    padding-right: 10px;
+  }
+
+  .brand-name {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .top-bar {
+    padding: 0 12px;
+  }
+
+  .brand-sub {
+    display: none;
+  }
+
+  .simple-hero-side {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .hero-core {
+    display: none;
+  }
+}
+
+/* ============================================================================
+   Capa de terminal — plana y densa
+   ----------------------------------------------------------------------------
+   El sistema original era un HUD de cristal: lavados radiales, rejilla de
+   fondo, bordes luminosos animados, orbe decorativo y titular de marketing
+   dentro de un panel. Eso no es un terminal, es una landing con datos: el
+   mismo repertorio que produce cualquier interfaz generada —cian sobre negro,
+   blur, glow, 01/02/03—. Esta capa lo aplana sin tocar la estructura: un solo
+   acento para lo interactivo, verde y rojo sólo para el resultado, hairlines de
+   1 px, radios de 2 px y cero sombras. Todo lo que decora sin informar se
+   apaga; lo que informa se queda y se lee antes.
+   ========================================================================== */
+
+:root {
+  /* Sólo geometría y efectos: el color es de cada tema, no de esta capa. */
+  --glow-accent: none;
+  --glow-bad: none;
+  --glow-1: transparent;
+  --glow-2: transparent;
+  --grid: transparent;
+  --sheen: transparent;
+  --shadow-pop: none;
+  --shadow-panel: none;
+
+  --radius: 2px;
+  --radius-sm: 2px;
+  --font-ui: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --font-display: var(--font-ui);
+  --font-mono: "Cascadia Mono", "Consolas", ui-monospace, monospace;
+}
+
+/*
+ * Grafito neutro para el tema por defecto; los demás conservan su paleta. Sin
+ * esta acotación, `:root` (misma especificidad, más tarde) pisaría los bloques
+ * `[data-theme]` y el selector de temas seguiría enseñando muestras que ya no
+ * aplica.
+ */
+:root:is([data-theme="wraith"], :not([data-theme])) {
+  --bg: #0f1113;
+  --bg-deep: #0f1113;
+  --bg-wash: #0f1113;
+  --panel: #14171a;
+  --panel-2: #16191d;
+  --panel-3: #1a1e22;
+  --optical-cut: #14171a;
+  --line: #272d33;
+  --line-soft: #1e2328;
+
+  --text: #d8dde3;
+  --text-dim: #a3adb8;
+  --muted: #79838e;
+
+  /* Un acento apagado para lo interactivo; el color fuerte queda para el P&L. */
+  --accent: #7ea6d9;
+  --accent-2: #7ea6d9;
+  --violet: #7ea6d9;
+  --good: #4fbf7f;
+  --bad: #e05a6a;
+  --warn: #d9a441;
+
+  --surface-1: #14171a;
+  --surface-2: #16191d;
+  --surface-3: #1a1e22;
+  --surface-4: #14171a;
+  --surface-5: #14171a;
+}
+
+/* Nada de lavados, rejillas ni luz ambiental: el fondo es el fondo. */
+body {
+  background: var(--bg);
+  font-size: 13px;
+  line-height: 1.42;
+}
+
+body::before,
+.ambient,
+.hero-sheen {
+  display: none;
+}
+
+.app-shell[data-mood="gain"],
+.app-shell[data-mood="loss"] {
+  --mood-a: transparent;
+  --mood-b: transparent;
+}
+
+/* El titular de la vista es una etiqueta, no un hero de landing. */
+.page > h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.page > h2::after {
+  display: none;
+}
+
+.page,
+.page-swap,
+.simple .simple-hero,
+.simple .simple-cards .simple-card,
+.simple .simple-pulse,
+.simple .simple-history {
+  animation: none;
+}
+
+/* Barra superior sólida; el borde inferior ya dice dónde acaba. */
+.top-bar {
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.top-bar::after {
+  display: none;
+}
+
+.sidebar {
+  background: var(--bg-deep);
+  border-right: 1px solid var(--line);
+  box-shadow: none;
+}
+
+.sidebar-foot {
+  background: transparent;
+  border-color: var(--line-soft);
+  letter-spacing: 0;
+  font-size: 0.68rem;
+}
+
+/* Un panel es un rectángulo con un hairline: ni cristal ni sombra. */
+.card,
+.simple-card,
+.kpi,
+.panel,
+.toast,
+.onboarding,
+.promotion-card,
+.summary-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.card::before,
+.kpi::after,
+.simple-card::before,
+.small-card::before {
+  display: none;
+}
+
+.card,
+.simple-card,
+.kpi {
+  padding: 14px 15px;
+}
+
+.kpi:hover,
+.simple-card:hover {
+  border-color: var(--muted);
+  box-shadow: none;
+  transform: none;
+}
+
+/* Los índices 01/02/03 numeraban tarjetas: jerarquía fingida. */
+.simple-card-index,
+.kpi-index {
+  display: none;
+}
+
+.card-header h3,
+h3 {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+/* El panel de estado del modo básico: frase, cifra y acciones, sin orbe. */
+.simple-hero {
+  min-height: 0;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: none;
+}
+
+.simple-hero::before,
+.simple-hero::after {
+  display: none;
+}
+
+.simple-hero h2 {
+  max-width: none;
+  margin-bottom: 4px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0;
+  text-wrap: nowrap;
+  text-shadow: none;
+}
+
+.simple-hero p {
+  max-width: 78ch;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.hero-core {
+  display: none;
+}
+
+.simple-hero-actions .btn {
+  border-radius: var(--radius);
+  background: transparent;
+  backdrop-filter: none;
+}
+
+/* Botones y pastillas: rectángulo, borde, sin degradado ni resplandor. */
+.btn,
+.badge,
+.fresh-chip,
+.mode-switch,
+.mode-option,
+.icon-btn,
+.toast,
+.chip {
+  border-radius: var(--radius);
+  box-shadow: none;
+  background-image: none;
+  backdrop-filter: none;
+}
+
+.btn {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  font-weight: 500;
+}
+
+.btn:hover {
+  background: var(--panel-3);
+  border-color: var(--muted);
+}
+
+.badge,
+.fresh-chip {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.04em;
+  background: transparent;
+  border: 1px solid var(--line);
+}
+
+.mode-switch {
+  border: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.mode-option.active {
+  background: var(--panel-3);
+  color: var(--text);
+}
+
+.mode-thumb {
+  background: var(--panel-3);
+  border-radius: 1px;
+}
+
+/* Cifras: monoespaciadas y tabulares, que es como se comparan dos filas. */
+.hud-value,
+.hud-price,
+.kpi-value,
+.simple-big,
+td .num,
+.tabular {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.simple-big {
+  font-size: 1.5rem;
+  font-weight: 500;
+}
+
+.hud-value-lg {
+  font-size: 0.95rem;
+}
+
+/* Verde y rojo sólo donde hay resultado, y sin brillo. */
+.tone-good,
+.hud-value.tone-good {
+  color: var(--good);
+}
+
+.tone-bad,
+.hud-value.tone-bad {
+  color: var(--bad);
+}
+
+/* Los avisos flotantes tapan datos: borde y fondo sólidos, sin sombra. */
+.toast {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+
+/* Sin animaciones de ambiente; el movimiento se reserva a los datos. */
+@media (prefers-reduced-motion: no-preference) {
+  .simple-led,
+  .led {
+    box-shadow: none;
+  }
+}
+
+/* Restos del HUD: lavado de página, activo del menú con degradado y halo. */
+.page::before,
+.page::after,
+.page.simple::before,
+.page.simple::after {
+  display: none;
+}
+
+.nav-item.active {
+  background: var(--panel-2);
+  border-color: var(--line);
+  box-shadow: none;
+}
+
+.nav-item.active svg {
+  color: var(--accent);
+  filter: none;
+}
+
+/* Tablas: filas de 28 px y fechas/cifras en mono, que es donde se compara. */
+.dynamic-table {
+  font-size: 12.5px;
+}
+
+.dynamic-table th {
+  font-size: 0.63rem;
+  letter-spacing: 0.07em;
+}
+
+.dynamic-table td,
+.dynamic-table th {
+  padding: 5px 10px;
+}
+
+.dynamic-table tbody tr:hover {
+  background: var(--surface-2);
+}
+
+.dynamic-table td:first-child,
+.dynamic-table .mono {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+/* Las pestañas de filtro eran píldoras de 999 px: rectángulo, como el resto. */
+.range-tabs .btn,
+.segmented .btn,
+.btn.active,
+.btn[aria-pressed="true"] {
+  border-radius: var(--radius);
+}
+
+.seg,
+.seg.active {
+  border-radius: var(--radius);
+}
+
+/* Nada de píldoras sueltas ni cajas dentro de cajas: filas con hairline. */
+[class*="chip"],
+[class*="pill"],
+.badge {
+  border-radius: var(--radius);
+}
+
+.onboarding::before {
+  display: none;
+}
+
+.promotion-metric,
+.promotion-metrics > div,
+.metric-cell {
+  border: 0;
+  border-top: 1px solid var(--line-soft);
+  border-radius: 0;
+  background: transparent;
+  padding: 8px 0;
 }

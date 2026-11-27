@@ -6,20 +6,27 @@ interface Props {
 }
 
 /**
- * La marca de ezur: la E tallada en una placa redondeada.
+ * La marca de ezur: una insignia de carbono con la E espectral.
  *
- * Una sola idea y tres formas —placa, E, nada más—: la E es la letra y también
- * tres barras de un gráfico. Las barras miden 6,5 de 48 con huecos de 3,25, así
- * que a 16 px siguen midiendo más de 2 px y el hueco no se cierra: el criterio
- * de las guías de marca es que por debajo de eso la marca se vuelve un borrón.
+ * La placa es un octógono con facetas, no un cuadrado redondeado: los chaflanes
+ * y el borde luminoso le dan el aire de una pieza mecanizada. La E ya no es un
+ * hueco plano, sino tres barras inclinadas con degradado esmeralda: a 16 px la
+ * inclinación se pierde, pero el trazo sigue midiendo casi 2 px y la letra se
+ * lee; a 48 px se ve el detalle de las facetas.
  *
- * La placa usa `--accent`, o sea el color que el operador haya elegido en el
- * selector de temas; las barras se recortan con el color del fondo
- * (`--logo-cut`), de modo que la letra se lee como un hueco y no como un trazo
- * encima. Vector puro: sin fuente, sin imagen, sin dependencia.
+ * Usa `--accent` para el borde y el brillo, y `--logo-cut` para la sombra de la
+ * placa, de modo que el color siga al tema elegido. Vector puro, sin fuente ni
+ * imagen.
  */
 export function Logo({ size = 30, title }: Props) {
-  const shineId = `ezur-shine-${useId().replace(/:/g, "")}`;
+  const uid = useId().replace(/:/g, "");
+  const plateId = `ezur-plate-${uid}`;
+  const edgeId = `ezur-edge-${uid}`;
+  const letterId = `ezur-letter-${uid}`;
+  const shadeId = `ezur-shade-${uid}`;
+  const clipId = `ezur-clip-${uid}`;
+  const plate = "M13 2.5h22l10.5 10.5v22L35 45.5H13L2.5 35V13z";
+
   return (
     <svg
       width={size}
@@ -31,27 +38,52 @@ export function Logo({ size = 30, title }: Props) {
       data-logo="ezur"
     >
       <defs>
-        {/* Luz de arriba y sombra abajo: da volumen sin depender de un color fijo. */}
-        <linearGradient id={shineId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#ffffff" stopOpacity=".26" />
-          <stop offset=".52" stopColor="#ffffff" stopOpacity=".03" />
-          <stop offset="1" stopColor="#000000" stopOpacity=".22" />
+        <linearGradient id={plateId} x1="6" y1="3" x2="41" y2="46" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#183122" />
+          <stop offset=".48" stopColor="#0b1710" />
+          <stop offset="1" stopColor="#050b07" />
         </linearGradient>
+        <linearGradient id={edgeId} x1="3" y1="2" x2="45" y2="46" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#d8ffe1" />
+          <stop offset=".38" stopColor="var(--accent, #35ea86)" />
+          <stop offset="1" stopColor="#0b7042" />
+        </linearGradient>
+        <linearGradient id={letterId} x1="13" y1="7" x2="37" y2="41" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#effff5" />
+          <stop offset=".48" stopColor="#86ffbb" />
+          <stop offset="1" stopColor="#22c46f" />
+        </linearGradient>
+        <linearGradient id={shadeId} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#ffffff" stopOpacity=".16" />
+          <stop offset=".55" stopColor="#ffffff" stopOpacity=".02" />
+          <stop offset="1" stopColor="#000000" stopOpacity=".32" />
+        </linearGradient>
+        <clipPath id={clipId}>
+          <path d={plate} />
+        </clipPath>
       </defs>
-      <rect x="1.5" y="1.5" width="45" height="45" rx="12" fill="var(--accent, #37e0d0)" />
-      <rect
-        x="1.5"
-        y="1.5"
-        width="45"
-        height="45"
-        rx="12"
-        fill={`url(#${shineId})`}
+
+      <path d={plate} fill={`url(#${plateId})`} />
+      <g clipPath={`url(#${clipId})`}>
+        {/* Dos facetas opuestas: la izquierda recibe la luz, la derecha se hunde. */}
+        <path d="M2.5 13 13 2.5h11v43H13L2.5 35z" fill={`url(#${shadeId})`} />
+        <path d="M35 2.5 45.5 13v22L35 45.5 24 48V0z" fill="#000000" opacity=".26" />
+        <path d="M2.5 35 13 45.5h22l10.5-10.5" fill="none" stroke="#000000" opacity=".24" />
+      </g>
+      <path d={plate} fill="none" stroke={`url(#${edgeId})`} strokeWidth="1.4" />
+
+      {/* Una sola forma compuesta: las barras se funden sin costuras internas. */}
+      <path
+        fill={`url(#${letterId})`}
+        d="M13.2 10.6 19 9.4v30l-5.8 1.2z M13.2 10.6 36.4 6.7l1.1 7.3-24.3 4.7z M13.2 20.9 31.2 17.6l1.1 7.3-19.1 3.8z M13.2 31.3 37.4 27.3l1.1 7.3-25.3 4.5z"
       />
-      <g fill="var(--logo-cut, #070b11)">
-        <rect x="13" y="11" width="6.5" height="26" />
-        <rect x="13" y="11" width="21" height="6.5" />
-        <rect x="13" y="20.75" width="17" height="6.5" />
-        <rect x="13" y="30.5" width="23" height="6.5" />
+
+      {/* Tres trazos espectrales en el borde derecho: desaparecen a 16 px,
+          pero a tamaño de cabecera dan la sensación de telemetría. */}
+      <g stroke="var(--accent, #35ea86)" strokeLinecap="round" opacity=".42">
+        <path d="M39.5 17.5h3.1" />
+        <path d="M40.2 23.5h2.4" />
+        <path d="M40.9 29.5h1.7" />
       </g>
     </svg>
   );

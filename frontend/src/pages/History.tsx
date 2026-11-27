@@ -287,6 +287,7 @@ function HistorySummaryView({
       ) : null}
       <div className="kpi-grid" data-history-summary>
         <article className="kpi">
+          <span className="kpi-index" aria-hidden="true">01</span>
           <span className="kpi-label">Total ganado</span>
           <span className={`kpi-value ${hasPnl && summary.grossWin > 0 ? "tone-good" : ""}`}>
             {hasPnl ? money(summary.grossWin, true) : "—"}
@@ -297,6 +298,7 @@ function HistorySummaryView({
           </span>
         </article>
         <article className="kpi">
+          <span className="kpi-index" aria-hidden="true">02</span>
           <span className="kpi-label">Total perdido</span>
           <span className={`kpi-value ${hasPnl && summary.grossLoss < 0 ? "tone-bad" : ""}`}>
             {hasPnl ? money(summary.grossLoss) : "—"}
@@ -307,6 +309,7 @@ function HistorySummaryView({
           </span>
         </article>
         <article className="kpi">
+          <span className="kpi-index" aria-hidden="true">03</span>
           <span className="kpi-label">Resultado total</span>
           <span className={`kpi-value ${netTone}`}>{net === null ? "—" : money(net, true)}</span>
           <span className="kpi-foot">
@@ -319,6 +322,7 @@ function HistorySummaryView({
           </span>
         </article>
         <article className="kpi">
+          <span className="kpi-index" aria-hidden="true">04</span>
           <span className="kpi-label">Operaciones</span>
           <span className="kpi-value">{summary.rows}</span>
           <span className="kpi-foot">
@@ -329,6 +333,41 @@ function HistorySummaryView({
           </span>
         </article>
       </div>
+      {hasPnl ? (
+        <section className="summary-balance" data-history-balance aria-label="Reparto de operaciones">
+          <div className="summary-balance-head">
+            <span className="summary-balance-title">Reparto del periodo</span>
+            <span className="mono small">
+              {summary.wins} G · {summary.losses} P
+            </span>
+          </div>
+          <div
+            className="summary-balance-track"
+            role="img"
+            aria-label={`${summary.wins} ganadoras y ${summary.losses} perdedoras`}
+          >
+            <span
+              className="summary-balance-win"
+              style={{ width: `${summary.wins + summary.losses > 0 ? (summary.wins / (summary.wins + summary.losses)) * 100 : 0}%` }}
+            />
+          </div>
+          <div className="summary-balance-foot">
+            <span className="tone-good">
+              {summary.wins + summary.losses > 0
+                ? formatValue((summary.wins / (summary.wins + summary.losses)) * 100, "pct", 0)
+                : "0 %"}{" "}
+              ganadoras
+            </span>
+            <span className="tone-bad">
+              {summary.wins + summary.losses > 0
+                ? formatValue((summary.losses / (summary.wins + summary.losses)) * 100, "pct", 0)
+                : "0 %"}{" "}
+              perdedoras
+            </span>
+            {summary.flats > 0 ? <span className="muted">{summary.flats} empates</span> : null}
+          </div>
+        </section>
+      ) : null}
       {!simple ? (
         <section className="card">
           <header className="card-header">
@@ -441,36 +480,40 @@ export function HistoryPage() {
           Actualizar
         </button>
       </h2>
-      <div className="button-row" role="tablist" aria-label="Vista del historial">
-        {HISTORY_VIEWS.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            role="tab"
-            aria-selected={view === item.id}
-            className={view === item.id ? "btn active" : "btn"}
-            onClick={() => setView(item.id)}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
-      <div className="button-row">
-        {PERIODS.map((value) => (
-          <button
-            key={value}
-            type="button"
-            className={value === period ? "btn active" : "btn"}
-            onClick={() => setPeriod(value)}
-          >
-            {PERIOD_WORDS[value]}
-          </button>
-        ))}
-        {isSimple ? null : (
-          <a className="btn" href={api.tradesCsvUrl({ start })} download>
-            Exportar CSV
-          </a>
-        )}
+      <div className="history-controls">
+        <div className="button-row history-views" role="tablist" aria-label="Vista del historial">
+          {HISTORY_VIEWS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              role="tab"
+              aria-selected={view === item.id}
+              className={view === item.id ? "btn active" : "btn"}
+              onClick={() => setView(item.id)}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+        <span className="history-divider" aria-hidden="true" />
+        <div className="button-row history-periods" role="group" aria-label="Periodo">
+          {PERIODS.map((value) => (
+            <button
+              key={value}
+              type="button"
+              className={value === period ? "btn active" : "btn"}
+              aria-pressed={value === period}
+              onClick={() => setPeriod(value)}
+            >
+              {PERIOD_WORDS[value]}
+            </button>
+          ))}
+          {isSimple ? null : (
+            <a className="btn" href={api.tradesCsvUrl({ start })} download>
+              Exportar CSV
+            </a>
+          )}
+        </div>
       </div>
       {isSimple && view === "trades" ? (
         <p className="simple-lead">

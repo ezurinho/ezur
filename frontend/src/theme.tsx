@@ -2,17 +2,17 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { ReactNode } from "react";
 
 /**
- * Themes are token sets, not stylesheets: the same components, five moods.
+ * Themes are token sets, not stylesheets: the same components, six moods.
  *
- * `hud` is the original cyan mission-control palette and stays the default so an
- * existing operator sees no change. The rest are alternates of the same design
- * language (dark, hairline, single accent) plus one light theme for daylight.
+ * `wraith` is the default: carbon-black glass with an emerald signal, the same
+ * language as the Nitro and Chess Wraith panels. `hud` keeps the original cyan
+ * mission-control palette for operators who prefer it.
  *
  * Two things are the operator's, not the theme's: whether the choice follows the
  * system (`auto`) and the accent colour. Both live in localStorage because they
  * are reading preferences, not engine state.
  */
-export type ThemeId = "hud" | "aurora" | "ember" | "matrix" | "daylight";
+export type ThemeId = "wraith" | "hud" | "aurora" | "ember" | "matrix" | "daylight";
 export type ThemeChoice = ThemeId | "auto";
 
 export interface ThemeDefinition {
@@ -25,9 +25,15 @@ export interface ThemeDefinition {
 
 export const THEMES: ThemeDefinition[] = [
   {
+    id: "wraith",
+    label: "Wraith",
+    hint: "esmeralda · por defecto",
+    swatch: ["#050806", "#35ea86", "#9bf7c5"],
+  },
+  {
     id: "hud",
     label: "HUD",
-    hint: "cian · por defecto",
+    hint: "cian · clásico",
     swatch: ["#070b11", "#37e0d0", "#3ddc84"],
   },
   {
@@ -58,6 +64,7 @@ export const THEMES: ThemeDefinition[] = [
 
 /** Accents that already work on both the dark and the light surfaces. */
 export const ACCENT_PRESETS: { label: string; value: string }[] = [
+  { label: "esmeralda", value: "#35ea86" },
   { label: "cian", value: "#37e0d0" },
   { label: "violeta", value: "#b07bff" },
   { label: "ámbar", value: "#ff9f45" },
@@ -104,7 +111,7 @@ function readChoice(): ThemeChoice {
   } catch {
     /* storage blocked: the default is still a valid answer */
   }
-  return "hud";
+  return "wraith";
 }
 
 function readAccent(): string | null {
@@ -137,7 +144,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [accent, setAccentState] = useState<string | null>(readAccent);
   const [systemDark, setSystemDark] = useState<boolean>(prefersDark);
 
-  const theme: ThemeId = choice === "auto" ? (systemDark ? "hud" : "daylight") : choice;
+  const theme: ThemeId = choice === "auto" ? (systemDark ? "wraith" : "daylight") : choice;
 
   const setTheme = useCallback((next: ThemeChoice) => {
     setChoiceState(next);

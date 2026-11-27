@@ -27,14 +27,14 @@ describe("temas", () => {
     );
   }
 
-  it("arranca en hud y lo escribe en el documento", () => {
+  it("arranca en wraith y lo escribe en el documento", () => {
     render(
       <ThemeProvider>
         <Probe />
       </ThemeProvider>,
     );
-    expect(screen.getByTestId("theme")).toHaveTextContent("hud");
-    expect(document.documentElement.dataset.theme).toBe("hud");
+    expect(screen.getByTestId("theme")).toHaveTextContent("wraith");
+    expect(document.documentElement.dataset.theme).toBe("wraith");
   });
 
   it("recuerda el tema elegido entre recargas", () => {
@@ -55,11 +55,18 @@ describe("temas", () => {
         <Probe />
       </ThemeProvider>,
     );
-    expect(screen.getByTestId("theme")).toHaveTextContent("hud");
+    expect(screen.getByTestId("theme")).toHaveTextContent("wraith");
   });
 
-  it("publica cinco temas y todos tienen tres muestras", () => {
-    expect(THEMES.map((item) => item.id)).toEqual(["hud", "aurora", "ember", "matrix", "daylight"]);
+  it("publica seis temas y todos tienen tres muestras", () => {
+    expect(THEMES.map((item) => item.id)).toEqual([
+      "wraith",
+      "hud",
+      "aurora",
+      "ember",
+      "matrix",
+      "daylight",
+    ]);
     for (const theme of THEMES) expect(theme.swatch).toHaveLength(3);
   });
 

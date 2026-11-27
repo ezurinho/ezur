@@ -62,7 +62,7 @@ export function ThemePicker() {
             data-theme-option="auto"
           >
             <span className="theme-swatch" aria-hidden="true">
-              <i style={{ background: "#070b11" }} />
+              <i style={{ background: "#050806" }} />
               <i style={{ background: "#f4f6fa" }} />
               <i style={{ background: currentAccent }} />
             </span>

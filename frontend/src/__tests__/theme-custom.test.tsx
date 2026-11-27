@@ -110,8 +110,8 @@ describe("modo automático", () => {
     act(() => screen.getByText("auto").click());
 
     expect(screen.getByTestId("choice")).toHaveTextContent("auto");
-    expect(screen.getByTestId("theme")).toHaveTextContent("hud");
-    expect(document.documentElement.dataset.theme).toBe("hud");
+    expect(screen.getByTestId("theme")).toHaveTextContent("wraith");
+    expect(document.documentElement.dataset.theme).toBe("wraith");
   });
 
   it("con el sistema en claro usa el tema de día", () => {

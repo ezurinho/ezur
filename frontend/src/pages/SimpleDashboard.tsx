@@ -312,14 +312,22 @@ export function SimpleDashboard() {
             </p>
           ) : null}
         </div>
-        <div className="simple-hero-actions">
-          {status === "running" ? null : <DispatchButton action="start" label="Reanudar" />}
-          <DispatchButton action="stop" label="Detener" />
+        <div className="simple-hero-side">
+          <div className="hero-core" aria-hidden="true" data-hero-core>
+            <span className="hero-core-ring" />
+            <span className="hero-core-ring" />
+            <span className="hero-core-dot" />
+          </div>
+          <div className="simple-hero-actions">
+            {status === "running" ? null : <DispatchButton action="start" label="Reanudar" />}
+            <DispatchButton action="stop" label="Detener" />
+          </div>
         </div>
       </section>
 
       <div className="simple-cards">
         <article className="simple-card">
+          <span className="simple-card-index" aria-hidden="true">01</span>
           <span className="simple-label">Hoy</span>
           <strong className={`simple-big ${risk.daily_pnl > 0 ? "tone-good" : risk.daily_pnl < 0 ? "tone-bad" : ""}`}>
             <AnimatedNumber value={risk.daily_pnl} format={(value) => `${value > 0 ? "+" : ""}${money(value)}`} />
@@ -343,6 +351,7 @@ export function SimpleDashboard() {
         </article>
 
         <article className="simple-card">
+          <span className="simple-card-index" aria-hidden="true">02</span>
           <span className="simple-label">Dinero en la cuenta</span>
           <strong className="simple-big">
             <AnimatedNumber value={risk.equity} format={money} />
@@ -376,6 +385,7 @@ export function SimpleDashboard() {
         </article>
 
         <article className="simple-card">
+          <span className="simple-card-index" aria-hidden="true">03</span>
           <span className="simple-label">Operación abierta</span>
           {position ? (
             <>

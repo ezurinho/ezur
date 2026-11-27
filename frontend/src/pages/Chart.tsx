@@ -145,14 +145,15 @@ export function ChartPage() {
     if (!containerRef.current) return;
     const styles = getComputedStyle(document.documentElement);
     const read = (name: string, fallback: string) => styles.getPropertyValue(name).trim() || fallback;
-    const accent = read("--accent", "#37e0d0");
+    const accent = read("--accent", "#35ea86");
     const good = read("--good", "#3ddc84");
     const bad = read("--bad", "#ff5c6c");
-    const line = read("--line", "#1b2533");
-    const text = read("--text-dim", "#a9b6c6");
+    const line = read("--line", "#1c2c23");
+    const text = read("--text-dim", "#9fb5a9");
     const muted = read("--muted", "#6f8096");
 
     const chart = createChart(containerRef.current, {
+      autoSize: true,
       height: 440,
       layout: {
         background: { color: "transparent" },

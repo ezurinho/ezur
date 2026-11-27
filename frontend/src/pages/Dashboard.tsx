@@ -160,8 +160,11 @@ export function DashboardPage() {
       <Reasoning snapshot={snapshot} />
 
       <div className="kpi-grid">
-        {kpis.map((kpi) => (
+        {kpis.map((kpi, index) => (
           <article key={kpi.label} className="kpi">
+            <span className="kpi-index" aria-hidden="true">
+              {String(index + 1).padStart(2, "0")}
+            </span>
             <span className="kpi-label">
               {kpi.label}
               {kpi.info ? <Info term={kpi.label} text={kpi.info} /> : null}
