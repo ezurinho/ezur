@@ -19,11 +19,12 @@ que no haya dudas.
 | Flujo de taker (H7) | 5 | 2025-01/2026-11 | candidata -27,3 %, PF 0,9355, top-5 -11.152; ninguna variante pasa | `docs/ARCHIVO-H7.md` |
 | Spread de funding entre venues (H8) | 5 | 2025-01/2026-11 | candidata +0,32 %, PF 10,46, esperanza 0,0094 R, 17 episodios/34 ops; ninguna variante llega a 100 ops | `docs/ARCHIVO-H8.md` |
 | Basis spot-perp (H9) | 5 | 2025-01/2026-11 | candidata -0,21 %, PF 0,1356, esperanza -0,0047 R, 22 episodios/44 ops; las cinco variantes pierden | `docs/ARCHIVO-H9.md` |
+| H5 re-hecho sobre el panel de H10 | 3 | 2025-01/2026-10 | ninguna pasa: la configuración fiel da 0,0041 R de esperanza y k=4 falla top-5 (-7.161) | `docs/MEDICION-H5-PANEL-H10.md` |
 
-**Total de variantes medidas:** 50. A ellas se suman las pruebas de viabilidad
+**Total de variantes medidas:** 53. A ellas se suman las pruebas de viabilidad
 exploratorias (umbrales de funding, ventanas de momentum) que no llegaron a
 pre-registro; no se usan para coronar nada, pero inflan el espacio de búsqueda.
-El DSR de cualquier hipótesis futura debe declarar al menos 50 ensayos, no 5.
+El DSR de cualquier hipótesis futura debe declarar al menos 53 ensayos, no 5.
 
 ## Descartadas antes de medir
 
@@ -34,8 +35,9 @@ El DSR de cualquier hipótesis futura debe declarar al menos 50 ensayos, no 5.
 Las cinco variantes de H10 están congeladas en `docs/PRE-REGISTRO-H10.md` y no se
 midieron. **No se suman al total**: sólo cuentan las variantes que llegaron a
 medirse, y el cribado económico no produce estadístico de estrategia. El DSR de
-cualquier hipótesis posterior sigue declarando **50 ensayos**, no 55. El
-pre-registro decía 55 asumiendo que se mediría; no se midió.
+cualquier hipótesis posterior declara **53 ensayos** —50 previos más las tres
+re-mediciones de H5 sobre el panel de H10— y no 55: el pre-registro decía 55
+asumiendo que H10 llegaría a medirse, y no se midió.
 
 ## Lo que el registro ya dice
 
