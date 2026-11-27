@@ -14,21 +14,26 @@ que no haya dudas.
 | Carry BTC (H2) | 5 | 2025-01/2026-11 | 4 episodios, +2,35 % anual, IC80 1,85-6,75 % | `docs/ARCHIVO-H2.md` |
 | Momentum cross-sectional (H3) | 5 | 2025-01/2026-11 | PF 0,7046, esperanza -0,0447 R, P&L -30,9 % | `docs/ARCHIVO-H3.md` |
 | Pares spot contra BTC (H4) | 5 | 2025-01/2026-11 | PF 0,9235, esperanza -0,0044 R, P&L -2,75 % | `docs/ARCHIVO-H4.md` |
+| Carry cross-sectional de funding (H5) | 5 | 2025-01/2026-11 | candidata PF 1,1114, esperanza 0,0301 R, top-5 -1.864; raw PF 1,1849 pero DSR 0,54 | `docs/ARCHIVO-H5.md` |
 
-**Total de variantes medidas:** 25. A ellas se suman las pruebas de viabilidad
+**Total de variantes medidas:** 30. A ellas se suman las pruebas de viabilidad
 exploratorias (umbrales de funding, ventanas de momentum) que no llegaron a
 pre-registro; no se usan para coronar nada, pero inflan el espacio de búsqueda.
-El DSR de cualquier hipótesis futura debe declarar al menos 25 ensayos, no 5.
+El DSR de cualquier hipótesis futura debe declarar al menos 30 ensayos, no 5.
 
 ## Lo que el registro ya dice
 
-- Ninguna de las 25 variantes supera las puertas duras del plan en OOS.
+- Ninguna de las 30 variantes supera **todas** las puertas duras del plan en OOS.
 - La mejor expectativa OOS es la del carry (+2,35 % anual), pero con 4
   episodios; no es una muestra.
 - El mejor PF de desarrollo (momentum 14/7, 1,3523) se convierte en 1,0468 en
   OOS; el mejor PF OOS (carry, 34,33) es degenerado por tener un solo perdedor.
 - El patrón se repite: el bruto se desvanece al cambiar de régimen y el coste no
   es la causa principal (0,006-0,03 R por operación, muy por debajo de 0,25 R).
+- La variante raw de H5 pasó PF, esperanza, coste y top-5 en la ventana
+  completa, pero cayó en DSR (0,54) y en el top-5 de cada año. Es el primer
+  casi-éxito y la mejor prueba de que el DSR y la concentración no son
+  decorativos.
 
 ## Regla de higiene
 

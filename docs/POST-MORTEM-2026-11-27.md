@@ -1,4 +1,4 @@
-# Post-mortem — cuatro familias, 25 variantes, ningún edge desplegable
+# Post-mortem — cinco familias, 30 variantes, ningún edge desplegable
 
 **Fecha:** 2026-11-27
 **Alcance:** SMA 15 m, Donchian 1 h (H1), carry BTC (H2), momentum
@@ -14,8 +14,9 @@ archivadas. Ninguna pasa las puertas duras en OOS.
 | Carry BTC | 5 | +2,35 % anual, 4 episodios | archivada por muestra |
 | Momentum cross-sectional | 5 | PF 0,7046, -30,9 % | archivada |
 | Pares contra BTC | 5 | PF 0,9235, -2,75 % | archivada |
+| Carry cross-sectional de funding | 5 | PF 1,1849 raw, DSR 0,54 | archivada |
 
-**Total: 25 variantes medidas.** El registro está en `docs/TRIALS.md`.
+**Total: 30 variantes medidas.** El registro está en `docs/TRIALS.md`.
 
 ## El patrón
 
@@ -33,6 +34,12 @@ archivadas. Ninguna pasa las puertas duras en OOS.
 5. **La muestra no es el problema principal.** H1, H3 y H4 tienen 227-728
    operaciones OOS y pierden; el carry tiene 4 y gana poco. Más muestra no
    arregla una señal que no está.
+6. **El primer casi-éxito lo mató el DSR, no el coste.** La variante de funding
+   bruto de H5 pasó PF, esperanza, coste y top-5 en la ventana completa
+   (+36,25 %, PF 1,1849), pero el DSR con 30 ensayos es 0,54 y el top-5 es
+   negativo en 2025 y en 2026 por separado. Además, el 78 % del P&L es precio,
+   no funding: era momentum de alts disfrazado de carry. Sin el DSR y el
+   análisis por subperiodos, se habría desplegado una ilusión.
 
 ## Lo que sí mejoró
 
