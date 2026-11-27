@@ -1,5 +1,12 @@
 """H5 re-hecho sobre el panel congelado de H10, con sus reglas intactas.
 
+SUPERADO. Este motor cierra y reabre la posición cada semana, mientras H5 la
+mantiene abierta mientras siga en la cartera. Validado contra
+`server/funding_xs.py`, esa diferencia parte la esperanza por dos (0,0155 R frente
+a 0,0301 R en los majors de H5), así que **sus cifras no se usan**. El motor
+validado y los números vigentes están en `scripts/validate_h5_engine.py` y
+`docs/MEDICION-H5-PANEL-H10.md`. Se conserva por trazabilidad.
+
 H5 pre-registró sus reglas sobre 20 perpetuos elegidos por liquidez de 2026, un
 sesgo de supervivencia que su archivo declara. El panel de H10 corrige justo eso
 (887 símbolos, deslistados dentro, liquidez punto en tiempo), así que este script

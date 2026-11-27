@@ -19,7 +19,7 @@ que no haya dudas.
 | Flujo de taker (H7) | 5 | 2025-01/2026-11 | candidata -27,3 %, PF 0,9355, top-5 -11.152; ninguna variante pasa | `docs/ARCHIVO-H7.md` |
 | Spread de funding entre venues (H8) | 5 | 2025-01/2026-11 | candidata +0,32 %, PF 10,46, esperanza 0,0094 R, 17 episodios/34 ops; ninguna variante llega a 100 ops | `docs/ARCHIVO-H8.md` |
 | Basis spot-perp (H9) | 5 | 2025-01/2026-11 | candidata -0,21 %, PF 0,1356, esperanza -0,0047 R, 22 episodios/44 ops; las cinco variantes pierden | `docs/ARCHIVO-H9.md` |
-| H5 re-hecho sobre el panel de H10 | 3 | 2025-01/2026-10 | ninguna pasa: la configuración fiel da 0,0041 R de esperanza y k=4 falla top-5 (-7.161) | `docs/MEDICION-H5-PANEL-H10.md` |
+| H5 re-hecho sobre el panel de H10 | 3 | 2025-01/2026-10 | motor validado contra funding_xs: la configuración fiel da 0,0066 R (falla 7,6×); k=4 pasa las simples pero falla top-5 en cada año | `docs/MEDICION-H5-PANEL-H10.md` |
 
 **Total de variantes medidas:** 53. A ellas se suman las pruebas de viabilidad
 exploratorias (umbrales de funding, ventanas de momentum) que no llegaron a
