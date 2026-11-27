@@ -46,7 +46,10 @@ STRESS = {"split": {"out_of_sample": {"trades": 169, "profit_factor": 1.03}}}
 CYCLE = {
     "pbo": {"pbo": 0.11},
     "dsr": {"dsr": 0.97},
-    "universe": [{"timeframe": "1h"}],
+    "strategy": {"id": "null", "version": "0.0.0"},
+    "candidate": "fast5",
+    "inputs": {"dataset": {"path": "data/BTC_1h_binance.csv"}},
+    "universe": [{"name": "fast5", "timeframe": "1h"}],
 }
 
 
