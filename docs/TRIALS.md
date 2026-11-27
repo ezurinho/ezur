@@ -25,15 +25,17 @@ exploratorias (umbrales de funding, ventanas de momentum) que no llegaron a
 pre-registro; no se usan para coronar nada, pero inflan el espacio de búsqueda.
 El DSR de cualquier hipótesis futura debe declarar al menos 50 ensayos, no 5.
 
-## Familia en curso (declarada antes de medir)
+## Descartadas antes de medir
 
-| Familia | Variantes | Estado |
+| Familia | Variantes declaradas | Estado |
 |---|---:|---|
-| Carry cross-sectional en el tramo largo (extensión de H5) | 5 | pre-registrada el 2026-11-27; sin medir |
+| Carry cross-sectional en el tramo largo (extensión de H5) | 5 | cribado económico fallido (80,51 pb < 120 pb); archivada sin backtest |
 
-Las cinco variantes de H10 están congeladas en `docs/PRE-REGISTRO-H10.md`. No se
-suman al total hasta que se midan: cuando lo hagan, el registro pasa a **55** y el
-DSR de cualquier hipótesis posterior debe contar 55 ensayos, no 50.
+Las cinco variantes de H10 están congeladas en `docs/PRE-REGISTRO-H10.md` y no se
+midieron. **No se suman al total**: sólo cuentan las variantes que llegaron a
+medirse, y el cribado económico no produce estadístico de estrategia. El DSR de
+cualquier hipótesis posterior sigue declarando **50 ensayos**, no 55. El
+pre-registro decía 55 asumiendo que se mediría; no se midió.
 
 ## Lo que el registro ya dice
 

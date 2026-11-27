@@ -1,0 +1,7143 @@
+{
+  "source": "data.binance.vision futures/um monthly fundingRate + klines 1d",
+  "universe": "perpetuos USD-M en USDT fuera de los 20 mayores de H5, con deslistados",
+  "excluded_majors": [
+    "AAVEUSDT",
+    "ADAUSDT",
+    "ATOMUSDT",
+    "AVAXUSDT",
+    "BCHUSDT",
+    "BNBUSDT",
+    "BTCUSDT",
+    "DOGEUSDT",
+    "DOTUSDT",
+    "ETCUSDT",
+    "ETHUSDT",
+    "FILUSDT",
+    "LINKUSDT",
+    "LTCUSDT",
+    "NEARUSDT",
+    "SANDUSDT",
+    "SOLUSDT",
+    "TRXUSDT",
+    "UNIUSDT",
+    "XRPUSDT"
+  ],
+  "period": {
+    "start": "2023-01-01",
+    "end": "2026-10-31",
+    "end_exclusive": false
+  },
+  "symbols": 887,
+  "funding_rows": 512801,
+  "perp_rows": 552628,
+  "funding_sha256": "1b18cb96025b141f29ef554470bca21baa924ac581a7cc4558671a46fddd58dc",
+  "perp_sha256": "ae0db7542566c99cffb11532d0ba74e7fde19f428d4652a6167d4ed3554e57cd",
+  "fetch_stats": {
+    "downloaded": 0,
+    "cached": 35790,
+    "missing": 46918,
+    "badsum": 0,
+    "error": 0
+  },
+  "errors": [],
+  "coverage": {
+    "0GUSDT": {
+      "funding_days": 410,
+      "funding_start": "2025-09-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 410,
+      "perp_start": "2025-09-17",
+      "perp_end": "2026-10-31"
+    },
+    "1000000BOBUSDT": {
+      "funding_days": 488,
+      "funding_start": "2025-06-05",
+      "funding_end": "2026-10-05",
+      "perp_days": 514,
+      "perp_start": "2025-06-05",
+      "perp_end": "2026-10-31"
+    },
+    "1000000MOGUSDT": {
+      "funding_days": 724,
+      "funding_start": "2024-11-07",
+      "funding_end": "2026-10-31",
+      "perp_days": 724,
+      "perp_start": "2024-11-07",
+      "perp_end": "2026-10-31"
+    },
+    "1000BONKUSDT": {
+      "funding_days": 1075,
+      "funding_start": "2023-11-22",
+      "funding_end": "2026-10-31",
+      "perp_days": 1075,
+      "perp_start": "2023-11-22",
+      "perp_end": "2026-10-31"
+    },
+    "1000CATUSDT": {
+      "funding_days": 741,
+      "funding_start": "2024-10-21",
+      "funding_end": "2026-10-31",
+      "perp_days": 741,
+      "perp_start": "2024-10-21",
+      "perp_end": "2026-10-31"
+    },
+    "1000CHEEMSUSDT": {
+      "funding_days": 706,
+      "funding_start": "2024-11-25",
+      "funding_end": "2026-10-31",
+      "perp_days": 706,
+      "perp_start": "2024-11-25",
+      "perp_end": "2026-10-31"
+    },
+    "1000FLOKIUSDT": {
+      "funding_days": 1275,
+      "funding_start": "2023-05-06",
+      "funding_end": "2026-10-31",
+      "perp_days": 1275,
+      "perp_start": "2023-05-06",
+      "perp_end": "2026-10-31"
+    },
+    "1000LUNCUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "1000PEPEUSDT": {
+      "funding_days": 1276,
+      "funding_start": "2023-05-05",
+      "funding_end": "2026-10-31",
+      "perp_days": 1276,
+      "perp_start": "2023-05-05",
+      "perp_end": "2026-10-31"
+    },
+    "1000RATSUSDT": {
+      "funding_days": 1052,
+      "funding_start": "2023-12-15",
+      "funding_end": "2026-10-31",
+      "perp_days": 1052,
+      "perp_start": "2023-12-15",
+      "perp_end": "2026-10-31"
+    },
+    "1000SATSUSDT": {
+      "funding_days": 1055,
+      "funding_start": "2023-12-12",
+      "funding_end": "2026-10-31",
+      "perp_days": 1055,
+      "perp_start": "2023-12-12",
+      "perp_end": "2026-10-31"
+    },
+    "1000SHIBUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "1000WHYUSDT": {
+      "funding_days": 478,
+      "funding_start": "2024-11-25",
+      "funding_end": "2026-03-17",
+      "perp_days": 706,
+      "perp_start": "2024-11-25",
+      "perp_end": "2026-10-31"
+    },
+    "1000XECUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "1000XUSDT": {
+      "funding_days": 367,
+      "funding_start": "2024-11-13",
+      "funding_end": "2025-11-14",
+      "perp_days": 718,
+      "perp_start": "2024-11-13",
+      "perp_end": "2026-10-31"
+    },
+    "1INCHUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "1MBABYDOGEUSDT": {
+      "funding_days": 776,
+      "funding_start": "2024-09-16",
+      "funding_end": "2026-10-31",
+      "perp_days": 776,
+      "perp_start": "2024-09-16",
+      "perp_end": "2026-10-31"
+    },
+    "2ZUSDT": {
+      "funding_days": 395,
+      "funding_start": "2025-10-02",
+      "funding_end": "2026-10-31",
+      "perp_days": 395,
+      "perp_start": "2025-10-02",
+      "perp_end": "2026-10-31"
+    },
+    "42USDT": {
+      "funding_days": 96,
+      "funding_start": "2025-10-27",
+      "funding_end": "2026-01-30",
+      "perp_days": 370,
+      "perp_start": "2025-10-27",
+      "perp_end": "2026-10-31"
+    },
+    "4USDT": {
+      "funding_days": 389,
+      "funding_start": "2025-10-08",
+      "funding_end": "2026-10-31",
+      "perp_days": 389,
+      "perp_start": "2025-10-08",
+      "perp_end": "2026-10-31"
+    },
+    "A2ZUSDT": {
+      "funding_days": 238,
+      "funding_start": "2025-07-30",
+      "funding_end": "2026-03-24",
+      "perp_days": 459,
+      "perp_start": "2025-07-30",
+      "perp_end": "2026-10-31"
+    },
+    "AAOIUSDT": {
+      "funding_days": 146,
+      "funding_start": "2026-06-08",
+      "funding_end": "2026-10-31",
+      "perp_days": 146,
+      "perp_start": "2026-06-08",
+      "perp_end": "2026-10-31"
+    },
+    "AAPLUSDT": {
+      "funding_days": 212,
+      "funding_start": "2026-04-03",
+      "funding_end": "2026-10-31",
+      "perp_days": 209,
+      "perp_start": "2026-04-06",
+      "perp_end": "2026-10-31"
+    },
+    "ABBVUSDT": {
+      "funding_days": 6,
+      "funding_start": "2026-10-26",
+      "funding_end": "2026-10-31",
+      "perp_days": 6,
+      "perp_start": "2026-10-26",
+      "perp_end": "2026-10-31"
+    },
+    "ACEUSDT": {
+      "funding_days": 1049,
+      "funding_start": "2023-12-18",
+      "funding_end": "2026-10-31",
+      "perp_days": 1049,
+      "perp_start": "2023-12-18",
+      "perp_end": "2026-10-31"
+    },
+    "ACHUSDT": {
+      "funding_days": 1348,
+      "funding_start": "2023-02-22",
+      "funding_end": "2026-10-31",
+      "perp_days": 1348,
+      "perp_start": "2023-02-22",
+      "perp_end": "2026-10-31"
+    },
+    "ACNUSDT": {
+      "funding_days": 33,
+      "funding_start": "2026-09-29",
+      "funding_end": "2026-10-31",
+      "perp_days": 33,
+      "perp_start": "2026-09-29",
+      "perp_end": "2026-10-31"
+    },
+    "ACTUSDT": {
+      "funding_days": 720,
+      "funding_start": "2024-11-11",
+      "funding_end": "2026-10-31",
+      "perp_days": 720,
+      "perp_start": "2024-11-11",
+      "perp_end": "2026-10-31"
+    },
+    "ACUUSDT": {
+      "funding_days": 284,
+      "funding_start": "2026-01-21",
+      "funding_end": "2026-10-31",
+      "perp_days": 284,
+      "perp_start": "2026-01-21",
+      "perp_end": "2026-10-31"
+    },
+    "ACXUSDT": {
+      "funding_days": 610,
+      "funding_start": "2024-12-06",
+      "funding_end": "2026-08-07",
+      "perp_days": 695,
+      "perp_start": "2024-12-06",
+      "perp_end": "2026-10-31"
+    },
+    "ADBEUSDT": {
+      "funding_days": 143,
+      "funding_start": "2026-06-11",
+      "funding_end": "2026-10-31",
+      "perp_days": 143,
+      "perp_start": "2026-06-11",
+      "perp_end": "2026-10-31"
+    },
+    "AERGOUSDT": {
+      "funding_days": 659,
+      "funding_start": "2024-09-10",
+      "funding_end": "2026-06-30",
+      "perp_days": 659,
+      "perp_start": "2024-09-10",
+      "perp_end": "2026-06-30"
+    },
+    "AEROUSDT": {
+      "funding_days": 697,
+      "funding_start": "2024-12-04",
+      "funding_end": "2026-10-31",
+      "perp_days": 697,
+      "perp_start": "2024-12-04",
+      "perp_end": "2026-10-31"
+    },
+    "AEVOUSDT": {
+      "funding_days": 963,
+      "funding_start": "2024-03-13",
+      "funding_end": "2026-10-31",
+      "perp_days": 963,
+      "perp_start": "2024-03-13",
+      "perp_end": "2026-10-31"
+    },
+    "AGIXUSDT": {
+      "funding_days": 856,
+      "funding_start": "2023-02-15",
+      "funding_end": "2025-06-19",
+      "perp_days": 1354,
+      "perp_start": "2023-02-16",
+      "perp_end": "2026-10-31"
+    },
+    "AGLDUSDT": {
+      "funding_days": 1192,
+      "funding_start": "2023-07-28",
+      "funding_end": "2026-10-31",
+      "perp_days": 1191,
+      "perp_start": "2023-07-29",
+      "perp_end": "2026-10-31"
+    },
+    "AGPUUSDT": {
+      "funding_days": 44,
+      "funding_start": "2026-09-18",
+      "funding_end": "2026-10-31",
+      "perp_days": 44,
+      "perp_start": "2026-09-18",
+      "perp_end": "2026-10-31"
+    },
+    "AGTUSDT": {
+      "funding_days": 530,
+      "funding_start": "2025-05-20",
+      "funding_end": "2026-10-31",
+      "perp_days": 530,
+      "perp_start": "2025-05-20",
+      "perp_end": "2026-10-31"
+    },
+    "AI16ZUSDT": {
+      "funding_days": 309,
+      "funding_start": "2025-01-02",
+      "funding_end": "2025-11-06",
+      "perp_days": 668,
+      "perp_start": "2025-01-02",
+      "perp_end": "2026-10-31"
+    },
+    "AIAUSDT": {
+      "funding_days": 370,
+      "funding_start": "2025-09-18",
+      "funding_end": "2026-10-31",
+      "perp_days": 409,
+      "perp_start": "2025-09-18",
+      "perp_end": "2026-10-31"
+    },
+    "AIGENSYNUSDT": {
+      "funding_days": 186,
+      "funding_start": "2026-04-29",
+      "funding_end": "2026-10-31",
+      "perp_days": 186,
+      "perp_start": "2026-04-29",
+      "perp_end": "2026-10-31"
+    },
+    "AINUSDT": {
+      "funding_days": 479,
+      "funding_start": "2025-07-10",
+      "funding_end": "2026-10-31",
+      "perp_days": 479,
+      "perp_start": "2025-07-10",
+      "perp_end": "2026-10-31"
+    },
+    "AIOTUSDT": {
+      "funding_days": 550,
+      "funding_start": "2025-04-30",
+      "funding_end": "2026-10-31",
+      "perp_days": 550,
+      "perp_start": "2025-04-30",
+      "perp_end": "2026-10-31"
+    },
+    "AIOUSDT": {
+      "funding_days": 445,
+      "funding_start": "2025-08-13",
+      "funding_end": "2026-10-31",
+      "perp_days": 445,
+      "perp_start": "2025-08-13",
+      "perp_end": "2026-10-31"
+    },
+    "AIUSDT": {
+      "funding_days": 842,
+      "funding_start": "2024-01-08",
+      "funding_end": "2026-04-28",
+      "perp_days": 1028,
+      "perp_start": "2024-01-08",
+      "perp_end": "2026-10-31"
+    },
+    "AIXBTUSDT": {
+      "funding_days": 681,
+      "funding_start": "2024-12-20",
+      "funding_end": "2026-10-31",
+      "perp_days": 681,
+      "perp_start": "2024-12-20",
+      "perp_end": "2026-10-31"
+    },
+    "AKAMUSDT": {
+      "funding_days": 26,
+      "funding_start": "2026-10-06",
+      "funding_end": "2026-10-31",
+      "perp_days": 26,
+      "perp_start": "2026-10-06",
+      "perp_end": "2026-10-31"
+    },
+    "AKEUSDT": {
+      "funding_days": 401,
+      "funding_start": "2025-09-26",
+      "funding_end": "2026-10-31",
+      "perp_days": 401,
+      "perp_start": "2025-09-26",
+      "perp_end": "2026-10-31"
+    },
+    "AKTUSDT": {
+      "funding_days": 713,
+      "funding_start": "2024-11-18",
+      "funding_end": "2026-10-31",
+      "perp_days": 713,
+      "perp_start": "2024-11-18",
+      "perp_end": "2026-10-31"
+    },
+    "ALABUSDT": {
+      "funding_days": 132,
+      "funding_start": "2026-06-22",
+      "funding_end": "2026-10-31",
+      "perp_days": 132,
+      "perp_start": "2026-06-22",
+      "perp_end": "2026-10-31"
+    },
+    "ALCHUSDT": {
+      "funding_days": 663,
+      "funding_start": "2025-01-07",
+      "funding_end": "2026-10-31",
+      "perp_days": 663,
+      "perp_start": "2025-01-07",
+      "perp_end": "2026-10-31"
+    },
+    "ALGOUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "ALICEUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "ALLOUSDT": {
+      "funding_days": 355,
+      "funding_start": "2025-11-11",
+      "funding_end": "2026-10-31",
+      "perp_days": 355,
+      "perp_start": "2025-11-11",
+      "perp_end": "2026-10-31"
+    },
+    "ALLUSDT": {
+      "funding_days": 452,
+      "funding_start": "2025-08-06",
+      "funding_end": "2026-10-31",
+      "perp_days": 452,
+      "perp_start": "2025-08-06",
+      "perp_end": "2026-10-31"
+    },
+    "ALPACAUSDT": {
+      "funding_days": 302,
+      "funding_start": "2024-08-22",
+      "funding_end": "2025-06-19",
+      "perp_days": 801,
+      "perp_start": "2024-08-22",
+      "perp_end": "2026-10-31"
+    },
+    "ALPHAUSDT": {
+      "funding_days": 997,
+      "funding_start": "2023-01-01",
+      "funding_end": "2025-09-23",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "ALPINEUSDT": {
+      "funding_days": 544,
+      "funding_start": "2025-05-06",
+      "funding_end": "2026-10-31",
+      "perp_days": 544,
+      "perp_start": "2025-05-06",
+      "perp_end": "2026-10-31"
+    },
+    "ALTUSDT": {
+      "funding_days": 1011,
+      "funding_start": "2024-01-25",
+      "funding_end": "2026-10-31",
+      "perp_days": 1011,
+      "perp_start": "2024-01-25",
+      "perp_end": "2026-10-31"
+    },
+    "AMATUSDT": {
+      "funding_days": 146,
+      "funding_start": "2026-06-08",
+      "funding_end": "2026-10-31",
+      "perp_days": 146,
+      "perp_start": "2026-06-08",
+      "perp_end": "2026-10-31"
+    },
+    "AMBUSDT": {
+      "funding_days": 813,
+      "funding_start": "2023-03-30",
+      "funding_end": "2025-06-19",
+      "perp_days": 1312,
+      "perp_start": "2023-03-30",
+      "perp_end": "2026-10-31"
+    },
+    "AMCUSDT": {
+      "funding_days": 44,
+      "funding_start": "2026-09-18",
+      "funding_end": "2026-10-31",
+      "perp_days": 44,
+      "perp_start": "2026-09-18",
+      "perp_end": "2026-10-31"
+    },
+    "AMDUSDT": {
+      "funding_days": 179,
+      "funding_start": "2026-05-06",
+      "funding_end": "2026-10-31",
+      "perp_days": 179,
+      "perp_start": "2026-05-06",
+      "perp_end": "2026-10-31"
+    },
+    "AMGNUSDT": {
+      "funding_days": 3,
+      "funding_start": "2026-10-29",
+      "funding_end": "2026-10-31",
+      "perp_days": 3,
+      "perp_start": "2026-10-29",
+      "perp_end": "2026-10-31"
+    },
+    "AMZNUSDT": {
+      "funding_days": 268,
+      "funding_start": "2026-02-06",
+      "funding_end": "2026-10-31",
+      "perp_days": 265,
+      "perp_start": "2026-02-09",
+      "perp_end": "2026-10-31"
+    },
+    "ANETUSDT": {
+      "funding_days": 44,
+      "funding_start": "2026-09-18",
+      "funding_end": "2026-10-31",
+      "perp_days": 44,
+      "perp_start": "2026-09-18",
+      "perp_end": "2026-10-31"
+    },
+    "ANIMEUSDT": {
+      "funding_days": 647,
+      "funding_start": "2025-01-23",
+      "funding_end": "2026-10-31",
+      "perp_days": 647,
+      "perp_start": "2025-01-23",
+      "perp_end": "2026-10-31"
+    },
+    "ANKRUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "ANTHROPICUSDT": {
+      "funding_days": 152,
+      "funding_start": "2026-06-02",
+      "funding_end": "2026-10-31",
+      "perp_days": 152,
+      "perp_start": "2026-06-02",
+      "perp_end": "2026-10-31"
+    },
+    "ANTUSDT": {
+      "funding_days": 566,
+      "funding_start": "2023-01-01",
+      "funding_end": "2024-07-19",
+      "perp_days": 514,
+      "perp_start": "2023-01-01",
+      "perp_end": "2024-05-28"
+    },
+    "APEUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "API3USDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "APLDUSDT": {
+      "funding_days": 44,
+      "funding_start": "2026-09-18",
+      "funding_end": "2026-10-31",
+      "perp_days": 44,
+      "perp_start": "2026-09-18",
+      "perp_end": "2026-10-31"
+    },
+    "APPUSDT": {
+      "funding_days": 114,
+      "funding_start": "2026-07-10",
+      "funding_end": "2026-10-31",
+      "perp_days": 114,
+      "perp_start": "2026-07-10",
+      "perp_end": "2026-10-31"
+    },
+    "APRUSDT": {
+      "funding_days": 374,
+      "funding_start": "2025-10-23",
+      "funding_end": "2026-10-31",
+      "perp_days": 374,
+      "perp_start": "2025-10-23",
+      "perp_end": "2026-10-31"
+    },
+    "APTUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "ARBUSDT": {
+      "funding_days": 1319,
+      "funding_start": "2023-03-23",
+      "funding_end": "2026-10-31",
+      "perp_days": 1319,
+      "perp_start": "2023-03-23",
+      "perp_end": "2026-10-31"
+    },
+    "ARCUSDT": {
+      "funding_days": 653,
+      "funding_start": "2025-01-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 653,
+      "perp_start": "2025-01-17",
+      "perp_end": "2026-10-31"
+    },
+    "ARIAUSDT": {
+      "funding_days": 424,
+      "funding_start": "2025-09-03",
+      "funding_end": "2026-10-31",
+      "perp_days": 424,
+      "perp_start": "2025-09-03",
+      "perp_end": "2026-10-31"
+    },
+    "ARKMUSDT": {
+      "funding_days": 1193,
+      "funding_start": "2023-07-27",
+      "funding_end": "2026-10-31",
+      "perp_days": 1192,
+      "perp_start": "2023-07-28",
+      "perp_end": "2026-10-31"
+    },
+    "ARKUSDT": {
+      "funding_days": 1139,
+      "funding_start": "2023-09-19",
+      "funding_end": "2026-10-31",
+      "perp_days": 1139,
+      "perp_start": "2023-09-19",
+      "perp_end": "2026-10-31"
+    },
+    "ARMUSDT": {
+      "funding_days": 159,
+      "funding_start": "2026-05-26",
+      "funding_end": "2026-10-31",
+      "perp_days": 159,
+      "perp_start": "2026-05-26",
+      "perp_end": "2026-10-31"
+    },
+    "ARPAUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "ARUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "ARXUSDT": {
+      "funding_days": 131,
+      "funding_start": "2026-06-23",
+      "funding_end": "2026-10-31",
+      "perp_days": 131,
+      "perp_start": "2026-06-23",
+      "perp_end": "2026-10-31"
+    },
+    "ASMLUSDT": {
+      "funding_days": 143,
+      "funding_start": "2026-06-11",
+      "funding_end": "2026-10-31",
+      "perp_days": 143,
+      "perp_start": "2026-06-11",
+      "perp_end": "2026-10-31"
+    },
+    "ASRUSDT": {
+      "funding_days": 544,
+      "funding_start": "2025-05-06",
+      "funding_end": "2026-10-31",
+      "perp_days": 544,
+      "perp_start": "2025-05-06",
+      "perp_end": "2026-10-31"
+    },
+    "ASTERUSDT": {
+      "funding_days": 408,
+      "funding_start": "2025-09-19",
+      "funding_end": "2026-10-31",
+      "perp_days": 408,
+      "perp_start": "2025-09-19",
+      "perp_end": "2026-10-31"
+    },
+    "ASTRUSDT": {
+      "funding_days": 1357,
+      "funding_start": "2023-02-13",
+      "funding_end": "2026-10-31",
+      "perp_days": 1356,
+      "perp_start": "2023-02-14",
+      "perp_end": "2026-10-31"
+    },
+    "ASTSUSDT": {
+      "funding_days": 153,
+      "funding_start": "2026-06-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 153,
+      "perp_start": "2026-06-01",
+      "perp_end": "2026-10-31"
+    },
+    "ATAUSDT": {
+      "funding_days": 1235,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-05-19",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "ATHUSDT": {
+      "funding_days": 578,
+      "funding_start": "2025-04-02",
+      "funding_end": "2026-10-31",
+      "perp_days": 578,
+      "perp_start": "2025-04-02",
+      "perp_end": "2026-10-31"
+    },
+    "ATUSDT": {
+      "funding_days": 368,
+      "funding_start": "2025-10-29",
+      "funding_end": "2026-10-31",
+      "perp_days": 368,
+      "perp_start": "2025-10-29",
+      "perp_end": "2026-10-31"
+    },
+    "AUCTIONUSDT": {
+      "funding_days": 1052,
+      "funding_start": "2023-12-15",
+      "funding_end": "2026-10-31",
+      "perp_days": 1052,
+      "perp_start": "2023-12-15",
+      "perp_end": "2026-10-31"
+    },
+    "AUDIOUSDT": {
+      "funding_days": 566,
+      "funding_start": "2023-01-01",
+      "funding_end": "2024-07-19",
+      "perp_days": 514,
+      "perp_start": "2023-01-01",
+      "perp_end": "2024-05-28"
+    },
+    "AUSDT": {
+      "funding_days": 522,
+      "funding_start": "2025-05-28",
+      "funding_end": "2026-10-31",
+      "perp_days": 522,
+      "perp_start": "2025-05-28",
+      "perp_end": "2026-10-31"
+    },
+    "AVAAIUSDT": {
+      "funding_days": 653,
+      "funding_start": "2025-01-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 653,
+      "perp_start": "2025-01-17",
+      "perp_end": "2026-10-31"
+    },
+    "AVAUSDT": {
+      "funding_days": 688,
+      "funding_start": "2024-12-13",
+      "funding_end": "2026-10-31",
+      "perp_days": 688,
+      "perp_start": "2024-12-13",
+      "perp_end": "2026-10-31"
+    },
+    "AVGOUSDT": {
+      "funding_days": 198,
+      "funding_start": "2026-04-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 195,
+      "perp_start": "2026-04-20",
+      "perp_end": "2026-10-31"
+    },
+    "AVNTUSDT": {
+      "funding_days": 418,
+      "funding_start": "2025-09-09",
+      "funding_end": "2026-10-31",
+      "perp_days": 418,
+      "perp_start": "2025-09-09",
+      "perp_end": "2026-10-31"
+    },
+    "AWEUSDT": {
+      "funding_days": 529,
+      "funding_start": "2025-05-21",
+      "funding_end": "2026-10-31",
+      "perp_days": 529,
+      "perp_start": "2025-05-21",
+      "perp_end": "2026-10-31"
+    },
+    "AXLUSDT": {
+      "funding_days": 975,
+      "funding_start": "2024-03-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 975,
+      "perp_start": "2024-03-01",
+      "perp_end": "2026-10-31"
+    },
+    "AXSUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "AXTIUSDT": {
+      "funding_days": 146,
+      "funding_start": "2026-06-08",
+      "funding_end": "2026-10-31",
+      "perp_days": 146,
+      "perp_start": "2026-06-08",
+      "perp_end": "2026-10-31"
+    },
+    "AZTECUSDT": {
+      "funding_days": 263,
+      "funding_start": "2026-02-11",
+      "funding_end": "2026-10-31",
+      "perp_days": 263,
+      "perp_start": "2026-02-11",
+      "perp_end": "2026-10-31"
+    },
+    "B2USDT": {
+      "funding_days": 544,
+      "funding_start": "2025-05-06",
+      "funding_end": "2026-10-31",
+      "perp_days": 544,
+      "perp_start": "2025-05-06",
+      "perp_end": "2026-10-31"
+    },
+    "B3USDT": {
+      "funding_days": 440,
+      "funding_start": "2025-02-13",
+      "funding_end": "2026-04-28",
+      "perp_days": 626,
+      "perp_start": "2025-02-13",
+      "perp_end": "2026-10-31"
+    },
+    "BABAUSDT": {
+      "funding_days": 198,
+      "funding_start": "2026-04-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 195,
+      "perp_start": "2026-04-20",
+      "perp_end": "2026-10-31"
+    },
+    "BABYUSDT": {
+      "funding_days": 575,
+      "funding_start": "2025-04-05",
+      "funding_end": "2026-10-31",
+      "perp_days": 575,
+      "perp_start": "2025-04-05",
+      "perp_end": "2026-10-31"
+    },
+    "BACUSDT": {
+      "funding_days": 11,
+      "funding_start": "2026-10-21",
+      "funding_end": "2026-10-31",
+      "perp_days": 11,
+      "perp_start": "2026-10-21",
+      "perp_end": "2026-10-31"
+    },
+    "BADGERUSDT": {
+      "funding_days": 589,
+      "funding_start": "2023-11-09",
+      "funding_end": "2025-06-19",
+      "perp_days": 1088,
+      "perp_start": "2023-11-09",
+      "perp_end": "2026-10-31"
+    },
+    "BAKEUSDT": {
+      "funding_days": 1007,
+      "funding_start": "2023-01-01",
+      "funding_end": "2025-10-03",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "BALUSDT": {
+      "funding_days": 901,
+      "funding_start": "2023-01-01",
+      "funding_end": "2025-06-19",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "BANANAS31USDT": {
+      "funding_days": 591,
+      "funding_start": "2025-03-20",
+      "funding_end": "2026-10-31",
+      "perp_days": 589,
+      "perp_start": "2025-03-22",
+      "perp_end": "2026-10-31"
+    },
+    "BANANAUSDT": {
+      "funding_days": 809,
+      "funding_start": "2024-08-14",
+      "funding_end": "2026-10-31",
+      "perp_days": 808,
+      "perp_start": "2024-08-15",
+      "perp_end": "2026-10-31"
+    },
+    "BANDUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "BANKUSDT": {
+      "funding_days": 562,
+      "funding_start": "2025-04-18",
+      "funding_end": "2026-10-31",
+      "perp_days": 562,
+      "perp_start": "2025-04-18",
+      "perp_end": "2026-10-31"
+    },
+    "BANUSDT": {
+      "funding_days": 713,
+      "funding_start": "2024-11-18",
+      "funding_end": "2026-10-31",
+      "perp_days": 713,
+      "perp_start": "2024-11-18",
+      "perp_end": "2026-10-31"
+    },
+    "BARDUSDT": {
+      "funding_days": 409,
+      "funding_start": "2025-09-18",
+      "funding_end": "2026-10-31",
+      "perp_days": 409,
+      "perp_start": "2025-09-18",
+      "perp_end": "2026-10-31"
+    },
+    "BASEDUSDT": {
+      "funding_days": 216,
+      "funding_start": "2026-03-30",
+      "funding_end": "2026-10-31",
+      "perp_days": 216,
+      "perp_start": "2026-03-30",
+      "perp_end": "2026-10-31"
+    },
+    "BASUSDT": {
+      "funding_days": 432,
+      "funding_start": "2025-08-26",
+      "funding_end": "2026-10-31",
+      "perp_days": 432,
+      "perp_start": "2025-08-26",
+      "perp_end": "2026-10-31"
+    },
+    "BATUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "BBUSDT": {
+      "funding_days": 902,
+      "funding_start": "2024-05-13",
+      "funding_end": "2026-10-31",
+      "perp_days": 902,
+      "perp_start": "2024-05-13",
+      "perp_end": "2026-10-31"
+    },
+    "BBXUSDT": {
+      "funding_days": 153,
+      "funding_start": "2026-06-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 153,
+      "perp_start": "2026-06-01",
+      "perp_end": "2026-10-31"
+    },
+    "BDXNUSDT": {
+      "funding_days": 288,
+      "funding_start": "2025-06-03",
+      "funding_end": "2026-03-17",
+      "perp_days": 302,
+      "perp_start": "2025-06-03",
+      "perp_end": "2026-03-31"
+    },
+    "BEAMXUSDT": {
+      "funding_days": 1080,
+      "funding_start": "2023-11-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 1080,
+      "perp_start": "2023-11-17",
+      "perp_end": "2026-10-31"
+    },
+    "BEATUSDT": {
+      "funding_days": 354,
+      "funding_start": "2025-11-12",
+      "funding_end": "2026-10-31",
+      "perp_days": 354,
+      "perp_start": "2025-11-12",
+      "perp_end": "2026-10-31"
+    },
+    "BELUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "BERAUSDT": {
+      "funding_days": 633,
+      "funding_start": "2025-02-06",
+      "funding_end": "2026-10-31",
+      "perp_days": 633,
+      "perp_start": "2025-02-06",
+      "perp_end": "2026-10-31"
+    },
+    "BEUSDT": {
+      "funding_days": 159,
+      "funding_start": "2026-05-26",
+      "funding_end": "2026-10-31",
+      "perp_days": 159,
+      "perp_start": "2026-05-26",
+      "perp_end": "2026-10-31"
+    },
+    "BICOUSDT": {
+      "funding_days": 1130,
+      "funding_start": "2023-09-28",
+      "funding_end": "2026-10-31",
+      "perp_days": 1130,
+      "perp_start": "2023-09-28",
+      "perp_end": "2026-10-31"
+    },
+    "BIDUSDT": {
+      "funding_days": 308,
+      "funding_start": "2025-03-20",
+      "funding_end": "2026-01-21",
+      "perp_days": 591,
+      "perp_start": "2025-03-20",
+      "perp_end": "2026-10-31"
+    },
+    "BIGTIMEUSDT": {
+      "funding_days": 1116,
+      "funding_start": "2023-10-12",
+      "funding_end": "2026-10-31",
+      "perp_days": 1116,
+      "perp_start": "2023-10-12",
+      "perp_end": "2026-10-31"
+    },
+    "BILLUSDT": {
+      "funding_days": 178,
+      "funding_start": "2026-05-07",
+      "funding_end": "2026-10-31",
+      "perp_days": 178,
+      "perp_start": "2026-05-07",
+      "perp_end": "2026-10-31"
+    },
+    "BIOUSDT": {
+      "funding_days": 667,
+      "funding_start": "2025-01-03",
+      "funding_end": "2026-10-31",
+      "perp_days": 667,
+      "perp_start": "2025-01-03",
+      "perp_end": "2026-10-31"
+    },
+    "BIRBUSDT": {
+      "funding_days": 276,
+      "funding_start": "2026-01-29",
+      "funding_end": "2026-10-31",
+      "perp_days": 276,
+      "perp_start": "2026-01-29",
+      "perp_end": "2026-10-31"
+    },
+    "BITOUSDT": {
+      "funding_days": 97,
+      "funding_start": "2026-07-27",
+      "funding_end": "2026-10-31",
+      "perp_days": 97,
+      "perp_start": "2026-07-27",
+      "perp_end": "2026-10-31"
+    },
+    "BLESSUSDT": {
+      "funding_days": 404,
+      "funding_start": "2025-09-23",
+      "funding_end": "2026-10-31",
+      "perp_days": 404,
+      "perp_start": "2025-09-23",
+      "perp_end": "2026-10-31"
+    },
+    "BLUAIUSDT": {
+      "funding_days": 376,
+      "funding_start": "2025-10-21",
+      "funding_end": "2026-10-31",
+      "perp_days": 376,
+      "perp_start": "2025-10-21",
+      "perp_end": "2026-10-31"
+    },
+    "BLUEBIRDUSDT": {
+      "funding_days": 566,
+      "funding_start": "2023-01-01",
+      "funding_end": "2024-07-19",
+      "perp_days": 514,
+      "perp_start": "2023-01-01",
+      "perp_end": "2024-05-28"
+    },
+    "BLURUSDT": {
+      "funding_days": 1284,
+      "funding_start": "2023-04-27",
+      "funding_end": "2026-10-31",
+      "perp_days": 1283,
+      "perp_start": "2023-04-28",
+      "perp_end": "2026-10-31"
+    },
+    "BLZUSDT": {
+      "funding_days": 901,
+      "funding_start": "2023-01-01",
+      "funding_end": "2025-06-19",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "BMNRUSDT": {
+      "funding_days": 143,
+      "funding_start": "2026-06-11",
+      "funding_end": "2026-10-31",
+      "perp_days": 143,
+      "perp_start": "2026-06-11",
+      "perp_end": "2026-10-31"
+    },
+    "BMTUSDT": {
+      "funding_days": 594,
+      "funding_start": "2025-03-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 594,
+      "perp_start": "2025-03-17",
+      "perp_end": "2026-10-31"
+    },
+    "BNCUSDT": {
+      "funding_days": 115,
+      "funding_start": "2026-07-09",
+      "funding_end": "2026-10-31",
+      "perp_days": 115,
+      "perp_start": "2026-07-09",
+      "perp_end": "2026-10-31"
+    },
+    "BNTUSDT": {
+      "funding_days": 1180,
+      "funding_start": "2023-08-09",
+      "funding_end": "2026-10-31",
+      "perp_days": 1179,
+      "perp_start": "2023-08-10",
+      "perp_end": "2026-10-31"
+    },
+    "BNXUSDT": {
+      "funding_days": 870,
+      "funding_start": "2023-02-01",
+      "funding_end": "2025-06-19",
+      "perp_days": 1379,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "BOBUSDT": {
+      "funding_days": 159,
+      "funding_start": "2025-11-21",
+      "funding_end": "2026-04-28",
+      "perp_days": 345,
+      "perp_start": "2025-11-21",
+      "perp_end": "2026-10-31"
+    },
+    "BOMEUSDT": {
+      "funding_days": 960,
+      "funding_start": "2024-03-16",
+      "funding_end": "2026-10-31",
+      "perp_days": 960,
+      "perp_start": "2024-03-16",
+      "perp_end": "2026-10-31"
+    },
+    "BONDUSDT": {
+      "funding_days": 614,
+      "funding_start": "2023-10-15",
+      "funding_end": "2025-06-19",
+      "perp_days": 1113,
+      "perp_start": "2023-10-15",
+      "perp_end": "2026-10-31"
+    },
+    "BOTUSDT": {
+      "funding_days": 115,
+      "funding_start": "2026-07-09",
+      "funding_end": "2026-10-31",
+      "perp_days": 115,
+      "perp_start": "2026-07-09",
+      "perp_end": "2026-10-31"
+    },
+    "BRETTUSDT": {
+      "funding_days": 803,
+      "funding_start": "2024-08-20",
+      "funding_end": "2026-10-31",
+      "perp_days": 803,
+      "perp_start": "2024-08-20",
+      "perp_end": "2026-10-31"
+    },
+    "BREVUSDT": {
+      "funding_days": 306,
+      "funding_start": "2025-12-30",
+      "funding_end": "2026-10-31",
+      "perp_days": 306,
+      "perp_start": "2025-12-30",
+      "perp_end": "2026-10-31"
+    },
+    "BRKBUSDT": {
+      "funding_days": 167,
+      "funding_start": "2026-05-18",
+      "funding_end": "2026-10-31",
+      "perp_days": 167,
+      "perp_start": "2026-05-18",
+      "perp_end": "2026-10-31"
+    },
+    "BROCCOLI714USDT": {
+      "funding_days": 591,
+      "funding_start": "2025-03-20",
+      "funding_end": "2026-10-31",
+      "perp_days": 590,
+      "perp_start": "2025-03-21",
+      "perp_end": "2026-10-31"
+    },
+    "BROCCOLIF3BUSDT": {
+      "funding_days": 591,
+      "funding_start": "2025-03-20",
+      "funding_end": "2026-10-31",
+      "perp_days": 590,
+      "perp_start": "2025-03-21",
+      "perp_end": "2026-10-31"
+    },
+    "BRUSDT": {
+      "funding_days": 590,
+      "funding_start": "2025-03-21",
+      "funding_end": "2026-10-31",
+      "perp_days": 590,
+      "perp_start": "2025-03-21",
+      "perp_end": "2026-10-31"
+    },
+    "BSBUSDT": {
+      "funding_days": 221,
+      "funding_start": "2026-03-25",
+      "funding_end": "2026-10-31",
+      "perp_days": 221,
+      "perp_start": "2026-03-25",
+      "perp_end": "2026-10-31"
+    },
+    "BSPUSDT": {
+      "funding_days": 122,
+      "funding_start": "2026-07-02",
+      "funding_end": "2026-10-31",
+      "perp_days": 122,
+      "perp_start": "2026-07-02",
+      "perp_end": "2026-10-31"
+    },
+    "BSVUSDT": {
+      "funding_days": 1108,
+      "funding_start": "2023-10-20",
+      "funding_end": "2026-10-31",
+      "perp_days": 1108,
+      "perp_start": "2023-10-20",
+      "perp_end": "2026-10-31"
+    },
+    "BSWUSDT": {
+      "funding_days": 376,
+      "funding_start": "2024-09-05",
+      "funding_end": "2025-09-15",
+      "perp_days": 787,
+      "perp_start": "2024-09-05",
+      "perp_end": "2026-10-31"
+    },
+    "BTCDOMUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "BTCSTUSDT": {
+      "funding_days": 1277,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-06-30",
+      "perp_days": 1277,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-06-30"
+    },
+    "BTRUSDT": {
+      "funding_days": 431,
+      "funding_start": "2025-08-27",
+      "funding_end": "2026-10-31",
+      "perp_days": 431,
+      "perp_start": "2025-08-27",
+      "perp_end": "2026-10-31"
+    },
+    "BTSUSDT": {
+      "funding_days": 593,
+      "funding_start": "2023-01-01",
+      "funding_end": "2024-08-15",
+      "perp_days": 514,
+      "perp_start": "2023-01-01",
+      "perp_end": "2024-05-28"
+    },
+    "BTWUSDT": {
+      "funding_days": 150,
+      "funding_start": "2026-06-04",
+      "funding_end": "2026-10-31",
+      "perp_days": 150,
+      "perp_start": "2026-06-04",
+      "perp_end": "2026-10-31"
+    },
+    "BULLAUSDT": {
+      "funding_days": 485,
+      "funding_start": "2025-07-04",
+      "funding_end": "2026-10-31",
+      "perp_days": 485,
+      "perp_start": "2025-07-04",
+      "perp_end": "2026-10-31"
+    },
+    "BUSDT": {
+      "funding_days": 528,
+      "funding_start": "2025-05-22",
+      "funding_end": "2026-10-31",
+      "perp_days": 528,
+      "perp_start": "2025-05-22",
+      "perp_end": "2026-10-31"
+    },
+    "BWETUSDT": {
+      "funding_days": 33,
+      "funding_start": "2026-09-29",
+      "funding_end": "2026-10-31",
+      "perp_days": 33,
+      "perp_start": "2026-09-29",
+      "perp_end": "2026-10-31"
+    },
+    "BXUSDT": {
+      "funding_days": 146,
+      "funding_start": "2026-06-08",
+      "funding_end": "2026-10-31",
+      "perp_days": 146,
+      "perp_start": "2026-06-08",
+      "perp_end": "2026-10-31"
+    },
+    "BYDUSDT": {
+      "funding_days": 58,
+      "funding_start": "2026-09-04",
+      "funding_end": "2026-10-31",
+      "perp_days": 55,
+      "perp_start": "2026-09-07",
+      "perp_end": "2026-10-31"
+    },
+    "BZUSDT": {
+      "funding_days": 215,
+      "funding_start": "2026-03-31",
+      "funding_end": "2026-10-31",
+      "perp_days": 214,
+      "perp_start": "2026-04-01",
+      "perp_end": "2026-10-31"
+    },
+    "C98USDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "CAKEUSDT": {
+      "funding_days": 1095,
+      "funding_start": "2023-11-02",
+      "funding_end": "2026-10-31",
+      "perp_days": 1095,
+      "perp_start": "2023-11-02",
+      "perp_end": "2026-10-31"
+    },
+    "CAPUSDT": {
+      "funding_days": 127,
+      "funding_start": "2026-06-27",
+      "funding_end": "2026-10-31",
+      "perp_days": 127,
+      "perp_start": "2026-06-27",
+      "perp_end": "2026-10-31"
+    },
+    "CARVUSDT": {
+      "funding_days": 451,
+      "funding_start": "2025-08-07",
+      "funding_end": "2026-10-31",
+      "perp_days": 451,
+      "perp_start": "2025-08-07",
+      "perp_end": "2026-10-31"
+    },
+    "CATIUSDT": {
+      "funding_days": 774,
+      "funding_start": "2024-09-18",
+      "funding_end": "2026-10-31",
+      "perp_days": 772,
+      "perp_start": "2024-09-20",
+      "perp_end": "2026-10-31"
+    },
+    "CATUSDT": {
+      "funding_days": 122,
+      "funding_start": "2026-07-02",
+      "funding_end": "2026-10-31",
+      "perp_days": 122,
+      "perp_start": "2026-07-02",
+      "perp_end": "2026-10-31"
+    },
+    "CBRSUSDT": {
+      "funding_days": 166,
+      "funding_start": "2026-05-19",
+      "funding_end": "2026-10-31",
+      "perp_days": 166,
+      "perp_start": "2026-05-19",
+      "perp_end": "2026-10-31"
+    },
+    "CCUSDT": {
+      "funding_days": 366,
+      "funding_start": "2025-10-31",
+      "funding_end": "2026-10-31",
+      "perp_days": 366,
+      "perp_start": "2025-10-31",
+      "perp_end": "2026-10-31"
+    },
+    "CEGUSDT": {
+      "funding_days": 11,
+      "funding_start": "2026-10-21",
+      "funding_end": "2026-10-31",
+      "perp_days": 11,
+      "perp_start": "2026-10-21",
+      "perp_end": "2026-10-31"
+    },
+    "CELOUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "CELRUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "CETUSUSDT": {
+      "funding_days": 725,
+      "funding_start": "2024-11-06",
+      "funding_end": "2026-10-31",
+      "perp_days": 725,
+      "perp_start": "2024-11-06",
+      "perp_end": "2026-10-31"
+    },
+    "CFGUSDT": {
+      "funding_days": 230,
+      "funding_start": "2026-03-16",
+      "funding_end": "2026-10-31",
+      "perp_days": 230,
+      "perp_start": "2026-03-16",
+      "perp_end": "2026-10-31"
+    },
+    "CFXUSDT": {
+      "funding_days": 1350,
+      "funding_start": "2023-02-20",
+      "funding_end": "2026-10-31",
+      "perp_days": 1350,
+      "perp_start": "2023-02-20",
+      "perp_end": "2026-10-31"
+    },
+    "CGPTUSDT": {
+      "funding_days": 681,
+      "funding_start": "2024-12-20",
+      "funding_end": "2026-10-31",
+      "perp_days": 681,
+      "perp_start": "2024-12-20",
+      "perp_end": "2026-10-31"
+    },
+    "CHESSUSDT": {
+      "funding_days": 527,
+      "funding_start": "2024-08-29",
+      "funding_end": "2026-02-06",
+      "perp_days": 794,
+      "perp_start": "2024-08-29",
+      "perp_end": "2026-10-31"
+    },
+    "CHILLGUYUSDT": {
+      "funding_days": 704,
+      "funding_start": "2024-11-27",
+      "funding_end": "2026-10-31",
+      "perp_days": 704,
+      "perp_start": "2024-11-27",
+      "perp_end": "2026-10-31"
+    },
+    "CHIPUSDT": {
+      "funding_days": 199,
+      "funding_start": "2026-04-16",
+      "funding_end": "2026-10-31",
+      "perp_days": 199,
+      "perp_start": "2026-04-16",
+      "perp_end": "2026-10-31"
+    },
+    "CHRUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "CHZUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "CIENUSDT": {
+      "funding_days": 132,
+      "funding_start": "2026-06-22",
+      "funding_end": "2026-10-31",
+      "perp_days": 132,
+      "perp_start": "2026-06-22",
+      "perp_end": "2026-10-31"
+    },
+    "CKBUSDT": {
+      "funding_days": 1342,
+      "funding_start": "2023-02-28",
+      "funding_end": "2026-10-31",
+      "perp_days": 1342,
+      "perp_start": "2023-02-28",
+      "perp_end": "2026-10-31"
+    },
+    "CLANKERUSDT": {
+      "funding_days": 354,
+      "funding_start": "2025-11-12",
+      "funding_end": "2026-10-31",
+      "perp_days": 354,
+      "perp_start": "2025-11-12",
+      "perp_end": "2026-10-31"
+    },
+    "CLOUSDT": {
+      "funding_days": 383,
+      "funding_start": "2025-10-14",
+      "funding_end": "2026-10-31",
+      "perp_days": 383,
+      "perp_start": "2025-10-14",
+      "perp_end": "2026-10-31"
+    },
+    "CLUSDT": {
+      "funding_days": 215,
+      "funding_start": "2026-03-31",
+      "funding_end": "2026-10-31",
+      "perp_days": 214,
+      "perp_start": "2026-04-01",
+      "perp_end": "2026-10-31"
+    },
+    "COAIUSDT": {
+      "funding_days": 402,
+      "funding_start": "2025-09-25",
+      "funding_end": "2026-10-31",
+      "perp_days": 402,
+      "perp_start": "2025-09-25",
+      "perp_end": "2026-10-31"
+    },
+    "COCOSUSDT": {
+      "funding_days": 515,
+      "funding_start": "2023-02-21",
+      "funding_end": "2024-07-19",
+      "perp_days": 463,
+      "perp_start": "2023-02-21",
+      "perp_end": "2024-05-28"
+    },
+    "COHRUSDT": {
+      "funding_days": 159,
+      "funding_start": "2026-05-26",
+      "funding_end": "2026-10-31",
+      "perp_days": 159,
+      "perp_start": "2026-05-26",
+      "perp_end": "2026-10-31"
+    },
+    "COINUSDT": {
+      "funding_days": 268,
+      "funding_start": "2026-02-06",
+      "funding_end": "2026-10-31",
+      "perp_days": 265,
+      "perp_start": "2026-02-09",
+      "perp_end": "2026-10-31"
+    },
+    "COLLECTUSDT": {
+      "funding_days": 305,
+      "funding_start": "2025-12-31",
+      "funding_end": "2026-10-31",
+      "perp_days": 305,
+      "perp_start": "2025-12-31",
+      "perp_end": "2026-10-31"
+    },
+    "COMBOUSDT": {
+      "funding_days": 749,
+      "funding_start": "2023-06-02",
+      "funding_end": "2025-06-19",
+      "perp_days": 1248,
+      "perp_start": "2023-06-02",
+      "perp_end": "2026-10-31"
+    },
+    "COMMONUSDT": {
+      "funding_days": 96,
+      "funding_start": "2025-10-27",
+      "funding_end": "2026-01-30",
+      "perp_days": 370,
+      "perp_start": "2025-10-27",
+      "perp_end": "2026-10-31"
+    },
+    "COMPUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "COOKIEUSDT": {
+      "funding_days": 663,
+      "funding_start": "2025-01-07",
+      "funding_end": "2026-10-31",
+      "perp_days": 663,
+      "perp_start": "2025-01-07",
+      "perp_end": "2026-10-31"
+    },
+    "COPPERUSDT": {
+      "funding_days": 241,
+      "funding_start": "2026-03-05",
+      "funding_end": "2026-10-31",
+      "perp_days": 240,
+      "perp_start": "2026-03-06",
+      "perp_end": "2026-10-31"
+    },
+    "COSTUSDT": {
+      "funding_days": 145,
+      "funding_start": "2026-06-09",
+      "funding_end": "2026-10-31",
+      "perp_days": 145,
+      "perp_start": "2026-06-09",
+      "perp_end": "2026-10-31"
+    },
+    "COSUSDT": {
+      "funding_days": 620,
+      "funding_start": "2024-09-30",
+      "funding_end": "2026-06-11",
+      "perp_days": 762,
+      "perp_start": "2024-09-30",
+      "perp_end": "2026-10-31"
+    },
+    "COTIUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "COWUSDT": {
+      "funding_days": 725,
+      "funding_start": "2024-11-06",
+      "funding_end": "2026-10-31",
+      "perp_days": 725,
+      "perp_start": "2024-11-06",
+      "perp_end": "2026-10-31"
+    },
+    "CRCLUSDT": {
+      "funding_days": 268,
+      "funding_start": "2026-02-06",
+      "funding_end": "2026-10-31",
+      "perp_days": 265,
+      "perp_start": "2026-02-09",
+      "perp_end": "2026-10-31"
+    },
+    "CRDOUSDT": {
+      "funding_days": 146,
+      "funding_start": "2026-06-08",
+      "funding_end": "2026-10-31",
+      "perp_days": 146,
+      "perp_start": "2026-06-08",
+      "perp_end": "2026-10-31"
+    },
+    "CRMLUSDT": {
+      "funding_days": 33,
+      "funding_start": "2026-09-29",
+      "funding_end": "2026-10-31",
+      "perp_days": 33,
+      "perp_start": "2026-09-29",
+      "perp_end": "2026-10-31"
+    },
+    "CRMUSDT": {
+      "funding_days": 151,
+      "funding_start": "2026-06-03",
+      "funding_end": "2026-10-31",
+      "perp_days": 151,
+      "perp_start": "2026-06-03",
+      "perp_end": "2026-10-31"
+    },
+    "CROSSUSDT": {
+      "funding_days": 479,
+      "funding_start": "2025-07-10",
+      "funding_end": "2026-10-31",
+      "perp_days": 479,
+      "perp_start": "2025-07-10",
+      "perp_end": "2026-10-31"
+    },
+    "CRVUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "CRWDUSDT": {
+      "funding_days": 146,
+      "funding_start": "2026-06-08",
+      "funding_end": "2026-10-31",
+      "perp_days": 146,
+      "perp_start": "2026-06-08",
+      "perp_end": "2026-10-31"
+    },
+    "CRWVUSDT": {
+      "funding_days": 167,
+      "funding_start": "2026-05-18",
+      "funding_end": "2026-10-31",
+      "perp_days": 167,
+      "perp_start": "2026-05-18",
+      "perp_end": "2026-10-31"
+    },
+    "CSCOUSDT": {
+      "funding_days": 171,
+      "funding_start": "2026-05-14",
+      "funding_end": "2026-10-31",
+      "perp_days": 170,
+      "perp_start": "2026-05-15",
+      "perp_end": "2026-10-31"
+    },
+    "CSOPSAMSUNG2LUSDT": {
+      "funding_days": 83,
+      "funding_start": "2026-08-10",
+      "funding_end": "2026-10-31",
+      "perp_days": 82,
+      "perp_start": "2026-08-11",
+      "perp_end": "2026-10-31"
+    },
+    "CSOPSKHYNIX2LUSDT": {
+      "funding_days": 83,
+      "funding_start": "2026-08-10",
+      "funding_end": "2026-10-31",
+      "perp_days": 82,
+      "perp_start": "2026-08-11",
+      "perp_end": "2026-10-31"
+    },
+    "CTKUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "CTRUSDT": {
+      "funding_days": 157,
+      "funding_start": "2026-05-28",
+      "funding_end": "2026-10-31",
+      "perp_days": 157,
+      "perp_start": "2026-05-28",
+      "perp_end": "2026-10-31"
+    },
+    "CTSIUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "CTUSDT": {
+      "funding_days": 31,
+      "funding_start": "2026-10-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 31,
+      "perp_start": "2026-10-01",
+      "perp_end": "2026-10-31"
+    },
+    "CUDISUSDT": {
+      "funding_days": 164,
+      "funding_start": "2025-08-20",
+      "funding_end": "2026-01-30",
+      "perp_days": 438,
+      "perp_start": "2025-08-20",
+      "perp_end": "2026-10-31"
+    },
+    "CUSDT": {
+      "funding_days": 474,
+      "funding_start": "2025-07-15",
+      "funding_end": "2026-10-31",
+      "perp_days": 474,
+      "perp_start": "2025-07-15",
+      "perp_end": "2026-10-31"
+    },
+    "CVCUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "CVNAUSDT": {
+      "funding_days": 34,
+      "funding_start": "2026-09-28",
+      "funding_end": "2026-10-31",
+      "perp_days": 34,
+      "perp_start": "2026-09-28",
+      "perp_end": "2026-10-31"
+    },
+    "CVXUSDT": {
+      "funding_days": 1367,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "CXMTUSDT": {
+      "funding_days": 76,
+      "funding_start": "2026-08-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 75,
+      "perp_start": "2026-08-18",
+      "perp_end": "2026-10-31"
+    },
+    "CYBERUSDT": {
+      "funding_days": 1173,
+      "funding_start": "2023-08-16",
+      "funding_end": "2026-10-31",
+      "perp_days": 1168,
+      "perp_start": "2023-08-21",
+      "perp_end": "2026-10-31"
+    },
+    "CYPHUSDT": {
+      "funding_days": 44,
+      "funding_start": "2026-09-18",
+      "funding_end": "2026-10-31",
+      "perp_days": 44,
+      "perp_start": "2026-09-18",
+      "perp_end": "2026-10-31"
+    },
+    "CYSUSDT": {
+      "funding_days": 324,
+      "funding_start": "2025-12-12",
+      "funding_end": "2026-10-31",
+      "perp_days": 324,
+      "perp_start": "2025-12-12",
+      "perp_end": "2026-10-31"
+    },
+    "DAMUSDT": {
+      "funding_days": 255,
+      "funding_start": "2025-08-18",
+      "funding_end": "2026-04-29",
+      "perp_days": 440,
+      "perp_start": "2025-08-18",
+      "perp_end": "2026-10-31"
+    },
+    "DARUSDT": {
+      "funding_days": 901,
+      "funding_start": "2023-01-01",
+      "funding_end": "2025-06-19",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "DASHUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "DATAIPUSDT": {
+      "funding_days": 121,
+      "funding_start": "2026-07-03",
+      "funding_end": "2026-10-31",
+      "perp_days": 121,
+      "perp_start": "2026-07-03",
+      "perp_end": "2026-10-31"
+    },
+    "DDOGUSDT": {
+      "funding_days": 60,
+      "funding_start": "2026-09-02",
+      "funding_end": "2026-10-31",
+      "perp_days": 60,
+      "perp_start": "2026-09-02",
+      "perp_end": "2026-10-31"
+    },
+    "DEEPUSDT": {
+      "funding_days": 558,
+      "funding_start": "2025-04-22",
+      "funding_end": "2026-10-31",
+      "perp_days": 558,
+      "perp_start": "2025-04-22",
+      "perp_end": "2026-10-31"
+    },
+    "DEFIUSDT": {
+      "funding_days": 954,
+      "funding_start": "2023-01-01",
+      "funding_end": "2025-08-11",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "DEGENUSDT": {
+      "funding_days": 530,
+      "funding_start": "2024-11-15",
+      "funding_end": "2026-04-28",
+      "perp_days": 716,
+      "perp_start": "2024-11-15",
+      "perp_end": "2026-10-31"
+    },
+    "DEGOUSDT": {
+      "funding_days": 495,
+      "funding_start": "2024-12-13",
+      "funding_end": "2026-04-21",
+      "perp_days": 688,
+      "perp_start": "2024-12-13",
+      "perp_end": "2026-10-31"
+    },
+    "DELLUSDT": {
+      "funding_days": 151,
+      "funding_start": "2026-06-03",
+      "funding_end": "2026-10-31",
+      "perp_days": 151,
+      "perp_start": "2026-06-03",
+      "perp_end": "2026-10-31"
+    },
+    "DENTUSDT": {
+      "funding_days": 1207,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-04-21",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "DEXEUSDT": {
+      "funding_days": 677,
+      "funding_start": "2024-12-24",
+      "funding_end": "2026-10-31",
+      "perp_days": 677,
+      "perp_start": "2024-12-24",
+      "perp_end": "2026-10-31"
+    },
+    "DFUSDT": {
+      "funding_days": 404,
+      "funding_start": "2024-12-30",
+      "funding_end": "2026-02-06",
+      "perp_days": 671,
+      "perp_start": "2024-12-30",
+      "perp_end": "2026-10-31"
+    },
+    "DGBUSDT": {
+      "funding_days": 901,
+      "funding_start": "2023-01-01",
+      "funding_end": "2025-06-19",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "DIAUSDT": {
+      "funding_days": 760,
+      "funding_start": "2024-10-02",
+      "funding_end": "2026-10-31",
+      "perp_days": 760,
+      "perp_start": "2024-10-02",
+      "perp_end": "2026-10-31"
+    },
+    "DISUSDT": {
+      "funding_days": 171,
+      "funding_start": "2026-05-14",
+      "funding_end": "2026-10-31",
+      "perp_days": 170,
+      "perp_start": "2026-05-15",
+      "perp_end": "2026-10-31"
+    },
+    "DJTUSDT": {
+      "funding_days": 68,
+      "funding_start": "2026-08-25",
+      "funding_end": "2026-10-31",
+      "perp_days": 68,
+      "perp_start": "2026-08-25",
+      "perp_end": "2026-10-31"
+    },
+    "DKNGUSDT": {
+      "funding_days": 144,
+      "funding_start": "2026-06-10",
+      "funding_end": "2026-10-31",
+      "perp_days": 144,
+      "perp_start": "2026-06-10",
+      "perp_end": "2026-10-31"
+    },
+    "DMCUSDT": {
+      "funding_days": 212,
+      "funding_start": "2025-06-24",
+      "funding_end": "2026-01-21",
+      "perp_days": 495,
+      "perp_start": "2025-06-24",
+      "perp_end": "2026-10-31"
+    },
+    "DODOXUSDT": {
+      "funding_days": 1182,
+      "funding_start": "2023-08-07",
+      "funding_end": "2026-10-31",
+      "perp_days": 1181,
+      "perp_start": "2023-08-08",
+      "perp_end": "2026-10-31"
+    },
+    "DOGSUSDT": {
+      "funding_days": 797,
+      "funding_start": "2024-08-26",
+      "funding_end": "2026-10-31",
+      "perp_days": 797,
+      "perp_start": "2024-08-26",
+      "perp_end": "2026-10-31"
+    },
+    "DOLOUSDT": {
+      "funding_days": 549,
+      "funding_start": "2025-05-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 549,
+      "perp_start": "2025-05-01",
+      "perp_end": "2026-10-31"
+    },
+    "DOODUSDT": {
+      "funding_days": 541,
+      "funding_start": "2025-05-09",
+      "funding_end": "2026-10-31",
+      "perp_days": 541,
+      "perp_start": "2025-05-09",
+      "perp_end": "2026-10-31"
+    },
+    "DOSUSDT": {
+      "funding_days": 82,
+      "funding_start": "2026-08-11",
+      "funding_end": "2026-10-31",
+      "perp_days": 82,
+      "perp_start": "2026-08-11",
+      "perp_end": "2026-10-31"
+    },
+    "DRAMUSDT": {
+      "funding_days": 167,
+      "funding_start": "2026-05-18",
+      "funding_end": "2026-10-31",
+      "perp_days": 167,
+      "perp_start": "2026-05-18",
+      "perp_end": "2026-10-31"
+    },
+    "DRIFTUSDT": {
+      "funding_days": 723,
+      "funding_start": "2024-11-08",
+      "funding_end": "2026-10-31",
+      "perp_days": 723,
+      "perp_start": "2024-11-08",
+      "perp_end": "2026-10-31"
+    },
+    "DUSDT": {
+      "funding_days": 519,
+      "funding_start": "2025-01-09",
+      "funding_end": "2026-06-11",
+      "perp_days": 661,
+      "perp_start": "2025-01-09",
+      "perp_end": "2026-10-31"
+    },
+    "DUSKUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "DYDXUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "DYMUSDT": {
+      "funding_days": 998,
+      "funding_start": "2024-02-07",
+      "funding_end": "2026-10-31",
+      "perp_days": 998,
+      "perp_start": "2024-02-07",
+      "perp_end": "2026-10-31"
+    },
+    "EBAYUSDT": {
+      "funding_days": 145,
+      "funding_start": "2026-06-09",
+      "funding_end": "2026-10-31",
+      "perp_days": 145,
+      "perp_start": "2026-06-09",
+      "perp_end": "2026-10-31"
+    },
+    "EDENUSDT": {
+      "funding_days": 397,
+      "funding_start": "2025-09-30",
+      "funding_end": "2026-10-31",
+      "perp_days": 397,
+      "perp_start": "2025-09-30",
+      "perp_end": "2026-10-31"
+    },
+    "EDGEUSDT": {
+      "funding_days": 227,
+      "funding_start": "2026-03-19",
+      "funding_end": "2026-10-31",
+      "perp_days": 227,
+      "perp_start": "2026-03-19",
+      "perp_end": "2026-10-31"
+    },
+    "EDUUSDT": {
+      "funding_days": 1283,
+      "funding_start": "2023-04-28",
+      "funding_end": "2026-10-31",
+      "perp_days": 1281,
+      "perp_start": "2023-04-30",
+      "perp_end": "2026-10-31"
+    },
+    "EGLDUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "EIDOUSDT": {
+      "funding_days": 6,
+      "funding_start": "2026-10-26",
+      "funding_end": "2026-10-31",
+      "perp_days": 6,
+      "perp_start": "2026-10-26",
+      "perp_end": "2026-10-31"
+    },
+    "EIGENUSDT": {
+      "funding_days": 761,
+      "funding_start": "2024-10-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 761,
+      "perp_start": "2024-10-01",
+      "perp_end": "2026-10-31"
+    },
+    "ELSAUSDT": {
+      "funding_days": 283,
+      "funding_start": "2026-01-22",
+      "funding_end": "2026-10-31",
+      "perp_days": 283,
+      "perp_start": "2026-01-22",
+      "perp_end": "2026-10-31"
+    },
+    "ENAUSDT": {
+      "funding_days": 943,
+      "funding_start": "2024-04-02",
+      "funding_end": "2026-10-31",
+      "perp_days": 943,
+      "perp_start": "2024-04-02",
+      "perp_end": "2026-10-31"
+    },
+    "ENJUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "ENSOUSDT": {
+      "funding_days": 383,
+      "funding_start": "2025-10-14",
+      "funding_end": "2026-10-31",
+      "perp_days": 383,
+      "perp_start": "2025-10-14",
+      "perp_end": "2026-10-31"
+    },
+    "ENSUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "EOSUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 872,
+      "perp_start": "2023-01-01",
+      "perp_end": "2025-05-21"
+    },
+    "EPICUSDT": {
+      "funding_days": 587,
+      "funding_start": "2025-03-13",
+      "funding_end": "2026-10-20",
+      "perp_days": 598,
+      "perp_start": "2025-03-13",
+      "perp_end": "2026-10-31"
+    },
+    "EPTUSDT": {
+      "funding_days": 285,
+      "funding_start": "2025-04-21",
+      "funding_end": "2026-01-30",
+      "perp_days": 559,
+      "perp_start": "2025-04-21",
+      "perp_end": "2026-10-31"
+    },
+    "EQTUSDT": {
+      "funding_days": 6,
+      "funding_start": "2026-10-26",
+      "funding_end": "2026-10-31",
+      "perp_days": 6,
+      "perp_start": "2026-10-26",
+      "perp_end": "2026-10-31"
+    },
+    "ERAUSDT": {
+      "funding_days": 472,
+      "funding_start": "2025-07-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 472,
+      "perp_start": "2025-07-17",
+      "perp_end": "2026-10-31"
+    },
+    "ESPORTSUSDT": {
+      "funding_days": 460,
+      "funding_start": "2025-07-29",
+      "funding_end": "2026-10-31",
+      "perp_days": 460,
+      "perp_start": "2025-07-29",
+      "perp_end": "2026-10-31"
+    },
+    "ESPUSDT": {
+      "funding_days": 264,
+      "funding_start": "2026-02-10",
+      "funding_end": "2026-10-31",
+      "perp_days": 264,
+      "perp_start": "2026-02-10",
+      "perp_end": "2026-10-31"
+    },
+    "ETHFIUSDT": {
+      "funding_days": 958,
+      "funding_start": "2024-03-18",
+      "funding_end": "2026-10-31",
+      "perp_days": 958,
+      "perp_start": "2024-03-18",
+      "perp_end": "2026-10-31"
+    },
+    "ETHWUSDT": {
+      "funding_days": 1069,
+      "funding_start": "2023-11-28",
+      "funding_end": "2026-10-31",
+      "perp_days": 1069,
+      "perp_start": "2023-11-28",
+      "perp_end": "2026-10-31"
+    },
+    "EULUSDT": {
+      "funding_days": 384,
+      "funding_start": "2025-10-13",
+      "funding_end": "2026-10-31",
+      "perp_days": 384,
+      "perp_start": "2025-10-13",
+      "perp_end": "2026-10-31"
+    },
+    "EVAAUSDT": {
+      "funding_days": 394,
+      "funding_start": "2025-10-03",
+      "funding_end": "2026-10-31",
+      "perp_days": 394,
+      "perp_start": "2025-10-03",
+      "perp_end": "2026-10-31"
+    },
+    "EWJUSDT": {
+      "funding_days": 229,
+      "funding_start": "2026-03-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 227,
+      "perp_start": "2026-03-19",
+      "perp_end": "2026-10-31"
+    },
+    "EWTUSDT": {
+      "funding_days": 153,
+      "funding_start": "2026-06-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 153,
+      "perp_start": "2026-06-01",
+      "perp_end": "2026-10-31"
+    },
+    "EWYUSDT": {
+      "funding_days": 233,
+      "funding_start": "2026-03-13",
+      "funding_end": "2026-10-31",
+      "perp_days": 230,
+      "perp_start": "2026-03-16",
+      "perp_end": "2026-10-31"
+    },
+    "EWZSUSDT": {
+      "funding_days": 3,
+      "funding_start": "2026-10-29",
+      "funding_end": "2026-10-31",
+      "perp_days": 3,
+      "perp_start": "2026-10-29",
+      "perp_end": "2026-10-31"
+    },
+    "EWZUSDT": {
+      "funding_days": 144,
+      "funding_start": "2026-06-10",
+      "funding_end": "2026-10-31",
+      "perp_days": 144,
+      "perp_start": "2026-06-10",
+      "perp_end": "2026-10-31"
+    },
+    "FARTCOINUSDT": {
+      "funding_days": 681,
+      "funding_start": "2024-12-20",
+      "funding_end": "2026-10-31",
+      "perp_days": 681,
+      "perp_start": "2024-12-20",
+      "perp_end": "2026-10-31"
+    },
+    "FETUSDT": {
+      "funding_days": 1385,
+      "funding_start": "2023-01-16",
+      "funding_end": "2026-10-31",
+      "perp_days": 1384,
+      "perp_start": "2023-01-17",
+      "perp_end": "2026-10-31"
+    },
+    "FFUSDT": {
+      "funding_days": 398,
+      "funding_start": "2025-09-29",
+      "funding_end": "2026-10-31",
+      "perp_days": 398,
+      "perp_start": "2025-09-29",
+      "perp_end": "2026-10-31"
+    },
+    "FHEUSDT": {
+      "funding_days": 568,
+      "funding_start": "2025-04-12",
+      "funding_end": "2026-10-31",
+      "perp_days": 568,
+      "perp_start": "2025-04-12",
+      "perp_end": "2026-10-31"
+    },
+    "FIDAUSDT": {
+      "funding_days": 773,
+      "funding_start": "2024-09-19",
+      "funding_end": "2026-10-31",
+      "perp_days": 773,
+      "perp_start": "2024-09-19",
+      "perp_end": "2026-10-31"
+    },
+    "FIGHTUSDT": {
+      "funding_days": 282,
+      "funding_start": "2026-01-23",
+      "funding_end": "2026-10-31",
+      "perp_days": 282,
+      "perp_start": "2026-01-23",
+      "perp_end": "2026-10-31"
+    },
+    "FIOUSDT": {
+      "funding_days": 573,
+      "funding_start": "2024-09-20",
+      "funding_end": "2026-04-15",
+      "perp_days": 772,
+      "perp_start": "2024-09-20",
+      "perp_end": "2026-10-31"
+    },
+    "FISUSDT": {
+      "funding_days": 230,
+      "funding_start": "2025-04-25",
+      "funding_end": "2025-12-10",
+      "perp_days": 555,
+      "perp_start": "2025-04-25",
+      "perp_end": "2026-10-31"
+    },
+    "FLEXUSDT": {
+      "funding_days": 122,
+      "funding_start": "2026-07-02",
+      "funding_end": "2026-10-31",
+      "perp_days": 122,
+      "perp_start": "2026-07-02",
+      "perp_end": "2026-10-31"
+    },
+    "FLMUSDT": {
+      "funding_days": 1056,
+      "funding_start": "2023-01-01",
+      "funding_end": "2025-11-21",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "FLNCUSDT": {
+      "funding_days": 167,
+      "funding_start": "2026-05-18",
+      "funding_end": "2026-10-31",
+      "perp_days": 167,
+      "perp_start": "2026-05-18",
+      "perp_end": "2026-10-31"
+    },
+    "FLOCKUSDT": {
+      "funding_days": 418,
+      "funding_start": "2025-09-09",
+      "funding_end": "2026-10-31",
+      "perp_days": 418,
+      "perp_start": "2025-09-09",
+      "perp_end": "2026-10-31"
+    },
+    "FLOWUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "FLUIDUSDT": {
+      "funding_days": 403,
+      "funding_start": "2025-09-24",
+      "funding_end": "2026-10-31",
+      "perp_days": 403,
+      "perp_start": "2025-09-24",
+      "perp_end": "2026-10-31"
+    },
+    "FLUXUSDT": {
+      "funding_days": 789,
+      "funding_start": "2024-09-03",
+      "funding_end": "2026-10-31",
+      "perp_days": 789,
+      "perp_start": "2024-09-03",
+      "perp_end": "2026-10-31"
+    },
+    "FOGOUSDT": {
+      "funding_days": 295,
+      "funding_start": "2026-01-10",
+      "funding_end": "2026-10-31",
+      "perp_days": 295,
+      "perp_start": "2026-01-10",
+      "perp_end": "2026-10-31"
+    },
+    "FOLKSUSDT": {
+      "funding_days": 360,
+      "funding_start": "2025-11-06",
+      "funding_end": "2026-10-31",
+      "perp_days": 360,
+      "perp_start": "2025-11-06",
+      "perp_end": "2026-10-31"
+    },
+    "FOOTBALLUSDT": {
+      "funding_days": 566,
+      "funding_start": "2023-01-01",
+      "funding_end": "2024-07-19",
+      "perp_days": 514,
+      "perp_start": "2023-01-01",
+      "perp_end": "2024-05-28"
+    },
+    "FORMUSDT": {
+      "funding_days": 592,
+      "funding_start": "2025-03-19",
+      "funding_end": "2026-10-31",
+      "perp_days": 592,
+      "perp_start": "2025-03-19",
+      "perp_end": "2026-10-31"
+    },
+    "FORTHUSDT": {
+      "funding_days": 351,
+      "funding_start": "2025-04-08",
+      "funding_end": "2026-03-24",
+      "perp_days": 572,
+      "perp_start": "2025-04-08",
+      "perp_end": "2026-10-31"
+    },
+    "FRAXUSDT": {
+      "funding_days": 290,
+      "funding_start": "2026-01-15",
+      "funding_end": "2026-10-31",
+      "perp_days": 290,
+      "perp_start": "2026-01-15",
+      "perp_end": "2026-10-31"
+    },
+    "FRONTUSDT": {
+      "funding_days": 1136,
+      "funding_start": "2023-09-22",
+      "funding_end": "2026-10-31",
+      "perp_days": 356,
+      "perp_start": "2023-09-22",
+      "perp_end": "2024-09-11"
+    },
+    "FTMUSDT": {
+      "funding_days": 901,
+      "funding_start": "2023-01-01",
+      "funding_end": "2025-06-19",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "FTTUSDT": {
+      "funding_days": 901,
+      "funding_start": "2023-01-01",
+      "funding_end": "2025-06-19",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "FUNUSDT": {
+      "funding_days": 381,
+      "funding_start": "2025-03-31",
+      "funding_end": "2026-04-15",
+      "perp_days": 580,
+      "perp_start": "2025-03-31",
+      "perp_end": "2026-10-31"
+    },
+    "FUSDT": {
+      "funding_days": 501,
+      "funding_start": "2025-06-18",
+      "funding_end": "2026-10-31",
+      "perp_days": 501,
+      "perp_start": "2025-06-18",
+      "perp_end": "2026-10-31"
+    },
+    "FWDIUSDT": {
+      "funding_days": 115,
+      "funding_start": "2026-07-09",
+      "funding_end": "2026-10-31",
+      "perp_days": 115,
+      "perp_start": "2026-07-09",
+      "perp_end": "2026-10-31"
+    },
+    "FXSUSDT": {
+      "funding_days": 1083,
+      "funding_start": "2023-01-20",
+      "funding_end": "2026-01-06",
+      "perp_days": 1381,
+      "perp_start": "2023-01-20",
+      "perp_end": "2026-10-31"
+    },
+    "GAIBUSDT": {
+      "funding_days": 146,
+      "funding_start": "2025-11-20",
+      "funding_end": "2026-04-14",
+      "perp_days": 0,
+      "perp_start": null,
+      "perp_end": null
+    },
+    "GALAUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "GALUSDT": {
+      "funding_days": 593,
+      "funding_start": "2023-01-01",
+      "funding_end": "2024-08-15",
+      "perp_days": 577,
+      "perp_start": "2023-01-01",
+      "perp_end": "2024-07-30"
+    },
+    "GASUSDT": {
+      "funding_days": 1104,
+      "funding_start": "2023-10-24",
+      "funding_end": "2026-10-31",
+      "perp_days": 1103,
+      "perp_start": "2023-10-25",
+      "perp_end": "2026-10-31"
+    },
+    "GDXUSDT": {
+      "funding_days": 76,
+      "funding_start": "2026-08-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 76,
+      "perp_start": "2026-08-17",
+      "perp_end": "2026-10-31"
+    },
+    "GENIUSUSDT": {
+      "funding_days": 199,
+      "funding_start": "2026-04-16",
+      "funding_end": "2026-10-31",
+      "perp_days": 199,
+      "perp_start": "2026-04-16",
+      "perp_end": "2026-10-31"
+    },
+    "GEVUSDT": {
+      "funding_days": 114,
+      "funding_start": "2026-07-10",
+      "funding_end": "2026-10-31",
+      "perp_days": 114,
+      "perp_start": "2026-07-10",
+      "perp_end": "2026-10-31"
+    },
+    "GHSTUSDT": {
+      "funding_days": 502,
+      "funding_start": "2024-09-23",
+      "funding_end": "2026-02-06",
+      "perp_days": 769,
+      "perp_start": "2024-09-23",
+      "perp_end": "2026-10-31"
+    },
+    "GIGADEVUSDT": {
+      "funding_days": 90,
+      "funding_start": "2026-08-03",
+      "funding_end": "2026-10-31",
+      "perp_days": 90,
+      "perp_start": "2026-08-03",
+      "perp_end": "2026-10-31"
+    },
+    "GIGGLEUSDT": {
+      "funding_days": 388,
+      "funding_start": "2025-10-09",
+      "funding_end": "2026-10-31",
+      "perp_days": 388,
+      "perp_start": "2025-10-09",
+      "perp_end": "2026-10-31"
+    },
+    "GLMRUSDT": {
+      "funding_days": 634,
+      "funding_start": "2023-09-25",
+      "funding_end": "2025-06-19",
+      "perp_days": 1132,
+      "perp_start": "2023-09-26",
+      "perp_end": "2026-10-31"
+    },
+    "GLMUSDT": {
+      "funding_days": 983,
+      "funding_start": "2024-02-22",
+      "funding_end": "2026-10-31",
+      "perp_days": 983,
+      "perp_start": "2024-02-22",
+      "perp_end": "2026-10-31"
+    },
+    "GLWUSDT": {
+      "funding_days": 143,
+      "funding_start": "2026-06-11",
+      "funding_end": "2026-10-31",
+      "perp_days": 143,
+      "perp_start": "2026-06-11",
+      "perp_end": "2026-10-31"
+    },
+    "GMEUSDT": {
+      "funding_days": 144,
+      "funding_start": "2026-06-10",
+      "funding_end": "2026-10-31",
+      "perp_days": 144,
+      "perp_start": "2026-06-10",
+      "perp_end": "2026-10-31"
+    },
+    "GMTUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "GMXUSDT": {
+      "funding_days": 1353,
+      "funding_start": "2023-02-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 1353,
+      "perp_start": "2023-02-17",
+      "perp_end": "2026-10-31"
+    },
+    "GOATUSDT": {
+      "funding_days": 738,
+      "funding_start": "2024-10-24",
+      "funding_end": "2026-10-31",
+      "perp_days": 738,
+      "perp_start": "2024-10-24",
+      "perp_end": "2026-10-31"
+    },
+    "GOOGLUSDT": {
+      "funding_days": 221,
+      "funding_start": "2026-03-25",
+      "funding_end": "2026-10-31",
+      "perp_days": 220,
+      "perp_start": "2026-03-26",
+      "perp_end": "2026-10-31"
+    },
+    "GPROUSDT": {
+      "funding_days": 59,
+      "funding_start": "2026-09-03",
+      "funding_end": "2026-10-31",
+      "perp_days": 59,
+      "perp_start": "2026-09-03",
+      "perp_end": "2026-10-31"
+    },
+    "GPSUSDT": {
+      "funding_days": 622,
+      "funding_start": "2025-02-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 622,
+      "perp_start": "2025-02-17",
+      "perp_end": "2026-10-31"
+    },
+    "GRAMUSDT": {
+      "funding_days": 122,
+      "funding_start": "2026-07-02",
+      "funding_end": "2026-10-31",
+      "perp_days": 122,
+      "perp_start": "2026-07-02",
+      "perp_end": "2026-10-31"
+    },
+    "GRASSUSDT": {
+      "funding_days": 723,
+      "funding_start": "2024-11-08",
+      "funding_end": "2026-10-31",
+      "perp_days": 723,
+      "perp_start": "2024-11-08",
+      "perp_end": "2026-10-31"
+    },
+    "GRIFFAINUSDT": {
+      "funding_days": 668,
+      "funding_start": "2025-01-02",
+      "funding_end": "2026-10-31",
+      "perp_days": 668,
+      "perp_start": "2025-01-02",
+      "perp_end": "2026-10-31"
+    },
+    "GRTUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "GRVTUSDT": {
+      "funding_days": 93,
+      "funding_start": "2026-07-31",
+      "funding_end": "2026-10-31",
+      "perp_days": 93,
+      "perp_start": "2026-07-31",
+      "perp_end": "2026-10-31"
+    },
+    "GSUSDT": {
+      "funding_days": 95,
+      "funding_start": "2026-07-29",
+      "funding_end": "2026-10-31",
+      "perp_days": 95,
+      "perp_start": "2026-07-29",
+      "perp_end": "2026-10-31"
+    },
+    "GTCUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "GTLBUSDT": {
+      "funding_days": 60,
+      "funding_start": "2026-09-02",
+      "funding_end": "2026-10-31",
+      "perp_days": 60,
+      "perp_start": "2026-09-02",
+      "perp_end": "2026-10-31"
+    },
+    "GUAUSDT": {
+      "funding_days": 315,
+      "funding_start": "2025-12-21",
+      "funding_end": "2026-10-31",
+      "perp_days": 315,
+      "perp_start": "2025-12-21",
+      "perp_end": "2026-10-31"
+    },
+    "GUNUSDT": {
+      "funding_days": 580,
+      "funding_start": "2025-03-31",
+      "funding_end": "2026-10-31",
+      "perp_days": 580,
+      "perp_start": "2025-03-31",
+      "perp_end": "2026-10-31"
+    },
+    "GUSDT": {
+      "funding_days": 808,
+      "funding_start": "2024-08-15",
+      "funding_end": "2026-10-31",
+      "perp_days": 808,
+      "perp_start": "2024-08-15",
+      "perp_end": "2026-10-31"
+    },
+    "GWEIUSDT": {
+      "funding_days": 276,
+      "funding_start": "2026-01-29",
+      "funding_end": "2026-10-31",
+      "perp_days": 276,
+      "perp_start": "2026-01-29",
+      "perp_end": "2026-10-31"
+    },
+    "HAEDALUSDT": {
+      "funding_days": 549,
+      "funding_start": "2025-05-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 549,
+      "perp_start": "2025-05-01",
+      "perp_end": "2026-10-31"
+    },
+    "HANAUSDT": {
+      "funding_days": 401,
+      "funding_start": "2025-09-26",
+      "funding_end": "2026-10-31",
+      "perp_days": 401,
+      "perp_start": "2025-09-26",
+      "perp_end": "2026-10-31"
+    },
+    "HANMIUSDT": {
+      "funding_days": 80,
+      "funding_start": "2026-08-13",
+      "funding_end": "2026-10-31",
+      "perp_days": 79,
+      "perp_start": "2026-08-14",
+      "perp_end": "2026-10-31"
+    },
+    "HBARUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "HDUSDT": {
+      "funding_days": 171,
+      "funding_start": "2026-05-14",
+      "funding_end": "2026-10-31",
+      "perp_days": 170,
+      "perp_start": "2026-05-15",
+      "perp_end": "2026-10-31"
+    },
+    "HEIUSDT": {
+      "funding_days": 626,
+      "funding_start": "2025-02-13",
+      "funding_end": "2026-10-31",
+      "perp_days": 626,
+      "perp_start": "2025-02-13",
+      "perp_end": "2026-10-31"
+    },
+    "HEMIUSDT": {
+      "funding_days": 430,
+      "funding_start": "2025-08-28",
+      "funding_end": "2026-10-31",
+      "perp_days": 429,
+      "perp_start": "2025-08-29",
+      "perp_end": "2026-10-31"
+    },
+    "HFTUSDT": {
+      "funding_days": 1221,
+      "funding_start": "2023-04-05",
+      "funding_end": "2026-08-07",
+      "perp_days": 1305,
+      "perp_start": "2023-04-06",
+      "perp_end": "2026-10-31"
+    },
+    "HIFIUSDT": {
+      "funding_days": 749,
+      "funding_start": "2023-09-16",
+      "funding_end": "2025-10-03",
+      "perp_days": 1142,
+      "perp_start": "2023-09-16",
+      "perp_end": "2026-10-31"
+    },
+    "HIGHUSDT": {
+      "funding_days": 1225,
+      "funding_start": "2023-02-03",
+      "funding_end": "2026-06-11",
+      "perp_days": 1363,
+      "perp_start": "2023-02-07",
+      "perp_end": "2026-10-31"
+    },
+    "HIMSUSDT": {
+      "funding_days": 145,
+      "funding_start": "2026-06-09",
+      "funding_end": "2026-10-31",
+      "perp_days": 145,
+      "perp_start": "2026-06-09",
+      "perp_end": "2026-10-31"
+    },
+    "HIPPOUSDT": {
+      "funding_days": 512,
+      "funding_start": "2024-11-13",
+      "funding_end": "2026-04-08",
+      "perp_days": 718,
+      "perp_start": "2024-11-13",
+      "perp_end": "2026-10-31"
+    },
+    "HIVEUSDT": {
+      "funding_days": 678,
+      "funding_start": "2024-12-23",
+      "funding_end": "2026-10-31",
+      "perp_days": 678,
+      "perp_start": "2024-12-23",
+      "perp_end": "2026-10-31"
+    },
+    "HK0625USDT": {
+      "funding_days": 61,
+      "funding_start": "2026-09-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 61,
+      "perp_start": "2026-09-01",
+      "perp_end": "2026-10-31"
+    },
+    "HK0700USDT": {
+      "funding_days": 107,
+      "funding_start": "2026-07-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 102,
+      "perp_start": "2026-07-22",
+      "perp_end": "2026-10-31"
+    },
+    "HK0992USDT": {
+      "funding_days": 58,
+      "funding_start": "2026-09-04",
+      "funding_end": "2026-10-31",
+      "perp_days": 55,
+      "perp_start": "2026-09-07",
+      "perp_end": "2026-10-31"
+    },
+    "HK1810USDT": {
+      "funding_days": 107,
+      "funding_start": "2026-07-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 102,
+      "perp_start": "2026-07-22",
+      "perp_end": "2026-10-31"
+    },
+    "HMSTRUSDT": {
+      "funding_days": 766,
+      "funding_start": "2024-09-26",
+      "funding_end": "2026-10-31",
+      "perp_days": 766,
+      "perp_start": "2024-09-26",
+      "perp_end": "2026-10-31"
+    },
+    "HNTUSDT": {
+      "funding_days": 593,
+      "funding_start": "2023-01-01",
+      "funding_end": "2024-08-15",
+      "perp_days": 514,
+      "perp_start": "2023-01-01",
+      "perp_end": "2024-05-28"
+    },
+    "HOLOUSDT": {
+      "funding_days": 416,
+      "funding_start": "2025-09-11",
+      "funding_end": "2026-10-31",
+      "perp_days": 416,
+      "perp_start": "2025-09-11",
+      "perp_end": "2026-10-31"
+    },
+    "HOMEUSDT": {
+      "funding_days": 509,
+      "funding_start": "2025-06-10",
+      "funding_end": "2026-10-31",
+      "perp_days": 509,
+      "perp_start": "2025-06-10",
+      "perp_end": "2026-10-31"
+    },
+    "HOODUSDT": {
+      "funding_days": 272,
+      "funding_start": "2026-02-02",
+      "funding_end": "2026-10-31",
+      "perp_days": 272,
+      "perp_start": "2026-02-02",
+      "perp_end": "2026-10-31"
+    },
+    "HOOKUSDT": {
+      "funding_days": 1160,
+      "funding_start": "2023-01-20",
+      "funding_end": "2026-03-24",
+      "perp_days": 1378,
+      "perp_start": "2023-01-23",
+      "perp_end": "2026-10-31"
+    },
+    "HOTUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "HPEUSDT": {
+      "funding_days": 146,
+      "funding_start": "2026-06-08",
+      "funding_end": "2026-10-31",
+      "perp_days": 146,
+      "perp_start": "2026-06-08",
+      "perp_end": "2026-10-31"
+    },
+    "HUMAUSDT": {
+      "funding_days": 524,
+      "funding_start": "2025-05-26",
+      "funding_end": "2026-10-31",
+      "perp_days": 524,
+      "perp_start": "2025-05-26",
+      "perp_end": "2026-10-31"
+    },
+    "HUSDT": {
+      "funding_days": 494,
+      "funding_start": "2025-06-25",
+      "funding_end": "2026-10-31",
+      "perp_days": 494,
+      "perp_start": "2025-06-25",
+      "perp_end": "2026-10-31"
+    },
+    "HUTUSDT": {
+      "funding_days": 44,
+      "funding_start": "2026-09-18",
+      "funding_end": "2026-10-31",
+      "perp_days": 44,
+      "perp_start": "2026-09-18",
+      "perp_end": "2026-10-31"
+    },
+    "HYPERUSDT": {
+      "funding_days": 558,
+      "funding_start": "2025-04-22",
+      "funding_end": "2026-10-31",
+      "perp_days": 558,
+      "perp_start": "2025-04-22",
+      "perp_end": "2026-10-31"
+    },
+    "HYPEUSDT": {
+      "funding_days": 520,
+      "funding_start": "2025-05-30",
+      "funding_end": "2026-10-31",
+      "perp_days": 520,
+      "perp_start": "2025-05-30",
+      "perp_end": "2026-10-31"
+    },
+    "HYUNDAIUSDT": {
+      "funding_days": 152,
+      "funding_start": "2026-06-02",
+      "funding_end": "2026-10-31",
+      "perp_days": 152,
+      "perp_start": "2026-06-02",
+      "perp_end": "2026-10-31"
+    },
+    "IBKRUSDT": {
+      "funding_days": 11,
+      "funding_start": "2026-10-21",
+      "funding_end": "2026-10-31",
+      "perp_days": 11,
+      "perp_start": "2026-10-21",
+      "perp_end": "2026-10-31"
+    },
+    "IBMUSDT": {
+      "funding_days": 151,
+      "funding_start": "2026-06-03",
+      "funding_end": "2026-10-31",
+      "perp_days": 151,
+      "perp_start": "2026-06-03",
+      "perp_end": "2026-10-31"
+    },
+    "ICNTUSDT": {
+      "funding_days": 486,
+      "funding_start": "2025-07-03",
+      "funding_end": "2026-10-31",
+      "perp_days": 486,
+      "perp_start": "2025-07-03",
+      "perp_end": "2026-10-31"
+    },
+    "ICPUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "ICXUSDT": {
+      "funding_days": 1334,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-08-26",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "IDEXUSDT": {
+      "funding_days": 780,
+      "funding_start": "2023-05-02",
+      "funding_end": "2025-06-19",
+      "perp_days": 1278,
+      "perp_start": "2023-05-03",
+      "perp_end": "2026-10-31"
+    },
+    "IDOLUSDT": {
+      "funding_days": 485,
+      "funding_start": "2025-07-04",
+      "funding_end": "2026-10-31",
+      "perp_days": 485,
+      "perp_start": "2025-07-04",
+      "perp_end": "2026-10-31"
+    },
+    "IDUSDT": {
+      "funding_days": 1319,
+      "funding_start": "2023-03-23",
+      "funding_end": "2026-10-31",
+      "perp_days": 1319,
+      "perp_start": "2023-03-23",
+      "perp_end": "2026-10-31"
+    },
+    "ILVUSDT": {
+      "funding_days": 1087,
+      "funding_start": "2023-11-10",
+      "funding_end": "2026-10-31",
+      "perp_days": 1087,
+      "perp_start": "2023-11-10",
+      "perp_end": "2026-10-31"
+    },
+    "IMXUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "INITUSDT": {
+      "funding_days": 564,
+      "funding_start": "2025-04-16",
+      "funding_end": "2026-10-31",
+      "perp_days": 564,
+      "perp_start": "2025-04-16",
+      "perp_end": "2026-10-31"
+    },
+    "INJUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "INTCUSDT": {
+      "funding_days": 272,
+      "funding_start": "2026-02-02",
+      "funding_end": "2026-10-31",
+      "perp_days": 272,
+      "perp_start": "2026-02-02",
+      "perp_end": "2026-10-31"
+    },
+    "INTWUSDT": {
+      "funding_days": 115,
+      "funding_start": "2026-07-09",
+      "funding_end": "2026-10-31",
+      "perp_days": 115,
+      "perp_start": "2026-07-09",
+      "perp_end": "2026-10-31"
+    },
+    "INUSDT": {
+      "funding_days": 451,
+      "funding_start": "2025-08-07",
+      "funding_end": "2026-10-31",
+      "perp_days": 451,
+      "perp_start": "2025-08-07",
+      "perp_end": "2026-10-31"
+    },
+    "INXUSDT": {
+      "funding_days": 275,
+      "funding_start": "2026-01-30",
+      "funding_end": "2026-10-31",
+      "perp_days": 275,
+      "perp_start": "2026-01-30",
+      "perp_end": "2026-10-31"
+    },
+    "IONQUSDT": {
+      "funding_days": 65,
+      "funding_start": "2026-08-28",
+      "funding_end": "2026-10-31",
+      "perp_days": 65,
+      "perp_start": "2026-08-28",
+      "perp_end": "2026-10-31"
+    },
+    "IOSTUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "IOTAUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "IOTXUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "IOUSDT": {
+      "funding_days": 873,
+      "funding_start": "2024-06-11",
+      "funding_end": "2026-10-31",
+      "perp_days": 873,
+      "perp_start": "2024-06-11",
+      "perp_end": "2026-10-31"
+    },
+    "IPUSDT": {
+      "funding_days": 501,
+      "funding_start": "2025-02-13",
+      "funding_end": "2026-06-28",
+      "perp_days": 626,
+      "perp_start": "2025-02-13",
+      "perp_end": "2026-10-31"
+    },
+    "IRENUSDT": {
+      "funding_days": 151,
+      "funding_start": "2026-06-03",
+      "funding_end": "2026-10-31",
+      "perp_days": 151,
+      "perp_start": "2026-06-03",
+      "perp_end": "2026-10-31"
+    },
+    "IRUSDT": {
+      "funding_days": 130,
+      "funding_start": "2025-12-21",
+      "funding_end": "2026-04-29",
+      "perp_days": 315,
+      "perp_start": "2025-12-21",
+      "perp_end": "2026-10-31"
+    },
+    "IRYSUSDT": {
+      "funding_days": 340,
+      "funding_start": "2025-11-26",
+      "funding_end": "2026-10-31",
+      "perp_days": 340,
+      "perp_start": "2025-11-26",
+      "perp_end": "2026-10-31"
+    },
+    "IWMUSDT": {
+      "funding_days": 146,
+      "funding_start": "2026-06-08",
+      "funding_end": "2026-10-31",
+      "perp_days": 146,
+      "perp_start": "2026-06-08",
+      "perp_end": "2026-10-31"
+    },
+    "JASMYUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "JCTUSDT": {
+      "funding_days": 356,
+      "funding_start": "2025-11-10",
+      "funding_end": "2026-10-31",
+      "perp_days": 356,
+      "perp_start": "2025-11-10",
+      "perp_end": "2026-10-31"
+    },
+    "JELLYJELLYUSDT": {
+      "funding_days": 585,
+      "funding_start": "2025-03-26",
+      "funding_end": "2026-10-31",
+      "perp_days": 585,
+      "perp_start": "2025-03-26",
+      "perp_end": "2026-10-31"
+    },
+    "JOEUSDT": {
+      "funding_days": 1314,
+      "funding_start": "2023-03-28",
+      "funding_end": "2026-10-31",
+      "perp_days": 1313,
+      "perp_start": "2023-03-29",
+      "perp_end": "2026-10-31"
+    },
+    "JPMUSDT": {
+      "funding_days": 167,
+      "funding_start": "2026-05-18",
+      "funding_end": "2026-10-31",
+      "perp_days": 167,
+      "perp_start": "2026-05-18",
+      "perp_end": "2026-10-31"
+    },
+    "JSTUSDT": {
+      "funding_days": 552,
+      "funding_start": "2025-04-28",
+      "funding_end": "2026-10-31",
+      "perp_days": 552,
+      "perp_start": "2025-04-28",
+      "perp_end": "2026-10-31"
+    },
+    "JTOUSDT": {
+      "funding_days": 1059,
+      "funding_start": "2023-12-08",
+      "funding_end": "2026-10-31",
+      "perp_days": 1059,
+      "perp_start": "2023-12-08",
+      "perp_end": "2026-10-31"
+    },
+    "JUPUSDT": {
+      "funding_days": 1004,
+      "funding_start": "2024-02-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1005,
+      "perp_start": "2024-01-31",
+      "perp_end": "2026-10-31"
+    },
+    "KAIAUSDT": {
+      "funding_days": 697,
+      "funding_start": "2024-12-04",
+      "funding_end": "2026-10-31",
+      "perp_days": 697,
+      "perp_start": "2024-12-04",
+      "perp_end": "2026-10-31"
+    },
+    "KAITOUSDT": {
+      "funding_days": 619,
+      "funding_start": "2025-02-20",
+      "funding_end": "2026-10-31",
+      "perp_days": 619,
+      "perp_start": "2025-02-20",
+      "perp_end": "2026-10-31"
+    },
+    "KASUSDT": {
+      "funding_days": 1081,
+      "funding_start": "2023-11-16",
+      "funding_end": "2026-10-31",
+      "perp_days": 1080,
+      "perp_start": "2023-11-17",
+      "perp_end": "2026-10-31"
+    },
+    "KATUSDT": {
+      "funding_days": 244,
+      "funding_start": "2026-03-02",
+      "funding_end": "2026-10-31",
+      "perp_days": 244,
+      "perp_start": "2026-03-02",
+      "perp_end": "2026-10-31"
+    },
+    "KAVAUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "KDAUSDT": {
+      "funding_days": 415,
+      "funding_start": "2024-09-18",
+      "funding_end": "2025-11-06",
+      "perp_days": 774,
+      "perp_start": "2024-09-18",
+      "perp_end": "2026-10-31"
+    },
+    "KERNELUSDT": {
+      "funding_days": 566,
+      "funding_start": "2025-04-14",
+      "funding_end": "2026-10-31",
+      "perp_days": 566,
+      "perp_start": "2025-04-14",
+      "perp_end": "2026-10-31"
+    },
+    "KEYUSDT": {
+      "funding_days": 759,
+      "funding_start": "2023-05-23",
+      "funding_end": "2025-06-19",
+      "perp_days": 1257,
+      "perp_start": "2023-05-24",
+      "perp_end": "2026-10-31"
+    },
+    "KGENUSDT": {
+      "funding_days": 390,
+      "funding_start": "2025-10-07",
+      "funding_end": "2026-10-31",
+      "perp_days": 390,
+      "perp_start": "2025-10-07",
+      "perp_end": "2026-10-31"
+    },
+    "KITEUSDT": {
+      "funding_days": 368,
+      "funding_start": "2025-10-29",
+      "funding_end": "2026-10-31",
+      "perp_days": 368,
+      "perp_start": "2025-10-29",
+      "perp_end": "2026-10-31"
+    },
+    "KLACUSDT": {
+      "funding_days": 132,
+      "funding_start": "2026-06-22",
+      "funding_end": "2026-10-31",
+      "perp_days": 132,
+      "perp_start": "2026-06-22",
+      "perp_end": "2026-10-31"
+    },
+    "KLAYUSDT": {
+      "funding_days": 901,
+      "funding_start": "2023-01-01",
+      "funding_end": "2025-06-19",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "KMNOUSDT": {
+      "funding_days": 681,
+      "funding_start": "2024-12-20",
+      "funding_end": "2026-10-31",
+      "perp_days": 681,
+      "perp_start": "2024-12-20",
+      "perp_end": "2026-10-31"
+    },
+    "KNCUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "KODEX200USDT": {
+      "funding_days": 80,
+      "funding_start": "2026-08-13",
+      "funding_end": "2026-10-31",
+      "perp_days": 79,
+      "perp_start": "2026-08-14",
+      "perp_end": "2026-10-31"
+    },
+    "KOMAUSDT": {
+      "funding_days": 691,
+      "funding_start": "2024-12-10",
+      "funding_end": "2026-10-31",
+      "perp_days": 691,
+      "perp_start": "2024-12-10",
+      "perp_end": "2026-10-31"
+    },
+    "KORUUSDT": {
+      "funding_days": 132,
+      "funding_start": "2026-06-22",
+      "funding_end": "2026-10-31",
+      "perp_days": 132,
+      "perp_start": "2026-06-22",
+      "perp_end": "2026-10-31"
+    },
+    "KOUSDT": {
+      "funding_days": 87,
+      "funding_start": "2026-08-06",
+      "funding_end": "2026-10-31",
+      "perp_days": 87,
+      "perp_start": "2026-08-06",
+      "perp_end": "2026-10-31"
+    },
+    "KSMUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "KSTRUSDT": {
+      "funding_days": 122,
+      "funding_start": "2026-07-02",
+      "funding_end": "2026-10-31",
+      "perp_days": 122,
+      "perp_start": "2026-07-02",
+      "perp_end": "2026-10-31"
+    },
+    "KUAISHOUUSDT": {
+      "funding_days": 83,
+      "funding_start": "2026-08-10",
+      "funding_end": "2026-10-31",
+      "perp_days": 82,
+      "perp_start": "2026-08-11",
+      "perp_end": "2026-10-31"
+    },
+    "LABUSDT": {
+      "funding_days": 380,
+      "funding_start": "2025-10-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 380,
+      "perp_start": "2025-10-17",
+      "perp_end": "2026-10-31"
+    },
+    "LAUSDT": {
+      "funding_days": 514,
+      "funding_start": "2025-06-05",
+      "funding_end": "2026-10-31",
+      "perp_days": 514,
+      "perp_start": "2025-06-05",
+      "perp_end": "2026-10-31"
+    },
+    "LAYERUSDT": {
+      "funding_days": 628,
+      "funding_start": "2025-02-11",
+      "funding_end": "2026-10-31",
+      "perp_days": 628,
+      "perp_start": "2025-02-11",
+      "perp_end": "2026-10-31"
+    },
+    "LDOUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "LEVERUSDT": {
+      "funding_days": 889,
+      "funding_start": "2023-03-30",
+      "funding_end": "2025-09-03",
+      "perp_days": 1312,
+      "perp_start": "2023-03-30",
+      "perp_end": "2026-10-31"
+    },
+    "LGELECTRONICSUSDT": {
+      "funding_days": 80,
+      "funding_start": "2026-08-13",
+      "funding_end": "2026-10-31",
+      "perp_days": 79,
+      "perp_start": "2026-08-14",
+      "perp_end": "2026-10-31"
+    },
+    "LIGHTUSDT": {
+      "funding_days": 401,
+      "funding_start": "2025-09-26",
+      "funding_end": "2026-10-31",
+      "perp_days": 400,
+      "perp_start": "2025-09-27",
+      "perp_end": "2026-10-31"
+    },
+    "LINAUSDT": {
+      "funding_days": 901,
+      "funding_start": "2023-01-01",
+      "funding_end": "2025-06-19",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "LINEAUSDT": {
+      "funding_days": 426,
+      "funding_start": "2025-09-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 426,
+      "perp_start": "2025-09-01",
+      "perp_end": "2026-10-31"
+    },
+    "LISTAUSDT": {
+      "funding_days": 864,
+      "funding_start": "2024-06-20",
+      "funding_end": "2026-10-31",
+      "perp_days": 864,
+      "perp_start": "2024-06-20",
+      "perp_end": "2026-10-31"
+    },
+    "LITEUSDT": {
+      "funding_days": 171,
+      "funding_start": "2026-05-14",
+      "funding_end": "2026-10-31",
+      "perp_days": 170,
+      "perp_start": "2026-05-15",
+      "perp_end": "2026-10-31"
+    },
+    "LITUSDT": {
+      "funding_days": 1214,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "LLYUSDT": {
+      "funding_days": 153,
+      "funding_start": "2026-06-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 153,
+      "perp_start": "2026-06-01",
+      "perp_end": "2026-10-31"
+    },
+    "LOKAUSDT": {
+      "funding_days": 301,
+      "funding_start": "2024-09-24",
+      "funding_end": "2025-07-21",
+      "perp_days": 768,
+      "perp_start": "2024-09-24",
+      "perp_end": "2026-10-31"
+    },
+    "LOOMUSDT": {
+      "funding_days": 618,
+      "funding_start": "2023-10-11",
+      "funding_end": "2025-06-19",
+      "perp_days": 1117,
+      "perp_start": "2023-10-11",
+      "perp_end": "2026-10-31"
+    },
+    "LPTUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "LQTYUSDT": {
+      "funding_days": 1333,
+      "funding_start": "2023-03-09",
+      "funding_end": "2026-10-31",
+      "perp_days": 1332,
+      "perp_start": "2023-03-10",
+      "perp_end": "2026-10-31"
+    },
+    "LRCUSDT": {
+      "funding_days": 1179,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-03-24",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "LRCXUSDT": {
+      "funding_days": 132,
+      "funding_start": "2026-06-22",
+      "funding_end": "2026-10-31",
+      "perp_days": 132,
+      "perp_start": "2026-06-22",
+      "perp_end": "2026-10-31"
+    },
+    "LSKUSDT": {
+      "funding_days": 1011,
+      "funding_start": "2024-01-25",
+      "funding_end": "2026-10-31",
+      "perp_days": 1011,
+      "perp_start": "2024-01-25",
+      "perp_end": "2026-10-31"
+    },
+    "LUMIAUSDT": {
+      "funding_days": 683,
+      "funding_start": "2024-12-18",
+      "funding_end": "2026-10-31",
+      "perp_days": 683,
+      "perp_start": "2024-12-18",
+      "perp_end": "2026-10-31"
+    },
+    "LUNA2USDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "LYNUSDT": {
+      "funding_days": 391,
+      "funding_start": "2025-10-06",
+      "funding_end": "2026-10-31",
+      "perp_days": 391,
+      "perp_start": "2025-10-06",
+      "perp_end": "2026-10-31"
+    },
+    "LYTEUSDT": {
+      "funding_days": 76,
+      "funding_start": "2026-08-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 76,
+      "perp_start": "2026-08-17",
+      "perp_end": "2026-10-31"
+    },
+    "MAGICUSDT": {
+      "funding_days": 1378,
+      "funding_start": "2023-01-23",
+      "funding_end": "2026-10-31",
+      "perp_days": 1376,
+      "perp_start": "2023-01-25",
+      "perp_end": "2026-10-31"
+    },
+    "MAGMAUSDT": {
+      "funding_days": 305,
+      "funding_start": "2025-12-31",
+      "funding_end": "2026-10-31",
+      "perp_days": 305,
+      "perp_start": "2025-12-31",
+      "perp_end": "2026-10-31"
+    },
+    "MANAUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "MANTAUSDT": {
+      "funding_days": 1018,
+      "funding_start": "2024-01-18",
+      "funding_end": "2026-10-31",
+      "perp_days": 1018,
+      "perp_start": "2024-01-18",
+      "perp_end": "2026-10-31"
+    },
+    "MANTRAUSDT": {
+      "funding_days": 242,
+      "funding_start": "2026-03-04",
+      "funding_end": "2026-10-31",
+      "perp_days": 242,
+      "perp_start": "2026-03-04",
+      "perp_end": "2026-10-31"
+    },
+    "MARAUSDT": {
+      "funding_days": 65,
+      "funding_start": "2026-08-28",
+      "funding_end": "2026-10-31",
+      "perp_days": 65,
+      "perp_start": "2026-08-28",
+      "perp_end": "2026-10-31"
+    },
+    "MARSCOINUSDT": {
+      "funding_days": 61,
+      "funding_start": "2026-09-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 61,
+      "perp_start": "2026-09-01",
+      "perp_end": "2026-10-31"
+    },
+    "MASKUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "MATICUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 620,
+      "perp_start": "2023-01-01",
+      "perp_end": "2024-09-11"
+    },
+    "MAVIAUSDT": {
+      "funding_days": 984,
+      "funding_start": "2024-02-21",
+      "funding_end": "2026-10-31",
+      "perp_days": 984,
+      "perp_start": "2024-02-21",
+      "perp_end": "2026-10-31"
+    },
+    "MAVUSDT": {
+      "funding_days": 1222,
+      "funding_start": "2023-06-28",
+      "funding_end": "2026-10-31",
+      "perp_days": 1221,
+      "perp_start": "2023-06-29",
+      "perp_end": "2026-10-31"
+    },
+    "MBLUSDT": {
+      "funding_days": 249,
+      "funding_start": "2023-11-14",
+      "funding_end": "2024-07-19",
+      "perp_days": 197,
+      "perp_start": "2023-11-14",
+      "perp_end": "2024-05-28"
+    },
+    "MBOXUSDT": {
+      "funding_days": 653,
+      "funding_start": "2024-08-28",
+      "funding_end": "2026-06-11",
+      "perp_days": 795,
+      "perp_start": "2024-08-28",
+      "perp_end": "2026-10-31"
+    },
+    "MCDUSDT": {
+      "funding_days": 26,
+      "funding_start": "2026-10-06",
+      "funding_end": "2026-10-31",
+      "perp_days": 26,
+      "perp_start": "2026-10-06",
+      "perp_end": "2026-10-31"
+    },
+    "MDBUSDT": {
+      "funding_days": 60,
+      "funding_start": "2026-09-02",
+      "funding_end": "2026-10-31",
+      "perp_days": 60,
+      "perp_start": "2026-09-02",
+      "perp_end": "2026-10-31"
+    },
+    "MDTUSDT": {
+      "funding_days": 733,
+      "funding_start": "2023-06-29",
+      "funding_end": "2026-10-31",
+      "perp_days": 1212,
+      "perp_start": "2023-06-30",
+      "perp_end": "2026-10-31"
+    },
+    "MEGAUSDT": {
+      "funding_days": 275,
+      "funding_start": "2026-01-30",
+      "funding_end": "2026-10-31",
+      "perp_days": 275,
+      "perp_start": "2026-01-30",
+      "perp_end": "2026-10-31"
+    },
+    "MEITUANUSDT": {
+      "funding_days": 83,
+      "funding_start": "2026-08-10",
+      "funding_end": "2026-10-31",
+      "perp_days": 82,
+      "perp_start": "2026-08-11",
+      "perp_end": "2026-10-31"
+    },
+    "MELANIAUSDT": {
+      "funding_days": 650,
+      "funding_start": "2025-01-20",
+      "funding_end": "2026-10-31",
+      "perp_days": 650,
+      "perp_start": "2025-01-20",
+      "perp_end": "2026-10-31"
+    },
+    "MELIUSDT": {
+      "funding_days": 3,
+      "funding_start": "2026-10-29",
+      "funding_end": "2026-10-31",
+      "perp_days": 3,
+      "perp_start": "2026-10-29",
+      "perp_end": "2026-10-31"
+    },
+    "MEMEFIUSDT": {
+      "funding_days": 109,
+      "funding_start": "2025-04-25",
+      "funding_end": "2025-08-11",
+      "perp_days": 555,
+      "perp_start": "2025-04-25",
+      "perp_end": "2026-10-31"
+    },
+    "MEMEUSDT": {
+      "funding_days": 1094,
+      "funding_start": "2023-11-03",
+      "funding_end": "2026-10-31",
+      "perp_days": 1094,
+      "perp_start": "2023-11-03",
+      "perp_end": "2026-10-31"
+    },
+    "MERLUSDT": {
+      "funding_days": 521,
+      "funding_start": "2025-05-29",
+      "funding_end": "2026-10-31",
+      "perp_days": 521,
+      "perp_start": "2025-05-29",
+      "perp_end": "2026-10-31"
+    },
+    "METAUSDT": {
+      "funding_days": 221,
+      "funding_start": "2026-03-25",
+      "funding_end": "2026-10-31",
+      "perp_days": 220,
+      "perp_start": "2026-03-26",
+      "perp_end": "2026-10-31"
+    },
+    "METISUSDT": {
+      "funding_days": 965,
+      "funding_start": "2024-03-11",
+      "funding_end": "2026-10-31",
+      "perp_days": 964,
+      "perp_start": "2024-03-12",
+      "perp_end": "2026-10-31"
+    },
+    "METUSDT": {
+      "funding_days": 386,
+      "funding_start": "2025-10-11",
+      "funding_end": "2026-10-31",
+      "perp_days": 386,
+      "perp_start": "2025-10-11",
+      "perp_end": "2026-10-31"
+    },
+    "MEUSDT": {
+      "funding_days": 691,
+      "funding_start": "2024-12-10",
+      "funding_end": "2026-10-31",
+      "perp_days": 691,
+      "perp_start": "2024-12-10",
+      "perp_end": "2026-10-31"
+    },
+    "MEWUSDT": {
+      "funding_days": 867,
+      "funding_start": "2024-06-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 867,
+      "perp_start": "2024-06-17",
+      "perp_end": "2026-10-31"
+    },
+    "MILKUSDT": {
+      "funding_days": 214,
+      "funding_start": "2025-05-06",
+      "funding_end": "2025-12-05",
+      "perp_days": 544,
+      "perp_start": "2025-05-06",
+      "perp_end": "2026-10-31"
+    },
+    "MINAUSDT": {
+      "funding_days": 1367,
+      "funding_start": "2023-02-03",
+      "funding_end": "2026-10-31",
+      "perp_days": 1363,
+      "perp_start": "2023-02-07",
+      "perp_end": "2026-10-31"
+    },
+    "MINIMAXUSDT": {
+      "funding_days": 107,
+      "funding_start": "2026-07-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 107,
+      "perp_start": "2026-07-17",
+      "perp_end": "2026-10-31"
+    },
+    "MIRAUSDT": {
+      "funding_days": 401,
+      "funding_start": "2025-09-26",
+      "funding_end": "2026-10-31",
+      "perp_days": 401,
+      "perp_start": "2025-09-26",
+      "perp_end": "2026-10-31"
+    },
+    "MITOUSDT": {
+      "funding_days": 422,
+      "funding_start": "2025-08-28",
+      "funding_end": "2026-10-23",
+      "perp_days": 430,
+      "perp_start": "2025-08-28",
+      "perp_end": "2026-10-31"
+    },
+    "MKRUSDT": {
+      "funding_days": 982,
+      "funding_start": "2023-01-01",
+      "funding_end": "2025-09-08",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "MLNUSDT": {
+      "funding_days": 415,
+      "funding_start": "2025-03-31",
+      "funding_end": "2026-05-19",
+      "perp_days": 580,
+      "perp_start": "2025-03-31",
+      "perp_end": "2026-10-31"
+    },
+    "MMTUSDT": {
+      "funding_days": 362,
+      "funding_start": "2025-11-04",
+      "funding_end": "2026-10-31",
+      "perp_days": 362,
+      "perp_start": "2025-11-04",
+      "perp_end": "2026-10-31"
+    },
+    "MOCAUSDT": {
+      "funding_days": 685,
+      "funding_start": "2024-12-16",
+      "funding_end": "2026-10-31",
+      "perp_days": 685,
+      "perp_start": "2024-12-16",
+      "perp_end": "2026-10-31"
+    },
+    "MONUSDT": {
+      "funding_days": 387,
+      "funding_start": "2025-10-10",
+      "funding_end": "2026-10-31",
+      "perp_days": 387,
+      "perp_start": "2025-10-10",
+      "perp_end": "2026-10-31"
+    },
+    "MOODENGUSDT": {
+      "funding_days": 737,
+      "funding_start": "2024-10-25",
+      "funding_end": "2026-10-31",
+      "perp_days": 737,
+      "perp_start": "2024-10-25",
+      "perp_end": "2026-10-31"
+    },
+    "MOONSHOTUSDT": {
+      "funding_days": 40,
+      "funding_start": "2026-09-22",
+      "funding_end": "2026-10-31",
+      "perp_days": 40,
+      "perp_start": "2026-09-22",
+      "perp_end": "2026-10-31"
+    },
+    "MORPHOUSDT": {
+      "funding_days": 704,
+      "funding_start": "2024-11-27",
+      "funding_end": "2026-10-31",
+      "perp_days": 704,
+      "perp_start": "2024-11-27",
+      "perp_end": "2026-10-31"
+    },
+    "MOVEUSDT": {
+      "funding_days": 692,
+      "funding_start": "2024-12-09",
+      "funding_end": "2026-10-31",
+      "perp_days": 692,
+      "perp_start": "2024-12-09",
+      "perp_end": "2026-10-31"
+    },
+    "MOVRUSDT": {
+      "funding_days": 1041,
+      "funding_start": "2023-12-26",
+      "funding_end": "2026-10-31",
+      "perp_days": 1041,
+      "perp_start": "2023-12-26",
+      "perp_end": "2026-10-31"
+    },
+    "MPUSDT": {
+      "funding_days": 33,
+      "funding_start": "2026-09-29",
+      "funding_end": "2026-10-31",
+      "perp_days": 33,
+      "perp_start": "2026-09-29",
+      "perp_end": "2026-10-31"
+    },
+    "MRKUSDT": {
+      "funding_days": 65,
+      "funding_start": "2026-08-28",
+      "funding_end": "2026-10-31",
+      "perp_days": 65,
+      "perp_start": "2026-08-28",
+      "perp_end": "2026-10-31"
+    },
+    "MRNAUSDT": {
+      "funding_days": 68,
+      "funding_start": "2026-08-25",
+      "funding_end": "2026-10-31",
+      "perp_days": 68,
+      "perp_start": "2026-08-25",
+      "perp_end": "2026-10-31"
+    },
+    "MRVLUSDT": {
+      "funding_days": 171,
+      "funding_start": "2026-05-14",
+      "funding_end": "2026-10-31",
+      "perp_days": 170,
+      "perp_start": "2026-05-15",
+      "perp_end": "2026-10-31"
+    },
+    "MSFTUSDT": {
+      "funding_days": 198,
+      "funding_start": "2026-04-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 195,
+      "perp_start": "2026-04-20",
+      "perp_end": "2026-10-31"
+    },
+    "MSTRUSDT": {
+      "funding_days": 268,
+      "funding_start": "2026-02-06",
+      "funding_end": "2026-10-31",
+      "perp_days": 265,
+      "perp_start": "2026-02-09",
+      "perp_end": "2026-10-31"
+    },
+    "MSTUUSDT": {
+      "funding_days": 20,
+      "funding_start": "2026-10-12",
+      "funding_end": "2026-10-31",
+      "perp_days": 20,
+      "perp_start": "2026-10-12",
+      "perp_end": "2026-10-31"
+    },
+    "MTLUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "MUBARAKUSDT": {
+      "funding_days": 594,
+      "funding_start": "2025-03-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 594,
+      "perp_start": "2025-03-17",
+      "perp_end": "2026-10-31"
+    },
+    "MUSDT": {
+      "funding_days": 482,
+      "funding_start": "2025-07-07",
+      "funding_end": "2026-10-31",
+      "perp_days": 482,
+      "perp_start": "2025-07-07",
+      "perp_end": "2026-10-31"
+    },
+    "MUUSDT": {
+      "funding_days": 208,
+      "funding_start": "2026-04-07",
+      "funding_end": "2026-10-31",
+      "perp_days": 208,
+      "perp_start": "2026-04-07",
+      "perp_end": "2026-10-31"
+    },
+    "MUUUSDT": {
+      "funding_days": 108,
+      "funding_start": "2026-07-16",
+      "funding_end": "2026-10-31",
+      "perp_days": 108,
+      "perp_start": "2026-07-16",
+      "perp_end": "2026-10-31"
+    },
+    "MVLLUSDT": {
+      "funding_days": 130,
+      "funding_start": "2026-06-24",
+      "funding_end": "2026-10-31",
+      "perp_days": 125,
+      "perp_start": "2026-06-29",
+      "perp_end": "2026-10-31"
+    },
+    "MYROUSDT": {
+      "funding_days": 620,
+      "funding_start": "2024-03-05",
+      "funding_end": "2025-11-14",
+      "perp_days": 971,
+      "perp_start": "2024-03-05",
+      "perp_end": "2026-10-31"
+    },
+    "MYXUSDT": {
+      "funding_days": 501,
+      "funding_start": "2025-06-18",
+      "funding_end": "2026-10-31",
+      "perp_days": 501,
+      "perp_start": "2025-06-18",
+      "perp_end": "2026-10-31"
+    },
+    "NAORISUSDT": {
+      "funding_days": 458,
+      "funding_start": "2025-07-31",
+      "funding_end": "2026-10-31",
+      "perp_days": 458,
+      "perp_start": "2025-07-31",
+      "perp_end": "2026-10-31"
+    },
+    "NATGASUSDT": {
+      "funding_days": 215,
+      "funding_start": "2026-03-31",
+      "funding_end": "2026-10-31",
+      "perp_days": 214,
+      "perp_start": "2026-04-01",
+      "perp_end": "2026-10-31"
+    },
+    "NAVERUSDT": {
+      "funding_days": 80,
+      "funding_start": "2026-08-13",
+      "funding_end": "2026-10-31",
+      "perp_days": 79,
+      "perp_start": "2026-08-14",
+      "perp_end": "2026-10-31"
+    },
+    "NBISUSDT": {
+      "funding_days": 159,
+      "funding_start": "2026-05-26",
+      "funding_end": "2026-10-31",
+      "perp_days": 159,
+      "perp_start": "2026-05-26",
+      "perp_end": "2026-10-31"
+    },
+    "NEIROETHUSDT": {
+      "funding_days": 386,
+      "funding_start": "2024-09-06",
+      "funding_end": "2025-09-26",
+      "perp_days": 786,
+      "perp_start": "2024-09-06",
+      "perp_end": "2026-10-31"
+    },
+    "NEIROUSDT": {
+      "funding_days": 776,
+      "funding_start": "2024-09-16",
+      "funding_end": "2026-10-31",
+      "perp_days": 776,
+      "perp_start": "2024-09-16",
+      "perp_end": "2026-10-31"
+    },
+    "NEOUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "NETUSDT": {
+      "funding_days": 76,
+      "funding_start": "2026-08-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 76,
+      "perp_start": "2026-08-17",
+      "perp_end": "2026-10-31"
+    },
+    "NEWTUSDT": {
+      "funding_days": 500,
+      "funding_start": "2025-06-19",
+      "funding_end": "2026-10-31",
+      "perp_days": 500,
+      "perp_start": "2025-06-19",
+      "perp_end": "2026-10-31"
+    },
+    "NFLXUSDT": {
+      "funding_days": 145,
+      "funding_start": "2026-06-09",
+      "funding_end": "2026-10-31",
+      "perp_days": 145,
+      "perp_start": "2026-06-09",
+      "perp_end": "2026-10-31"
+    },
+    "NFPUSDT": {
+      "funding_days": 919,
+      "funding_start": "2023-12-27",
+      "funding_end": "2026-07-02",
+      "perp_days": 1040,
+      "perp_start": "2023-12-27",
+      "perp_end": "2026-10-31"
+    },
+    "NIGHTUSDT": {
+      "funding_days": 326,
+      "funding_start": "2025-12-10",
+      "funding_end": "2026-10-31",
+      "perp_days": 326,
+      "perp_start": "2025-12-10",
+      "perp_end": "2026-10-31"
+    },
+    "NILUSDT": {
+      "funding_days": 587,
+      "funding_start": "2025-03-24",
+      "funding_end": "2026-10-31",
+      "perp_days": 587,
+      "perp_start": "2025-03-24",
+      "perp_end": "2026-10-31"
+    },
+    "NKEUSDT": {
+      "funding_days": 33,
+      "funding_start": "2026-09-29",
+      "funding_end": "2026-10-31",
+      "perp_days": 33,
+      "perp_start": "2026-09-29",
+      "perp_end": "2026-10-31"
+    },
+    "NKNUSDT": {
+      "funding_days": 1133,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-02-06",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "NMRUSDT": {
+      "funding_days": 1229,
+      "funding_start": "2023-06-21",
+      "funding_end": "2026-10-31",
+      "perp_days": 1228,
+      "perp_start": "2023-06-22",
+      "perp_end": "2026-10-31"
+    },
+    "NOKUSDT": {
+      "funding_days": 153,
+      "funding_start": "2026-06-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 153,
+      "perp_start": "2026-06-01",
+      "perp_end": "2026-10-31"
+    },
+    "NOMUSDT": {
+      "funding_days": 396,
+      "funding_start": "2025-10-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 396,
+      "perp_start": "2025-10-01",
+      "perp_end": "2026-10-31"
+    },
+    "NOTUSDT": {
+      "funding_days": 899,
+      "funding_start": "2024-05-16",
+      "funding_end": "2026-10-31",
+      "perp_days": 899,
+      "perp_start": "2024-05-16",
+      "perp_end": "2026-10-31"
+    },
+    "NOWUSDT": {
+      "funding_days": 151,
+      "funding_start": "2026-06-03",
+      "funding_end": "2026-10-31",
+      "perp_days": 151,
+      "perp_start": "2026-06-03",
+      "perp_end": "2026-10-31"
+    },
+    "NTRNUSDT": {
+      "funding_days": 862,
+      "funding_start": "2023-11-14",
+      "funding_end": "2026-03-24",
+      "perp_days": 1083,
+      "perp_start": "2023-11-14",
+      "perp_end": "2026-10-31"
+    },
+    "NULSUSDT": {
+      "funding_days": 298,
+      "funding_start": "2024-08-26",
+      "funding_end": "2025-06-19",
+      "perp_days": 797,
+      "perp_start": "2024-08-26",
+      "perp_end": "2026-10-31"
+    },
+    "NVDAUSDT": {
+      "funding_days": 221,
+      "funding_start": "2026-03-25",
+      "funding_end": "2026-10-31",
+      "perp_days": 220,
+      "perp_start": "2026-03-26",
+      "perp_end": "2026-10-31"
+    },
+    "NVDLUSDT": {
+      "funding_days": 60,
+      "funding_start": "2026-09-02",
+      "funding_end": "2026-10-31",
+      "perp_days": 60,
+      "perp_start": "2026-09-02",
+      "perp_end": "2026-10-31"
+    },
+    "NVOUSDT": {
+      "funding_days": 153,
+      "funding_start": "2026-06-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 153,
+      "perp_start": "2026-06-01",
+      "perp_end": "2026-10-31"
+    },
+    "NXPCUSDT": {
+      "funding_days": 535,
+      "funding_start": "2025-05-15",
+      "funding_end": "2026-10-31",
+      "perp_days": 535,
+      "perp_start": "2025-05-15",
+      "perp_end": "2026-10-31"
+    },
+    "OBOLUSDT": {
+      "funding_days": 213,
+      "funding_start": "2025-05-07",
+      "funding_end": "2025-12-05",
+      "perp_days": 543,
+      "perp_start": "2025-05-07",
+      "perp_end": "2026-10-31"
+    },
+    "OCEANUSDT": {
+      "funding_days": 901,
+      "funding_start": "2023-01-01",
+      "funding_end": "2025-06-19",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "OGNUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "OGUSDT": {
+      "funding_days": 538,
+      "funding_start": "2025-05-12",
+      "funding_end": "2026-10-31",
+      "perp_days": 538,
+      "perp_start": "2025-05-12",
+      "perp_end": "2026-10-31"
+    },
+    "OKLOUSDT": {
+      "funding_days": 34,
+      "funding_start": "2026-09-28",
+      "funding_end": "2026-10-31",
+      "perp_days": 34,
+      "perp_start": "2026-09-28",
+      "perp_end": "2026-10-31"
+    },
+    "OLUSDT": {
+      "funding_days": 288,
+      "funding_start": "2025-06-25",
+      "funding_end": "2026-04-08",
+      "perp_days": 494,
+      "perp_start": "2025-06-25",
+      "perp_end": "2026-10-31"
+    },
+    "OMGUSDT": {
+      "funding_days": 901,
+      "funding_start": "2023-01-01",
+      "funding_end": "2025-06-19",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "OMNIUSDT": {
+      "funding_days": 524,
+      "funding_start": "2024-04-17",
+      "funding_end": "2025-09-22",
+      "perp_days": 928,
+      "perp_start": "2024-04-17",
+      "perp_end": "2026-10-31"
+    },
+    "OMUSDT": {
+      "funding_days": 742,
+      "funding_start": "2024-02-13",
+      "funding_end": "2026-02-23",
+      "perp_days": 992,
+      "perp_start": "2024-02-13",
+      "perp_end": "2026-10-31"
+    },
+    "ONDOUSDT": {
+      "funding_days": 1016,
+      "funding_start": "2024-01-20",
+      "funding_end": "2026-10-31",
+      "perp_days": 1016,
+      "perp_start": "2024-01-20",
+      "perp_end": "2026-10-31"
+    },
+    "ONDSUSDT": {
+      "funding_days": 151,
+      "funding_start": "2026-06-03",
+      "funding_end": "2026-10-31",
+      "perp_days": 151,
+      "perp_start": "2026-06-03",
+      "perp_end": "2026-10-31"
+    },
+    "ONEUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "ONGUSDT": {
+      "funding_days": 1070,
+      "funding_start": "2023-11-27",
+      "funding_end": "2026-10-31",
+      "perp_days": 1070,
+      "perp_start": "2023-11-27",
+      "perp_end": "2026-10-31"
+    },
+    "ONTUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "ONUSDT": {
+      "funding_days": 374,
+      "funding_start": "2025-10-23",
+      "funding_end": "2026-10-31",
+      "perp_days": 373,
+      "perp_start": "2025-10-24",
+      "perp_end": "2026-10-31"
+    },
+    "OPENAIUSDT": {
+      "funding_days": 159,
+      "funding_start": "2026-05-26",
+      "funding_end": "2026-10-31",
+      "perp_days": 159,
+      "perp_start": "2026-05-26",
+      "perp_end": "2026-10-31"
+    },
+    "OPENUSDT": {
+      "funding_days": 423,
+      "funding_start": "2025-09-04",
+      "funding_end": "2026-10-31",
+      "perp_days": 419,
+      "perp_start": "2025-09-08",
+      "perp_end": "2026-10-31"
+    },
+    "OPGUSDT": {
+      "funding_days": 193,
+      "funding_start": "2026-04-22",
+      "funding_end": "2026-10-31",
+      "perp_days": 193,
+      "perp_start": "2026-04-22",
+      "perp_end": "2026-10-31"
+    },
+    "OPNUSDT": {
+      "funding_days": 253,
+      "funding_start": "2026-02-21",
+      "funding_end": "2026-10-31",
+      "perp_days": 253,
+      "perp_start": "2026-02-21",
+      "perp_end": "2026-10-31"
+    },
+    "OPUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "ORBSUSDT": {
+      "funding_days": 612,
+      "funding_start": "2023-10-17",
+      "funding_end": "2025-06-19",
+      "perp_days": 1111,
+      "perp_start": "2023-10-17",
+      "perp_end": "2026-10-31"
+    },
+    "ORCAUSDT": {
+      "funding_days": 695,
+      "funding_start": "2024-12-06",
+      "funding_end": "2026-10-31",
+      "perp_days": 695,
+      "perp_start": "2024-12-06",
+      "perp_end": "2026-10-31"
+    },
+    "ORCLUSDT": {
+      "funding_days": 171,
+      "funding_start": "2026-05-14",
+      "funding_end": "2026-10-31",
+      "perp_days": 170,
+      "perp_start": "2026-05-15",
+      "perp_end": "2026-10-31"
+    },
+    "ORDERUSDT": {
+      "funding_days": 401,
+      "funding_start": "2025-09-26",
+      "funding_end": "2026-10-31",
+      "perp_days": 401,
+      "perp_start": "2025-09-26",
+      "perp_end": "2026-10-31"
+    },
+    "ORDIUSDT": {
+      "funding_days": 1090,
+      "funding_start": "2023-11-07",
+      "funding_end": "2026-10-31",
+      "perp_days": 1090,
+      "perp_start": "2023-11-07",
+      "perp_end": "2026-10-31"
+    },
+    "OURAUSDT": {
+      "funding_days": 39,
+      "funding_start": "2026-09-23",
+      "funding_end": "2026-10-31",
+      "perp_days": 39,
+      "perp_start": "2026-09-23",
+      "perp_end": "2026-10-31"
+    },
+    "OUSDT": {
+      "funding_days": 130,
+      "funding_start": "2026-06-24",
+      "funding_end": "2026-10-31",
+      "perp_days": 130,
+      "perp_start": "2026-06-24",
+      "perp_end": "2026-10-31"
+    },
+    "OXTUSDT": {
+      "funding_days": 980,
+      "funding_start": "2023-08-10",
+      "funding_end": "2026-04-15",
+      "perp_days": 1178,
+      "perp_start": "2023-08-11",
+      "perp_end": "2026-10-31"
+    },
+    "OXYUSDT": {
+      "funding_days": 3,
+      "funding_start": "2026-10-29",
+      "funding_end": "2026-10-31",
+      "perp_days": 3,
+      "perp_start": "2026-10-29",
+      "perp_end": "2026-10-31"
+    },
+    "PANWUSDT": {
+      "funding_days": 103,
+      "funding_start": "2026-07-21",
+      "funding_end": "2026-10-31",
+      "perp_days": 103,
+      "perp_start": "2026-07-21",
+      "perp_end": "2026-10-31"
+    },
+    "PARTIUSDT": {
+      "funding_days": 586,
+      "funding_start": "2025-03-25",
+      "funding_end": "2026-10-31",
+      "perp_days": 586,
+      "perp_start": "2025-03-25",
+      "perp_end": "2026-10-31"
+    },
+    "PATHUSDT": {
+      "funding_days": 44,
+      "funding_start": "2026-09-18",
+      "funding_end": "2026-10-31",
+      "perp_days": 44,
+      "perp_start": "2026-09-18",
+      "perp_end": "2026-10-31"
+    },
+    "PAXGUSDT": {
+      "funding_days": 584,
+      "funding_start": "2025-03-27",
+      "funding_end": "2026-10-31",
+      "perp_days": 584,
+      "perp_start": "2025-03-27",
+      "perp_end": "2026-10-31"
+    },
+    "PAYPUSDT": {
+      "funding_days": 223,
+      "funding_start": "2026-03-23",
+      "funding_end": "2026-10-31",
+      "perp_days": 223,
+      "perp_start": "2026-03-23",
+      "perp_end": "2026-10-31"
+    },
+    "PDDUSDT": {
+      "funding_days": 65,
+      "funding_start": "2026-08-28",
+      "funding_end": "2026-10-31",
+      "perp_days": 65,
+      "perp_start": "2026-08-28",
+      "perp_end": "2026-10-31"
+    },
+    "PENDLEUSDT": {
+      "funding_days": 1195,
+      "funding_start": "2023-07-25",
+      "funding_end": "2026-10-31",
+      "perp_days": 1192,
+      "perp_start": "2023-07-28",
+      "perp_end": "2026-10-31"
+    },
+    "PENGUSDT": {
+      "funding_days": 103,
+      "funding_start": "2026-07-21",
+      "funding_end": "2026-10-31",
+      "perp_days": 103,
+      "perp_start": "2026-07-21",
+      "perp_end": "2026-10-31"
+    },
+    "PENGUUSDT": {
+      "funding_days": 684,
+      "funding_start": "2024-12-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 684,
+      "perp_start": "2024-12-17",
+      "perp_end": "2026-10-31"
+    },
+    "PEOPLEUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "PERPUSDT": {
+      "funding_days": 995,
+      "funding_start": "2023-03-03",
+      "funding_end": "2025-11-21",
+      "perp_days": 1336,
+      "perp_start": "2023-03-06",
+      "perp_end": "2026-10-31"
+    },
+    "PFEUSDT": {
+      "funding_days": 3,
+      "funding_start": "2026-10-29",
+      "funding_end": "2026-10-31",
+      "perp_days": 3,
+      "perp_start": "2026-10-29",
+      "perp_end": "2026-10-31"
+    },
+    "PHAROSUSDT": {
+      "funding_days": 171,
+      "funding_start": "2026-05-14",
+      "funding_end": "2026-10-31",
+      "perp_days": 171,
+      "perp_start": "2026-05-14",
+      "perp_end": "2026-10-31"
+    },
+    "PHAUSDT": {
+      "funding_days": 671,
+      "funding_start": "2024-12-30",
+      "funding_end": "2026-10-31",
+      "perp_days": 671,
+      "perp_start": "2024-12-30",
+      "perp_end": "2026-10-31"
+    },
+    "PHBUSDT": {
+      "funding_days": 1190,
+      "funding_start": "2023-02-15",
+      "funding_end": "2026-05-19",
+      "perp_days": 1354,
+      "perp_start": "2023-02-16",
+      "perp_end": "2026-10-31"
+    },
+    "PIEVERSEUSDT": {
+      "funding_days": 352,
+      "funding_start": "2025-11-14",
+      "funding_end": "2026-10-31",
+      "perp_days": 352,
+      "perp_start": "2025-11-14",
+      "perp_end": "2026-10-31"
+    },
+    "PIPPINUSDT": {
+      "funding_days": 646,
+      "funding_start": "2025-01-24",
+      "funding_end": "2026-10-31",
+      "perp_days": 646,
+      "perp_start": "2025-01-24",
+      "perp_end": "2026-10-31"
+    },
+    "PIXELUSDT": {
+      "funding_days": 986,
+      "funding_start": "2024-02-19",
+      "funding_end": "2026-10-31",
+      "perp_days": 986,
+      "perp_start": "2024-02-19",
+      "perp_end": "2026-10-31"
+    },
+    "PLAYUSDT": {
+      "funding_days": 458,
+      "funding_start": "2025-07-31",
+      "funding_end": "2026-10-31",
+      "perp_days": 458,
+      "perp_start": "2025-07-31",
+      "perp_end": "2026-10-31"
+    },
+    "PLTRUSDT": {
+      "funding_days": 268,
+      "funding_start": "2026-02-06",
+      "funding_end": "2026-10-31",
+      "perp_days": 265,
+      "perp_start": "2026-02-09",
+      "perp_end": "2026-10-31"
+    },
+    "PLUMEUSDT": {
+      "funding_days": 590,
+      "funding_start": "2025-03-21",
+      "funding_end": "2026-10-31",
+      "perp_days": 590,
+      "perp_start": "2025-03-21",
+      "perp_end": "2026-10-31"
+    },
+    "PNUTUSDT": {
+      "funding_days": 720,
+      "funding_start": "2024-11-11",
+      "funding_end": "2026-10-31",
+      "perp_days": 720,
+      "perp_start": "2024-11-11",
+      "perp_end": "2026-10-31"
+    },
+    "POLUSDT": {
+      "funding_days": 779,
+      "funding_start": "2024-09-13",
+      "funding_end": "2026-10-31",
+      "perp_days": 779,
+      "perp_start": "2024-09-13",
+      "perp_end": "2026-10-31"
+    },
+    "POLYXUSDT": {
+      "funding_days": 1104,
+      "funding_start": "2023-10-24",
+      "funding_end": "2026-10-31",
+      "perp_days": 1103,
+      "perp_start": "2023-10-25",
+      "perp_end": "2026-10-31"
+    },
+    "PONKEUSDT": {
+      "funding_days": 390,
+      "funding_start": "2024-11-04",
+      "funding_end": "2025-11-28",
+      "perp_days": 727,
+      "perp_start": "2024-11-04",
+      "perp_end": "2026-10-31"
+    },
+    "PONSUSDT": {
+      "funding_days": 56,
+      "funding_start": "2026-09-06",
+      "funding_end": "2026-10-31",
+      "perp_days": 56,
+      "perp_start": "2026-09-06",
+      "perp_end": "2026-10-31"
+    },
+    "POPCATUSDT": {
+      "funding_days": 801,
+      "funding_start": "2024-08-22",
+      "funding_end": "2026-10-31",
+      "perp_days": 801,
+      "perp_start": "2024-08-22",
+      "perp_end": "2026-10-31"
+    },
+    "POPMARTUSDT": {
+      "funding_days": 101,
+      "funding_start": "2026-07-23",
+      "funding_end": "2026-10-31",
+      "perp_days": 101,
+      "perp_start": "2026-07-23",
+      "perp_end": "2026-10-31"
+    },
+    "PORT3USDT": {
+      "funding_days": 173,
+      "funding_start": "2025-06-04",
+      "funding_end": "2025-11-23",
+      "perp_days": 515,
+      "perp_start": "2025-06-04",
+      "perp_end": "2026-10-31"
+    },
+    "PORTALUSDT": {
+      "funding_days": 976,
+      "funding_start": "2024-02-29",
+      "funding_end": "2026-10-31",
+      "perp_days": 976,
+      "perp_start": "2024-02-29",
+      "perp_end": "2026-10-31"
+    },
+    "POWERUSDT": {
+      "funding_days": 330,
+      "funding_start": "2025-12-06",
+      "funding_end": "2026-10-31",
+      "perp_days": 330,
+      "perp_start": "2025-12-06",
+      "perp_end": "2026-10-31"
+    },
+    "POWRUSDT": {
+      "funding_days": 1102,
+      "funding_start": "2023-10-26",
+      "funding_end": "2026-10-31",
+      "perp_days": 1101,
+      "perp_start": "2023-10-27",
+      "perp_end": "2026-10-31"
+    },
+    "PREDICTUSDT": {
+      "funding_days": 7,
+      "funding_start": "2026-10-25",
+      "funding_end": "2026-10-31",
+      "perp_days": 7,
+      "perp_start": "2026-10-25",
+      "perp_end": "2026-10-31"
+    },
+    "PRLUSDT": {
+      "funding_days": 214,
+      "funding_start": "2026-04-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 214,
+      "perp_start": "2026-04-01",
+      "perp_end": "2026-10-31"
+    },
+    "PROMPTUSDT": {
+      "funding_days": 543,
+      "funding_start": "2025-04-11",
+      "funding_end": "2026-10-05",
+      "perp_days": 569,
+      "perp_start": "2025-04-11",
+      "perp_end": "2026-10-31"
+    },
+    "PROMUSDT": {
+      "funding_days": 655,
+      "funding_start": "2025-01-15",
+      "funding_end": "2026-10-31",
+      "perp_days": 655,
+      "perp_start": "2025-01-15",
+      "perp_end": "2026-10-31"
+    },
+    "PROVEUSDT": {
+      "funding_days": 453,
+      "funding_start": "2025-08-05",
+      "funding_end": "2026-10-31",
+      "perp_days": 453,
+      "perp_start": "2025-08-05",
+      "perp_end": "2026-10-31"
+    },
+    "PTBUSDT": {
+      "funding_days": 417,
+      "funding_start": "2025-09-02",
+      "funding_end": "2026-10-23",
+      "perp_days": 424,
+      "perp_start": "2025-09-03",
+      "perp_end": "2026-10-31"
+    },
+    "PUFFERUSDT": {
+      "funding_days": 309,
+      "funding_start": "2025-06-04",
+      "funding_end": "2026-04-08",
+      "perp_days": 515,
+      "perp_start": "2025-06-04",
+      "perp_end": "2026-10-31"
+    },
+    "PUMPBTCUSDT": {
+      "funding_days": 481,
+      "funding_start": "2025-06-12",
+      "funding_end": "2026-10-05",
+      "perp_days": 506,
+      "perp_start": "2025-06-13",
+      "perp_end": "2026-10-31"
+    },
+    "PUMPUSDT": {
+      "funding_days": 548,
+      "funding_start": "2025-04-12",
+      "funding_end": "2026-10-31",
+      "perp_days": 568,
+      "perp_start": "2025-04-12",
+      "perp_end": "2026-10-31"
+    },
+    "PUNDIXUSDT": {
+      "funding_days": 550,
+      "funding_start": "2025-04-30",
+      "funding_end": "2026-10-31",
+      "perp_days": 550,
+      "perp_start": "2025-04-30",
+      "perp_end": "2026-10-31"
+    },
+    "PYPLUSDT": {
+      "funding_days": 95,
+      "funding_start": "2026-07-29",
+      "funding_end": "2026-10-31",
+      "perp_days": 95,
+      "perp_start": "2026-07-29",
+      "perp_end": "2026-10-31"
+    },
+    "PYTHUSDT": {
+      "funding_days": 1075,
+      "funding_start": "2023-11-22",
+      "funding_end": "2026-10-31",
+      "perp_days": 1075,
+      "perp_start": "2023-11-22",
+      "perp_end": "2026-10-31"
+    },
+    "QCOMUSDT": {
+      "funding_days": 179,
+      "funding_start": "2026-05-06",
+      "funding_end": "2026-10-31",
+      "perp_days": 179,
+      "perp_start": "2026-05-06",
+      "perp_end": "2026-10-31"
+    },
+    "QNTUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "QNTXUSDT": {
+      "funding_days": 156,
+      "funding_start": "2026-05-29",
+      "funding_end": "2026-10-31",
+      "perp_days": 156,
+      "perp_start": "2026-05-29",
+      "perp_end": "2026-10-31"
+    },
+    "QQQUSDT": {
+      "funding_days": 212,
+      "funding_start": "2026-04-03",
+      "funding_end": "2026-10-31",
+      "perp_days": 209,
+      "perp_start": "2026-04-06",
+      "perp_end": "2026-10-31"
+    },
+    "QTUMUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "QUICKUSDT": {
+      "funding_days": 449,
+      "funding_start": "2024-09-06",
+      "funding_end": "2025-11-28",
+      "perp_days": 786,
+      "perp_start": "2024-09-06",
+      "perp_end": "2026-10-31"
+    },
+    "QUSDT": {
+      "funding_days": 425,
+      "funding_start": "2025-09-02",
+      "funding_end": "2026-10-31",
+      "perp_days": 425,
+      "perp_start": "2025-09-02",
+      "perp_end": "2026-10-31"
+    },
+    "RADUSDT": {
+      "funding_days": 777,
+      "funding_start": "2023-05-05",
+      "funding_end": "2025-06-19",
+      "perp_days": 1271,
+      "perp_start": "2023-05-10",
+      "perp_end": "2026-10-31"
+    },
+    "RAMUSDT": {
+      "funding_days": 68,
+      "funding_start": "2026-08-25",
+      "funding_end": "2026-10-31",
+      "perp_days": 68,
+      "perp_start": "2026-08-25",
+      "perp_end": "2026-10-31"
+    },
+    "RAREUSDT": {
+      "funding_days": 808,
+      "funding_start": "2024-08-15",
+      "funding_end": "2026-10-31",
+      "perp_days": 808,
+      "perp_start": "2024-08-15",
+      "perp_end": "2026-10-31"
+    },
+    "RAVEUSDT": {
+      "funding_days": 322,
+      "funding_start": "2025-12-14",
+      "funding_end": "2026-10-31",
+      "perp_days": 322,
+      "perp_start": "2025-12-14",
+      "perp_end": "2026-10-31"
+    },
+    "RAYSOLUSDT": {
+      "funding_days": 691,
+      "funding_start": "2024-12-10",
+      "funding_end": "2026-10-31",
+      "perp_days": 691,
+      "perp_start": "2024-12-10",
+      "perp_end": "2026-10-31"
+    },
+    "RAYUSDT": {
+      "funding_days": 901,
+      "funding_start": "2023-01-01",
+      "funding_end": "2025-06-19",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "RDDTUSDT": {
+      "funding_days": 87,
+      "funding_start": "2026-08-06",
+      "funding_end": "2026-10-31",
+      "perp_days": 87,
+      "perp_start": "2026-08-06",
+      "perp_end": "2026-10-31"
+    },
+    "RDNTUSDT": {
+      "funding_days": 1086,
+      "funding_start": "2023-04-04",
+      "funding_end": "2026-03-24",
+      "perp_days": 1306,
+      "perp_start": "2023-04-05",
+      "perp_end": "2026-10-31"
+    },
+    "RDWUSDT": {
+      "funding_days": 20,
+      "funding_start": "2026-10-12",
+      "funding_end": "2026-10-31",
+      "perp_days": 20,
+      "perp_start": "2026-10-12",
+      "perp_end": "2026-10-31"
+    },
+    "RECALLUSDT": {
+      "funding_days": 382,
+      "funding_start": "2025-10-15",
+      "funding_end": "2026-10-31",
+      "perp_days": 382,
+      "perp_start": "2025-10-15",
+      "perp_end": "2026-10-31"
+    },
+    "REDUSDT": {
+      "funding_days": 605,
+      "funding_start": "2025-03-06",
+      "funding_end": "2026-10-31",
+      "perp_days": 605,
+      "perp_start": "2025-03-06",
+      "perp_end": "2026-10-31"
+    },
+    "REEFUSDT": {
+      "funding_days": 901,
+      "funding_start": "2023-01-01",
+      "funding_end": "2025-06-19",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "REIUSDT": {
+      "funding_days": 440,
+      "funding_start": "2024-09-27",
+      "funding_end": "2025-12-10",
+      "perp_days": 765,
+      "perp_start": "2024-09-27",
+      "perp_end": "2026-10-31"
+    },
+    "RENDERUSDT": {
+      "funding_days": 828,
+      "funding_start": "2024-07-26",
+      "funding_end": "2026-10-31",
+      "perp_days": 828,
+      "perp_start": "2024-07-26",
+      "perp_end": "2026-10-31"
+    },
+    "RENUSDT": {
+      "funding_days": 901,
+      "funding_start": "2023-01-01",
+      "funding_end": "2025-06-19",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "RESOLVUSDT": {
+      "funding_days": 509,
+      "funding_start": "2025-06-10",
+      "funding_end": "2026-10-31",
+      "perp_days": 509,
+      "perp_start": "2025-06-10",
+      "perp_end": "2026-10-31"
+    },
+    "REUSDT": {
+      "funding_days": 136,
+      "funding_start": "2026-06-18",
+      "funding_end": "2026-10-31",
+      "perp_days": 136,
+      "perp_start": "2026-06-18",
+      "perp_end": "2026-10-31"
+    },
+    "REZUSDT": {
+      "funding_days": 915,
+      "funding_start": "2024-04-30",
+      "funding_end": "2026-10-31",
+      "perp_days": 915,
+      "perp_start": "2024-04-30",
+      "perp_end": "2026-10-31"
+    },
+    "RIFUSDT": {
+      "funding_days": 1107,
+      "funding_start": "2023-10-21",
+      "funding_end": "2026-10-31",
+      "perp_days": 1107,
+      "perp_start": "2023-10-21",
+      "perp_end": "2026-10-31"
+    },
+    "RIVERUSDT": {
+      "funding_days": 380,
+      "funding_start": "2025-10-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 380,
+      "perp_start": "2025-10-17",
+      "perp_end": "2026-10-31"
+    },
+    "RIVNUSDT": {
+      "funding_days": 144,
+      "funding_start": "2026-06-10",
+      "funding_end": "2026-10-31",
+      "perp_days": 144,
+      "perp_start": "2026-06-10",
+      "perp_end": "2026-10-31"
+    },
+    "RKLBUSDT": {
+      "funding_days": 167,
+      "funding_start": "2026-05-18",
+      "funding_end": "2026-10-31",
+      "perp_days": 167,
+      "perp_start": "2026-05-18",
+      "perp_end": "2026-10-31"
+    },
+    "RLCUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "RLSUSDT": {
+      "funding_days": 128,
+      "funding_start": "2025-12-02",
+      "funding_end": "2026-04-08",
+      "perp_days": 334,
+      "perp_start": "2025-12-02",
+      "perp_end": "2026-10-31"
+    },
+    "RNDRUSDT": {
+      "funding_days": 560,
+      "funding_start": "2023-02-03",
+      "funding_end": "2024-08-15",
+      "perp_days": 544,
+      "perp_start": "2023-02-03",
+      "perp_end": "2024-07-30"
+    },
+    "ROBOUSDT": {
+      "funding_days": 247,
+      "funding_start": "2026-02-27",
+      "funding_end": "2026-10-31",
+      "perp_days": 247,
+      "perp_start": "2026-02-27",
+      "perp_end": "2026-10-31"
+    },
+    "RONINUSDT": {
+      "funding_days": 1000,
+      "funding_start": "2024-02-05",
+      "funding_end": "2026-10-31",
+      "perp_days": 999,
+      "perp_start": "2024-02-06",
+      "perp_end": "2026-10-31"
+    },
+    "ROSEUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "RPLUSDT": {
+      "funding_days": 783,
+      "funding_start": "2024-09-09",
+      "funding_end": "2026-10-31",
+      "perp_days": 783,
+      "perp_start": "2024-09-09",
+      "perp_end": "2026-10-31"
+    },
+    "RSRUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "RUMUSDT": {
+      "funding_days": 34,
+      "funding_start": "2026-09-28",
+      "funding_end": "2026-10-31",
+      "perp_days": 34,
+      "perp_start": "2026-09-28",
+      "perp_end": "2026-10-31"
+    },
+    "RUNEUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "RVNUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "RVVUSDT": {
+      "funding_days": 117,
+      "funding_start": "2025-10-17",
+      "funding_end": "2026-02-10",
+      "perp_days": 379,
+      "perp_start": "2025-10-18",
+      "perp_end": "2026-10-31"
+    },
+    "SAFEUSDT": {
+      "funding_days": 737,
+      "funding_start": "2024-10-25",
+      "funding_end": "2026-10-31",
+      "perp_days": 737,
+      "perp_start": "2024-10-25",
+      "perp_end": "2026-10-31"
+    },
+    "SAGAUSDT": {
+      "funding_days": 936,
+      "funding_start": "2024-04-09",
+      "funding_end": "2026-10-31",
+      "perp_days": 936,
+      "perp_start": "2024-04-09",
+      "perp_end": "2026-10-31"
+    },
+    "SAHARAUSDT": {
+      "funding_days": 493,
+      "funding_start": "2025-06-26",
+      "funding_end": "2026-10-31",
+      "perp_days": 493,
+      "perp_start": "2025-06-26",
+      "perp_end": "2026-10-31"
+    },
+    "SAMSUNGEMUSDT": {
+      "funding_days": 80,
+      "funding_start": "2026-08-13",
+      "funding_end": "2026-10-31",
+      "perp_days": 79,
+      "perp_start": "2026-08-14",
+      "perp_end": "2026-10-31"
+    },
+    "SAMSUNGUSDT": {
+      "funding_days": 152,
+      "funding_start": "2026-06-02",
+      "funding_end": "2026-10-31",
+      "perp_days": 152,
+      "perp_start": "2026-06-02",
+      "perp_end": "2026-10-31"
+    },
+    "SANTOSUSDT": {
+      "funding_days": 734,
+      "funding_start": "2024-10-28",
+      "funding_end": "2026-10-31",
+      "perp_days": 734,
+      "perp_start": "2024-10-28",
+      "perp_end": "2026-10-31"
+    },
+    "SAPIENUSDT": {
+      "funding_days": 438,
+      "funding_start": "2025-08-20",
+      "funding_end": "2026-10-31",
+      "perp_days": 438,
+      "perp_start": "2025-08-20",
+      "perp_end": "2026-10-31"
+    },
+    "SCRTUSDT": {
+      "funding_days": 644,
+      "funding_start": "2024-11-21",
+      "funding_end": "2026-08-26",
+      "perp_days": 710,
+      "perp_start": "2024-11-21",
+      "perp_end": "2026-10-31"
+    },
+    "SCRUSDT": {
+      "funding_days": 740,
+      "funding_start": "2024-10-22",
+      "funding_end": "2026-10-31",
+      "perp_days": 740,
+      "perp_start": "2024-10-22",
+      "perp_end": "2026-10-31"
+    },
+    "SCUSDT": {
+      "funding_days": 901,
+      "funding_start": "2023-01-01",
+      "funding_end": "2025-06-19",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "SECZUSDT": {
+      "funding_days": 33,
+      "funding_start": "2026-09-29",
+      "funding_end": "2026-10-31",
+      "perp_days": 33,
+      "perp_start": "2026-09-29",
+      "perp_end": "2026-10-31"
+    },
+    "SEIUSDT": {
+      "funding_days": 1173,
+      "funding_start": "2023-08-16",
+      "funding_end": "2026-10-31",
+      "perp_days": 1172,
+      "perp_start": "2023-08-17",
+      "perp_end": "2026-10-31"
+    },
+    "SENTUSDT": {
+      "funding_days": 352,
+      "funding_start": "2025-11-14",
+      "funding_end": "2026-10-31",
+      "perp_days": 352,
+      "perp_start": "2025-11-14",
+      "perp_end": "2026-10-31"
+    },
+    "SFPUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "SHAZUSDT": {
+      "funding_days": 103,
+      "funding_start": "2026-07-21",
+      "funding_end": "2026-10-31",
+      "perp_days": 103,
+      "perp_start": "2026-07-21",
+      "perp_end": "2026-10-31"
+    },
+    "SHELLUSDT": {
+      "funding_days": 622,
+      "funding_start": "2025-02-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 622,
+      "perp_start": "2025-02-17",
+      "perp_end": "2026-10-31"
+    },
+    "SHOPUSDT": {
+      "funding_days": 76,
+      "funding_start": "2026-08-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 76,
+      "perp_start": "2026-08-17",
+      "perp_end": "2026-10-31"
+    },
+    "SIGNUSDT": {
+      "funding_days": 552,
+      "funding_start": "2025-04-28",
+      "funding_end": "2026-10-31",
+      "perp_days": 552,
+      "perp_start": "2025-04-28",
+      "perp_end": "2026-10-31"
+    },
+    "SIRENUSDT": {
+      "funding_days": 591,
+      "funding_start": "2025-03-20",
+      "funding_end": "2026-10-31",
+      "perp_days": 589,
+      "perp_start": "2025-03-22",
+      "perp_end": "2026-10-31"
+    },
+    "SKATEUSDT": {
+      "funding_days": 185,
+      "funding_start": "2025-06-09",
+      "funding_end": "2025-12-10",
+      "perp_days": 510,
+      "perp_start": "2025-06-09",
+      "perp_end": "2026-10-31"
+    },
+    "SKDDUSDT": {
+      "funding_days": 68,
+      "funding_start": "2026-08-25",
+      "funding_end": "2026-10-31",
+      "perp_days": 68,
+      "perp_start": "2026-08-25",
+      "perp_end": "2026-10-31"
+    },
+    "SKHYNIXUSDT": {
+      "funding_days": 152,
+      "funding_start": "2026-06-02",
+      "funding_end": "2026-10-31",
+      "perp_days": 152,
+      "perp_start": "2026-06-02",
+      "perp_end": "2026-10-31"
+    },
+    "SKHYUSDT": {
+      "funding_days": 114,
+      "funding_start": "2026-07-10",
+      "funding_end": "2026-10-31",
+      "perp_days": 114,
+      "perp_start": "2026-07-10",
+      "perp_end": "2026-10-31"
+    },
+    "SKLUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "SKRUSDT": {
+      "funding_days": 283,
+      "funding_start": "2026-01-22",
+      "funding_end": "2026-10-31",
+      "perp_days": 283,
+      "perp_start": "2026-01-22",
+      "perp_end": "2026-10-31"
+    },
+    "SKUUUSDT": {
+      "funding_days": 68,
+      "funding_start": "2026-08-25",
+      "funding_end": "2026-10-31",
+      "perp_days": 68,
+      "perp_start": "2026-08-25",
+      "perp_end": "2026-10-31"
+    },
+    "SKYAIUSDT": {
+      "funding_days": 537,
+      "funding_start": "2025-05-13",
+      "funding_end": "2026-10-31",
+      "perp_days": 537,
+      "perp_start": "2025-05-13",
+      "perp_end": "2026-10-31"
+    },
+    "SKYUSDT": {
+      "funding_days": 418,
+      "funding_start": "2025-09-09",
+      "funding_end": "2026-10-31",
+      "perp_days": 418,
+      "perp_start": "2025-09-09",
+      "perp_end": "2026-10-31"
+    },
+    "SLERFUSDT": {
+      "funding_days": 334,
+      "funding_start": "2024-11-21",
+      "funding_end": "2025-10-20",
+      "perp_days": 710,
+      "perp_start": "2024-11-21",
+      "perp_end": "2026-10-31"
+    },
+    "SLPUSDT": {
+      "funding_days": 1064,
+      "funding_start": "2023-10-31",
+      "funding_end": "2026-10-31",
+      "perp_days": 1097,
+      "perp_start": "2023-10-31",
+      "perp_end": "2026-10-31"
+    },
+    "SLXUSDT": {
+      "funding_days": 153,
+      "funding_start": "2026-06-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 153,
+      "perp_start": "2026-06-01",
+      "perp_end": "2026-10-31"
+    },
+    "SMCIUSDT": {
+      "funding_days": 132,
+      "funding_start": "2026-06-22",
+      "funding_end": "2026-10-31",
+      "perp_days": 132,
+      "perp_start": "2026-06-22",
+      "perp_end": "2026-10-31"
+    },
+    "SMHUSDT": {
+      "funding_days": 95,
+      "funding_start": "2026-07-29",
+      "funding_end": "2026-10-31",
+      "perp_days": 95,
+      "perp_start": "2026-07-29",
+      "perp_end": "2026-10-31"
+    },
+    "SMRUSDT": {
+      "funding_days": 3,
+      "funding_start": "2026-10-29",
+      "funding_end": "2026-10-31",
+      "perp_days": 3,
+      "perp_start": "2026-10-29",
+      "perp_end": "2026-10-31"
+    },
+    "SNDKUSDT": {
+      "funding_days": 208,
+      "funding_start": "2026-04-07",
+      "funding_end": "2026-10-31",
+      "perp_days": 208,
+      "perp_start": "2026-04-07",
+      "perp_end": "2026-10-31"
+    },
+    "SNOWUSDT": {
+      "funding_days": 114,
+      "funding_start": "2026-07-10",
+      "funding_end": "2026-10-31",
+      "perp_days": 114,
+      "perp_start": "2026-07-10",
+      "perp_end": "2026-10-31"
+    },
+    "SNPSUSDT": {
+      "funding_days": 20,
+      "funding_start": "2026-10-12",
+      "funding_end": "2026-10-31",
+      "perp_days": 20,
+      "perp_start": "2026-10-12",
+      "perp_end": "2026-10-31"
+    },
+    "SNTUSDT": {
+      "funding_days": 596,
+      "funding_start": "2023-11-02",
+      "funding_end": "2025-06-19",
+      "perp_days": 1095,
+      "perp_start": "2023-11-02",
+      "perp_end": "2026-10-31"
+    },
+    "SNXUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "SNXXUSDT": {
+      "funding_days": 115,
+      "funding_start": "2026-07-09",
+      "funding_end": "2026-10-31",
+      "perp_days": 115,
+      "perp_start": "2026-07-09",
+      "perp_end": "2026-10-31"
+    },
+    "SOFIUSDT": {
+      "funding_days": 103,
+      "funding_start": "2026-07-21",
+      "funding_end": "2026-10-31",
+      "perp_days": 103,
+      "perp_start": "2026-07-21",
+      "perp_end": "2026-10-31"
+    },
+    "SOLVUSDT": {
+      "funding_days": 653,
+      "funding_start": "2025-01-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 653,
+      "perp_start": "2025-01-17",
+      "perp_end": "2026-10-31"
+    },
+    "SOMIUSDT": {
+      "funding_days": 433,
+      "funding_start": "2025-08-25",
+      "funding_end": "2026-10-31",
+      "perp_days": 433,
+      "perp_start": "2025-08-25",
+      "perp_end": "2026-10-31"
+    },
+    "SONICUSDT": {
+      "funding_days": 662,
+      "funding_start": "2025-01-08",
+      "funding_end": "2026-10-31",
+      "perp_days": 662,
+      "perp_start": "2025-01-08",
+      "perp_end": "2026-10-31"
+    },
+    "SONYUSDT": {
+      "funding_days": 132,
+      "funding_start": "2026-06-22",
+      "funding_end": "2026-10-31",
+      "perp_days": 132,
+      "perp_start": "2026-06-22",
+      "perp_end": "2026-10-31"
+    },
+    "SOONUSDT": {
+      "funding_days": 527,
+      "funding_start": "2025-05-23",
+      "funding_end": "2026-10-31",
+      "perp_days": 527,
+      "perp_start": "2025-05-23",
+      "perp_end": "2026-10-31"
+    },
+    "SOPHUSDT": {
+      "funding_days": 522,
+      "funding_start": "2025-05-28",
+      "funding_end": "2026-10-31",
+      "perp_days": 522,
+      "perp_start": "2025-05-28",
+      "perp_end": "2026-10-31"
+    },
+    "SOXLUSDT": {
+      "funding_days": 171,
+      "funding_start": "2026-05-14",
+      "funding_end": "2026-10-31",
+      "perp_days": 170,
+      "perp_start": "2026-05-15",
+      "perp_end": "2026-10-31"
+    },
+    "SOXSUSDT": {
+      "funding_days": 108,
+      "funding_start": "2026-07-16",
+      "funding_end": "2026-10-31",
+      "perp_days": 108,
+      "perp_start": "2026-07-16",
+      "perp_end": "2026-10-31"
+    },
+    "SPACEUSDT": {
+      "funding_days": 282,
+      "funding_start": "2026-01-23",
+      "funding_end": "2026-10-31",
+      "perp_days": 282,
+      "perp_start": "2026-01-23",
+      "perp_end": "2026-10-31"
+    },
+    "SPCXUSDT": {
+      "funding_days": 164,
+      "funding_start": "2026-05-21",
+      "funding_end": "2026-10-31",
+      "perp_days": 164,
+      "perp_start": "2026-05-21",
+      "perp_end": "2026-10-31"
+    },
+    "SPELLUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "SPKUSDT": {
+      "funding_days": 502,
+      "funding_start": "2025-06-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 502,
+      "perp_start": "2025-06-17",
+      "perp_end": "2026-10-31"
+    },
+    "SPORTFUNUSDT": {
+      "funding_days": 289,
+      "funding_start": "2026-01-16",
+      "funding_end": "2026-10-31",
+      "perp_days": 289,
+      "perp_start": "2026-01-16",
+      "perp_end": "2026-10-31"
+    },
+    "SPXUSDT": {
+      "funding_days": 691,
+      "funding_start": "2024-12-10",
+      "funding_end": "2026-10-31",
+      "perp_days": 691,
+      "perp_start": "2024-12-10",
+      "perp_end": "2026-10-31"
+    },
+    "SPYUSDT": {
+      "funding_days": 212,
+      "funding_start": "2026-04-03",
+      "funding_end": "2026-10-31",
+      "perp_days": 209,
+      "perp_start": "2026-04-06",
+      "perp_end": "2026-10-31"
+    },
+    "SQDUSDT": {
+      "funding_days": 508,
+      "funding_start": "2025-06-11",
+      "funding_end": "2026-10-31",
+      "perp_days": 508,
+      "perp_start": "2025-06-11",
+      "perp_end": "2026-10-31"
+    },
+    "SQQQUSDT": {
+      "funding_days": 130,
+      "funding_start": "2026-06-24",
+      "funding_end": "2026-10-31",
+      "perp_days": 125,
+      "perp_start": "2026-06-29",
+      "perp_end": "2026-10-31"
+    },
+    "SRMUSDT": {
+      "funding_days": 566,
+      "funding_start": "2023-01-01",
+      "funding_end": "2024-07-19",
+      "perp_days": 514,
+      "perp_start": "2023-01-01",
+      "perp_end": "2024-05-28"
+    },
+    "SSVUSDT": {
+      "funding_days": 1347,
+      "funding_start": "2023-02-23",
+      "funding_end": "2026-10-31",
+      "perp_days": 1346,
+      "perp_start": "2023-02-24",
+      "perp_end": "2026-10-31"
+    },
+    "STABLEUSDT": {
+      "funding_days": 360,
+      "funding_start": "2025-11-06",
+      "funding_end": "2026-10-31",
+      "perp_days": 360,
+      "perp_start": "2025-11-06",
+      "perp_end": "2026-10-31"
+    },
+    "STARUSDT": {
+      "funding_days": 171,
+      "funding_start": "2026-05-14",
+      "funding_end": "2026-10-31",
+      "perp_days": 171,
+      "perp_start": "2026-05-14",
+      "perp_end": "2026-10-31"
+    },
+    "STBLUSDT": {
+      "funding_days": 410,
+      "funding_start": "2025-09-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 410,
+      "perp_start": "2025-09-17",
+      "perp_end": "2026-10-31"
+    },
+    "STEEMUSDT": {
+      "funding_days": 1089,
+      "funding_start": "2023-11-08",
+      "funding_end": "2026-10-31",
+      "perp_days": 1089,
+      "perp_start": "2023-11-08",
+      "perp_end": "2026-10-31"
+    },
+    "STGUSDT": {
+      "funding_days": 1363,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-09-24",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "STMUSDT": {
+      "funding_days": 6,
+      "funding_start": "2026-10-26",
+      "funding_end": "2026-10-31",
+      "perp_days": 6,
+      "perp_start": "2026-10-26",
+      "perp_end": "2026-10-31"
+    },
+    "STMXUSDT": {
+      "funding_days": 901,
+      "funding_start": "2023-01-01",
+      "funding_end": "2025-06-19",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "STORJUSDT": {
+      "funding_days": 1334,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-08-26",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "STOUSDT": {
+      "funding_days": 568,
+      "funding_start": "2025-04-12",
+      "funding_end": "2026-10-31",
+      "perp_days": 568,
+      "perp_start": "2025-04-12",
+      "perp_end": "2026-10-31"
+    },
+    "STPTUSDT": {
+      "funding_days": 611,
+      "funding_start": "2023-10-18",
+      "funding_end": "2025-06-19",
+      "perp_days": 1110,
+      "perp_start": "2023-10-18",
+      "perp_end": "2026-10-31"
+    },
+    "STRAXUSDT": {
+      "funding_days": 619,
+      "funding_start": "2023-10-10",
+      "funding_end": "2025-06-19",
+      "perp_days": 1117,
+      "perp_start": "2023-10-11",
+      "perp_end": "2026-10-31"
+    },
+    "STRCUSDT": {
+      "funding_days": 122,
+      "funding_start": "2026-07-02",
+      "funding_end": "2026-10-31",
+      "perp_days": 122,
+      "perp_start": "2026-07-02",
+      "perp_end": "2026-10-31"
+    },
+    "STRKUSDT": {
+      "funding_days": 985,
+      "funding_start": "2024-02-20",
+      "funding_end": "2026-10-31",
+      "perp_days": 985,
+      "perp_start": "2024-02-20",
+      "perp_end": "2026-10-31"
+    },
+    "STXUSDT": {
+      "funding_days": 1349,
+      "funding_start": "2023-02-21",
+      "funding_end": "2026-10-31",
+      "perp_days": 1349,
+      "perp_start": "2023-02-21",
+      "perp_end": "2026-10-31"
+    },
+    "STXXUSDT": {
+      "funding_days": 143,
+      "funding_start": "2026-06-11",
+      "funding_end": "2026-10-31",
+      "perp_days": 143,
+      "perp_start": "2026-06-11",
+      "perp_end": "2026-10-31"
+    },
+    "SUIUSDT": {
+      "funding_days": 1278,
+      "funding_start": "2023-05-03",
+      "funding_end": "2026-10-31",
+      "perp_days": 1278,
+      "perp_start": "2023-05-03",
+      "perp_end": "2026-10-31"
+    },
+    "SUNUSDT": {
+      "funding_days": 801,
+      "funding_start": "2024-08-22",
+      "funding_end": "2026-10-31",
+      "perp_days": 801,
+      "perp_start": "2024-08-22",
+      "perp_end": "2026-10-31"
+    },
+    "SUPERUSDT": {
+      "funding_days": 1071,
+      "funding_start": "2023-11-26",
+      "funding_end": "2026-10-31",
+      "perp_days": 1071,
+      "perp_start": "2023-11-26",
+      "perp_end": "2026-10-31"
+    },
+    "SUSDT": {
+      "funding_days": 654,
+      "funding_start": "2025-01-16",
+      "funding_end": "2026-10-31",
+      "perp_days": 654,
+      "perp_start": "2025-01-16",
+      "perp_end": "2026-10-31"
+    },
+    "SUSHIUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "SWARMSUSDT": {
+      "funding_days": 663,
+      "funding_start": "2025-01-07",
+      "funding_end": "2026-10-31",
+      "perp_days": 663,
+      "perp_start": "2025-01-07",
+      "perp_end": "2026-10-31"
+    },
+    "SWELLUSDT": {
+      "funding_days": 386,
+      "funding_start": "2024-11-08",
+      "funding_end": "2025-11-28",
+      "perp_days": 723,
+      "perp_start": "2024-11-08",
+      "perp_end": "2026-10-31"
+    },
+    "SXPUSDT": {
+      "funding_days": 1070,
+      "funding_start": "2023-01-01",
+      "funding_end": "2025-12-05",
+      "perp_days": 1247,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-05-31"
+    },
+    "SXTUSDT": {
+      "funding_days": 548,
+      "funding_start": "2025-05-02",
+      "funding_end": "2026-10-31",
+      "perp_days": 548,
+      "perp_start": "2025-05-02",
+      "perp_end": "2026-10-31"
+    },
+    "SYNUSDT": {
+      "funding_days": 807,
+      "funding_start": "2024-08-16",
+      "funding_end": "2026-10-31",
+      "perp_days": 807,
+      "perp_start": "2024-08-16",
+      "perp_end": "2026-10-31"
+    },
+    "SYRUPUSDT": {
+      "funding_days": 544,
+      "funding_start": "2025-05-06",
+      "funding_end": "2026-10-31",
+      "perp_days": 543,
+      "perp_start": "2025-05-07",
+      "perp_end": "2026-10-31"
+    },
+    "SYSUSDT": {
+      "funding_days": 639,
+      "funding_start": "2024-08-19",
+      "funding_end": "2026-05-19",
+      "perp_days": 804,
+      "perp_start": "2024-08-19",
+      "perp_end": "2026-10-31"
+    },
+    "TACUSDT": {
+      "funding_days": 474,
+      "funding_start": "2025-07-15",
+      "funding_end": "2026-10-31",
+      "perp_days": 474,
+      "perp_start": "2025-07-15",
+      "perp_end": "2026-10-31"
+    },
+    "TAGUSDT": {
+      "funding_days": 464,
+      "funding_start": "2025-07-25",
+      "funding_end": "2026-10-31",
+      "perp_days": 464,
+      "perp_start": "2025-07-25",
+      "perp_end": "2026-10-31"
+    },
+    "TAIKOUSDT": {
+      "funding_days": 508,
+      "funding_start": "2025-06-11",
+      "funding_end": "2026-10-31",
+      "perp_days": 508,
+      "perp_start": "2025-06-11",
+      "perp_end": "2026-10-31"
+    },
+    "TAKEUSDT": {
+      "funding_days": 424,
+      "funding_start": "2025-09-03",
+      "funding_end": "2026-10-31",
+      "perp_days": 424,
+      "perp_start": "2025-09-03",
+      "perp_end": "2026-10-31"
+    },
+    "TANSSIUSDT": {
+      "funding_days": 197,
+      "funding_start": "2025-07-09",
+      "funding_end": "2026-01-21",
+      "perp_days": 480,
+      "perp_start": "2025-07-09",
+      "perp_end": "2026-10-31"
+    },
+    "TAOUSDT": {
+      "funding_days": 934,
+      "funding_start": "2024-04-11",
+      "funding_end": "2026-10-31",
+      "perp_days": 934,
+      "perp_start": "2024-04-11",
+      "perp_end": "2026-10-31"
+    },
+    "TAUSDT": {
+      "funding_days": 468,
+      "funding_start": "2025-07-21",
+      "funding_end": "2026-10-31",
+      "perp_days": 468,
+      "perp_start": "2025-07-21",
+      "perp_end": "2026-10-31"
+    },
+    "TBTUSDT": {
+      "funding_days": 97,
+      "funding_start": "2026-07-27",
+      "funding_end": "2026-10-31",
+      "perp_days": 97,
+      "perp_start": "2026-07-27",
+      "perp_end": "2026-10-31"
+    },
+    "TEAMUSDT": {
+      "funding_days": 60,
+      "funding_start": "2026-09-02",
+      "funding_end": "2026-10-31",
+      "perp_days": 60,
+      "perp_start": "2026-09-02",
+      "perp_end": "2026-10-31"
+    },
+    "TEMUSDT": {
+      "funding_days": 65,
+      "funding_start": "2026-08-28",
+      "funding_end": "2026-10-31",
+      "perp_days": 65,
+      "perp_start": "2026-08-28",
+      "perp_end": "2026-10-31"
+    },
+    "TENCENTUSDT": {
+      "funding_days": 107,
+      "funding_start": "2026-07-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 102,
+      "perp_start": "2026-07-22",
+      "perp_end": "2026-10-31"
+    },
+    "TERUSDT": {
+      "funding_days": 122,
+      "funding_start": "2026-07-02",
+      "funding_end": "2026-10-31",
+      "perp_days": 122,
+      "perp_start": "2026-07-02",
+      "perp_end": "2026-10-31"
+    },
+    "THETAUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "THEUSDT": {
+      "funding_days": 704,
+      "funding_start": "2024-11-27",
+      "funding_end": "2026-10-31",
+      "perp_days": 704,
+      "perp_start": "2024-11-27",
+      "perp_end": "2026-10-31"
+    },
+    "TIAUSDT": {
+      "funding_days": 1097,
+      "funding_start": "2023-10-31",
+      "funding_end": "2026-10-31",
+      "perp_days": 1097,
+      "perp_start": "2023-10-31",
+      "perp_end": "2026-10-31"
+    },
+    "TLMUSDT": {
+      "funding_days": 1341,
+      "funding_start": "2023-03-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1371,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "TMFUSDT": {
+      "funding_days": 97,
+      "funding_start": "2026-07-27",
+      "funding_end": "2026-10-31",
+      "perp_days": 97,
+      "perp_start": "2026-07-27",
+      "perp_end": "2026-10-31"
+    },
+    "TNSRUSDT": {
+      "funding_days": 937,
+      "funding_start": "2024-04-08",
+      "funding_end": "2026-10-31",
+      "perp_days": 937,
+      "perp_start": "2024-04-08",
+      "perp_end": "2026-10-31"
+    },
+    "TOKENUSDT": {
+      "funding_days": 764,
+      "funding_start": "2023-11-03",
+      "funding_end": "2025-12-05",
+      "perp_days": 1094,
+      "perp_start": "2023-11-03",
+      "perp_end": "2026-10-31"
+    },
+    "TOMOUSDT": {
+      "funding_days": 593,
+      "funding_start": "2023-01-01",
+      "funding_end": "2024-08-15",
+      "perp_days": 514,
+      "perp_start": "2023-01-01",
+      "perp_end": "2024-05-28"
+    },
+    "TONUSDT": {
+      "funding_days": 845,
+      "funding_start": "2024-03-01",
+      "funding_end": "2026-06-23",
+      "perp_days": 975,
+      "perp_start": "2024-03-01",
+      "perp_end": "2026-10-31"
+    },
+    "TOSHIUSDT": {
+      "funding_days": 410,
+      "funding_start": "2025-09-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 410,
+      "perp_start": "2025-09-17",
+      "perp_end": "2026-10-31"
+    },
+    "TOWNSUSDT": {
+      "funding_days": 453,
+      "funding_start": "2025-08-05",
+      "funding_end": "2026-10-31",
+      "perp_days": 453,
+      "perp_start": "2025-08-05",
+      "perp_end": "2026-10-31"
+    },
+    "TQQQUSDT": {
+      "funding_days": 130,
+      "funding_start": "2026-06-24",
+      "funding_end": "2026-10-31",
+      "perp_days": 125,
+      "perp_start": "2026-06-29",
+      "perp_end": "2026-10-31"
+    },
+    "TRADOORUSDT": {
+      "funding_days": 408,
+      "funding_start": "2025-09-19",
+      "funding_end": "2026-10-31",
+      "perp_days": 408,
+      "perp_start": "2025-09-19",
+      "perp_end": "2026-10-31"
+    },
+    "TRBUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "TREEUSDT": {
+      "funding_days": 460,
+      "funding_start": "2025-07-29",
+      "funding_end": "2026-10-31",
+      "perp_days": 460,
+      "perp_start": "2025-07-29",
+      "perp_end": "2026-10-31"
+    },
+    "TRIAUSDT": {
+      "funding_days": 268,
+      "funding_start": "2026-02-06",
+      "funding_end": "2026-10-31",
+      "perp_days": 268,
+      "perp_start": "2026-02-06",
+      "perp_end": "2026-10-31"
+    },
+    "TROYUSDT": {
+      "funding_days": 232,
+      "funding_start": "2024-10-31",
+      "funding_end": "2025-06-19",
+      "perp_days": 731,
+      "perp_start": "2024-10-31",
+      "perp_end": "2026-10-31"
+    },
+    "TRUMPUSDT": {
+      "funding_days": 652,
+      "funding_start": "2025-01-18",
+      "funding_end": "2026-10-31",
+      "perp_days": 652,
+      "perp_start": "2025-01-18",
+      "perp_end": "2026-10-31"
+    },
+    "TRUSTUSDT": {
+      "funding_days": 361,
+      "funding_start": "2025-11-05",
+      "funding_end": "2026-10-31",
+      "perp_days": 361,
+      "perp_start": "2025-11-05",
+      "perp_end": "2026-10-31"
+    },
+    "TRUTHUSDT": {
+      "funding_days": 396,
+      "funding_start": "2025-10-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 396,
+      "perp_start": "2025-10-01",
+      "perp_end": "2026-10-31"
+    },
+    "TRUUSDT": {
+      "funding_days": 1143,
+      "funding_start": "2023-03-06",
+      "funding_end": "2026-04-21",
+      "perp_days": 1335,
+      "perp_start": "2023-03-07",
+      "perp_end": "2026-10-31"
+    },
+    "TSLAUSDT": {
+      "funding_days": 278,
+      "funding_start": "2026-01-27",
+      "funding_end": "2026-10-31",
+      "perp_days": 277,
+      "perp_start": "2026-01-28",
+      "perp_end": "2026-10-31"
+    },
+    "TSLLUSDT": {
+      "funding_days": 60,
+      "funding_start": "2026-09-02",
+      "funding_end": "2026-10-31",
+      "perp_days": 60,
+      "perp_start": "2026-09-02",
+      "perp_end": "2026-10-31"
+    },
+    "TSMUSDT": {
+      "funding_days": 212,
+      "funding_start": "2026-04-03",
+      "funding_end": "2026-10-31",
+      "perp_days": 209,
+      "perp_start": "2026-04-06",
+      "perp_end": "2026-10-31"
+    },
+    "TSTUSDT": {
+      "funding_days": 630,
+      "funding_start": "2025-02-09",
+      "funding_end": "2026-10-31",
+      "perp_days": 630,
+      "perp_start": "2025-02-09",
+      "perp_end": "2026-10-31"
+    },
+    "TTWOUSDT": {
+      "funding_days": 122,
+      "funding_start": "2026-07-02",
+      "funding_end": "2026-10-31",
+      "perp_days": 122,
+      "perp_start": "2026-07-02",
+      "perp_end": "2026-10-31"
+    },
+    "TURBOUSDT": {
+      "funding_days": 885,
+      "funding_start": "2024-05-30",
+      "funding_end": "2026-10-31",
+      "perp_days": 885,
+      "perp_start": "2024-05-30",
+      "perp_end": "2026-10-31"
+    },
+    "TURTLEUSDT": {
+      "funding_days": 375,
+      "funding_start": "2025-10-22",
+      "funding_end": "2026-10-31",
+      "perp_days": 375,
+      "perp_start": "2025-10-22",
+      "perp_end": "2026-10-31"
+    },
+    "TUSDT": {
+      "funding_days": 1369,
+      "funding_start": "2023-02-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1369,
+      "perp_start": "2023-02-01",
+      "perp_end": "2026-10-31"
+    },
+    "TUTUSDT": {
+      "funding_days": 591,
+      "funding_start": "2025-03-20",
+      "funding_end": "2026-10-31",
+      "perp_days": 591,
+      "perp_start": "2025-03-20",
+      "perp_end": "2026-10-31"
+    },
+    "TWSTUSDT": {
+      "funding_days": 34,
+      "funding_start": "2026-09-28",
+      "funding_end": "2026-10-31",
+      "perp_days": 34,
+      "perp_start": "2026-09-28",
+      "perp_end": "2026-10-31"
+    },
+    "TWTUSDT": {
+      "funding_days": 1094,
+      "funding_start": "2023-11-03",
+      "funding_end": "2026-10-31",
+      "perp_days": 1094,
+      "perp_start": "2023-11-03",
+      "perp_end": "2026-10-31"
+    },
+    "TXNUSDT": {
+      "funding_days": 122,
+      "funding_start": "2026-07-02",
+      "funding_end": "2026-10-31",
+      "perp_days": 122,
+      "perp_start": "2026-07-02",
+      "perp_end": "2026-10-31"
+    },
+    "TZAUSDT": {
+      "funding_days": 108,
+      "funding_start": "2026-07-16",
+      "funding_end": "2026-10-31",
+      "perp_days": 108,
+      "perp_start": "2026-07-16",
+      "perp_end": "2026-10-31"
+    },
+    "UAIUSDT": {
+      "funding_days": 360,
+      "funding_start": "2025-11-06",
+      "funding_end": "2026-10-31",
+      "perp_days": 360,
+      "perp_start": "2025-11-06",
+      "perp_end": "2026-10-31"
+    },
+    "UBERUSDT": {
+      "funding_days": 171,
+      "funding_start": "2026-05-14",
+      "funding_end": "2026-10-31",
+      "perp_days": 170,
+      "perp_start": "2026-05-15",
+      "perp_end": "2026-10-31"
+    },
+    "UBUSDT": {
+      "funding_days": 415,
+      "funding_start": "2025-09-12",
+      "funding_end": "2026-10-31",
+      "perp_days": 415,
+      "perp_start": "2025-09-12",
+      "perp_end": "2026-10-31"
+    },
+    "UMAUSDT": {
+      "funding_days": 1272,
+      "funding_start": "2023-05-09",
+      "funding_end": "2026-10-31",
+      "perp_days": 1271,
+      "perp_start": "2023-05-10",
+      "perp_end": "2026-10-31"
+    },
+    "UNFIUSDT": {
+      "funding_days": 901,
+      "funding_start": "2023-01-01",
+      "funding_end": "2025-06-19",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "UNHUSDT": {
+      "funding_days": 33,
+      "funding_start": "2026-09-29",
+      "funding_end": "2026-10-31",
+      "perp_days": 33,
+      "perp_start": "2026-09-29",
+      "perp_end": "2026-10-31"
+    },
+    "UNITREEUSDT": {
+      "funding_days": 74,
+      "funding_start": "2026-08-19",
+      "funding_end": "2026-10-31",
+      "perp_days": 74,
+      "perp_start": "2026-08-19",
+      "perp_end": "2026-10-31"
+    },
+    "URNMUSDT": {
+      "funding_days": 145,
+      "funding_start": "2026-06-09",
+      "funding_end": "2026-10-31",
+      "perp_days": 145,
+      "perp_start": "2026-06-09",
+      "perp_end": "2026-10-31"
+    },
+    "USARUSDT": {
+      "funding_days": 179,
+      "funding_start": "2026-05-06",
+      "funding_end": "2026-10-31",
+      "perp_days": 179,
+      "perp_start": "2026-05-06",
+      "perp_end": "2026-10-31"
+    },
+    "USDBRLUSDT": {
+      "funding_days": 44,
+      "funding_start": "2026-09-18",
+      "funding_end": "2026-10-31",
+      "perp_days": 41,
+      "perp_start": "2026-09-21",
+      "perp_end": "2026-10-31"
+    },
+    "USDCUSDT": {
+      "funding_days": 1329,
+      "funding_start": "2023-03-13",
+      "funding_end": "2026-10-31",
+      "perp_days": 1330,
+      "perp_start": "2023-03-12",
+      "perp_end": "2026-10-31"
+    },
+    "USDEXUSDT": {
+      "funding_days": 26,
+      "funding_start": "2026-10-06",
+      "funding_end": "2026-10-31",
+      "perp_days": 26,
+      "perp_start": "2026-10-06",
+      "perp_end": "2026-10-31"
+    },
+    "USELESSUSDT": {
+      "funding_days": 443,
+      "funding_start": "2025-08-15",
+      "funding_end": "2026-10-31",
+      "perp_days": 443,
+      "perp_start": "2025-08-15",
+      "perp_end": "2026-10-31"
+    },
+    "USTCUSDT": {
+      "funding_days": 1070,
+      "funding_start": "2023-11-27",
+      "funding_end": "2026-10-31",
+      "perp_days": 1070,
+      "perp_start": "2023-11-27",
+      "perp_end": "2026-10-31"
+    },
+    "USUALUSDT": {
+      "funding_days": 683,
+      "funding_start": "2024-12-18",
+      "funding_end": "2026-10-31",
+      "perp_days": 683,
+      "perp_start": "2024-12-18",
+      "perp_end": "2026-10-31"
+    },
+    "USUSDT": {
+      "funding_days": 324,
+      "funding_start": "2025-12-12",
+      "funding_end": "2026-10-31",
+      "perp_days": 324,
+      "perp_start": "2025-12-12",
+      "perp_end": "2026-10-31"
+    },
+    "UVXYUSDT": {
+      "funding_days": 143,
+      "funding_start": "2026-06-11",
+      "funding_end": "2026-10-31",
+      "perp_days": 143,
+      "perp_start": "2026-06-11",
+      "perp_end": "2026-10-31"
+    },
+    "UXLINKUSDT": {
+      "funding_days": 377,
+      "funding_start": "2024-09-15",
+      "funding_end": "2025-09-26",
+      "perp_days": 777,
+      "perp_start": "2024-09-15",
+      "perp_end": "2026-10-31"
+    },
+    "VANAUSDT": {
+      "funding_days": 685,
+      "funding_start": "2024-12-16",
+      "funding_end": "2026-10-31",
+      "perp_days": 685,
+      "perp_start": "2024-12-16",
+      "perp_end": "2026-10-31"
+    },
+    "VANRYUSDT": {
+      "funding_days": 878,
+      "funding_start": "2024-03-13",
+      "funding_end": "2026-08-07",
+      "perp_days": 963,
+      "perp_start": "2024-03-13",
+      "perp_end": "2026-10-31"
+    },
+    "VELODROMEUSDT": {
+      "funding_days": 685,
+      "funding_start": "2024-12-13",
+      "funding_end": "2026-10-28",
+      "perp_days": 688,
+      "perp_start": "2024-12-13",
+      "perp_end": "2026-10-31"
+    },
+    "VELVETUSDT": {
+      "funding_days": 474,
+      "funding_start": "2025-07-15",
+      "funding_end": "2026-10-31",
+      "perp_days": 474,
+      "perp_start": "2025-07-15",
+      "perp_end": "2026-10-31"
+    },
+    "VETUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "VFYUSDT": {
+      "funding_days": 169,
+      "funding_start": "2025-09-30",
+      "funding_end": "2026-03-17",
+      "perp_days": 397,
+      "perp_start": "2025-09-30",
+      "perp_end": "2026-10-31"
+    },
+    "VICUSDT": {
+      "funding_days": 514,
+      "funding_start": "2025-03-12",
+      "funding_end": "2026-08-07",
+      "perp_days": 599,
+      "perp_start": "2025-03-12",
+      "perp_end": "2026-10-31"
+    },
+    "VIDTUSDT": {
+      "funding_days": 301,
+      "funding_start": "2024-08-23",
+      "funding_end": "2025-06-19",
+      "perp_days": 800,
+      "perp_start": "2024-08-23",
+      "perp_end": "2026-10-31"
+    },
+    "VINEUSDT": {
+      "funding_days": 460,
+      "funding_start": "2025-01-24",
+      "funding_end": "2026-04-28",
+      "perp_days": 646,
+      "perp_start": "2025-01-24",
+      "perp_end": "2026-10-31"
+    },
+    "VIRTUALUSDT": {
+      "funding_days": 691,
+      "funding_start": "2024-12-10",
+      "funding_end": "2026-10-31",
+      "perp_days": 691,
+      "perp_start": "2024-12-10",
+      "perp_end": "2026-10-31"
+    },
+    "VKTXUSDT": {
+      "funding_days": 26,
+      "funding_start": "2026-10-06",
+      "funding_end": "2026-10-31",
+      "perp_days": 26,
+      "perp_start": "2026-10-06",
+      "perp_end": "2026-10-31"
+    },
+    "VOXELUSDT": {
+      "funding_days": 478,
+      "funding_start": "2024-08-20",
+      "funding_end": "2025-12-10",
+      "perp_days": 803,
+      "perp_start": "2024-08-20",
+      "perp_end": "2026-10-31"
+    },
+    "VRTUSDT": {
+      "funding_days": 114,
+      "funding_start": "2026-07-10",
+      "funding_end": "2026-10-31",
+      "perp_days": 114,
+      "perp_start": "2026-07-10",
+      "perp_end": "2026-10-31"
+    },
+    "VSTUSDT": {
+      "funding_days": 76,
+      "funding_start": "2026-08-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 76,
+      "perp_start": "2026-08-17",
+      "perp_end": "2026-10-31"
+    },
+    "VTHOUSDT": {
+      "funding_days": 648,
+      "funding_start": "2025-01-22",
+      "funding_end": "2026-10-31",
+      "perp_days": 648,
+      "perp_start": "2025-01-22",
+      "perp_end": "2026-10-31"
+    },
+    "VUSDT": {
+      "funding_days": 167,
+      "funding_start": "2026-05-18",
+      "funding_end": "2026-10-31",
+      "perp_days": 167,
+      "perp_start": "2026-05-18",
+      "perp_end": "2026-10-31"
+    },
+    "VVVUSDT": {
+      "funding_days": 641,
+      "funding_start": "2025-01-29",
+      "funding_end": "2026-10-31",
+      "perp_days": 641,
+      "perp_start": "2025-01-29",
+      "perp_end": "2026-10-31"
+    },
+    "WALUSDT": {
+      "funding_days": 584,
+      "funding_start": "2025-03-27",
+      "funding_end": "2026-10-31",
+      "perp_days": 584,
+      "perp_start": "2025-03-27",
+      "perp_end": "2026-10-31"
+    },
+    "WAVESUSDT": {
+      "funding_days": 901,
+      "funding_start": "2023-01-01",
+      "funding_end": "2025-06-19",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "WAXPUSDT": {
+      "funding_days": 1110,
+      "funding_start": "2023-10-18",
+      "funding_end": "2026-10-31",
+      "perp_days": 1110,
+      "perp_start": "2023-10-18",
+      "perp_end": "2026-10-31"
+    },
+    "WCTUSDT": {
+      "funding_days": 565,
+      "funding_start": "2025-04-15",
+      "funding_end": "2026-10-31",
+      "perp_days": 565,
+      "perp_start": "2025-04-15",
+      "perp_end": "2026-10-31"
+    },
+    "WDCUSDT": {
+      "funding_days": 159,
+      "funding_start": "2026-05-26",
+      "funding_end": "2026-10-31",
+      "perp_days": 159,
+      "perp_start": "2026-05-26",
+      "perp_end": "2026-10-31"
+    },
+    "WENUSDT": {
+      "funding_days": 115,
+      "funding_start": "2026-07-09",
+      "funding_end": "2026-10-31",
+      "perp_days": 115,
+      "perp_start": "2026-07-09",
+      "perp_end": "2026-10-31"
+    },
+    "WETUSDT": {
+      "funding_days": 326,
+      "funding_start": "2025-12-10",
+      "funding_end": "2026-10-31",
+      "perp_days": 326,
+      "perp_start": "2025-12-10",
+      "perp_end": "2026-10-31"
+    },
+    "WIFUSDT": {
+      "funding_days": 1018,
+      "funding_start": "2024-01-18",
+      "funding_end": "2026-10-31",
+      "perp_days": 1018,
+      "perp_start": "2024-01-18",
+      "perp_end": "2026-10-31"
+    },
+    "WLDUSDT": {
+      "funding_days": 1196,
+      "funding_start": "2023-07-24",
+      "funding_end": "2026-10-31",
+      "perp_days": 1196,
+      "perp_start": "2023-07-24",
+      "perp_end": "2026-10-31"
+    },
+    "WLFIUSDT": {
+      "funding_days": 435,
+      "funding_start": "2025-08-23",
+      "funding_end": "2026-10-31",
+      "perp_days": 435,
+      "perp_start": "2025-08-23",
+      "perp_end": "2026-10-31"
+    },
+    "WMTUSDT": {
+      "funding_days": 167,
+      "funding_start": "2026-05-18",
+      "funding_end": "2026-10-31",
+      "perp_days": 167,
+      "perp_start": "2026-05-18",
+      "perp_end": "2026-10-31"
+    },
+    "WOOUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "WUSDT": {
+      "funding_days": 942,
+      "funding_start": "2024-04-03",
+      "funding_end": "2026-10-31",
+      "perp_days": 942,
+      "perp_start": "2024-04-03",
+      "perp_end": "2026-10-31"
+    },
+    "XAGUSDT": {
+      "funding_days": 298,
+      "funding_start": "2026-01-07",
+      "funding_end": "2026-10-31",
+      "perp_days": 298,
+      "perp_start": "2026-01-07",
+      "perp_end": "2026-10-31"
+    },
+    "XAIUSDT": {
+      "funding_days": 1027,
+      "funding_start": "2024-01-09",
+      "funding_end": "2026-10-31",
+      "perp_days": 1027,
+      "perp_start": "2024-01-09",
+      "perp_end": "2026-10-31"
+    },
+    "XANUSDT": {
+      "funding_days": 398,
+      "funding_start": "2025-09-29",
+      "funding_end": "2026-10-31",
+      "perp_days": 398,
+      "perp_start": "2025-09-29",
+      "perp_end": "2026-10-31"
+    },
+    "XAUTUSDT": {
+      "funding_days": 220,
+      "funding_start": "2026-03-26",
+      "funding_end": "2026-10-31",
+      "perp_days": 220,
+      "perp_start": "2026-03-26",
+      "perp_end": "2026-10-31"
+    },
+    "XAUUSDT": {
+      "funding_days": 325,
+      "funding_start": "2025-12-11",
+      "funding_end": "2026-10-31",
+      "perp_days": 325,
+      "perp_start": "2025-12-11",
+      "perp_end": "2026-10-31"
+    },
+    "XBIUSDT": {
+      "funding_days": 115,
+      "funding_start": "2026-07-09",
+      "funding_end": "2026-10-31",
+      "perp_days": 115,
+      "perp_start": "2026-07-09",
+      "perp_end": "2026-10-31"
+    },
+    "XCNUSDT": {
+      "funding_days": 225,
+      "funding_start": "2025-04-11",
+      "funding_end": "2025-11-21",
+      "perp_days": 569,
+      "perp_start": "2025-04-11",
+      "perp_end": "2026-10-31"
+    },
+    "XEMUSDT": {
+      "funding_days": 901,
+      "funding_start": "2023-01-01",
+      "funding_end": "2025-06-19",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "XLEUSDT": {
+      "funding_days": 144,
+      "funding_start": "2026-06-10",
+      "funding_end": "2026-10-31",
+      "perp_days": 144,
+      "perp_start": "2026-06-10",
+      "perp_end": "2026-10-31"
+    },
+    "XLMUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "XMRUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "XNYUSDT": {
+      "funding_days": 445,
+      "funding_start": "2025-08-13",
+      "funding_end": "2026-10-31",
+      "perp_days": 445,
+      "perp_start": "2025-08-13",
+      "perp_end": "2026-10-31"
+    },
+    "XOMUSDT": {
+      "funding_days": 34,
+      "funding_start": "2026-09-28",
+      "funding_end": "2026-10-31",
+      "perp_days": 34,
+      "perp_start": "2026-09-28",
+      "perp_end": "2026-10-31"
+    },
+    "XPDUSDT": {
+      "funding_days": 275,
+      "funding_start": "2026-01-30",
+      "funding_end": "2026-10-31",
+      "perp_days": 275,
+      "perp_start": "2026-01-30",
+      "perp_end": "2026-10-31"
+    },
+    "XPINUSDT": {
+      "funding_days": 415,
+      "funding_start": "2025-09-12",
+      "funding_end": "2026-10-31",
+      "perp_days": 415,
+      "perp_start": "2025-09-12",
+      "perp_end": "2026-10-31"
+    },
+    "XPLUSDT": {
+      "funding_days": 436,
+      "funding_start": "2025-08-22",
+      "funding_end": "2026-10-31",
+      "perp_days": 436,
+      "perp_start": "2025-08-22",
+      "perp_end": "2026-10-31"
+    },
+    "XPTUSDT": {
+      "funding_days": 275,
+      "funding_start": "2026-01-30",
+      "funding_end": "2026-10-31",
+      "perp_days": 275,
+      "perp_start": "2026-01-30",
+      "perp_end": "2026-10-31"
+    },
+    "XTZUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "XVGUSDT": {
+      "funding_days": 1216,
+      "funding_start": "2023-07-04",
+      "funding_end": "2026-10-31",
+      "perp_days": 1215,
+      "perp_start": "2023-07-05",
+      "perp_end": "2026-10-31"
+    },
+    "XVSUSDT": {
+      "funding_days": 1299,
+      "funding_start": "2023-04-12",
+      "funding_end": "2026-10-31",
+      "perp_days": 1298,
+      "perp_start": "2023-04-13",
+      "perp_end": "2026-10-31"
+    },
+    "YALAUSDT": {
+      "funding_days": 188,
+      "funding_start": "2025-08-07",
+      "funding_end": "2026-02-10",
+      "perp_days": 451,
+      "perp_start": "2025-08-07",
+      "perp_end": "2026-10-31"
+    },
+    "YBUSDT": {
+      "funding_days": 387,
+      "funding_start": "2025-10-10",
+      "funding_end": "2026-10-31",
+      "perp_days": 387,
+      "perp_start": "2025-10-10",
+      "perp_end": "2026-10-31"
+    },
+    "YFIUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "YGGUSDT": {
+      "funding_days": 1185,
+      "funding_start": "2023-08-04",
+      "funding_end": "2026-10-31",
+      "perp_days": 1184,
+      "perp_start": "2023-08-05",
+      "perp_end": "2026-10-31"
+    },
+    "ZAMAUSDT": {
+      "funding_days": 296,
+      "funding_start": "2026-01-09",
+      "funding_end": "2026-10-31",
+      "perp_days": 296,
+      "perp_start": "2026-01-09",
+      "perp_end": "2026-10-31"
+    },
+    "ZBTUSDT": {
+      "funding_days": 380,
+      "funding_start": "2025-10-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 380,
+      "perp_start": "2025-10-17",
+      "perp_end": "2026-10-31"
+    },
+    "ZCSHUSDT": {
+      "funding_days": 20,
+      "funding_start": "2026-10-12",
+      "funding_end": "2026-10-31",
+      "perp_days": 20,
+      "perp_start": "2026-10-12",
+      "perp_end": "2026-10-31"
+    },
+    "ZECUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "ZENUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "ZEREBROUSDT": {
+      "funding_days": 668,
+      "funding_start": "2025-01-02",
+      "funding_end": "2026-10-31",
+      "perp_days": 668,
+      "perp_start": "2025-01-02",
+      "perp_end": "2026-10-31"
+    },
+    "ZESTUSDT": {
+      "funding_days": 150,
+      "funding_start": "2026-06-04",
+      "funding_end": "2026-10-31",
+      "perp_days": 150,
+      "perp_start": "2026-06-04",
+      "perp_end": "2026-10-31"
+    },
+    "ZETAUSDT": {
+      "funding_days": 1003,
+      "funding_start": "2024-02-02",
+      "funding_end": "2026-10-31",
+      "perp_days": 1003,
+      "perp_start": "2024-02-02",
+      "perp_end": "2026-10-31"
+    },
+    "ZHIPUUSDT": {
+      "funding_days": 107,
+      "funding_start": "2026-07-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 107,
+      "perp_start": "2026-07-17",
+      "perp_end": "2026-10-31"
+    },
+    "ZHONGJIUSDT": {
+      "funding_days": 80,
+      "funding_start": "2026-08-13",
+      "funding_end": "2026-10-31",
+      "perp_days": 79,
+      "perp_start": "2026-08-14",
+      "perp_end": "2026-10-31"
+    },
+    "ZILUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "ZKCUSDT": {
+      "funding_days": 412,
+      "funding_start": "2025-09-15",
+      "funding_end": "2026-10-31",
+      "perp_days": 412,
+      "perp_start": "2025-09-15",
+      "perp_end": "2026-10-31"
+    },
+    "ZKJUSDT": {
+      "funding_days": 352,
+      "funding_start": "2025-05-13",
+      "funding_end": "2026-04-29",
+      "perp_days": 537,
+      "perp_start": "2025-05-13",
+      "perp_end": "2026-10-31"
+    },
+    "ZKPUSDT": {
+      "funding_days": 315,
+      "funding_start": "2025-12-21",
+      "funding_end": "2026-10-31",
+      "perp_days": 315,
+      "perp_start": "2025-12-21",
+      "perp_end": "2026-10-31"
+    },
+    "ZKUSDT": {
+      "funding_days": 867,
+      "funding_start": "2024-06-17",
+      "funding_end": "2026-10-31",
+      "perp_days": 867,
+      "perp_start": "2024-06-17",
+      "perp_end": "2026-10-31"
+    },
+    "ZMUSDT": {
+      "funding_days": 144,
+      "funding_start": "2026-06-10",
+      "funding_end": "2026-10-31",
+      "perp_days": 144,
+      "perp_start": "2026-06-10",
+      "perp_end": "2026-10-31"
+    },
+    "ZORAUSDT": {
+      "funding_days": 464,
+      "funding_start": "2025-07-25",
+      "funding_end": "2026-10-31",
+      "perp_days": 464,
+      "perp_start": "2025-07-25",
+      "perp_end": "2026-10-31"
+    },
+    "ZRCUSDT": {
+      "funding_days": 177,
+      "funding_start": "2025-07-29",
+      "funding_end": "2026-01-21",
+      "perp_days": 460,
+      "perp_start": "2025-07-29",
+      "perp_end": "2026-10-31"
+    },
+    "ZROUSDT": {
+      "funding_days": 864,
+      "funding_start": "2024-06-20",
+      "funding_end": "2026-10-31",
+      "perp_days": 864,
+      "perp_start": "2024-06-20",
+      "perp_end": "2026-10-31"
+    },
+    "ZRXUSDT": {
+      "funding_days": 1400,
+      "funding_start": "2023-01-01",
+      "funding_end": "2026-10-31",
+      "perp_days": 1400,
+      "perp_start": "2023-01-01",
+      "perp_end": "2026-10-31"
+    },
+    "ZSUSDT": {
+      "funding_days": 60,
+      "funding_start": "2026-09-02",
+      "funding_end": "2026-10-31",
+      "perp_days": 60,
+      "perp_start": "2026-09-02",
+      "perp_end": "2026-10-31"
+    }
+  },
+  "generated_at": "2026-11-27T18:22:26.117991+00:00"
+}

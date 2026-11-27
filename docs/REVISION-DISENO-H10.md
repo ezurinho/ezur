@@ -297,6 +297,12 @@ el de H8 —positivo y por debajo de la puerta— y se archiva igual.
 pata y lado el coste por posición sería 9,375 USD y el umbral 43,75 USD = 140 pb.
 El coste declarado no se revisa después de ver los fills de un backtest.
 
+**Resultado del cribado (2026-11-27).** Se ejecutó sobre el panel congelado y
+**no pasó**: 187 ventanas, mediana **80,51 pb**, p25 21,01, p75 187,61, 39,6 % de
+ventanas por encima de 120. La media (149,30) sí pasaba, que es exactamente el
+motivo por el que el criterio es la mediana. H10 quedó archivada sin backtest en
+`docs/ARCHIVO-H10.md`.
+
 **Qué pasa con las esperanzas ya publicadas.** Nada: no se recalculan. H5
 (0,0301 R) y H9 (−0,0047 R) salieron del mismo código con R = 250 y por
 operación, así que ya estaban bien. La comprobación cierra por los dos lados:
@@ -333,7 +339,7 @@ sin haber medido ese riesgo, y no se mide con datos gratuitos.
 |---|---|---|
 | **2026-11-27** | Esta revisión | `docs/REVISION-DISENO-H10.md` |
 | ~~2026-12-11~~ **2026-11-27** | H10 pre-registrada (adelantada) | `docs/PRE-REGISTRO-H10.md`: 5 variantes y 120 pb congelados |
-| **2026-12-18** | H10 medida y archivada | `docs/ARCHIVO-H10.md`, `TRIALS.md` a 55 |
+| ~~2026-12-18~~ **2026-11-27** | H10 archivada sin backtest | `docs/ARCHIVO-H10.md`; cribado 80,51 pb < 120 pb |
 | **2027-02-26** | Puerta dura de investigación | sin cambios |
 
 La pausa de dos semanas se cerró el **2026-11-27** al escribir el pre-registro,
