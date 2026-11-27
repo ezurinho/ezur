@@ -21,7 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 Family = Literal["trend", "breakout", "orb", "mean_reversion", "regime", "momentum"]
 Instrument = Literal["BTCUSDT_PERP", "BTCUSDT_SPOT"]
 Timeframe = Literal["5m", "15m", "30m", "1h", "2h", "4h", "12h", "1d"]
-EntryRule = Literal["donchian_breakout", "ema_state", "zscore_fade", "orb_session"]
+EntryRule = Literal["donchian_breakout", "ema_state", "sma_state", "zscore_fade", "orb_session"]
 FillType = Literal["taker", "maker", "mixed"]
 ImpactModel = Literal["none", "sqrt_law", "ofi"]
 FundingMode = Literal["real_timestamps", "none"]
@@ -276,8 +276,8 @@ class StrategySpec(_StrictModel):
         p = self.params
         if rule in ("donchian_breakout", "zscore_fade") and p.N is None:
             raise ValueError(f"rule {rule!r} requires params.N")
-        if rule == "ema_state" and (p.fast is None or p.slow is None):
-            raise ValueError("rule ema_state requires params.fast and params.slow")
+        if rule in ("ema_state", "sma_state") and (p.fast is None or p.slow is None):
+            raise ValueError(f"rule {rule} requires params.fast and params.slow")
         if rule == "orb_session" and not self.entry.sessions:
             raise ValueError("rule orb_session requires entry.sessions")
 
