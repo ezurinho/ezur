@@ -39,6 +39,7 @@ interface StatsPayload {
   by_side: Record<string, BucketStats>;
   by_day: Record<string, BucketStats>;
   equity: { ts: string; equity: number }[];
+  equity_marks?: { ts: string; equity: number }[];
 }
 
 const MONEY_KEYS = new Set([
@@ -533,6 +534,7 @@ export function StatsPage() {
   const initialCapital = snapshot?.risk.limits.initial_capital ?? null;
   const [tab, setTab] = useState<Tab>("resumen");
   const [stats, setStats] = useState<StatsPayload | null>(null);
+  const marks = stats?.equity_marks ?? [];
   const [validation, setValidation] = useState<ValidationPayload | null>(null);
   const [funnel, setFunnel] = useState<FunnelPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -691,11 +693,12 @@ export function StatsPage() {
               <header className="card-header">
                 <h3>Curva de equidad</h3>
                 <span className="muted small">
-                  {stats.equity.length} cierres
+                  {stats.equity.length} cierres auditados
+                  {marks.length > 0 ? ` · ${marks.length} marcas intradía (discontinua)` : ""}
                   {initialCapital !== null ? ` · referencia ${formatValue(initialCapital, "price")}` : ""}
                 </span>
               </header>
-              <EquityChart points={stats.equity} baseline={initialCapital} />
+              <EquityChart points={stats.equity} marks={marks} baseline={initialCapital} />
               <header className="card-header underwater-head">
                 <h3>Bajo el agua</h3>
                 <span className="muted small">
