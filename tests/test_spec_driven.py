@@ -8,12 +8,15 @@ from pydantic import ValidationError
 
 from server.models import Bar, SessionInfo
 from server.strategy.base import MarketData
+from server.strategy.reference import ReferenceStrategy
 from server.strategy.spec_driven import (
     DonchianBreakoutStrategy,
     EMAStateParams,
     EMAStateStrategy,
     ORBSessionParams,
     ORBSessionStrategy,
+    SMAStateParams,
+    SMAStateStrategy,
     ZScoreFadeParams,
     ZScoreFadeStrategy,
 )
@@ -181,6 +184,72 @@ def test_ema_spec_pide_calor_hasta_la_ema_lenta():
 
     assert strategy.warmup_requirements().bars["*"] == 22
     assert strategy.evaluate(_market(_flat(5))).state == "warmup"
+
+
+# --- SMA state: adaptador canónico de `reference` --------------------------
+
+
+def test_sma_state_replica_la_senal_de_la_estrategia_reference():
+    """El ciclo canónico no puede medir una EMA y llamarla `reference`."""
+    reference = ReferenceStrategy(
+        {"fast": 3, "slow": 5, "atr_period": 2, "stop_atr": 10.0, "rr": 1.0}
+    )
+    spec = SMAStateStrategy(
+        {"fast": 3, "slow": 5, "atr_period": 2, "atr_k": 10.0, "tp_r": 1.0}
+    )
+    bars = _closes([100.0] * 12 + [101.0, 103.0, 106.0, 110.0])
+    seen = 0
+
+    for size in range(7, len(bars) + 1):
+        expected = reference.evaluate(_market(bars[:size]))
+        actual = spec.evaluate(_market(bars[:size]))
+        assert (actual.signal is None) == (expected.signal is None)
+        if expected.signal is None:
+            continue
+        seen += 1
+        assert actual.signal is not None
+        assert actual.signal.model_dump() == expected.signal.model_dump()
+
+    assert seen >= 1
+
+
+def test_sma_state_rechaza_slow_menor_o_igual_que_fast():
+    with pytest.raises(ValidationError):
+        SMAStateParams(**{"fast": 7, "slow": 7, "atr_k": 10, "tp_r": 1})
+
+
+def test_spec_canonica_carga_y_resuelve_la_regla_sma_state():
+    from pathlib import Path
+
+    from server.strategy.registry import register_spec, resolve_strategy
+    from server.strategy.spec_schema import load_spec
+
+    path = Path(__file__).resolve().parents[1] / "data/specs_canonical/btc-trend-15m-sma-ref.json"
+    spec = load_spec(path)
+    spec.validate_params_for_rule()
+    register_spec(spec.id, path)
+
+    strategy = resolve_strategy(spec.id)
+
+    assert spec.entry.rule == "sma_state"
+    assert spec.params.fast == 7 and spec.params.slow == 21
+    assert strategy.id == "sma_state"
+
+
+def test_universo_canonico_declara_cinco_variantes_de_la_misma_familia():
+    from pathlib import Path
+
+    from server.strategy.spec_schema import load_spec
+
+    root = Path(__file__).resolve().parents[1] / "data/specs_canonical"
+    specs = [load_spec(path) for path in sorted(root.glob("*.json"))]
+
+    assert len(specs) == 5
+    assert len({spec.label for spec in specs}) == 5
+    assert {spec.entry.rule for spec in specs} == {"sma_state"}
+    candidate = next(spec for spec in specs if spec.label == "15m_7_21_a10_ref7")
+    assert candidate.params.fast == 7 and candidate.params.slow == 21
+    assert candidate.risk.risk_per_trade == pytest.approx(0.0025)
 
 
 # --- Z-Score ---------------------------------------------------------------
