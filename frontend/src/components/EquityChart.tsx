@@ -7,6 +7,8 @@ interface Point {
   equity: number;
 }
 
+const NO_MARKS: Point[] = [];
+
 /**
  * Equity curve with the theme's accent and a reference line.
  *
@@ -30,13 +32,16 @@ export function baselineLine(
 
 export function EquityChart({
   points,
+  marks,
   baseline,
   height = 220,
 }: {
   points: Point[];
+  marks?: Point[];
   baseline?: number | null;
   height?: number;
 }) {
+  const intraday = marks ?? NO_MARKS;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const { theme } = useTheme();
@@ -49,6 +54,7 @@ export function EquityChart({
     const muted = styles.getPropertyValue("--muted").trim() || "#6f8096";
     const text = styles.getPropertyValue("--text-dim").trim() || "#a9b6c6";
     const good = styles.getPropertyValue("--good").trim() || "#3ddc84";
+    const warn = styles.getPropertyValue("--warn").trim() || "#ffb547";
 
     const chart = createChart(containerRef.current, {
       height,
@@ -85,6 +91,27 @@ export function EquityChart({
       })),
     );
 
+    // Las marcas intradía no son cierres auditados: van en una línea propia,
+    // discontinua y sin último valor, para que la curva sólida siga siendo la
+    // única que representa la equity reconstruida desde el libro.
+    if (intraday.length > 0) {
+      const marksSeries = chart.addLineSeries({
+        color: warn,
+        lineWidth: 1,
+        lineStyle: 2,
+        priceLineVisible: false,
+        lastValueVisible: false,
+        crosshairMarkerVisible: true,
+        title: "marcas intradía",
+      });
+      marksSeries.setData(
+        intraday.map((point) => ({
+          time: (Date.parse(point.ts) / 1000) as UTCTimestamp,
+          value: point.equity,
+        })),
+      );
+    }
+
     const reference = baselineLine(points, baseline);
     if (reference) {
       series.createPriceLine({
@@ -103,9 +130,9 @@ export function EquityChart({
       chart.remove();
       chartRef.current = null;
     };
-  }, [points, baseline, height, theme]);
+  }, [points, intraday, baseline, height, theme]);
 
-  if (points.length === 0) {
+  if (points.length === 0 && intraday.length === 0) {
     return <p className="empty">Sin puntos de equidad</p>;
   }
   return <div ref={containerRef} className="chart-canvas" data-equity-chart />;
