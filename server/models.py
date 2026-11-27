@@ -65,6 +65,8 @@ class Position(_Model):
     units: int
     entry_price: float
     stop_price: float
+    # Stop con el que se abrio: el R se mide contra el, no contra el trailing.
+    initial_stop_price: float | None = None
     target_price: float | None = None
     opened_ts: datetime
     entry_fees: float = 0.0
