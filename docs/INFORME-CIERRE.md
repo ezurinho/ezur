@@ -230,12 +230,15 @@ descartadas con números es más de lo que tiene la mayoría.
 | Señal | `docs/MEDICION-SENAL.md` |
 | Intervalos y cash | `docs/MEDICION-INTERVALOS.md` |
 
-**Nota de fuente (auditoría del 2026-11-27).** `data/h5_val.txt` guarda
-`net_usd 6086,46`, que no cuadra con sus propios componentes (6.672,63 + 856,80 −
-1.500 = 6.029,43) ni con `data/h5_engine_validation.json`. Este informe cita
-6.029,43 porque es el valor que replica el motor validado y el que usan el
-archivo de H5 y la medición del panel; el volcado no se ha reescrito para no
-maquillar una fuente que ya estaba publicada.
+**Nota de fuente (auditoría del 2026-11-27, resuelta).** `data/h5_val.txt` guarda
+`net_usd 6086,46` y `data/h5_engine_validation.json` 6.029,43. Reejecutado
+`server/funding_xs.py --from 2025-01-01 --to 2026-11-01` sobre el panel congelado,
+el motor devuelve **6.086,46**: ese es el neto, porque `net_usd` sale de la curva
+diaria compuesta (`(1+daily).prod()−1` por 25.000 USD) y es lo que vería la
+cuenta. Los 6.029,43 son la **suma aritmética de las patas** (6.672,63 + 856,80 −
+1.500), que sirve para atribuir el resultado pero no compone; la diferencia son
+57,03 USD (0,94 %). Ninguna de las dos es un error: son dos cuentas distintas, y
+el neto del laboratorio es el del motor.
 
 Todo lo publicado se midió sobre datos con hash y se commiteó con su pre-registro
 antes de ver el resultado. Ningún número de este informe se ajustó después.
@@ -258,8 +261,9 @@ la lectura de por qué:
   outlier, es la forma que tiene ese trade.
 - La corrección de lectura sobre H5 es más dura de lo que decía este informe:
   con los precios constantes, su pata de funding da **−0,0032 R y PF 0,6301**
-  (el carry no cubre los 1.500 USD de costes) y los 6.029 USD de neto salen del
-  precio. Además, la prueba de permutación sobre el motor deja el resultado en
+  (el carry no cubre los 1.500 USD de costes) y los 6.086 USD de neto compuesto
+  salen del precio: 6.672,63 de la pata de precio contra 1.500 de costes y
+  −643,20 del carry. Además, la prueba de permutación sobre el motor deja el resultado en
   **p = 0,0784** (percentil 94 de 50 barajados): no distinguible del ruido. H5
   no era un carry; era una apuesta de precio con sesgo de funding.
 - Binance reformuló el funding el 18-sep-2025 (`F = [P + clamp]/(8/N)`), lo que

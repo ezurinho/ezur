@@ -115,8 +115,9 @@ encima del observado (+0,0301). No es distinguible del ruido.
 **Y el motivo es el que el diagnóstico de precio ya apuntaba.** Aislando la pata
 de funding —precios constantes, mismo funding y mismos costes— el resultado es
 **−643,20 USD, −0,0032 R, PF 0,6301**: el carry por sí solo **no cubre los
-costes**, que son 1.500 USD. Los 6.029,43 USD de neto salen íntegramente de la
-pata de precio (+6.672,63).
+costes**, que son 1.500 USD. El neto del motor es **6.086,46 USD** (curva diaria
+compuesta); la suma de patas, 6.029,43, sale íntegramente de la de precio
+(+6.672,63), porque el carry aporta 856,80 y los costes restan 1.500.
 
 Consecuencia: H5 no era un carry con exposición de precio; era una **apuesta de
 precio transversal** con un sesgo de funding, y el sesgo no pagaba. El archivo se
