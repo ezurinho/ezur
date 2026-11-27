@@ -1,5 +1,9 @@
 # Post-mortem — siete familias, 40 variantes, ningún edge desplegable
 
+**Actualización 2026-11-27:** después de este texto se midió H8 (spread de
+funding Binance–Hyperliquid): 17 episodios OOS, +0,32 %, 0,0094 R; también falló
+por muestra y esperanza. El registro queda en 45 variantes.
+
 **Fecha:** 2026-11-27
 **Alcance:** SMA 15 m, Donchian 1 h (H1), carry BTC (H2), momentum
 cross-sectional (H3), reversión de pares (H4). Todas pre-registradas, medidas y

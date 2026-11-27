@@ -31,7 +31,7 @@ no otra transformación de precio/funding de un solo venue.
 - **Activos:** BTC, ETH, SOL, XRP, DOGE.
 - **Venues:** Binance USD-M (`BTCUSDT`) y Hyperliquid (`BTC`).
 - **Funding:** suma diaria UTC de los eventos de cada venue. Hyperliquid paga cada
-  hora; Binance y OKX cada 8 h. Se guardan tasas por evento y agregados diarios.
+  hora; Binance cada 8 h. Se guardan tasas por evento y agregados diarios.
 - **Precios:** cierre diario UTC de cada venue. Si falta el cierre de entrada o
   salida, no se abre/cierra esa posición.
 - **Bybit:** excluido por bloqueo geográfico de su API; no se elude.
@@ -134,8 +134,8 @@ estrés 2×, CPCV, aleatorias y benchmark. No se cambia ningún umbral.
   de funding de un venue. Es un riesgo cualitativo, no un número del backtest.
 - Los precios de cada venue pueden divergir; el P&L de precio lo recoge, pero el
   modelo no ejecuta transferencias ni llama a margen.
-- El funding de Hyperliquid es horario y el de OKX/Binance es de 8 h; la suma
-  diaria alinea el cash, no el instante exacto de pago.
+- El funding de Hyperliquid es horario y el de Binance es de 8 h; la suma diaria
+  alinea el cash, no el instante exacto de pago. OKX queda fuera por cobertura.
 
 ## Criterio de aceptación
 

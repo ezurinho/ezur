@@ -45,7 +45,7 @@ ejecución, no riesgo de precio.
   declara como límite de cobertura, no como resultado.
 
 Universo: **BTC, ETH, SOL, XRP y DOGE**, los cinco mayores con historia común en
-los tres venues. La ventana común empieza el 2023-05-12 (primer funding de
+los dos venues. La ventana común empieza el 2023-05-12 (primer funding de
 Hyperliquid). Se usa warmup desde esa fecha, desarrollo desde 2023-07-01 y
 validación hasta 2026-11-01. El holdout 2026-12-01/2027-05-31 no se toca.
 
@@ -67,3 +67,10 @@ Si el candidato no supera PF, esperanza, top-5 o muestra en OOS, se archiva el
 mismo día y se pasa a H9 (basis spot-perp). No se prueban umbrales adicionales
 después de ver los resultados. El pre-registro con las cinco variantes queda en
 `docs/PRE-REGISTRO-H8.md`.
+
+## Resultado (2026-11-27)
+
+Se midió y archivó el mismo día. La candidata H8-S7-W-12 ganó +0,32 % en OOS
+(PF 10,46), pero solo tuvo 17 episodios (34 operaciones) y 0,0094 R: falla
+muestra y esperanza. Ninguna de las cinco variantes llegó a 100 operaciones. El
+detalle está en `docs/ARCHIVO-H8.md`; el holdout no se abrió.

@@ -1,8 +1,8 @@
 # Familias con dato nuevo después de H7
 
 **Fecha:** 2026-11-27
-**Estado:** propuesta. No hay simulador, pre-registro ni medida de ninguna de
-estas familias. Cualquier ejecución futura empieza por un pre-registro con hash.
+**Estado:** H8 medida y archivada el 2026-11-27; H9-H10 siguen siendo propuesta.
+Cualquier ejecución futura empieza por un pre-registro con hash.
 
 ## Criterio de valor
 
@@ -15,7 +15,7 @@ No ordeno por lo interesante que suena, sino por:
    máximo razonable).
 4. **Relación esfuerzo/beneficio** y disponibilidad gratuita del dato.
 
-Las 40 variantes ya medidas enseñan tres cosas que condicionan la lista:
+Las 45 variantes ya medidas enseñan tres cosas que condicionan la lista:
 el carry de un solo venue está arbitrado (H2/H5), el momentum de precio es beta
 o está muerto (H3/H6), y el flujo de taker a 3 días se desvanece (H7). Una
 familia nueva tiene que ser **ortogonal** a esas tres.
@@ -43,10 +43,10 @@ anualizado más que Binance/Bybit en 2024 y 4,6 % en 2025, con t HAC 4-8 y 4-5 d
 es el **mismo activo en dos venues**, delta-neutral, sin exposición a la
 dirección del precio ni a la ordenación por momentum.
 
-**Dato nuevo.** Funding histórico de Hyperliquid (`fundingHistory`), Bybit
-(`/v5/market/funding/history`) y OKX (`/api/v5/public/funding-rate-history`),
-más mark price de cada venue. Todo público y gratis; se puede congelar con hash.
-Binance ya está descargado.
+**Dato nuevo.** Funding histórico de Hyperliquid (`fundingHistory`) y Binance,
+más mark price de cada venue. Se comprobaron Bybit (bloqueo de CloudFront) y OKX
+(solo 67 días de historia); ambos quedaron fuera antes de medir. Todo público y
+gratis; el panel se congeló con hash.
 
 **Esbozo de regla (no pre-registrada).** Spread anualizado = funding del venue
 caro − funding del barato. Entrar cuando el spread supere 10-15 % anualizado y
@@ -57,6 +57,11 @@ transferencia declarado (no se transfiere en cada rebalanceo).
 **Qué la mataría.** Menos de 100 operaciones OOS; neto después de costes de
 transferencia por debajo de T-bill + 2 %; DSR < 0,95 con 45 ensayos; spread
 comprimido a <3 % en 2025-2026 (que es lo que sugiere Talos).
+
+**Resultado H8 (2026-11-27):** Binance + Hyperliquid, 5 majors, 17 episodios
+OOS (34 operaciones) y 0,0094 R. +0,32 % neto, PF 10,46, funding +179,90 USD y
+costes 119 USD. Falla muestra y esperanza; el spread existe pero es demasiado
+raro y pequeño. Archivada en `docs/ARCHIVO-H8.md`.
 
 **Riesgos.** Riesgo de venue (solvencia, retiradas), latencia de transferencia,
 desalineación de intervalos de funding, capacidad de Hyperliquid fuera de BTC y
@@ -193,11 +198,10 @@ que ya está en el precio. No la pondría por delante de las anteriores.
 
 ## Recomendación de secuencia
 
-1. **H8: spread de funding entre venues.** Es la única familia con evidencia OOS
-   reciente y específica; si falla por muestra o por compresión del spread, se
-   aprende algo sobre el carry que H2/H5 no pudieron dar.
-2. **H9: basis spot-perp.** Más fácil y rápida; si H8 consume más de dos semanas,
-   H9 puede adelantarse porque el dato spot se descarga en una sesión.
+1. **H8: spread de funding entre venues.** Medida y archivada: falló por muestra
+   y esperanza, no por el signo del funding. No se reintenta con otro umbral.
+2. **H9: basis spot-perp.** Siguiente familia; más fácil y rápida, con dato spot
+   descargable en una sesión.
 3. **H10: on-chain de stablecoins** solo si H8/H9 fallan y queda tiempo antes de
    la puerta del 2027-02-26. Macro y opciones quedan para después de esa puerta
    o para un bot con opciones.
