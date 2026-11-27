@@ -34,13 +34,13 @@ sin cortos ni pirámide. 22 meses, una posición a la vez.
 
 | Variante | Ops | PF | Esperanza | Acierto | DD USD | PnL USD |
 |---|---:|---:|---:|---:|---:|---:|
-| 1h_10_3_t3 | 215 | 0,5984 | -0,7428 R | 30,7 % | 949,64 | -830,52 |
-| 1h_15_3_t25 | 247 | 0,7536 | -0,8999 R | 34,8 % | 847,07 | -548,63 |
-| 1h_15_4_t4 | 182 | 0,9097 | -0,6538 R | 35,7 % | 699,45 | -290,06 |
-| **1h_15_3_t3** | **227** | **0,7529** | **-0,6034 R** | **34,8 %** | **871,29** | **-545,21** |
-| 1h_20_3_t3 | 209 | 0,7384 | -0,5729 R | 34,0 % | 839,34 | -599,89 |
+| 1h_10_3_t3 | 215 | 0,5984 | -0,1428 R | 30,7 % | 949,64 | -830,52 |
+| 1h_15_3_t25 | 247 | 0,7536 | -0,0382 R | 34,8 % | 847,07 | -548,63 |
+| 1h_15_4_t4 | 182 | 0,9097 | +0,0313 R | 35,7 % | 699,45 | -290,06 |
+| **1h_15_3_t3** | **227** | **0,7529** | **-0,0436 R** | **34,8 %** | **871,29** | **-545,21** |
+| 1h_20_3_t3 | 209 | 0,7384 | -0,0664 R | 34,0 % | 839,34 | -599,89 |
 
-Candidata: 227 operaciones, PF 0,7529, esperanza -0,6034 R, PnL -545,21 USD
+Candidata: 227 operaciones, PF 0,7529, esperanza -0,0436 R, PnL -545,21 USD
 (-2,2 %), DD 871,29 USD (3,5 %), sin topes de 5 operaciones: -1.022,89 USD.
 Coste: 388,76 USD de fees, 0,0274 R por operación.
 
@@ -50,7 +50,7 @@ Coste: 388,76 USD de fees, 0,0274 R por operación.
 |---|---:|---:|---|
 | Operaciones OOS | ≥ 100 | 227 | pasa |
 | PF OOS | > 1,10 | 0,7529 | **falla** |
-| Esperanza OOS | > 0,05 R | -0,6034 R | **falla** |
+| Esperanza OOS | > 0,05 R | -0,0436 R | **falla** |
 | Coste ponderado | < 0,25 R | 0,0274 R | pasa |
 | P&L sin top-5 | > 0 | -1.022,89 | **falla** |
 | PBO | ≤ 0,20 | no ejecutado | puerta anterior fallida |
@@ -62,6 +62,15 @@ Coste: 388,76 USD de fees, 0,0274 R por operación.
 El protocolo archiva al fallar una puerta dura; PBO/DSR/CPCV no se calcularon
 porque el PF OOS ya está por debajo de 1 y la esperanza es negativa. No se
 corrió el holdout.
+
+**Corrección de medición (2026-11-27):** el `r_multiple` se calculaba contra el
+stop já trailed, no contra el stop inicial; el trailing encogía el denominador
+y amplificaba el R. Se corrigió en `server/execution.py` y se añadió
+`tests/test_r_multiple.py`. La tabla usa el R corregido. El PF, el PnL y el
+coste no cambian; la esperanza de la candidata pasó de -0,6034 R (inflada) a
+-0,0436 R. La conclusión es la misma: el PF está por debajo de 1 y la cola de
+ganadores es demasiado corta. La corrección no afecta al archivo SMA 15 m,
+porque aquella familia no usaba trailing.
 
 ## Lectura
 
