@@ -1,4 +1,4 @@
-# Post-mortem — cinco familias, 30 variantes, ningún edge desplegable
+# Post-mortem — seis familias, 35 variantes, ningún edge desplegable
 
 **Fecha:** 2026-11-27
 **Alcance:** SMA 15 m, Donchian 1 h (H1), carry BTC (H2), momentum
@@ -15,8 +15,9 @@ archivadas. Ninguna pasa las puertas duras en OOS.
 | Momentum cross-sectional | 5 | PF 0,7046, -30,9 % | archivada |
 | Pares contra BTC | 5 | PF 0,9235, -2,75 % | archivada |
 | Carry cross-sectional de funding | 5 | PF 1,1849 raw, DSR 0,54 | archivada |
+| TSMOM long-only | 5 | -40,8 %, peor que BTC | archivada |
 
-**Total: 30 variantes medidas.** El registro está en `docs/TRIALS.md`.
+**Total: 35 variantes medidas.** El registro está en `docs/TRIALS.md`.
 
 ## El patrón
 
@@ -40,6 +41,12 @@ archivadas. Ninguna pasa las puertas duras en OOS.
    negativo en 2025 y en 2026 por separado. Además, el 78 % del P&L es precio,
    no funding: era momentum de alts disfrazado de carry. Sin el DSR y el
    análisis por subperiodos, se habría desplegado una ilusión.
+7. **El TSMOM long-only era beta, no alpha.** En desarrollo multiplicó por 148
+   con DD -89 %; en OOS perdió -40,8 % frente a -18,0 % de BTC y con peor
+   drawdown. La variante de 60 días batió a BTC en neto (+0,1 %) pero con DD
+   -61,7 % y P&L sin top-5 de -20.400: batir a BTC quedándose con más riesgo no
+   es una ventaja. La puerta de benchmark se añadió antes de medir y evitó el
+   autoengaño.
 
 ## Lo que sí mejoró
 
