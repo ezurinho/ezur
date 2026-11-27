@@ -121,11 +121,18 @@ def run_h9(spot, perp, funding, basis_override=None) -> dict:
                                    basis_override=basis_override).summary(years=YEARS))
 
 
-def summarise(name: str, observed: dict, null: list[float]) -> dict:
+def summarise(
+    name: str, observed: dict, null: list[float], two_sided: bool = True
+) -> dict:
+    """Resumen de una nulidad.
+
+    `two_sided=False` omite `p_valor_dos_colas` y `percentil_abs`: sólo tienen
+    sentido si la nulidad está centrada en cero. Cuando conserva el drift (H6)
+    el contraste es de diferencia y esos dos números engañan.
+    """
     values = np.array(null, dtype=float)
     observed_r = observed["esperanza_R"]
-    p_value = (1 + int((np.abs(values) >= abs(observed_r)).sum())) / (len(values) + 1)
-    return {
+    summary = {
         "familia": name,
         "observado": observed,
         "nulidad": {
@@ -135,9 +142,13 @@ def summarise(name: str, observed: dict, null: list[float]) -> dict:
             "p50_R": round(float(np.median(values)), 4),
             "p95_R": round(float(np.percentile(values, 95)), 4),
         },
-        "p_valor_dos_colas": round(p_value, 4),
-        "percentil_abs": round(float((np.abs(values) < abs(observed_r)).mean() * 100), 1),
     }
+    if two_sided:
+        p_value = (1 + int((np.abs(values) >= abs(observed_r)).sum())) / (len(values) + 1)
+        summary["p_valor_dos_colas"] = round(p_value, 4)
+        summary["percentil_abs"] = round(
+            float((np.abs(values) < abs(observed_r)).mean() * 100), 1)
+    return summary
 
 
 def main() -> int:
@@ -160,7 +171,7 @@ def main() -> int:
         observed = run_h6(prices)
         null = [run_h6(shuffle_returns(prices, rng))["esperanza_R"]
                 for _ in range(args.permutations)]
-        results["H6"] = summarise("H6", observed, null)
+        results["H6"] = summarise("H6", observed, null, two_sided=False)
         values = np.array(null, dtype=float)
         observed_r = observed["esperanza_R"]
         worse = float((values < observed_r).mean())
