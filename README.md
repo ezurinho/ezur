@@ -235,7 +235,7 @@ por la misma vara que el estudio:
 python -m server.promotion --config profiles/okx/config.json --evidence bt.json --stress bt-2x.json --cycle CYCLE-BOT-1D.json
 ```
 
-El coste se mide con la comisión y el `tick_value` del perfil que va a operar: `--config` es obligatorio, y una evidencia que no declara su modelo de ejecución no supera ese criterio. El número que decide es el **ponderado** (fees totales / riesgo total) y se mide sobre el mismo tramo fuera de muestra que el PF; la media simple por operación (fees/riesgo) se publica como distribución (mediana, p90, p99) y no aprueba nada. Sale con 1 si no está promovida. En el perfil, `"promotion": {"required": true,
+El coste se mide con la comisión y el `tick_value` del perfil que va a operar: `--config` es obligatorio, y una evidencia que no declara su modelo de ejecución no supera ese criterio. El número que decide es el **ponderado** (fees totales / riesgo total) y se mide sobre el mismo tramo fuera de muestra que el PF; la media simple por operación (fees/riesgo) se publica como distribución (mediana, p90, p99) y no aprueba nada. Sale con 1 si no está promovida. El ciclo publica además `random_entries` junto a PBO/DSR: un contraste de entradas aleatorias con el mismo stop, objetivo, tamaño, número de operaciones y filtros de entrada. Es informativo, no una puerta: no simula los frenos de cuenta que dependen de la secuencia. En el perfil, `"promotion": {"required": true,
 "evidence": "...", "stress_evidence": "...", "cycle": "..."}` con
 `"mode": "block"` impide arrancar, tanto por `auto_start` como a mano; con
 `"mode": "reduce"` arranca, pero multiplica el riesgo efectivo por `size_factor`
