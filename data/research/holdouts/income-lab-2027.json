@@ -1,0 +1,12 @@
+{
+  "holdout_id": "income-lab-2026-12-01-2027-05-31",
+  "status": "sealed",
+  "starts": "2026-12-01T00:00:00+00:00",
+  "ends": "2027-05-31T23:59:59+00:00",
+  "symbol": "BTCUSDT_SPOT",
+  "timeframe": "5m",
+  "source": "data.binance.vision spot 1m BTCUSDT",
+  "rule": "No se descarga ni se mira hasta que el ciclo canónico supere PBO, DSR, coste, WFA y estrés en desarrollo.",
+  "opened_by": null,
+  "opened_at": null
+}
