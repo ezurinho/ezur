@@ -245,3 +245,34 @@ reglas y variantes congeladas; ninguna ejecución hasta cerrar este documento. L
 medida se hace el 2026-12-18, se archiva el mismo día y se actualiza
 `docs/TRIALS.md` a 55 variantes. Si falla, H11 no se reserva: la puerta dura del
 2027-02-26 se resuelve con el informe de cierre.
+
+## Nota de cierre (2026-11-27) — k queda fijo en 4
+
+Las reglas de arriba **no se reescriben**: son las que se congelaron y las que se
+aplicaron. Esta nota sólo resuelve una contradicción que quedó dentro del
+documento y que el cribado encontró al ejecutarse.
+
+**k = 4 posiciones por lado.** Es el valor que hace coherente la tabla de reglas y
+todo lo que depende de ella: 12.500 USD por lado entre 4 posiciones son los 3.125
+USD de nocional que usan el coste (6,25 USD de ida y vuelta), los 37,50 USD de la
+regla 10 y su traducción a 120 pb. Es también el número que da por supuesto el
+párrafo de R.
+
+**El problema de la fórmula.** `k = max(2, round(n/5))`, en «Tamaño de la
+cartera», no puede convivir con ese nocional fijo. Con los 183 elegibles que
+resultaron en el panel da `round(183/5) = 37`, y 37 posiciones por lado dejan el
+nocional en 337,84 USD: entonces 37,50 USD por posición ya no son 120 pb sino
+1.110, y el coste de ida y vuelta deja de ser 0,0125 R para ser 0,0014 R. El tope
+«entre 2 y 8» tampoco lo salva, porque 8 tampoco es el 4 de la tabla. La fórmula
+escala con `n` y el nocional no; las dos cosas no pueden ser ciertas a la vez.
+
+**Qué se hizo.** El cribado se ejecutó con el tope de 8 por lado, que es la
+lectura más generosa que admite el documento, y falló igual: mediana de 80,51 pb
+frente a los 240 pb que exige su propia geometría. Los números, la sensibilidad
+con k = 4 y k = 37, y la corrección del script para que la barra salga de la
+geometría están en `docs/ARCHIVO-H10.md`.
+
+**Para la próxima familia.** O se fija `k` y el nocional, o el umbral se declara
+en dólares por posición y se recalcula por geometría. Las dos cosas a la vez
+producen un documento que se puede leer de dos maneras y un resultado que se puede
+comparar con la barra equivocada.
