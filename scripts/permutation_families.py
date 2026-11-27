@@ -174,10 +174,9 @@ def main() -> int:
         results["H9"] = summarise("H9", observed, null)
         results["H9"]["nulidad"]["episodios_mediana"] = int(np.median(
             [run["episodios"] for run in full_runs]))
-        results["H9"]["nulidad_solo_funding"] = summarise(
-            "H9", observed, null_funding)["nulidad"]
-        results["H9"]["p_valor_solo_funding"] = summarise(
-            "H9", observed, null_funding)["p_valor_dos_colas"]
+        funding_summary = summarise("H9", observed, null_funding)
+        results["H9"]["nulidad_solo_funding"] = funding_summary["nulidad"]
+        results["H9"]["p_valor_solo_funding"] = funding_summary["p_valor_dos_colas"]
         results["H9"]["solo_funding"] = isolated
         print(f"H9 observado {observed['esperanza_R']} R · sólo funding "
               f"{isolated['esperanza_R']} R · p (basis+funding) = "
