@@ -45,3 +45,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: raven-actions/actionlint@v2
+  attribution:
+    # El footer de Codebuff volvio una vez por accidente. Revisa los mensajes
+    # que entran en la rama, no solo el ultimo: un merge o un rebase tambien
+    # puede arrastrar el trailer.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Rechazar la atribucion a Codebuff
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.after }}
+        run: |
+          tip="${HEAD_SHA:-HEAD}"
+          if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
+            python scripts/check_attribution.py --rev "$tip"
+          else
+            python scripts/check_attribution.py --range "$BASE_SHA..$tip"
+          fi
