@@ -1,0 +1,86 @@
+{
+  "id": "BTC-TREND-15M-SMA-F9",
+  "name": "SMA 9/21 canónica de reference",
+  "version": "1.0.0",
+  "label": "15m_9_21_a10_ref9",
+  "family": "trend",
+  "hypothesis": "La estrategia que opera el perfil es un cruce de SMA 7/21 con stop de 10 ATR y objetivo de 1 R, sin time stop. Esta spec replica sus señales exactas para que el PBO y el DSR midan la misma estrategia y no una EMA parecida. La hipótesis sigue siendo que el 15m no tiene ventaja; el ciclo debe demostrarlo o archivarla.",
+  "instrument": "BTCUSDT_SPOT",
+  "timeframe_signal": "15m",
+  "timeframe_context": null,
+  "data_requirements": {
+    "datasets": [
+      "klines_5m"
+    ],
+    "min_coverage": "2020-01-01/2026-10-31",
+    "integrity": {
+      "gaps": 0,
+      "duplicates": 0,
+      "timezone": "UTC"
+    }
+  },
+  "entry": {
+    "rule": "sma_state",
+    "long": "sma[9][t] > sma[21][t] tras un cambio de estado",
+    "short": "sma[9][t] < sma[21][t] tras un cambio de estado",
+    "cooldown_bars": 0
+  },
+  "exit": {
+    "stop": "10.0 * ATR(14)[t]",
+    "target": "1.0 * R",
+    "time_stop_bars": 1000000,
+    "trailing": null
+  },
+  "params": {
+    "fast": 9,
+    "slow": 21,
+    "atr_k": 10,
+    "tp_r": 1
+  },
+  "risk": {
+    "sizing": "fixed_fractional",
+    "risk_per_trade": 0.0025,
+    "target_vol_annual": 0.2,
+    "kelly_fraction": 0.25,
+    "max_gross_leverage": 2,
+    "max_mdd_budget": 0.25
+  },
+  "costs": {
+    "fee_maker_bps": 2,
+    "fee_taker_bps": 5,
+    "assumed_fill": "taker",
+    "half_spread_bps": 0.07,
+    "impact_model": "none",
+    "funding": "none"
+  },
+  "execution": {
+    "signal_bar": "closed",
+    "fill": "next_bar_open",
+    "intrabar_priority": "stop_first",
+    "gap_fill": "bar_open"
+  },
+  "validation": {
+    "trials_declared": 5,
+    "is_oos_split": "0.60/0.20/0.20",
+    "seed": 7,
+    "bootstrap": {
+      "block": 5,
+      "reps": 4000
+    },
+    "wfa": {
+      "train_years": 2,
+      "test_months": 6,
+      "min_trades_per_fold": 30
+    }
+  },
+  "expected": {
+    "turnover_per_year": 60,
+    "cost_R_per_trade": 0.047,
+    "capacity_usd": 250000
+  },
+  "failure_modes": [
+    "el 15m no tiene ventaja y el ciclo solo añade comisiones",
+    "el stop de 10 ATR hace que cada pérdida pese más en R",
+    "un objetivo de 1 R con coste de 0,047 R exige acertar más de la mitad"
+  ]
+}
