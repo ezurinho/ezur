@@ -150,6 +150,25 @@ dentro de ese margen se cuenta como `tolerated`, no como imposible. Las
 operaciones con un fill imposible se eliminan y se comparan `pf_before` y
 `pf_after`; `pf_drop` mide cuánto baja el PF al quitarlas.
 
+## Entradas aleatorias frente a PBO/DSR
+
+El ciclo publica `random_entries` junto a `pbo` y `dsr`. Compara el PF del
+candidato con una distribución de entradas aleatorias que conserva, por
+operación, la distancia de stop, la distancia de objetivo y las unidades; usa
+el mismo número de operaciones y replica los filtros de entrada (ventana,
+máximo diario, una posición, cooldown y topes de stop/unidades). Entra en la
+vela siguiente al hueco elegido y sale con la misma regla de stop/objetivo/tiempo.
+
+```
+python -m server.selection --cycle CYCLE-... --random-iterations 200
+```
+
+El bloque informa `actual_pf`, `random_pf_median`, el rango `p05..p95`, el
+percentil del candidato y un `p_value` de una cola. **No es una puerta**: una
+entrada aleatoria no reproduce los frenos de cuenta (drawdown, rachas, frenos
+suaves), que dependen de la secuencia de resultados. Sirve para responder si el
+PF observado se distingue de un null con el mismo riesgo, no para promover.
+
 ## Paridad backtest ↔ motor
 
 `tests/test_parity.py` ejecuta el mismo CSV por los dos caminos: `run_backtest`
