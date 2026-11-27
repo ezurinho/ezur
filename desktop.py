@@ -38,7 +38,7 @@ import urllib.request
 from pathlib import Path
 
 APP_NAME = "ezur"
-WINDOW_TITLE = "ezur · trading terminal"
+WINDOW_TITLE = "ezur bot · trading terminal"
 LOGGER = logging.getLogger("ezur.desktop")
 
 
