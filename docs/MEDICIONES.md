@@ -92,20 +92,27 @@ de 105 operaciones.
 
 ### Re-medida de la evidencia activa (2026-11-26)
 
-La evidencia que usa la puerta se regeneró con las huellas nuevas y el modelo
-de ejecución actualizado, sin promocionar nada:
+La evidencia que usa la puerta se regeneró con las huellas nuevas, sin
+promocionar nada. Primero se midió con el modelo de ejecución completo y
+después se dejó el slippage por tamaño en 0 (ver más abajo); esta es la corrida
+que queda activa:
 
 ```
 python -m server.backtest --dataset data/BTC_15m_2025_20261124.csv \
     --config profiles/okx/config.json --split 2026-01-01 --gates \
-    --out data/research/promotion/profile-15m-2026-11-26-remesa.json
+    --out data/research/promotion/profile-15m-2026-11-24.json
 ```
 
-- `research_hash 7e6a27e5d53e6fa5`, `profile_hash 01c86ce397b02642`,
-  `config_hash b63a4b792641f363`.
+- `research_hash 27cfe57836921488`, `profile_hash 01c86ce397b02642`,
+  `config_hash bfebe1755b9d51a1`.
 - 241 operaciones totales, PF 1,024; **109 OOS, PF 1,053, esperanza +0,0347 R,
-  P&L +163,70, DD 440,66 y coste 0,047 R**. El PF OOS baja desde 1,068 por el
-  tick extra de slippage por tamaño, no por un cambio de estrategia.
+  P&L +163,70, DD 440,66 y coste 0,047 R**. Las cifras son las mismas que con
+  `slippage_ticks_per_100_units = 0.25`: a 1 unidad el término añadía 0,0025
+  ticks (0,000025 USD), por debajo de la precisión del fill. El PF OOS baja
+  frente a 1,068, pero esa caída no es atribuible al término por tamaño: con 0
+  y con 0,25 sale la misma cifra. El bloque de noviembre ya documentado (10
+  operaciones, PF 0,365) sigue siendo la explicación registrada del deterioro
+  anterior; este cambio no añade una causa nueva.
 - La puerta ya no rechaza por formato (`evidencia_de_la_configuracion` deja de
   fallar) y sigue **RECHAZADA** por rendimiento: PF con coste ×2 0,7606, PBO
   0,782 y DSR 0,0006. Modo `reduce` y factor 0,25 intactos.
@@ -113,16 +120,23 @@ python -m server.backtest --dataset data/BTC_15m_2025_20261124.csv \
   unidades.
 
 El artefacto activo (`profile-15m-2026-11-24.json`) se sobrescribió con esta
-corrida; la versión anterior quedó en
+corrida; la versión anterior a esta re-medida quedó en
+`.build/evidence-backup/profile-15m-2026-11-24.pre-slippage0.json`, y la de la
+re-medida previa, en
 `.build/evidence-backup/profile-15m-2026-11-24.pre-remesa.json`.
 
 ### Modelo de ejecución: fees, spread, slippage por tamaño y funding
 
 El perfil de papel cobra `commission_per_unit_side = 0.049` por lado (taker),
-`half_spread_bps = 0.07` y un slippage de **1 tick base + 0.25 ticks por cada
-100 unidades**, con tope de 5 ticks (`slippage_ticks_per_100_units`). El
-impacto de libro (`impact_model`) sigue en `none`: sin profundidad medida,
-inventar una curva sería precisión falsa.
+`half_spread_bps = 0.07` y un slippage de **1 tick base**, con tope de 5 ticks.
+El componente por tamaño (`slippage_ticks_per_100_units`) está en **0**: no hay
+profundidad histórica de OKX spot en el repo —la API pública solo sirve libro
+vivo y el histórico L2 de OKX es para VIP y futuros/perpetuos—, así que 0,25
+ticks/100 u era un supuesto sin calibrar. A 1 unidad aportaba 0,0025 ticks
+(0,000025 USD), por debajo de la precisión del fill. Se activará solo cuando
+exista un artefacto de calibración con tbbo/mbp-1 y tamaños comparables a los
+del bot; hasta entonces, 0. El impacto de libro (`impact_model`) sigue en
+`none`: sin profundidad medida, inventar una curva sería precisión falsa.
 
 El funding de perpetuos ya se modela (`funding_rate_bps_8h`, positivo = el largo
 paga) en cada frontera de 8 h UTC. El perfil activo es **spot**, así que
