@@ -6,7 +6,8 @@ consecutivas fallidas (H7, H8, H9), prevista para el 2027-01-08.
 **Decisión:** **H10 no es on-chain.** Es la extensión de universo de H5 al tramo
 largo de perpetuos. Las diez puertas no se tocan y no se reserva H11.
 **Alcance:** no se descarga, no se mide y no se añaden variantes. `TRIALS.md`
-sigue en 50.
+sigue en 50. (Después del archivo, y fuera de esta revisión, se rehicieron tres
+configuraciones de H5 sobre el panel: el registro está en **53**.)
 
 ## 1. Qué se decide aquí y qué no
 
@@ -331,7 +332,9 @@ sin haber medido ese riesgo, y no se mide con datos gratuitos.
 
 - No se abre el holdout 2026-12-01/2027-05-31.
 - No se toca `live_enabled` (sigue en `false`).
-- No se mide nada ni se añaden variantes: `TRIALS.md` sigue en 50.
+- No se mide nada ni se añaden variantes de H10: `TRIALS.md` sigue en 50. El
+  paso a 53 viene de rehacer H5 sobre el panel, que no añade ninguna variante a
+  esta familia ni cambia su veredicto.
 - No se cambian las puertas, los costes ni los veredictos de H7-H9.
 - No se reserva H11. Si H10 falla, no queda familia en el espacio permitido y
   la puerta del 2027-02-26 se resuelve con el informe de cierre.
