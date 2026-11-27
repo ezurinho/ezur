@@ -1,0 +1,29 @@
+{
+ "source": "Binance Vision UM monthly fundingRate + klines 1d",
+ "symbols": [
+  "BTCUSDT",
+  "ETHUSDT",
+  "BNBUSDT",
+  "SOLUSDT",
+  "XRPUSDT",
+  "ADAUSDT",
+  "DOGEUSDT",
+  "AVAXUSDT",
+  "LINKUSDT",
+  "DOTUSDT",
+  "LTCUSDT",
+  "BCHUSDT",
+  "TRXUSDT",
+  "ATOMUSDT",
+  "NEARUSDT",
+  "ETCUSDT",
+  "FILUSDT",
+  "UNIUSDT",
+  "AAVEUSDT",
+  "SANDUSDT"
+ ],
+ "funding_rows": 141980,
+ "kline_rows": 47255,
+ "funding_sha256": "36956d1c753d347a40f749683fe17fad62f5dd02b5cf9e03046426a7256a5fee",
+ "kline_sha256": "53c169aa04ba83a20b17d843db127c1f4462b755ebdc7e20e09c2b0a0eeb921c"
+}
