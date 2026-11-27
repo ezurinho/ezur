@@ -15,9 +15,10 @@ escrito antes de la fecha para que la decisión no se tome con prisa.
 
 Diez familias, **53 variantes medidas**, ninguna supera las diez puertas duras en
 OOS. `live_enabled=false`, cero capital desplegado, cero operaciones reales. El
-laboratorio encontró un casi-éxito (H5 raw), tres familias que pierden por
-coste o por magnitud, y una que sólo paga en el último año y medio de siete de
-muestra.
+laboratorio encontró un casi-éxito (H5 raw), cinco familias que pierden por
+coste o por magnitud (H1, H3 y H4 por coste; H8 y H9 por magnitud), tres que
+fallan por concentración o muestra (H2, H6 y H7) y una que sólo paga en el último
+año y medio de siete de muestra (H10).
 
 ## 2. Las diez familias
 
@@ -28,7 +29,7 @@ muestra.
 | H3 | Momentum cross-sectional | Ganadores de 7 d siguen ganando | **Falla** | PF 0,7046 · esperanza −0,0447 R · P&L −30,9 % |
 | H4 | Pares spot contra BTC | Cointegración de 20 alts con BTC | **Falla** | PF 0,9235 · esperanza −0,0044 R · P&L −2,75 % |
 | H5 | Apuesta de precio con sesgo de funding | Largo del quintil de menor funding, 20 majors; el P&L fue precio y la pata de funding pierde por sí sola | **Falla** | candidata PF 1,1114 · 0,0301 R (puerta 0,05) · top-5 −1.864; raw PF 1,1849 pero **DSR 0,54** |
-| H6 | TSMOM long-only | Momentum de 60 d en 20 perpetuos | **Falla** | −40,8 % OOS · PF 0,8766 · peor DD que BTC · top-5 −20.400 |
+| H6 | TSMOM long-only | Momentum de 60 d en 20 perpetuos | **Falla** | −40,8 % OOS · PF 0,8766 · peor DD que BTC · top-5 −22.364 (candidata); la 60-EW bate a BTC con top-5 −20.400 |
 | H7 | Flujo de taker | Order flow agresivo a 3 días | **Falla** | −27,3 % OOS · PF 0,9355 · top-5 −11.152; ninguna de las 5 variantes pasa |
 | H8 | Spread de funding entre venues | Binance contra Hyperliquid | **Falla** | +0,32 % · PF 10,46 · 0,0094 R · **17 episodios / 34 ops**; ninguna variante llega a 100 ops |
 | H9 | Basis spot-perp | Spot contra perp en 20 alts | **Falla** | −0,21 % · PF 0,1356 · −0,0047 R · 22 episodios; las 5 variantes pierden |
@@ -142,8 +143,8 @@ de funding son correctos.
 ## 5. El hallazgo de régimen de H10
 
 Al ampliar el panel a 2020-2026 con el mismo descargador y las mismas reglas
-(899 símbolos, 642.189 velas, 0 checksums fallidos), el cribado da una mediana de
-**44,66 pb** en 311 ventanas:
+(899 símbolos, 887 con datos en la ventana, 642.189 velas, 0 checksums fallidos),
+el cribado da una mediana de **44,66 pb** en 311 ventanas:
 
 | Año | Mediana | Ventanas | Sobre la barra |
 |---|---:|---:|---:|
@@ -220,7 +221,7 @@ descartadas con números es más de lo que tiene la mayoría.
 
 | Qué | Dónde |
 |---|---|
-| Registro de ensayos (53) | `docs/TRIALS.md` |
+| Registro de ensayos (53) | `docs/TRIALS.md` y `data/lab_ledger.jsonl` |
 | Plan, puertas y convenciones | `docs/PLAN-2027.md` |
 | Archivos por familia | `docs/ARCHIVO-H1.md` … `ARCHIVO-H10.md` |
 | Cribado de H10 y ventana | `scripts/screen_h10_dispersion.py`, `data/h10ext/screen_2020_2026.json` |
@@ -228,6 +229,13 @@ descartadas con números es más de lo que tiene la mayoría.
 | Coste medido | `docs/MEDICION-COSTE.md`, `docs/PRE-REGISTRO-COSTE.md` |
 | Señal | `docs/MEDICION-SENAL.md` |
 | Intervalos y cash | `docs/MEDICION-INTERVALOS.md` |
+
+**Nota de fuente (auditoría del 2026-11-27).** `data/h5_val.txt` guarda
+`net_usd 6086,46`, que no cuadra con sus propios componentes (6.672,63 + 856,80 −
+1.500 = 6.029,43) ni con `data/h5_engine_validation.json`. Este informe cita
+6.029,43 porque es el valor que replica el motor validado y el que usan el
+archivo de H5 y la medición del panel; el volcado no se ha reescrito para no
+maquillar una fuente que ya estaba publicada.
 
 Todo lo publicado se midió sobre datos con hash y se commiteó con su pre-registro
 antes de ver el resultado. Ningún número de este informe se ajustó después.
