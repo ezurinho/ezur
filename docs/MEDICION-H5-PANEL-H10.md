@@ -59,7 +59,10 @@ igual a las dos cifras.
 - **Funding:** el panel de H5 trae `rate` e `interval_h` y su motor normaliza a
   8 h (`rate × 8 / interval`); el panel de H10 trae el funding diario ya sumado.
   Con intervalos de 8, 4 y 2 h esa normalización no es inocua, pero el funding de
-  la candidata pesa poco (856 de 6.029) y no cambia ninguna conclusión.
+  la candidata pesa poco (856 de 6.086) y no cambia ninguna conclusión. El neto de
+  H5 es 6.086,46 USD (curva diaria compuesta, lo que vería la cuenta); 6.029,43 es
+  la suma aritmética de sus patas —precio 6.672,63 + funding 856,80 − costes 1.500—,
+  que sirve para atribuir, no para contabilizar.
 
 ## 2. Qué se cambió y qué no
 
@@ -137,8 +140,9 @@ llegaba, sobre una ventana ya gastada.
 ## 6. Lo que sí cambia con el panel
 
 - **El sesgo de supervivencia no era la causa del fallo.** Corregido, el quintil
-  amplio gana más dólares en total (+15.594 frente a los +6.029 de H5 en su OOS)
-  y sigue sin llegar a la puerta por operación.
+  amplio gana más dólares en total (+15.594 frente a los +6.086 de H5 en su OOS,
+  ambos con el mismo criterio de neto del motor: la ventaja baja de 9.565 a 9.508
+  USD) y sigue sin llegar a la puerta por operación.
 - **En el tramo largo el funding manda.** En la configuración concentrada el
   funding aporta 33.894 USD y el precio 7.166 (83 % del bruto), cuando en H5 el
   precio era el 89 %. En **esa** configuración el diagnóstico «no es carry, es
