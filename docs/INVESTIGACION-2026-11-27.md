@@ -149,7 +149,9 @@ lento; solo con órdenes límite pasivas pre-colocadas.
 
 1. **Carry cross-sectional de funding** — dato gratis, dollar-neutral, único
    test OOS con costes positivo (Sharpe 0,39), pero PBO 0,81 y pata corta de
-   momentum. Ya probado en H5; la variante raw murió en DSR 0,54.
+   momentum. Ya probado en H5, que al medir su nulidad resultó ser una **apuesta
+   de precio con sesgo de funding** —su pata de carry pierde sola—; la variante
+   raw murió en DSR 0,54.
 2. **TSMOM long-only** — evidencia neta más limpia, implementación trivial, pero
    es beta y se concentra en alcistas. Ya probado en H6; perdió en OOS.
 3. **Carry de nivel oportunista** — activar solo con funding anualizado >15-20 %

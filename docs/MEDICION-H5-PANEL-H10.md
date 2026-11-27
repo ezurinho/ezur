@@ -1,4 +1,8 @@
-# H5 re-hecho sobre el panel congelado de H10
+# H5 re-hecha sobre el panel congelado de H10
+
+*(H5 = apuesta de precio con sesgo de funding. Pre-registrada como carry; la
+etiqueta cambió al medir la nulidad del motor, no aquí: las cifras de este
+documento son las mismas que se publicaron.)*
 
 **Respuesta corta:** el veredicto no cambia. H5 sigue archivada. La configuración
 que respeta sus reglas sobre el panel falla la puerta de esperanza por un factor
@@ -137,9 +141,13 @@ llegaba, sobre una ventana ya gastada.
   y sigue sin llegar a la puerta por operación.
 - **En el tramo largo el funding manda.** En la configuración concentrada el
   funding aporta 33.894 USD y el precio 7.166 (83 % del bruto), cuando en H5 el
-  precio era el 89 %. El diagnóstico que enterró a H5 —«no es carry, es momentum
-  disfrazado»— **no se reproduce** aquí. Pero el carry aparece concentrado en
-  pocas semanas, y ahí falla.
+  precio era el 89 %. En **esa** configuración el diagnóstico «no es carry, es
+  momentum disfrazado» no se reproduce. Pero no es H5: 4 de 45 elegibles es el
+  9 % de cada cola, no su quintil, y es una cartera distinta. En **H5** la
+  permutación del motor confirmó lo contrario de lo que sugiere esta sección:
+  con precios constantes su pata de funding pierde sola (ver
+  `docs/ARCHIVO-H5.md`). El carry aparece concentrado en pocas semanas, y ahí
+  falla.
 - Es lo mismo que dijo el cribado de la regla 10 —80,51 pb capturados frente a
   240 exigidos—, ahora con P&L.
 
