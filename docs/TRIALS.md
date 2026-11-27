@@ -18,15 +18,16 @@ que no haya dudas.
 | TSMOM long-only en 20 perpetuos (H6) | 5 | 2025-01/2026-11 | candidata -40,8 %, PF 0,8766; 60 d bate a BTC pero con peor DD y top-5 -20.400 | `docs/ARCHIVO-H6.md` |
 | Flujo de taker (H7) | 5 | 2025-01/2026-11 | candidata -27,3 %, PF 0,9355, top-5 -11.152; ninguna variante pasa | `docs/ARCHIVO-H7.md` |
 | Spread de funding entre venues (H8) | 5 | 2025-01/2026-11 | candidata +0,32 %, PF 10,46, esperanza 0,0094 R, 17 episodios/34 ops; ninguna variante llega a 100 ops | `docs/ARCHIVO-H8.md` |
+| Basis spot-perp (H9) | 5 | 2025-01/2026-11 | candidata -0,21 %, PF 0,1356, esperanza -0,0047 R, 22 episodios/44 ops; las cinco variantes pierden | `docs/ARCHIVO-H9.md` |
 
-**Total de variantes medidas:** 45. A ellas se suman las pruebas de viabilidad
+**Total de variantes medidas:** 50. A ellas se suman las pruebas de viabilidad
 exploratorias (umbrales de funding, ventanas de momentum) que no llegaron a
 pre-registro; no se usan para coronar nada, pero inflan el espacio de búsqueda.
-El DSR de cualquier hipótesis futura debe declarar al menos 40 ensayos, no 5.
+El DSR de cualquier hipótesis futura debe declarar al menos 50 ensayos, no 5.
 
 ## Lo que el registro ya dice
 
-- Ninguna de las 45 variantes supera **todas** las puertas duras del plan en OOS.
+- Ninguna de las 50 variantes supera **todas** las puertas duras del plan en OOS.
 - La mejor expectativa OOS es la del carry (+2,35 % anual), pero con 4
   episodios; no es una muestra.
 - El mejor PF de desarrollo (momentum 14/7, 1,3523) se convierte en 1,0468 en
@@ -46,6 +47,9 @@ El DSR de cualquier hipótesis futura debe declarar al menos 40 ensayos, no 5.
 - El spread de funding de H8 gana +0,32 % en OOS con PF 10,46, pero solo 17
   episodios y 0,0094 R. Bajar la entrada a 8 % sube a 44 episodios y deja
   0,0030 R; el problema es frecuencia y tamaño, no el umbral.
+- El basis spot-perp de H9 pierde -0,21 % en OOS con PF 0,1356 y 22 episodios.
+  El funding por episodio (5,56 USD) no cubre el coste (8,75 USD); las cinco
+  variantes pierden y el quintil superior acaba concentrado en BNB.
 
 ## Regla de higiene
 

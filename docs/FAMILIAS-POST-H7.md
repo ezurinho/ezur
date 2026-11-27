@@ -1,8 +1,8 @@
 # Familias con dato nuevo después de H7
 
 **Fecha:** 2026-11-27
-**Estado:** H8 medida y archivada el 2026-11-27; H9-H10 siguen siendo propuesta.
-Cualquier ejecución futura empieza por un pre-registro con hash.
+**Estado:** H8 y H9 medidas y archivadas el 2026-11-27; H10 sigue siendo
+propuesta. Cualquier ejecución futura empieza por un pre-registro con hash.
 
 ## Criterio de valor
 
@@ -15,7 +15,7 @@ No ordeno por lo interesante que suena, sino por:
    máximo razonable).
 4. **Relación esfuerzo/beneficio** y disponibilidad gratuita del dato.
 
-Las 45 variantes ya medidas enseñan tres cosas que condicionan la lista:
+Las 50 variantes ya medidas enseñan tres cosas que condicionan la lista:
 el carry de un solo venue está arbitrado (H2/H5), el momentum de precio es beta
 o está muerto (H3/H6), y el flujo de taker a 3 días se desvanece (H7). Una
 familia nueva tiene que ser **ortogonal** a esas tres.
@@ -94,6 +94,13 @@ implementación.
 **Riesgos.** Capacidad, fees, slippage en spot, funding que cambia, y solapamiento
 económico con H2/H5 (aunque la construcción es distinta). Es la familia más
 fácil de implementar y la que más rápido se puede descartar.
+
+**Resultado H9 (2026-11-27):** 20 alts, 22 episodios OOS (44 operaciones),
+-0,21 %, PF 0,1356 y -0,0047 R. El funding por episodio (5,56 USD) no cubre el
+coste (8,75 USD); las cinco variantes pierden y el quintil superior se concentra
+en BNB (13 de 22 episodios). El score de entrada cae de 10,8 pb/día en
+desarrollo a 4,9 en OOS. Archivada en `docs/ARCHIVO-H9.md`; no se abre el
+holdout.
 
 ## 3. Flujos on-chain de stablecoins
 
@@ -200,10 +207,12 @@ que ya está en el precio. No la pondría por delante de las anteriores.
 
 1. **H8: spread de funding entre venues.** Medida y archivada: falló por muestra
    y esperanza, no por el signo del funding. No se reintenta con otro umbral.
-2. **H9: basis spot-perp.** Siguiente familia; más fácil y rápida, con dato spot
-   descargable en una sesión.
-3. **H10: on-chain de stablecoins** solo si H8/H9 fallan y queda tiempo antes de
-   la puerta del 2027-02-26. Macro y opciones quedan para después de esa puerta
+2. **H9: basis spot-perp.** Medida y archivada: falló por muestra, PF, esperanza
+   y top-5. El carry de 2025-2026 no cubre 28 pb de coste. No se reintenta con
+   otro umbral.
+3. **H10: on-chain de stablecoins.** Siguiente familia, pero H7-H9 son tres
+   fallos consecutivos: antes hay pausa de dos semanas y revisión de diseño el
+   2027-01-08. Macro y opciones quedan para después de la puerta del 2027-02-26
    o para un bot con opciones.
 
 Cada una empieza con pre-registro y hash, 5 variantes como máximo, las 10

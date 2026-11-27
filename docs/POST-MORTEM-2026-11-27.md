@@ -2,7 +2,9 @@
 
 **Actualización 2026-11-27:** después de este texto se midió H8 (spread de
 funding Binance–Hyperliquid): 17 episodios OOS, +0,32 %, 0,0094 R; también falló
-por muestra y esperanza. El registro queda en 45 variantes.
+por muestra y esperanza. Después se midió H9 (basis spot-perp): 22 episodios,
+-0,21 %, PF 0,1356 y -0,0047 R; falló por muestra, PF, esperanza y top-5. El
+registro queda en 50 variantes.
 
 **Fecha:** 2026-11-27
 **Alcance:** SMA 15 m, Donchian 1 h (H1), carry BTC (H2), momentum

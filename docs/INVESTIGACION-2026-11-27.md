@@ -168,4 +168,4 @@ Las dos mejores candidatas de la literatura ya se midieron y fallaron en OOS
 (H5 y H6). La próxima hipótesis no debería ser otra variante de precio/funding
 sobre los mismos 20 nombres: necesita un dato nuevo (order flow agregado,
 opciones, on-chain) o un universo distinto (small caps, multi-venue). Y debe
-declararse en `docs/TRIALS.md` antes de medir: ya van 45 variantes.
+declararse en `docs/TRIALS.md` antes de medir: ya van 50 variantes.
