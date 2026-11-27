@@ -119,8 +119,9 @@ y publica además la beta residual de la cartera contra BTC.
 
 ## Umbral mínimo de dispersión: 120 pb por episodio
 
-Fijado en `docs/REVISION-DISENO-H10.md` §7.1 **antes de tocar el panel**, y no se
-renegocia aquí. Un episodio es una posición: 20 pb de coste (6,25 USD) y dos
+Fijado según la **regla 10 de `docs/PLAN-2027.md`** (cribado económico previo) y
+desarrollado en `docs/REVISION-DISENO-H10.md` §7.1, antes de tocar el panel, y no
+se renegocia aquí. Un episodio es una posición: 20 pb de coste (6,25 USD) y dos
 operaciones, así que la puerta de 0,05 R por operación pide 25 USD netos, que
 sobre 3.125 son 80 pb:
 
