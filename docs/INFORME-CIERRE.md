@@ -53,6 +53,36 @@ Ninguna falló por un bug de implementación: el motor del carry se validó cont
 `server/funding_xs.py` y las cifras publicadas se reprodujeron de forma
 independiente.
 
+### 2.1 Las cinco nulidades
+
+Cada familia con motor pasó una prueba de permutación sobre lo que hace de señal
+(50 permutaciones, semilla 20261127). La pregunta no era si gana —ninguna gana—
+sino si el veredicto se distingue del ruido.
+
+| Familia | Observado | Nulidad, mediana | p | Qué concluye |
+|---|---:|---:|---:|---|
+| H5 | +0,0301 R | −0,0034 R | 0,078 (una cola) | No alcanza significación; su pata de funding aislada pierde (−0,0032 R) |
+| H6 | −0,0497 R | −0,1292 R | 0,14 (una cola) | El timing supera al azar (+0,07 R) sin significación; el −40,8 % es drift |
+| H7 | −0,0111 R | −0,0089 R | 0,37 (dos colas) | Indistinguible del ruido: se archiva por la puerta, no por daño demostrado |
+| H8 | +0,0094 R | −0,0036 R | 0,020 (dos colas) | La señal distingue; falla por muestra (17) y magnitud (0,0094 R) |
+| H9 | −0,0047 R | −0,0104 R | 0,020 (una cola) | La ordenación informa; 22 episodios y 28 pb de coste no la vuelven edge |
+
+Los p no son homogéneos, y por eso va la dirección: en H5, H6 y H9 la hipótesis
+es «mejor que la permutación»; en H7 y H8, «distinto de ella». En H6 la nulidad
+conserva el drift de cada símbolo (−0,13 R de centro), así que el contraste válido
+es la diferencia observado − nulidad (+0,0715 R), no el nivel. Con 50
+permutaciones el p mínimo alcanzable es 0,02, que es lo que marcan H8 y H9: allí
+la señal sí distingue, y el archivo se sostiene en magnitud y muestra, no en la
+nulidad.
+
+Leídas juntas dicen lo mismo con dos acentos: **señal sí, edge no**. En H5 y H7
+el veredicto ni siquiera depende de este test; en H8 y H9 confirma que hay
+información donde no hay dinero. H10 no aparece porque se archivó en el cribado,
+sin backtest.
+
+Reproducible con `python scripts/permutation_families.py --permutations 50`
+(H6-H9) y `python scripts/engine_validation.py --permutations 50` (H5).
+
 ## 3. Las dos convenciones que corrigen la medida
 
 Estas dos reglas no cambian ningún veredicto, pero cambian lo que se mide. Se
