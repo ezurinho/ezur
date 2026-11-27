@@ -1,0 +1,446 @@
+{
+  "cycle_id": "CYCLE-BOT-15M-CANONICAL-FULL",
+  "generated_at": "2026-11-27T05:28:02Z",
+  "method_version": "1.2.0",
+  "strategy": {
+    "id": "reference",
+    "version": "0.1.0",
+    "family": "trend"
+  },
+  "candidate": "15m_7_21_a10_ref7",
+  "candidate_source": "perfil",
+  "candidate_detail": {
+    "label": "15m_7_21_a10_ref7",
+    "spec_id": "BTC-TREND-15M-SMA-REF",
+    "family": "trend",
+    "timeframe": "15m"
+  },
+  "inputs": {
+    "data_hash": "sha256:90d33bd1cfb25d2a38e0d499501963eca93b7e06a835df078664d58a9a9d889b",
+    "specs_hash": "sha256:f51a1b1adf5442f028996c9536866ac07b35f6d6184e55b18c3b042575c479be",
+    "universe_size": 5,
+    "daily_observations": 958,
+    "coverage_years": 6.81,
+    "limits_source": "perfil",
+    "stress_multiplier": 2.0,
+    "dataset": {
+      "path": "data\\btc_5m_spot_canonical.pkl",
+      "dataset_id": "sha256:90d33bd1cfb25d2a38e0d499501963eca93b7e06a835df078664d58a9a9d889b",
+      "sha256": "sha256:90d33bd1cfb25d2a38e0d499501963eca93b7e06a835df078664d58a9a9d889b",
+      "rows": 718386,
+      "columns": [
+        "ts",
+        "symbol",
+        "o",
+        "h",
+        "l",
+        "c",
+        "v"
+      ],
+      "first_ts": "2020-01-01T00:00:00+00:00",
+      "last_ts": "2026-10-31T23:55:00+00:00",
+      "window": {
+        "from": null,
+        "to": null
+      }
+    }
+  },
+  "universe": [
+    {
+      "name": "15m_5_21_a10_ref5",
+      "spec_id": "BTC-TREND-15M-SMA-F5",
+      "timeframe": "15m",
+      "variant": null,
+      "trades": 638,
+      "pf_net": 0.9070681320191044,
+      "exp_r": 0.003948250737303449,
+      "days": 595,
+      "stress": {
+        "name": "15m_5_21_a10_ref5",
+        "base_pf_net": 0.9070681320191044,
+        "base_exp_r": 0.003948250737303449,
+        "trades": 470,
+        "pf_net": 0.828673007871228,
+        "exp_r": -0.04143327048355493,
+        "pnl_net": -899.1782589036092,
+        "survives": false,
+        "status": "evaluated"
+      }
+    },
+    {
+      "name": "15m_9_21_a10_ref9",
+      "spec_id": "BTC-TREND-15M-SMA-F9",
+      "timeframe": "15m",
+      "variant": null,
+      "trades": 645,
+      "pf_net": 0.9753934837003133,
+      "exp_r": 0.037267238877513396,
+      "days": 595,
+      "stress": {
+        "name": "15m_9_21_a10_ref9",
+        "base_pf_net": 0.9753934837003133,
+        "base_exp_r": 0.037267238877513396,
+        "trades": 622,
+        "pf_net": 0.9039457666642569,
+        "exp_r": -0.01400937960210496,
+        "pnl_net": -596.7163333874312,
+        "survives": false,
+        "status": "evaluated"
+      }
+    },
+    {
+      "name": "15m_7_21_a10_ref7",
+      "spec_id": "BTC-TREND-15M-SMA-REF",
+      "timeframe": "15m",
+      "variant": null,
+      "trades": 604,
+      "pf_net": 0.9763015474644566,
+      "exp_r": 0.025202534085782314,
+      "days": 556,
+      "stress": {
+        "name": "15m_7_21_a10_ref7",
+        "base_pf_net": 0.9763015474644566,
+        "base_exp_r": 0.025202534085782314,
+        "trades": 163,
+        "pf_net": 0.5425162414017035,
+        "exp_r": -0.21450404432158987,
+        "pnl_net": -870.6513628284317,
+        "survives": false,
+        "status": "evaluated"
+      }
+    },
+    {
+      "name": "15m_7_34_a10_ref34",
+      "spec_id": "BTC-TREND-15M-SMA-S34",
+      "timeframe": "15m",
+      "variant": null,
+      "trades": 274,
+      "pf_net": 0.7111816716978017,
+      "exp_r": -0.1150940269505216,
+      "days": 253,
+      "stress": {
+        "name": "15m_7_34_a10_ref34",
+        "base_pf_net": 0.7111816716978017,
+        "base_exp_r": -0.1150940269505216,
+        "trades": 205,
+        "pf_net": 0.705728770709403,
+        "exp_r": -0.15660867788020263,
+        "pnl_net": -938.2394790037922,
+        "survives": false,
+        "status": "evaluated"
+      }
+    },
+    {
+      "name": "15m_7_55_a10_ref55",
+      "spec_id": "BTC-TREND-15M-SMA-S55",
+      "timeframe": "15m",
+      "variant": null,
+      "trades": 442,
+      "pf_net": 0.8343174986304293,
+      "exp_r": -0.05564469006416334,
+      "days": 426,
+      "stress": {
+        "name": "15m_7_55_a10_ref55",
+        "base_pf_net": 0.8343174986304293,
+        "base_exp_r": -0.05564469006416334,
+        "trades": 234,
+        "pf_net": 0.7544688046642611,
+        "exp_r": -0.12652217277182323,
+        "pnl_net": -872.7367893948762,
+        "survives": false,
+        "status": "evaluated"
+      }
+    }
+  ],
+  "pbo": {
+    "pbo": 0.4087,
+    "n_splits": 252,
+    "blocks": 10,
+    "block_days": 95,
+    "median_logit": 0.6931,
+    "mean_oos_rank_pct": 0.727,
+    "most_selected": {
+      "15m_7_21_a10_ref7": 148,
+      "15m_9_21_a10_ref9": 72,
+      "15m_5_21_a10_ref5": 27,
+      "15m_7_34_a10_ref34": 5
+    },
+    "method": "CSCV (Bailey et al. 2015), S=10 blocks, all C(S,S/2) splits"
+  },
+  "dsr": {
+    "dsr": 0.0912,
+    "sharpe_daily": -0.0082,
+    "sharpe_annual": -0.1557,
+    "sr0_daily": 0.0348,
+    "sr0_annual": 0.6652,
+    "trials": 5,
+    "skew": -0.7721,
+    "kurtosis": 7.6166,
+    "observations": 958,
+    "source": "universo completo"
+  },
+  "dsr_pooled": {
+    "dsr": 0.0912,
+    "sharpe_daily": -0.0082,
+    "sharpe_annual": -0.1557,
+    "sr0_daily": 0.0348,
+    "sr0_annual": 0.6652,
+    "trials": 5,
+    "skew": -0.7721,
+    "kurtosis": 7.6166,
+    "observations": 958
+  },
+  "dsr_by_group": {},
+  "dsr_config": "15m_7_21_a10_ref7",
+  "random_entries": {
+    "available": false,
+    "reason": "una iteración no pudo colocar 604 operaciones (sin hueco para el calendario)",
+    "actual_pf": 0.9763,
+    "trades": 604,
+    "scope": "perfil"
+  },
+  "minbtl": {
+    "minbtl_years": null,
+    "reason": "Sharpe no positivo"
+  },
+  "wfa": {
+    "folds": [
+      {
+        "fold": 1,
+        "is_end": "2022-01-22",
+        "oos": [
+          "2022-01-22",
+          "2023-01-05"
+        ],
+        "chosen": "15m_9_21_a10_ref9",
+        "chosen_frozen": true,
+        "is_trades": 149,
+        "is_pf": 0.82,
+        "oos_trades": 69,
+        "oos_pf": 1.205,
+        "oos_rank_pct": 1.0
+      },
+      {
+        "fold": 2,
+        "is_end": "2023-01-05",
+        "oos": [
+          "2023-01-05",
+          "2023-12-20"
+        ],
+        "chosen": "15m_9_21_a10_ref9",
+        "chosen_frozen": true,
+        "is_trades": 218,
+        "is_pf": 0.9355,
+        "oos_trades": 51,
+        "oos_pf": 0.8373,
+        "oos_rank_pct": 0.6
+      },
+      {
+        "fold": 3,
+        "is_end": "2023-12-20",
+        "oos": [
+          "2023-12-20",
+          "2024-12-02"
+        ],
+        "chosen": "15m_9_21_a10_ref9",
+        "chosen_frozen": true,
+        "is_trades": 269,
+        "is_pf": 0.9135,
+        "oos_trades": 115,
+        "oos_pf": 0.9452,
+        "oos_rank_pct": 0.5
+      },
+      {
+        "fold": 4,
+        "is_end": "2024-12-02",
+        "oos": [
+          "2024-12-02",
+          "2025-11-15"
+        ],
+        "chosen": "15m_9_21_a10_ref9",
+        "chosen_frozen": true,
+        "is_trades": 384,
+        "is_pf": 0.9221,
+        "oos_trades": 134,
+        "oos_pf": 0.9641,
+        "oos_rank_pct": 1.0
+      },
+      {
+        "fold": 5,
+        "is_end": "2025-11-15",
+        "oos": [
+          "2025-11-15",
+          "2026-10-30"
+        ],
+        "chosen": "15m_9_21_a10_ref9",
+        "chosen_frozen": true,
+        "is_trades": 518,
+        "is_pf": 0.9282,
+        "oos_trades": 126,
+        "oos_pf": 1.2549,
+        "oos_rank_pct": 1.0
+      }
+    ],
+    "folds_requested": 5,
+    "warmup_share": 0.3,
+    "frozen_selection": true,
+    "evaluated_folds": 5,
+    "min_trades_per_fold": 51,
+    "total_oos_trades": 495,
+    "oos_pf_aggregate": 1.046,
+    "distinct_configs_chosen": 1,
+    "pbo_folds": 0.2,
+    "pbo_oos_matrix": {
+      "pbo": 0.2698,
+      "n_splits": 252,
+      "blocks": 10,
+      "block_days": 69,
+      "median_logit": 1.6094,
+      "mean_oos_rank_pct": 0.8198,
+      "most_selected": {
+        "15m_7_21_a10_ref7": 201,
+        "15m_7_34_a10_ref34": 33,
+        "15m_9_21_a10_ref9": 18
+      },
+      "method": "CSCV (Bailey et al. 2015), S=10 blocks, all C(S,S/2) splits"
+    },
+    "dsr_oos": {
+      "dsr": 0.2915,
+      "sharpe_daily": 0.0169,
+      "sharpe_annual": 0.3225,
+      "sr0_daily": 0.0378,
+      "sr0_annual": 0.7215,
+      "trials": 5,
+      "skew": -0.3532,
+      "kurtosis": 4.2582,
+      "observations": 696
+    },
+    "oos_daily_days": 696
+  },
+  "cpcv": {
+    "paths": 45,
+    "blocks": 10,
+    "test_blocks": 2,
+    "purge_blocks": 1,
+    "block_days": 95,
+    "share_below_median": 0.2667,
+    "mean_oos_rank_pct": 0.6756,
+    "mean_oos_sr_daily": -0.02162,
+    "median_oos_sr_daily": -0.01648,
+    "share_negative_oos": 0.6,
+    "most_selected": {
+      "15m_7_21_a10_ref7": 31,
+      "15m_9_21_a10_ref9": 10,
+      "15m_5_21_a10_ref5": 3,
+      "15m_7_34_a10_ref34": 1
+    },
+    "method": "CPCV (Lopez de Prado 2018), 10 bloques, 2 de test, purga 1"
+  },
+  "psr": {
+    "psr": 0.4001,
+    "sharpe_daily": -0.0082,
+    "sharpe_annual": -0.1557,
+    "sr0_annual": 0.0,
+    "observations": 958,
+    "method": "PSR (Bailey & Lopez de Prado 2012), sin ajuste por multiplicidad"
+  },
+  "stress": {
+    "multiplier": 2.0,
+    "method": "rerun",
+    "selected": "15m_7_21_a10_ref7",
+    "selected_survives": false,
+    "survivors": [],
+    "configs": [
+      {
+        "name": "15m_5_21_a10_ref5",
+        "base_pf_net": 0.9070681320191044,
+        "base_exp_r": 0.003948250737303449,
+        "trades": 470,
+        "pf_net": 0.828673007871228,
+        "exp_r": -0.04143327048355493,
+        "pnl_net": -899.1782589036092,
+        "survives": false,
+        "status": "evaluated"
+      },
+      {
+        "name": "15m_9_21_a10_ref9",
+        "base_pf_net": 0.9753934837003133,
+        "base_exp_r": 0.037267238877513396,
+        "trades": 622,
+        "pf_net": 0.9039457666642569,
+        "exp_r": -0.01400937960210496,
+        "pnl_net": -596.7163333874312,
+        "survives": false,
+        "status": "evaluated"
+      },
+      {
+        "name": "15m_7_21_a10_ref7",
+        "base_pf_net": 0.9763015474644566,
+        "base_exp_r": 0.025202534085782314,
+        "trades": 163,
+        "pf_net": 0.5425162414017035,
+        "exp_r": -0.21450404432158987,
+        "pnl_net": -870.6513628284317,
+        "survives": false,
+        "status": "evaluated"
+      },
+      {
+        "name": "15m_7_34_a10_ref34",
+        "base_pf_net": 0.7111816716978017,
+        "base_exp_r": -0.1150940269505216,
+        "trades": 205,
+        "pf_net": 0.705728770709403,
+        "exp_r": -0.15660867788020263,
+        "pnl_net": -938.2394790037922,
+        "survives": false,
+        "status": "evaluated"
+      },
+      {
+        "name": "15m_7_55_a10_ref55",
+        "base_pf_net": 0.8343174986304293,
+        "base_exp_r": -0.05564469006416334,
+        "trades": 234,
+        "pf_net": 0.7544688046642611,
+        "exp_r": -0.12652217277182323,
+        "pnl_net": -872.7367893948762,
+        "survives": false,
+        "status": "evaluated"
+      }
+    ]
+  },
+  "trial_ledger": {
+    "path": "data\\validation\\CYCLE-BOT-15M-CANONICAL-FULL.trials.jsonl",
+    "sha256": "sha256:8a8f10bbeca66de88c06e00060fc85a39b97eecf4546c95da12e8b8e569af5c8",
+    "trials": 5,
+    "discarded": [],
+    "selected": "15m_7_21_a10_ref7",
+    "not_selected": [
+      "15m_5_21_a10_ref5",
+      "15m_9_21_a10_ref9",
+      "15m_7_34_a10_ref34",
+      "15m_7_55_a10_ref55"
+    ],
+    "reconstruction": {
+      "pbo": 0.4087,
+      "dsr": 0.0912,
+      "dsr_config": "15m_7_21_a10_ref7",
+      "matrix": {
+        "days": 958,
+        "columns": 5
+      },
+      "matches": true
+    }
+  },
+  "caveats": [
+    "La procedencia (estrategia, dataset y candidato) forma parte del artefacto: la puerta rechaza un ciclo que no mida la misma estrategia y la misma fuente que la evidencia del perfil.",
+    "PBO y DSR son propiedades de este universo, no de una configuración suelta.",
+    "El DSR de la puerta se calcula dentro del grupo de variantes de cada hipótesis (el espacio de búsqueda real); el valor agrupado se incluye solo como contexto y suele ser más severo porque suma familias con signo opuesto.",
+    "El universo son vecindades paramétricas de las specs de referencia: si el investigador probó otras variantes fuera de esta lista, el PBO real es peor.",
+    "WFA elige de nuevo en cada fold, así que mide el procedimiento de selección, no la config ganadora del ciclo.",
+    "El PSR se reporta contra cero y sin deflactar: mide si hay habilidad, no si sobrevive a la multiplicidad. Por construcción es mayor que el DSR; no sustituye a la puerta.",
+    "La puerta de meseta (±20%) es un heurístico, no un test calibrado: la literatura reciente encuentra que la geometría de la meseta es un diagnóstico débil frente al PSR (Plateaus, Peaks and the PBO, 2025).",
+    "El estrés de costes re-ejecuta cada configuración con comisión, fees, medio spread y slippage multiplicados; no se estima desde el PnL base.",
+    "El trial ledger guarda cada spec, dataset, semilla y descarte; su reconstrucción vuelve a calcular PBO y DSR desde las series diarias y debe coincidir con las cifras de este artefacto. No cambia ninguna puerta.",
+    "La prueba de entradas aleatorias conserva stop, objetivo, unidades, número de operaciones y filtros de entrada; no simula los frenos de cuenta, que dependen de la secuencia. Es un contraste descriptivo, no una puerta."
+  ]
+}
