@@ -25,6 +25,16 @@ exploratorias (umbrales de funding, ventanas de momentum) que no llegaron a
 pre-registro; no se usan para coronar nada, pero inflan el espacio de búsqueda.
 El DSR de cualquier hipótesis futura debe declarar al menos 50 ensayos, no 5.
 
+## Familia en curso (declarada antes de medir)
+
+| Familia | Variantes | Estado |
+|---|---:|---|
+| Carry cross-sectional en el tramo largo (extensión de H5) | 5 | pre-registrada el 2026-11-27; sin medir |
+
+Las cinco variantes de H10 están congeladas en `docs/PRE-REGISTRO-H10.md`. No se
+suman al total hasta que se midan: cuando lo hagan, el registro pasa a **55** y el
+DSR de cualquier hipótesis posterior debe contar 55 ensayos, no 50.
+
 ## Lo que el registro ya dice
 
 - Ninguna de las 50 variantes supera **todas** las puertas duras del plan en OOS.

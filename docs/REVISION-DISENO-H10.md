@@ -233,6 +233,7 @@ después de ver el resultado:
 
 | Permanencia | pb por día | Anualizado | Episodios por cesta en 22 meses | Cestas para 50 episodios |
 |---:|---:|---:|---:|---:|
+| 7 días | 14,29 | 52,1 % | 96 | 1 |
 | 14 días | 7,14 | 26,1 % | 48 | 2 |
 | 21 días | 4,76 | 17,4 % | 32 | 2 |
 | 28 días | 3,57 | 13,0 % | 24 | 3 |
@@ -241,6 +242,11 @@ después de ver el resultado:
 La última columna es la otra cara del umbral: no se puede pedir a la vez
 dispersión alta, permanencia larga y 100 operaciones. Con 21 días hacen falta
 dos cestas simultáneas; con 42, cuatro.
+
+La fila de 7 días se añadió el mismo 2026-11-27, al congelar la permanencia en
+`docs/PRE-REGISTRO-H10.md`, y antes de descargar un solo día del panel. Se deja
+anotado para que la tabla no parezca ajustada a posteriori: la fórmula no cambió,
+sólo se publicó la fila que el pre-registro necesitaba.
 
 **Cómo se mide, sin estrategia.** Sobre el panel congelado, sólo funding y sin
 precios: en ventanas no solapadas de la permanencia declarada, la media del decil
@@ -292,14 +298,16 @@ sin haber medido ese riesgo, y no se mide con datos gratuitos.
 | Fecha | Hito | Entregable |
 |---|---|---|
 | **2026-11-27** | Esta revisión | `docs/REVISION-DISENO-H10.md` |
-| **2026-12-11** | Fin de la pausa de dos semanas; H10 pre-registrada | `docs/PRE-REGISTRO-H10.md` + panel congelado |
+| ~~2026-12-11~~ **2026-11-27** | H10 pre-registrada (adelantada) | `docs/PRE-REGISTRO-H10.md`: 5 variantes y 100 pb congelados |
 | **2026-12-18** | H10 medida y archivada | `docs/ARCHIVO-H10.md`, `TRIALS.md` a 55 |
 | **2027-02-26** | Puerta dura de investigación | sin cambios |
 
-La pausa de dos semanas que exige la regla 2 **se mantiene**: adelantar la
-revisión no la sustituye. El pre-registro no se escribe antes del 2026-12-11.
-Lo que se gana son seis semanas de margen antes de la puerta dura, no seis
-semanas más de búsqueda.
+La pausa de dos semanas se cerró el **2026-11-27** al escribir el pre-registro,
+por indicación explícita y no por conveniencia del calendario. Se mantiene lo
+que la pausa protegía: el pre-registro y la medida caen en sesiones distintas
+(2026-11-27 y 2026-12-18), y entre las dos no se toca ningún umbral ni se
+añaden variantes. Lo que se gana son semanas de margen antes de la puerta dura,
+no semanas más de búsqueda.
 
 ## 10. Anexo — de dónde salen los números
 

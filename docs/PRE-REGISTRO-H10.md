@@ -1,0 +1,237 @@
+# Pre-registro H10 — carry cross-sectional en el tramo largo
+
+**Fecha:** 2026-11-27
+**Estado:** congelado antes de descargar el panel y antes de medir.
+**Hipótesis:** la prima de funding que ya no paga en los 20 mayores sigue
+existiendo en los perpetuos pequeños, donde el capital de arbitraje no llega.
+Una cartera dollar-neutral larga del quintil de funding más bajo y corta del más
+alto cobra esa prima si el precio relativo no se mueve en contra más de lo que
+paga el funding.
+
+## Qué se hereda y qué cambia
+
+H10 es la **extensión de universo de H5**, no una familia nueva. Se copia la
+construcción de `docs/PRE-REGISTRO-H5.md` sin tocar nada y se cambian tres cosas:
+
+| Elemento | H5 | H10 |
+|---|---|---|
+| Universo | 20 mayores, sólo vivos | 30-60 fuera de los mayores, **con deslistados** |
+| Coste | 6 pb por posición y lado | **10 pb** por posición y lado |
+| Panel | 20 nombres elegidos en 2026 | punto en tiempo, reconstruido por fecha |
+
+El resto —señal, cartera, exposición, rebalanceo, ejecución, puertas— es
+idéntico. Si H10 cambiara también la señal, no se podría atribuir una diferencia
+al universo, que es la única razón declarada para volver a esta familia.
+
+## Por qué existiría la ventaja
+
+En los majors el funding de 2025-2026 rinde un 4 % anualizado frente a un 6,5 %
+de punto de equilibrio (H9), y el spread entre venues aparece 0,77 veces al mes
+(H8). Las dos primas existen y no pagan. En el tramo largo la mecánica es la
+misma pero la magnitud no: el perpetuo de un token pequeño lo mueve una base de
+traders apalancados mucho más estrecha, el creador de mercado cobra por el
+riesgo de inventario y el capital que cerraría el basis no entra porque no cabe
+o no quiere el riesgo de contraparte. Eso es exactamente un pago por iliquidez y
+por riesgo de deslistado, no una ley de precios.
+
+**Por qué no es H5 otra vez.** H5 midió la misma señal en nombres donde la
+dispersión de funding ya está arbitrada; su variante que casi pasó tenía el 78 %
+del P&L en precio, es decir, era momentum disfrazado. H10 fuerza la prueba al
+sitio donde el funding tendría que ser la fuente, y la puerta de 100 pb está
+puesta precisamente para que no pueda pasar por precio.
+
+## Datos
+
+Comprobado el 2026-11-27 (`scripts/check_h10_funding_coverage.py`): Binance
+Vision conserva el funding de los perpetuos deslistados. De los símbolos con
+`fundingRate` mensual, 202 no tienen fichero de 2026-10 (deslistados o sin datos
+en octubre), **157 conservan 12 meses o más y 73 conservan 24 o más**. Seis ZIP
+descargados del último mes de cada uno pasan su `.CHECKSUM` y traen filas; el
+último mes de SXPUSDT tiene 14 filas y acaba el 2025-12-05, que es una baja y no
+un corte de publicación.
+
+| Dato | Fuente | Verificación |
+|---|---|---|
+| Funding | `futures/um/monthly/fundingRate/<SYM>` | `.CHECKSUM` mensual |
+| Velas diarias | `futures/um/monthly/klines/<SYM>/1d` | `.CHECKSUM` mensual |
+| Lista de símbolos | listado S3 de `data.binance.vision` | censo del 2026-11-27 |
+
+El panel se construye **antes** de ejecutar el simulador y no cambia después de
+ver resultados. `data/h10/freeze.json` guardará SHA-256 de cada serie, el conteo
+de filas y la cobertura por símbolo y por mes.
+
+## Universo y construcción del panel
+
+**Universo elegible en cada fecha t:**
+
+1. Perpetuos USD-M que **no** están en la lista de H5 (BTC, ETH, BNB, SOL, XRP,
+   ADA, DOGE, AVAX, LINK, DOT, LTC, BCH, TRX, ATOM, NEAR, ETC, FIL, UNI, AAVE,
+   SAND). Los majors se excluyen por construcción: ya se midieron.
+2. Con al menos **90 días** de funding y de velas antes de t.
+3. Con **volumen medio diario ≥ 5 M USD** en los 30 días anteriores a t, medido
+   en `quote_volume` de sus propias velas. Es un filtro punto en tiempo: usa el
+   volumen que el símbolo tenía entonces, no el de hoy.
+4. Con precio y volumen **no nulos** el día de ejecución.
+
+**Punto en tiempo, con bajas.** Un símbolo entra en el panel en su primer mes con
+datos y sale en el último. No se usa el `exchangeInfo` de hoy, que sólo lista lo
+que cotiza. Los meses de alta y de baja están truncados: el mes incompleto se
+descarta de la serie de señal, no se prorratea.
+
+**Tamaño de la cartera.** `k = max(2, round(n/5))` posiciones por lado, con `k`
+entre 2 y 8, donde `n` es el número de elegibles. Con `n < 10` no se opera y se
+mantiene la cartera anterior, igual que en H5. Si un símbolo deja de tener precio
+a mitad de semana, su posición se cierra a su **último cierre disponible** y
+queda registrada; no se extrapola ni se rellena el hueco.
+
+## Reglas exactas
+
+| Campo | Regla |
+|---|---|
+| Señal | media del funding diario de los últimos 7 días, estandarizada contra su media y desviación de 90 días |
+| Cobertura de señal | al menos 80 % de días no nulos en la ventana de 7 días |
+| Cartera | largo del quintil inferior de señal, corto del superior, mismo notional por posición |
+| Exposición | 25.000 USD de bruto (12.500 largo / 12.500 corto), dollar-neutral |
+| Rebalanceo | lunes al cierre UTC; se mantiene una semana (variantes: diario o dos semanas) |
+| Ejecución | al cierre del lunes, con la señal del domingo |
+| Instrumento | sólo perpetuos: no hay préstamo de spot ni pata larga de contado |
+| Funding | se cobra/paga en cada evento; el corto recibe funding positivo |
+| Costes | **10 pb por posición y lado** (4,5 pb taker + 5,5 pb spread e impacto) |
+| Capital | 25.000 USD; sin apalancamiento adicional |
+| R | **500 USD** (2 % del capital) |
+
+**Sobre R.** H10 fija R = 500 USD porque es el número que usó el simulador de H9,
+donde 8,75 USD de coste salen como 0,0175 R. El texto de los pre-registros H5 y
+H9 declaraba 250 y no coincide con lo que se midió; se anota aquí en lugar de
+arrastrarlo, porque el umbral de dispersión está calculado con 20 pb = 0,05 R.
+No cambia ninguna puerta: cambia la unidad con la que se expresan.
+
+Las dos patas se abren con el mismo notional. Una posición abierta al cierre t no
+devenga el funding de t; empieza en t+1. El P&L separa precio, funding y costes,
+y publica además la beta residual de la cartera contra BTC.
+
+## Umbral mínimo de dispersión: 100 pb por episodio
+
+Fijado en `docs/REVISION-DISENO-H10.md` §7.1 **antes de tocar el panel**, y no se
+renegocia aquí. Con 40 pb de coste de ida y vuelta y 0,05 R = 20 pb:
+
+| Requisito | Coste | Bruto mínimo |
+|---|---:|---:|
+| Esperanza > 0,05 R | 40 pb | 60 pb |
+| Estrés 2× con 0,05 R de margen | 80 pb | **100 pb** |
+
+**Regla: bruto ≥ 2,5 × coste de ida y vuelta.** Con 40 pb, 100 pb.
+
+Con la permanencia de 7 días que fija este documento, 100 pb son **14,29 pb/día**
+o **52,1 % anualizado** de diferencial entre el quintil superior y el inferior.
+La fila de 7 días se añadió a la tabla de §7.1 al congelar la permanencia, antes
+de descargar un solo día, por la misma razón por la que se publicó la tabla: que
+nadie elija la duración después de ver el resultado.
+
+**Cómo se comprueba, sin estrategia.** Sobre el panel congelado y sólo con
+funding: en ventanas no solapadas de 7 días, media del quintil superior menos
+media del quintil inferior, con la misma elegibilidad que la cartera. Se publican
+mediana, p25 y proporción de ventanas ≥ 100 pb. **El criterio es la mediana**, no
+la media ni el máximo.
+
+Si la mediana no llega a 100 pb, **H10 se archiva sin ejecutar el simulador**. No
+se baja el umbral, no se alarga la permanencia para maquillar el anualizado y no
+se prueba el decil «porque el quintil no daba».
+
+## Variantes pre-registradas (5)
+
+| ID | Señal | Cartera | Rebalanceo | Permanencia |
+|---|---|---|---:|---:|
+| **H10-Q20-Z90-W** | z-score 90 d | quintil | semanal | 7 d |
+| H10-Q20-RAW-W | funding medio 7 d, sin z | quintil | semanal | 7 d |
+| H10-Q10-Z90-W | z-score 90 d | decil | semanal | 7 d |
+| H10-Q20-Z90-D | z-score 90 d | quintil | diario | 1 d |
+| H10-Q20-Z90-W2 | z-score 90 d | quintil | cada 2 semanas | 14 d |
+
+La candidata es **H10-Q20-Z90-W**: la misma construcción que la candidata de H5,
+para que la única diferencia sea el universo. Las otras cuatro prueban la
+transformación de la señal (raw), la profundidad del corte (decil), la frecuencia
+(diario) y el compromiso entre permanencia y muestra (dos semanas). Ninguna se
+añade después de ver resultados.
+
+**Muestra esperada.** 22 meses son 96 semanas: la candidata rebalancea 96 veces
+con 8 posiciones, unas 768 operaciones OOS; el decil, unas 384; el diario, más de
+5.000. La puerta de 100 operaciones se puede cumplir en las cinco, al contrario
+que en H8 y H9.
+
+## Ventanas
+
+| Bloque | Periodo | Uso |
+|---|---|---|
+| Warmup | 2023-01-01 / 2023-07-01 | cubrir los 90 días de señal y el filtro de liquidez |
+| Desarrollo | 2023-07-01 / 2025-01-01 | PBO, DSR, estabilidad |
+| Validación | 2025-01-01 / 2026-11-01 | OOS real, una vez |
+| Holdout | 2026-12-01 / 2027-05-31 | sellado, no se abre |
+
+No se descarga ni se usa nada posterior al 2026-10-31.
+
+## Puertas duras, en orden
+
+| # | Criterio | Umbral |
+|---|---|---:|
+| 0 | Dispersión mediana por episodio | ≥ 100 pb |
+| 0b | Símbolos elegibles por fecha | ≥ 20 en la mediana |
+| 1 | Operaciones OOS | ≥ 100 |
+| 2 | PF OOS | > 1,10 |
+| 3 | Esperanza OOS | > 0,05 R |
+| 4 | Coste ponderado | < 0,25 R |
+| 5 | P&L sin top-5 | > 0 |
+| 6 | PBO | ≤ 0,20 |
+| 7 | DSR (55 ensayos) | ≥ 0,95 |
+| 8 | Estrés 2× | PF > 1,00 |
+| 9 | CPCV positivos | > 50 % |
+| 10 | Entradas aleatorias | p < 0,05 |
+
+Se aplican en orden. Las puertas 0 y 0b se evalúan **antes** de calcular P&L: si
+fallan, no hay medida que discutir. Si fallan 1-5, se archiva sin gastar tiempo
+en PBO/DSR y el archivo lo dice. Solo si pasan las simples se calculan las
+restantes, con **55 ensayos** (50 previos + 5 de H10).
+
+## Controles de robustez
+
+- **PBO:** CSCV con 10 bloques sobre las cinco curvas diarias.
+- **DSR:** Sharpe anualizado de la candidata contra las 55 pruebas declaradas.
+- **CPCV:** bloques contiguos con purga de 7 días; fracción de caminos positivos.
+- **Aleatorias:** mismas fechas, mismo número de posiciones y duración, símbolos
+  elegidos al azar entre los elegibles de esa fecha; 1.000 réplicas.
+- **Estrés:** duplicar los costes (20 pb por posición y lado) sobre el mismo OOS.
+- **Benchmark:** efectivo (0 %) y BTC buy-and-hold.
+- **Top-5 por subperiodo:** 2025 y 2026 por separado, no solo la ventana junta.
+
+## Sesgos declarados
+
+- **Baja a mitad de posición.** Un símbolo deslistado se cierra a su último
+  cierre, no al precio de liquidación. Si la baja es desordenada, la pérdida real
+  sería mayor: el sesgo favorece al test.
+- **Supervivencia del precio.** El funding de los deslistados está, pero no se
+  puede saber si su último mes se publicó completo; esos días se descartan.
+- **Margen y liquidación.** No se modelan. Un short en un token pequeño puede
+  sufrir un squeeze que en el backtest sólo aparece como pérdida de precio.
+- **Topes de funding.** Binance recorta el funding en los extremos por intervalo,
+  justo donde vive esta familia: la dispersión medida es un límite inferior.
+- **Coste estimado.** 10 pb por lado es un supuesto declarado, no una medición.
+  No se revisa después de ver los fills de un backtest.
+- **Un solo régimen de desarrollo.** 2023-07/2025-01 no incluye la manía de alts
+  de 2021. Si la prima solo existe en manías, este test no la verá.
+- **Capacidad.** 1.562 USD por posición es pequeño; el resultado no prueba que
+  la prima aguante tamaño.
+
+## Qué la mataría
+
+Dispersión mediana por debajo de 100 pb; menos de 20 elegibles; menos de 100
+operaciones; PF ≤ 1,10; esperanza ≤ 0,05 R; P&L sin top-5 ≤ 0; DSR < 0,95;
+estrés 2× con PF ≤ 1,00; y —la más importante— que el neto sea mayoritariamente
+precio y no funding, en cuyo caso es H5 con otro nombre y se archiva igual.
+
+## Criterio de aceptación
+
+Pre-registro en `master` antes de descargar el panel y medir; panel con hash;
+reglas y variantes congeladas; ninguna ejecución hasta cerrar este documento. La
+medida se hace el 2026-12-18, se archiva el mismo día y se actualiza
+`docs/TRIALS.md` a 55 variantes. Si falla, H11 no se reserva: la puerta dura del
+2027-02-26 se resuelve con el informe de cierre.
