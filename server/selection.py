@@ -854,6 +854,7 @@ def _dataset_payload(
     )
     return {
         "path": _relative_path(source, root),
+        "dataset_id": file_hash,
         "sha256": file_hash,
         "rows": int(len(df5)),
         "columns": [str(column) for column in df5.columns],
@@ -1207,6 +1208,22 @@ def run_selection_cycle(
                 }
     random_block["scope"] = "perfil" if base_settings is not None else "seleccion"
 
+    candidate = random_label
+    candidate_source = "perfil" if base_settings is not None else "seleccion"
+    candidate_detail = {
+        "label": candidate,
+        "spec_id": getattr(random_spec, "id", None),
+        "family": getattr(random_spec, "family", None),
+        "timeframe": getattr(random_spec, "timeframe_signal", None),
+    }
+    strategy_block = None
+    if base_settings is not None:
+        strategy_block = {
+            "id": base_settings.strategy.id,
+            "version": base_settings.strategy.version,
+            "family": getattr(random_spec, "family", None),
+        }
+
     stress_block = None
     if stress_summary:
         selected_stress = next(
@@ -1255,7 +1272,11 @@ def run_selection_cycle(
     payload = {
         "cycle_id": cycle_id,
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "method_version": "1.1.0",
+        "method_version": "1.2.0",
+        "strategy": strategy_block,
+        "candidate": candidate,
+        "candidate_source": candidate_source,
+        "candidate_detail": candidate_detail,
         "inputs": {
             "data_hash": "sha256:" + data_hash,
             "specs_hash": "sha256:" + specs_hash_raw,
@@ -1294,6 +1315,9 @@ def run_selection_cycle(
             },
         },
         "caveats": [
+            "La procedencia (estrategia, dataset y candidato) forma parte del artefacto: "
+            "la puerta rechaza un ciclo que no mida la misma estrategia y la misma fuente "
+            "que la evidencia del perfil.",
             "PBO y DSR son propiedades de este universo, no de una configuración suelta.",
             "El DSR de la puerta se calcula dentro del grupo de variantes de cada "
             "hipótesis (el espacio de búsqueda real); el valor agrupado se incluye "
