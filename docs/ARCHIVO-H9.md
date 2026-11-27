@@ -100,6 +100,29 @@ de dos semanas y la revisión de diseño del 2027-01-08 que marca el plan; no se
 pre-registra otra familia hasta cerrarla. La puerta dura de investigación del
 2027-02-26 no cambia.
 
+## Nulidad por permutación (2026-11-27)
+
+`python scripts/permutation_families.py --family H9` baraja el funding de cada
+símbolo (50 permutaciones, semilla 20261127). La señal de H9 suma basis y
+funding, y el basis queda intacto, así que esta nulidad aísla el componente de
+funding; para la pata de basis se corre además el motor con `perp = spot` (basis
+exactamente cero).
+
+| | Episodios | Esperanza | PF |
+|---|---:|---:|---:|
+| Observado (C7-Q20-W-25) | 22 | −0,0047 R | 0,1356 |
+| Nulidad, mediana | — | −0,0152 R | — |
+| Nulidad, p5 / p95 | — | −0,0203 / −0,0117 R | — |
+| Sólo funding (basis = 0) | 40 | +0,0004 R | 1,0681 |
+
+El observado es **mejor que las 50 permutaciones**: la señal completa pierde unos
+0,010 R menos por episodio que una en la que el funding es aleatorio, así que la
+ordenación de la señal tiene información y no es ruido. Y la pata aislada de carry queda en cero
+(+0,0004 R, PF 1,07): el carry no es negativo, está comprimido. El veredicto no
+cambia —22 episodios, PF 0,1356, BNB en 13 de 22 y 28 pb de coste de ida y
+vuelta— pero el fracaso no es ignorancia: hay información en la señal y aun así
+no paga.
+
 ## Artefactos
 
 - Pre-registro: `docs/PRE-REGISTRO-H9.md`.

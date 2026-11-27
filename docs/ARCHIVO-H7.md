@@ -62,6 +62,25 @@ incluido. Cinco variantes; candidata H7-Z20-3D.
   pero a frecuencias altas el edge es del orden del coste; a 3 días se desvanece
   o se invierte.
 
+## Nulidad por permutación (2026-11-27)
+
+`python scripts/permutation_families.py --family H7` baraja el ratio de flujo de
+cada símbolo en el tiempo (50 permutaciones, semilla 20261127); precios, volumen
+y funding quedan reales.
+
+| | Esperanza |
+|---|---:|
+| Observado (Z20-3D) | −0,0111 R |
+| Nulidad, mediana | −0,0089 R |
+| Nulidad, p5 / p95 | −0,0230 / +0,0032 R |
+
+p de dos colas 0,37; el observado cae en el 64 % de la distribución nula. **El
+resultado de H7 no se distingue del ruido.** Eso no lo absuelve: la candidata se
+archiva porque no tiene edge que desplegar —PF 0,9355, esperanza negativa y
+ninguna de las cinco variantes por encima de 1,10—, no porque se haya demostrado
+que el flujo destruya dinero. Con 1.326 episodios la estimación es precisa; lo
+que no hay es señal, y a 3 días el edge del order flow es del orden del coste.
+
 ## Artefactos
 
 - Pre-registro: `docs/PRE-REGISTRO-H7.md`.

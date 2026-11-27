@@ -72,6 +72,26 @@ en un bear market quedándose con más riesgo no es una ventaja.
 - La pata corta no se probó aquí; H3 ya mostró que el momentum cross-sectional
   pierde en OOS y que la pata corta es la que sufre.
 
+## Nulidad por permutación (2026-11-27)
+
+`python scripts/permutation_families.py --family H6` baraja los retornos diarios
+de cada símbolo y reconstruye el precio (50 permutaciones, semilla 20261127): la
+tendencia desaparece y la distribución marginal se conserva.
+
+| | Esperanza |
+|---|---:|
+| Observado (28-EW) | −0,0497 R |
+| Nulidad, mediana | −0,1292 R |
+| Nulidad, p5 / p95 | −0,2161 / −0,0230 R |
+
+El observado es **menos malo que el 90 % de las permutaciones** (p de dos colas
+0,90 sobre el valor absoluto, que aquí engaña: la nulidad no está centrada en
+cero). La lectura no es «es ruido», sino la que ya daba la etiqueta: la señal de
+tendencia evita parte de la caída de las alts en 2025-2026 —una entrada al azar
+habría perdido unos 0,08 R más por episodio— y aun así pierde 40,8 %. Manda la
+beta, el timing sólo la mitiga, y no compensa coste ni beta negativa. Veredicto
+sin cambios.
+
 ## Artefactos
 
 - Pre-registro: `docs/PRE-REGISTRO-H6.md`.
