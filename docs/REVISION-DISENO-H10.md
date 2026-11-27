@@ -164,12 +164,81 @@ pre-registro, no se ajusta después de ver el resultado.
 esperanza > 0,05 R, coste < 0,25 R, P&L sin top-5 > 0, PBO ≤ 0,20, DSR ≥ 0,95,
 estrés 2× con PF > 1,00, CPCV y entradas aleatorias.
 
+### 7.1 Umbral mínimo de dispersión, fijado antes de medir
+
+Este número se declara aquí, con el coste ya escrito y sin haber consultado un
+solo día del panel. No es un filtro de entrada: es la condición económica que
+H10 debe cumplir para que medirla tenga sentido. Si el panel no la cumple, la
+familia se archiva **sin calcular P&L**.
+
+**Unidad.** 25.000 USD brutos, dos patas de 12.500. R = 500 USD, la convención
+de H9 (8,75 USD de coste = 0,0175 R). Una pata paga dos lados × 10 pb = 20 pb por
+episodio; el par paga 40 pb = 50 USD, en línea con el coste declarado. Y
+0,05 R = 25 USD = 20 pb sobre 12.500.
+
+**De dónde sale el número.** Cada puerta impone un bruto mínimo distinto:
+
+| Requisito | Coste del episodio | Bruto mínimo | Neto que deja |
+|---|---:|---:|---:|
+| Supervivencia (break-even) | 40 pb | 40 pb | 0 |
+| PF > 1,10 | 40 pb | 44 pb | 4 pb |
+| Esperanza > 0,05 R | 40 pb | 60 pb | 20 pb = 0,05 R |
+| Estrés 2× (PF > 1,00) | 80 pb | 80 pb | 0 |
+| Estrés 2× con 0,05 R de margen | 80 pb | **100 pb** | 20 pb = 0,05 R |
+
+**Umbral declarado: 100 pb de dispersión capturada por episodio**, el 1,00 %
+del nocional por pata (125 USD). La regla que se lleva al pre-registro es
+**bruto ≥ 2,5 × coste de ida y vuelta**; con 40 pb, 100 pb.
+
+**Por qué 2,5 y no 2,0.** 80 pb bastan para no perder con el coste duplicado,
+pero dejan un empate técnico: el mejor resultado posible sería «no pierde» en la
+prueba que más debería exigir. Los 20 pb que añade el 2,5 son el mismo 0,05 R de
+la puerta de esperanza, y son la diferencia entre sobrevivir y ser medible.
+
+**En el tiempo.** El umbral es por episodio; la permanencia la congela el
+pre-registro. La conversión, publicada ahora para que nadie elija la permanencia
+después de ver el resultado:
+
+| Permanencia | pb por día | Anualizado | Episodios por cesta en 22 meses | Cestas para 50 episodios |
+|---:|---:|---:|---:|---:|
+| 14 días | 7,14 | 26,1 % | 48 | 2 |
+| 21 días | 4,76 | 17,4 % | 32 | 2 |
+| 28 días | 3,57 | 13,0 % | 24 | 3 |
+| 42 días | 2,38 | 8,7 % | 16 | 4 |
+
+La última columna es la otra cara del umbral: no se puede pedir a la vez
+dispersión alta, permanencia larga y 100 operaciones. Con 21 días hacen falta
+dos cestas simultáneas; con 42, cuatro.
+
+**Cómo se mide, sin estrategia.** Sobre el panel congelado, sólo funding y sin
+precios: en ventanas no solapadas de la permanencia declarada, la media del decil
+superior de funding menos la media del decil inferior. Se publican mediana, p25 y
+proporción de ventanas ≥ 100 pb.
+
+**El criterio es la mediana, no la media.** El gate de top-5 ya castiga la
+concentración; usar la media aquí dejaría que una semana de 400 pb pagase
+cuarenta planas. Si la mediana no llega, H10 no es viable aunque la media sí.
+
+**Es dispersión de funding, no de precio.** Si el umbral sólo se alcanza cuando
+se suma el precio, la familia es H5 otra vez y se archiva. El P&L de precio se
+mide aparte y no cuenta para este número.
+
+**Si no llega.** Se archiva. No se baja el umbral, no se alarga la permanencia
+para mejorar el anualizado, no se cambia de decil y no se prueba un quintil
+«porque el decil no daba muestra». Si llega a 60-99 pb, el resultado esperado es
+el de H8 —positivo y por debajo de la puerta— y se archiva igual.
+
+**Si el coste real sube.** La regla se aplica al coste declarado: a 15 pb por
+pata y lado (60 pb de ida y vuelta) el umbral sería 150 pb. El coste declarado no
+se revisa después de ver los fills de un backtest.
+
 **Beta.** Se publica el P&L de precio y el de funding por separado, y la beta
 residual de la cartera contra BTC. Si el neto es mayoritariamente precio, se
 archiva: sería H5 otra vez, con más ruido.
 
 **Qué la mataría.** Menos de 100 operaciones; supervivencia no resuelta; neto
-explicado por precio; DSR por debajo de 0,95; top-5 que cambie el signo.
+explicado por precio; DSR por debajo de 0,95; top-5 que cambie el signo; y una
+dispersión mediana por episodio por debajo de 100 pb (§7.1).
 
 **Qué significaría un éxito.** Que la prima del tramo largo existe y es el pago
 por iliquidez y riesgo de deslistado. Eso es un riesgo que este backtest no
