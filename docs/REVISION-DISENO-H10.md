@@ -156,6 +156,38 @@ sesgo de supervivencia —y el sesgo es justo el que hace que el tramo largo
 parezca rentable— así que **no se pre-registra**: se escribe el informe de
 cierre. Esta comprobación es de disponibilidad de datos, no una medida.
 
+**Comprobado el 2026-11-27: la condición se cumple.**
+
+Censo sobre el listado público de Binance Vision (`scripts/check_h10_funding_coverage.py`,
+salida en `data/h10_coverage.json`): de los símbolos con `fundingRate` mensual,
+**202 no tienen fichero de 2026-10** —deslistados o sin datos en octubre— y de
+ellos **157 conservan 12 meses o más de funding y 73 conservan 24 o más**. La
+muestra con más historia llega a 72 meses (ICXUSDT, STORJUSDT). Las velas
+diarias del mismo símbolo también están en el archivo, así que hay precio y
+volumen para el filtro de liquidez.
+
+No basta con que el fichero exista: se descargaron seis ZIP del último mes de
+cada símbolo y se verificaron contra su `.CHECKSUM`. Los seis pasan y traen
+filas reales. La prueba de que la serie termina en la baja y no en un corte de
+publicación es **SXPUSDT**: su último mes es 2025-12 y sólo tiene **14 filas**,
+que acaban el 2025-12-05; un símbolo vivo no deja un mes truncado. ICXUSDT y
+STORJUSDT acaban el 2026-08-27, también a mitad de mes.
+
+**Consecuencia:** el panel de H10 se puede construir punto en tiempo con los
+deslistados dentro. El sesgo de supervivencia del tramo largo —el que habría
+hecho parecer rentable la familia por construcción— queda cerrado por
+disponibilidad de datos, no por una suposición.
+
+Lo que la comprobación **no** resuelve, y el pre-registro debe declarar:
+
+- El universo de cada fecha se reconstruye con el primer y el último mes de cada
+  símbolo, no con el `exchangeInfo` de hoy, que sólo lista lo que cotiza.
+- Los meses de alta y de baja están truncados; se descartan o se prorratean, y
+  la regla se fija antes de medir.
+- Hay símbolos con funding y sin velas, o al revés; el panel es la intersección.
+- El funding de un contrato deslistado no dice nada de su liquidez en vida: el
+  filtro se calcula con el volumen de sus propias velas, no con el de hoy.
+
 **Coste declarado.** 10 pb por pata y lado (40 pb ida y vuelta), por encima de
 los 7 pb de los majors, porque el spread es más ancho. Se declara en el
 pre-registro, no se ajusta después de ver el resultado.
