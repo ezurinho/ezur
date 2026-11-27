@@ -436,13 +436,17 @@ def list_events(request: Request, limit: int = Query(200, ge=1, le=5000), level:
 def get_stats(request: Request) -> dict[str, Any]:
     store = _store(request)
     engine = _engine(request)
-    return aggregate(
+    stats = aggregate(
         store.all_trades(mode=engine.mode),
         engine.settings.risk.initial_capital,
         timezone_name=engine.settings.instruments.template_for(
             engine.settings.instruments.primary
         ).timezone,
     )
+    # Las marcas intradía viven en su tabla y no son cierres: se envían como
+    # serie aparte para que el gráfico no las mezcle con la curva auditada.
+    stats["equity_marks"] = store.equity_marks()
+    return stats
 
 
 @router.get("/stats/reset/preview")
