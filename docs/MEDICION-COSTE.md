@@ -85,7 +85,15 @@ referencia es lo correcto y que el spot no sirve de sustituto.
 
 Coste re-expresado sobre los componentes publicados; ni un simulador re-ejecutado.
 
-| Familia | Declarado | Medido | Neto declarado | Neto medido | Esperanza declarada | Esperanza medida |
+**Los netos de esta tabla son suma de patas** (precio + funding − costes), no la
+curva compuesta: el ejercicio cambia el coste sin reejecutar el motor, así que no
+puede recalcular la composición. Con el criterio del laboratorio —neto = curva
+diaria compuesta— H5 candidata cierra en **6.086,46 USD** y H5 raw en **9.063,13**;
+la diferencia con los 6.029 y 8.343 de la tabla es sólo composición (57,03 y 720,63
+USD). Para H8, H9 y H10 el neto compuesto exigiría reejecutar sus motores y aquí
+sólo se compara coste.
+
+| Familia | Declarado | Medido | Neto declarado (patas) | Neto medido (patas) | Esperanza declarada | Esperanza medida |
 |---|---:|---|---:|---|---:|---|
 | H5 candidata | 6 pb | 1,33-5,23 | +6.029 | +7.196 / +6.221 | 0,0301 R | 0,0360 / 0,0311 R |
 | H5 raw | 6 pb | 1,33-5,23 | +8.343 | +9.270 / +8.495 | 0,0525 R | 0,0583 / 0,0534 R |
