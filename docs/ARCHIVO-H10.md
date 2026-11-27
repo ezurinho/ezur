@@ -122,6 +122,12 @@ que es el lado equivocado para fallar.
   deslistados, 1400 días, checksums verificados y liquidez punto en tiempo. Que
   aun así no llegue hace el fallo más informativo que el de H5, no menos.
 
+**Alcance tras la nulidad de H5 (2026-11-27).** Este cribado mide sólo la pata de
+funding. La permutación del motor de H5 mostró que su edge realizado era precio y
+que su pata de carry pierde sola, así que este fallo descarta el carry en el
+tramo largo, **no** la apuesta de precio de H5 trasladada a 60 nombres, que no se
+midió. No es motivo para reabrir: la ventana está gastada y no hay pre-registro.
+
 ## Dependencia de régimen (panel extendido 2020-2026)
 
 Nota añadida el 2026-11-27, después de archivar, al ampliar el panel con el
