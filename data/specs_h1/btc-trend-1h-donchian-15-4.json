@@ -1,0 +1,87 @@
+{
+  "id": "BTC-TREND-1H-DONCHIAN-15-4",
+  "name": "Donchian canal de 15 velas con stop y trailing de 4 ATR",
+  "version": "1.0.0",
+  "label": "1h_15_4_t4",
+  "family": "trend",
+  "hypothesis": "La tendencia de BTC spot en 1 h conserva ventaja neta porque reduce la rotación 4x frente a 15 m. Entrada long-only en ruptura de canal con filtro SMA200, stop y trailing de ATR.",
+  "instrument": "BTCUSDT_SPOT",
+  "timeframe_signal": "1h",
+  "timeframe_context": null,
+  "data_requirements": {
+    "datasets": [
+      "klines_5m"
+    ],
+    "min_coverage": "2020-01-01/2026-10-31",
+    "integrity": {
+      "gaps": 0,
+      "duplicates": 0,
+      "timezone": "UTC"
+    }
+  },
+  "entry": {
+    "rule": "donchian_trend",
+    "long": "cierre > maximo de las 15 velas anteriores y cierre > SMA(200)",
+    "cooldown_bars": 0
+  },
+  "exit": {
+    "stop": "4 * ATR(14)[t]",
+    "target": "100.0 * R",
+    "time_stop_bars": 1000000,
+    "trailing": "max(alto desde entrada) - 4 * ATR(14)"
+  },
+  "params": {
+    "N": 15,
+    "trend_sma": 200,
+    "atr_period": 14,
+    "atr_k": 4.0,
+    "trail_atr_k": 4.0,
+    "tp_r": 100
+  },
+  "risk": {
+    "sizing": "fixed_fractional",
+    "risk_per_trade": 0.0025,
+    "target_vol_annual": 0.2,
+    "kelly_fraction": 0.25,
+    "max_gross_leverage": 2,
+    "max_mdd_budget": 0.25
+  },
+  "costs": {
+    "fee_maker_bps": 2,
+    "fee_taker_bps": 5,
+    "assumed_fill": "taker",
+    "half_spread_bps": 0.07,
+    "impact_model": "none",
+    "funding": "none"
+  },
+  "execution": {
+    "signal_bar": "closed",
+    "fill": "next_bar_open",
+    "intrabar_priority": "stop_first",
+    "gap_fill": "bar_open"
+  },
+  "validation": {
+    "trials_declared": 5,
+    "is_oos_split": "0.60/0.20/0.20",
+    "seed": 11,
+    "bootstrap": {
+      "block": 5,
+      "reps": 4000
+    },
+    "wfa": {
+      "train_years": 2,
+      "test_months": 6,
+      "min_trades_per_fold": 30
+    }
+  },
+  "expected": {
+    "turnover_per_year": 120,
+    "cost_R_per_trade": 0.02,
+    "capacity_usd": 250000
+  },
+  "failure_modes": [
+    "la friccion de 1 h se come la prima de tendencia",
+    "el trailing de 3 ATR devuelve el beneficio en cada rango",
+    "el filtro SMA200 llega tarde y compra techos"
+  ]
+}
