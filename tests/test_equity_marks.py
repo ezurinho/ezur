@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 from server import equity
 from server.config import Settings
-from server.db import Store
+from server.db import EQUITY_MARKS_RETENTION, Store
 from server.engine import TradingEngine
 from server.models import TradeRecord
 
@@ -54,6 +54,23 @@ def test_stats_api_separa_la_curva_auditada_de_las_marcas(client):
     assert [point["equity"] for point in payload["equity"]] == [25_010.0]
     assert [point["equity"] for point in payload["equity_marks"]] == [24_990.0]
     assert payload["equity"][0]["ts"] != payload["equity_marks"][0]["ts"]
+
+
+def test_la_retencion_conserva_solo_las_ultimas_marcas(tmp_path):
+    store = Store(tmp_path / "terminal.db")
+    try:
+        total = EQUITY_MARKS_RETENTION + 3
+        for value in range(total):
+            store.append_equity_mark(float(value), STAMP + timedelta(minutes=value))
+
+        marks = store.equity_marks(limit=EQUITY_MARKS_RETENTION + 10)
+
+        assert len(marks) == EQUITY_MARKS_RETENTION
+        assert [point["equity"] for point in marks] == [
+            float(value) for value in range(total - EQUITY_MARKS_RETENTION, total)
+        ]
+    finally:
+        store.close()
 
 
 def test_la_auditoria_ignora_marcas_y_sigue_viendo_deriva(tmp_path):
