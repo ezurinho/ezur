@@ -77,14 +77,14 @@ def _sha(path: Path) -> str:
     return digest.hexdigest()
 
 
-def load() -> tuple[pd.DataFrame, pd.DataFrame, dict]:
-    freeze_path = DATA / "freeze.json"
+def load(panel_dir: Path = DATA) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
+    freeze_path = panel_dir / "freeze.json"
     if not freeze_path.is_file():
-        raise SystemExit("falta data/h10/freeze.json: el panel no está congelado")
+        raise SystemExit(f"falta {freeze_path}: el panel no está congelado")
     freeze = json.loads(freeze_path.read_text(encoding="utf-8"))
 
-    funding_path = DATA / "funding_daily.csv"
-    perp_path = DATA / "perp_daily.csv"
+    funding_path = panel_dir / "funding_daily.csv"
+    perp_path = panel_dir / "perp_daily.csv"
     for path, key in ((funding_path, "funding_sha256"), (perp_path, "perp_sha256")):
         if _sha(path) != freeze[key]:
             raise SystemExit(f"{path.name} no coincide con el hash congelado")
@@ -107,7 +107,8 @@ def panels(funding: pd.DataFrame, perp: pd.DataFrame):
 
 
 def screen(rate: pd.DataFrame, close: pd.DataFrame, quote: pd.DataFrame,
-           max_per_side: int = DEFAULT_MAX_PER_SIDE) -> dict:
+           max_per_side: int = DEFAULT_MAX_PER_SIDE,
+           start: str | None = None, end: str | None = None) -> dict:
     # Todo con datos hasta t-1: se desplaza un día antes de usarlo como filtro.
     adv = quote.rolling(30, min_periods=20).median().shift(1)
     history = close.notna().cumsum().shift(1)
@@ -119,7 +120,9 @@ def screen(rate: pd.DataFrame, close: pd.DataFrame, quote: pd.DataFrame,
     zscore = (signal - mean90) / std90.where(std90 > 1e-12)
 
     dates = close.index
-    monday = [d for d in dates if d.weekday() == 0]
+    monday = [d for d in dates if d.weekday() == 0
+              and (start is None or d >= pd.Timestamp(start, tz="UTC"))
+              and (end is None or d < pd.Timestamp(end, tz="UTC"))]
     windows: list[dict] = []
     eligible_counts: list[int] = []
 
@@ -229,14 +232,19 @@ def main() -> int:
     parser.add_argument("--max-per-side", type=int, default=DEFAULT_MAX_PER_SIDE,
                         help="tope de posiciones por lado (0 = sin tope, quintil puro)")
     parser.add_argument("--json", default=str(DATA / "screen.json"))
+    parser.add_argument("--panel-dir", default=str(DATA),
+                        help="panel congelado alternativo (por defecto data/h10)")
+    parser.add_argument("--start", default=None, help="primera fecha de evaluación")
+    parser.add_argument("--end", default=None, help="fin exclusivo de evaluación")
     args = parser.parse_args()
 
-    funding, perp, freeze = load()
+    funding, perp, freeze = load(Path(args.panel_dir))
     print(f"panel congelado: {freeze['symbols']} símbolos, "
-          f"{freeze['funding_rows']} filas de funding, {freeze['perp_rows']} de velas")
+          f"{freeze.get('funding_rows', freeze.get('rows'))} filas de funding, "
+          f"{freeze.get('perp_rows')} de velas")
     is_rate_frame, close, quote = panels(funding, perp)
     cap = args.max_per_side if args.max_per_side > 0 else 10_000
-    result = screen(is_rate_frame, close, quote, cap)
+    result = screen(is_rate_frame, close, quote, cap, args.start, args.end)
 
     print(json.dumps({k: v for k, v in result.items() if k != "sample"}, indent=2, ensure_ascii=False))
     target = Path(args.json)

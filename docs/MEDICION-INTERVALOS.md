@@ -91,11 +91,11 @@ que la que existe.
   anotada en el plan como convención.
 - **El cribado de H10 no se revisa**: sus 80,51 pb de dispersión mediana ya
   estaban en cash. El veredicto (falla frente a 240) se mantiene.
-- **H5 sí usó la convención inflada** en su motor: su P&L de funding de 856,80
-  USD está calculado con `8/intervalo`. En su ventana OOS (2025-2026) el 67-70 %
-  de los símbolos están en intervalo corto, así que ese componente está
-  sobreestimado. No cambia el veredicto —el funding es el 12 % del neto y el
-  candidato queda a 7,6× de la puerta— pero el número publicado no es cash puro.
+- **H5 usó la convención de 8 h, pero su panel no la sufre**: de 141.980 eventos,
+  141.879 son a 8 h, 99 a 2 h y 2 a 4 h. Los 856,80 USD de funding son cash en la
+  práctica. El riesgo de la convención es latente y sólo muerde en universos
+  anchos como el de H10, que ya medía cash. Corregí aquí una afirmación previa
+  mía que daba por inflado ese componente: no lo está.
 - **Para familias futuras**: si una señal se define sobre el nivel de funding,
   se define sobre cash anualizado, no sobre la tasa por evento. La tasa por
   evento sólo sirve para comparar símbolos en el mismo intervalo.

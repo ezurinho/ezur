@@ -122,6 +122,53 @@ que es el lado equivocado para fallar.
   deslistados, 1400 días, checksums verificados y liquidez punto en tiempo. Que
   aun así no llegue hace el fallo más informativo que el de H5, no menos.
 
+## Dependencia de régimen (panel extendido 2020-2026)
+
+Nota añadida el 2026-11-27, después de archivar, al ampliar el panel con el
+mismo descargador y las mismas reglas (`docs/PRE-REGISTRO-VENTANA-H10.md` y
+`data/h10ext/screen_2020_2026.json`). **No cambia el veredicto**: H10 sigue
+archivada.
+
+Sobre 2020-01/2026-10 la mediana del cribado es **44,66 pb** en 311 ventanas,
+por debajo de los 80,51 pb con los que se archivó. El año a año:
+
+| Año | Mediana | Ventanas | Sobre la barra |
+|---|---:|---:|---:|
+| 2020 (desde abril) | 29,28 pb | 7 | 0,0 % |
+| 2021 | 40,81 pb | 52 | 1,9 % |
+| 2022 | 29,21 pb | 52 | 1,9 % |
+| 2023 | 20,11 pb | 52 | 5,8 % |
+| 2024 | 29,43 pb | 53 | 1,9 % |
+| 2025 | 114,82 pb | 52 | 19,2 % |
+| 2026 (hasta octubre) | **309,42 pb** | 43 | **55,8 %** |
+
+**Sólo 2026 cruza los 240 pb de su geometría.** Durante los cinco años
+anteriores la prima por ventana se queda entre 20 y 41 pb, entre seis y doce
+veces por debajo de la barra; 2025 la roza con 115 pb.
+
+La lectura es incómoda y conviene dejarla escrita: el archivo se sostiene por la
+ventana completa, no porque la prima fuera estable y algo menor que la barra.
+2023-2026, el tramo con el que se midió, era **más generoso que el histórico**
+(80,51 frente a 44,66 pb), y el único periodo que paga es el último año y medio
+sobre siete de muestra. Eso es dependencia de régimen: un carry que aparece
+cuando el mercado paga por estar corto de alts, no una ventaja persistente que
+se pueda desplegar con la confianza de que seguirá ahí.
+
+**El veredicto no se toca**, y no por comodidad:
+
+- La puerta se congeló sobre la ventana completa y la regla 1 prohíbe reabrir una
+  familia archivada con los mismos datos. Que 2026 aislado pase no es un pase:
+  elegir el subperiodo que cruza la barra es exactamente el sesgo que el
+  pre-registro existe para impedir.
+- No se ajusta ningún umbral ni se cambia la geometría. Los 240 pb siguen siendo
+  la barra con la que se archivó.
+- `TRIALS` sigue en **53**: es una lectura distinta de una medida ya archivada,
+  no una variante nueva.
+
+Lo que sí cambia es lo que hay que decir en el informe de cierre: la familia no
+falló por poco en un mercado representativo, falló en un mercado que ya la
+favorecía.
+
 ## Qué no se hizo
 
 - No se ejecutó ningún simulador: no hay operaciones, PF, esperanza ni drawdown

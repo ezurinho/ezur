@@ -70,6 +70,8 @@ def main() -> int:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(description="Panel extendido con intervalo")
     parser.add_argument("--workers", type=int, default=24)
+    parser.add_argument("--klines", action="store_true",
+                        help="baja también las velas 1d de 2020-2022")
     args = parser.parse_args()
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -85,11 +87,15 @@ def main() -> int:
     print(f"{len(symbols)} símbolos · {len(ext_months)} meses nuevos · "
           f"{len(symbols) * len(ext_months)} ficheros de funding", flush=True)
 
-    jobs = [(symbol, month) for symbol in symbols for month in ext_months]
+    jobs = [(symbol, month, kind) for symbol in symbols for month in ext_months
+            for kind in ("funding",) if not args.klines]
+    if args.klines:
+        jobs = [(symbol, month, kind) for symbol in symbols for month in ext_months
+                for kind in ("funding", "klines")]
     stats = {"downloaded": 0, "cached": 0, "missing": 0, "badsum": 0, "error": 0}
 
-    def run(job: tuple[str, str]) -> tuple[str, str]:
-        state, _path, _error = f10.fetch_one("funding", job[0], job[1])
+    def run(job: tuple[str, str, str]) -> tuple[tuple[str, str, str], str]:
+        state, _path, _error = f10.fetch_one(job[2], job[0], job[1])
         return job, state
 
     done = 0
@@ -101,6 +107,22 @@ def main() -> int:
             if done % 2000 == 0:
                 elapsed = time.perf_counter() - started
                 print(f"  {done}/{len(jobs)} · {done / elapsed:.0f}/s · {stats}", flush=True)
+
+    perp_records: list[dict] = []
+    if args.klines:
+        for symbol in symbols:
+            for month in ext_months:
+                path = CACHE / "klines" / f"{symbol}-{month}.zip"
+                if path.is_file():
+                    for stamp, close, quote in f10.parse_klines(path):
+                        perp_records.append({"symbol": symbol, "dt": stamp, "close": close,
+                                             "quote_volume": quote})
+            for month in old_months:
+                path = BASE_CACHE / "klines" / f"{symbol}-{month}.zip"
+                if path.is_file():
+                    for stamp, close, quote in f10.parse_klines(path):
+                        perp_records.append({"symbol": symbol, "dt": stamp, "close": close,
+                                             "quote_volume": quote})
 
     records: list[dict] = []
     for symbol in symbols:
@@ -134,6 +156,16 @@ def main() -> int:
     daily.to_csv(path, index=False, date_format="%Y-%m-%d")
 
     digest = hashlib.sha256(path.read_bytes()).hexdigest()
+
+    perp = pd.DataFrame(perp_records)
+    perp_sha = None
+    if not perp.empty:
+        perp["dt"] = pd.to_datetime(perp["dt"], utc=True).dt.floor("D")
+        perp = perp.drop_duplicates(["symbol", "dt"]).sort_values(["symbol", "dt"])
+        perp_path = OUT_DIR / "perp_daily.csv"
+        perp.to_csv(perp_path, index=False, date_format="%Y-%m-%d")
+        perp_sha = hashlib.sha256(perp_path.read_bytes()).hexdigest()
+
     freeze = {
         "source": "data.binance.vision futures/um monthly fundingRate",
         "universe": "perpetuos USD-M en USDT fuera de los 20 mayores de H5",
@@ -141,7 +173,9 @@ def main() -> int:
         "symbols": int(daily["symbol"].nunique()),
         "rows": int(len(daily)),
         "events": int(len(events)),
+        "perp_rows": int(len(perp)),
         "funding_sha256": digest,
+        "perp_sha256": perp_sha,
         "events_per_year": {
             str(year): int(len(group)) for year, group in events.groupby(events["dt"].dt.year)
         },
@@ -149,7 +183,8 @@ def main() -> int:
         "generated_at": datetime.now(UTC).isoformat(),
     }
     (OUT_DIR / "freeze.json").write_text(json.dumps(freeze, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps({k: freeze[k] for k in ("symbols", "rows", "events", "funding_sha256",
+    print(json.dumps({k: freeze[k] for k in ("symbols", "rows", "events", "perp_rows",
+                                             "funding_sha256", "perp_sha256",
                                              "events_per_year", "fetch_stats")}, indent=2))
     return 0
 
