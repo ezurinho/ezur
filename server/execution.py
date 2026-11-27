@@ -391,6 +391,7 @@ class ExecutionEngine:
                 units=order.units,
                 entry_price=fill,
                 stop_price=order.stop_price or fill,
+                initial_stop_price=order.stop_price or fill,
                 target_price=order.target_price,
                 opened_ts=bar.t,
                 entry_fees=self._fees(order.symbol, order.units, fill),
@@ -584,7 +585,12 @@ class ExecutionEngine:
 
     def _risk_per_unit(self, position: Position) -> float:
         spec = self._instrument(position.symbol)
-        return abs(position.entry_price - position.stop_price) / spec.tick_size * spec.tick_value
+        # El trailing mueve el stop; el R de la operacion se mide contra el
+        # stop inicial o el denominador se encoge y el R se dispara.
+        reference = position.initial_stop_price
+        if reference is None:
+            reference = position.stop_price
+        return abs(position.entry_price - reference) / spec.tick_size * spec.tick_value
 
     def expire_pending(self, max_age_s: float, now: datetime) -> int:
         """Cancela órdenes de entrada demasiado antiguas antes de poder rellenarse."""
