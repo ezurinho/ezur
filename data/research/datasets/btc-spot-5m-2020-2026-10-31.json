@@ -1,0 +1,13 @@
+{
+  "dataset_id": "btc-spot-5m-2020-2026-10-31",
+  "path": "data/btc_5m_spot_canonical.pkl",
+  "sha256": "90d33bd1cfb25d2a38e0d499501963eca93b7e06a835df078664d58a9a9d889b",
+  "source": "data.binance.vision spot 1m BTCUSDT",
+  "raw": "data/BTC_1m_binance.csv",
+  "raw_sha256": "1b7a12d5b7684671c931b5dd70f58cbb38062ace0893b927e650da5811d039e7",
+  "symbol": "BTCUSDT_SPOT",
+  "rows": 718386,
+  "first": "2020-01-01T00:00:00+00:00",
+  "last": "2026-10-31T23:55:00+00:00",
+  "note": "Rejilla 5m derivada de velas spot de 1m; solo se cambió la etiqueta de símbolo del alias de motor a BTCUSDT_SPOT, sin tocar precios ni volumen."
+}
