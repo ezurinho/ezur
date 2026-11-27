@@ -1,8 +1,10 @@
 # Familias con dato nuevo después de H7
 
 **Fecha:** 2026-11-27
-**Estado:** H8 y H9 medidas y archivadas el 2026-11-27; H10 sigue siendo
-propuesta. Cualquier ejecución futura empieza por un pre-registro con hash.
+**Estado:** H8 y H9 medidas y archivadas el 2026-11-27. La revisión adelantada
+del 2026-11-27 (`docs/REVISION-DISENO-H10.md`) **descarta on-chain como familia**
+y fija H10 = extensión de universo de H5 al tramo largo. Cualquier ejecución
+futura empieza por un pre-registro con hash.
 
 ## Criterio de valor
 
@@ -20,7 +22,7 @@ el carry de un solo venue está arbitrado (H2/H5), el momentum de precio es beta
 o está muerto (H3/H6), y el flujo de taker a 3 días se desvanece (H7). Una
 familia nueva tiene que ser **ortogonal** a esas tres.
 
-## Ranking
+## Ranking original (2026-11-27, antes de medir H8 y H9)
 
 | # | Familia | Dato nuevo | Evidencia | Esfuerzo | ¿Desplegable? | Valor |
 |---|---|---|---:|---:|---|---|
@@ -31,6 +33,20 @@ familia nueva tiene que ser **ortogonal** a esas tres.
 | 5 | Prima de volatilidad de opciones | DVOL/IV de Deribit | QF 2024, JEF 2023; decay 2024-2026 | 3-4 semanas | No sin opciones | **Medio (research)** |
 | 6 | Cascadas y open interest | OI y liquidaciones | Reversión real, no pagable | 2 semanas + bloqueo de datos | No | **Bajo** |
 | 7 | Sentimiento (Google/Twitter) | Términos de búsqueda, posts | Débil y ruidosa | 1-2 semanas | No | **Bajo** |
+
+---
+
+## Ranking vigente (revisión del 2026-11-27)
+
+| # | Familia | Prima por episodio | ¿Falsable con las puertas? | ¿Desplegable? | Veredicto |
+|---|---|---:|---|---|---|
+| 1 | Carry cross-sectional en el tramo largo (extensión de H5) | Alta: la dispersión de funding crece al bajar capitalización | Sí | Sí, sólo perpetuos | **H10** |
+| 2 | Spread entre venues en el tramo largo | Alta | **No**: Hyperliquid no tiene historia de small caps | Sí | fuera por datos |
+| 3 | Flujos on-chain de stablecoins | Beta, no prima | **No**: ni 100 ops ni DD 2,5 % | Sólo filtro | descartada como familia |
+| 4 | Liquidez macro | Beta | Sí, pero es timing de un activo | Sí | descartada (ya H6) |
+
+Opciones y cascadas siguen fuera por infraestructura y por histórico truncado.
+La justificación completa está en `docs/REVISION-DISENO-H10.md`.
 
 ---
 
@@ -210,10 +226,12 @@ que ya está en el precio. No la pondría por delante de las anteriores.
 2. **H9: basis spot-perp.** Medida y archivada: falló por muestra, PF, esperanza
    y top-5. El carry de 2025-2026 no cubre 28 pb de coste. No se reintenta con
    otro umbral.
-3. **H10: on-chain de stablecoins.** Siguiente familia, pero H7-H9 son tres
-   fallos consecutivos: antes hay pausa de dos semanas y revisión de diseño el
-   2027-01-08. Macro y opciones quedan para después de la puerta del 2027-02-26
-   o para un bot con opciones.
+3. **H10: no es on-chain.** La revisión adelantada del 2026-11-27 descarta
+   on-chain (no es falsable con estas puertas y es beta con otro nombre) y fija
+   H10 = extensión de universo de H5 al tramo largo de perpetuos. La pausa de dos
+   semanas se mantiene hasta el 2026-12-11; después, pre-registro, medida y
+   archivo. Si el panel no incluye los deslistados, H10 no se mide y se cierra
+   la búsqueda. Macro y opciones siguen descartadas.
 
 Cada una empieza con pre-registro y hash, 5 variantes como máximo, las 10
 puertas del plan y la regla de archivo del mismo día. Sin excepciones.
