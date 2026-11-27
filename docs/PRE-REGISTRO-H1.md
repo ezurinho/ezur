@@ -1,20 +1,31 @@
-# Pre-registro H1 — tendencia BTC spot 4 h
+# Pre-registro H1 — tendencia BTC spot 1 h
 
 **Fecha:** 2026-11-27
 **Estado:** congelado antes de implementar y antes de ejecutar cualquier backtest.
-**Hipótesis:** el trend following en BTC spot a 4 h conserva una ventaja neta
-después de costes porque reduce la rotación ~24× frente a 15 m sin perder la
-señal de tendencia. Si falla una puerta dura, H1 se archiva y no se reajusta.
+**Hipótesis:** el trend following en BTC spot a 1 h conserva una ventaja neta
+después de costes porque reduce la rotación 4× frente a 15 m sin perder la señal
+de tendencia. Si falla una puerta dura, H1 se archiva y no se reajusta.
+
+## Corrección de viabilidad (antes de medir)
+
+El plan pedía 4 h y ≥100 operaciones OOS. El conteo de señales sobre el dataset
+canónico mostró que 4 h no puede cumplirlo en un solo par: con un canal de 55
+velas y filtro SMA200 hay 31 señales espaciadas 24 h en 2025; con 40 velas, 36;
+con 10 velas, 55. Aun sin ocupación de posición, ninguna llega a 100.
+
+Se corrige el marco a **1 h** antes de implementar o ejecutar nada, y se amplía
+la validación a 2025-01-01/2026-11-01 (22 meses, sin tocar el holdout de
+2026-12). Con 1 h y canal de 10-20 velas hay 121-150 señales espaciadas en 2025,
+suficientes para superar las 100 operaciones OOS tras descontar la ocupación.
+La corrección es de viabilidad muestral, no de resultados: no se ha corrido
+ningún backtest de H1 todavía.
 
 ## Por qué existiría la ventaja
 
-- **Rotación:** 15 m son 96 velas/día (35.040/año); 4 h son 6/día (2.190/año).
-  El presupuesto de fricción cae con la frecuencia. BLL (IRFA 2024) mide
-  break-even costs de 4,21–6,10 % en diario frente a 0,44–0,98 % en 60 m y
-  0,29–0,83 % en 10 m: cuanto más corto el marco, más cerca está el coste de
-  comerse el bruto. Khan (SSRN 7573918, preprint 2026) sitúa la frontera de
-  rentabilidad entre 1 h y 4 h, y encuentra que 5 m no es rentable ni con coste
-  casi nulo.
+- **Rotación:** 15 m son 96 velas/día (35.040/año); 1 h son 24/día (8.760/año).
+  El presupuesto de fricción cae 4×. BLL (IRFA 2024) mide break-even costs de
+  4,21–6,10 % en diario frente a 0,58–0,98 % en 60 m: el coste se acerca al
+  bruto al bajar de frecuencia, pero 1 h sigue por encima del umbral.
 - **Quién paga:** infra-reacción a la información y efecto disposición en
   tenedores de BTC (venden ganadores antes de tiempo), adopción extrapolativa
   del retail tras las subidas (BIS WP 1049: 73–81 % del retail perdió en su
@@ -26,20 +37,19 @@ señal de tendencia. Si falla una puerta dura, H1 se archiva y no se reajusta.
   eso H1 usa 3 ATR y sale por trailing, no por objetivo fijo.
 
 **Límite honesto:** no hay estudio peer-reviewed de trend following BTC-only a
-4 h con retorno neto y drawdown. El resultado H4 más cercano es un preprint
-sobre 150+ perpetuos (Sharpe 2,08, MDD −15,6 %, 213 operaciones/mes), que sirve
-como orden de magnitud, no como expectativa. Esta es una hipótesis pre-registrada,
-no una promesa.
+1 h con retorno neto y drawdown. La evidencia de frecuencias altas es
+consistente en que el bruto existe y el coste decide; esta es una hipótesis
+pre-registrada, no una promesa.
 
 ## Reglas exactas (congeladas)
 
 | Campo | Regla |
 |---|---|
 | Instrumento | BTC spot (`BTCUSDT_SPOT`), una sola posición, sin cortos, sin pirámide |
-| Marco de señal | 4 h, velas UTC agregadas desde el dataset de 5 m |
-| Entrada | cierre > máximo de las `N` velas de 4 h anteriores **y** cierre > SMA(200) de 4 h |
+| Marco de señal | 1 h, velas UTC agregadas desde el dataset de 5 m |
+| Entrada | cierre > máximo de las `N` velas de 1 h anteriores **y** cierre > SMA(200) de 1 h |
 | Ejecución | apertura de la vela siguiente (`next_open`), slippage y comisión del perfil |
-| Stop inicial | entrada − `k` × ATR(14) de 4 h |
+| Stop inicial | entrada − `k` × ATR(14) de 1 h |
 | Trailing | tras cada vela cerrada: stop = max(stop, máximo alto desde la entrada − `k_trail` × ATR(14)); nunca baja |
 | Objetivo | 100 R (desactivado a efectos prácticos; la salida es el trailing) |
 | Time stop | 1.000.000 de velas (desactivado) |
@@ -57,11 +67,11 @@ idea original («entrada limit») antes de medir, no después.
 
 | ID | N | k (stop) | k_trail | Papel |
 |---|---:|---:|---:|---|
-| H1-40-3 | 40 | 3,0 | 3,0 | variante de canal corto |
-| **H1-55-3** | **55** | **3,0** | **3,0** | **candidata a priori** |
-| H1-70-3 | 70 | 3,0 | 3,0 | variante de canal largo |
-| H1-55-4 | 55 | 4,0 | 4,0 | stop más ancho |
-| H1-55-25 | 55 | 3,0 | 2,5 | salida más ajustada |
+| H1-10-3 | 10 | 3,0 | 3,0 | canal corto |
+| **H1-15-3** | **15** | **3,0** | **3,0** | **candidata a priori** |
+| H1-20-3 | 20 | 3,0 | 3,0 | canal largo |
+| H1-15-4 | 15 | 4,0 | 4,0 | stop más ancho |
+| H1-15-25 | 15 | 3,0 | 2,5 | salida más ajustada |
 
 La candidata es la del centro de la rejilla, elegida **antes** de ver resultados.
 No se elige la mejor variante del ciclo: el ciclo mide el procedimiento, no
@@ -72,9 +82,9 @@ corona un ganador. No se añaden variantes después de esta fecha.
 | Bloque | Periodo | Uso |
 |---|---|---|
 | Desarrollo | 2020-01-01 / 2025-01-01 | PBO, DSR, WFA, CPCV, estrés |
-| Validación | 2025-01-01 / 2026-01-01 | OOS real, una sola vez, reglas congeladas |
+| Validación | 2025-01-01 / 2026-11-01 | OOS real, una sola vez, reglas congeladas |
 | Holdout | 2026-12-01 / 2027-05-31 | sellado; no se abre con este pre-registro |
-| No usado | 2026-01-01 / 2026-10-31 | fuera de desarrollo y validación |
+| No usado | — | no queda tramo sin asignar |
 
 ## Puertas duras (las del plan, sin cambios)
 
