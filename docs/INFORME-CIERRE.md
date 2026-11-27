@@ -27,7 +27,7 @@ muestra.
 | H2 | Carry BTC | Funding de BTC como renta | **Falla** | 4 episodios · +2,35 % anual · IC80 1,85-6,75 % (no es muestra) |
 | H3 | Momentum cross-sectional | Ganadores de 7 d siguen ganando | **Falla** | PF 0,7046 · esperanza −0,0447 R · P&L −30,9 % |
 | H4 | Pares spot contra BTC | Cointegración de 20 alts con BTC | **Falla** | PF 0,9235 · esperanza −0,0044 R · P&L −2,75 % |
-| H5 | Carry cross-sectional de funding | Largo del quintil inferior de funding, 20 majors | **Falla** | candidata PF 1,1114 · 0,0301 R (puerta 0,05) · top-5 −1.864; raw PF 1,1849 pero **DSR 0,54** |
+| H5 | Apuesta de precio con sesgo de funding | Largo del quintil de menor funding, 20 majors; el P&L fue precio y la pata de funding pierde por sí sola | **Falla** | candidata PF 1,1114 · 0,0301 R (puerta 0,05) · top-5 −1.864; raw PF 1,1849 pero **DSR 0,54** |
 | H6 | TSMOM long-only | Momentum de 60 d en 20 perpetuos | **Falla** | −40,8 % OOS · PF 0,8766 · peor DD que BTC · top-5 −20.400 |
 | H7 | Flujo de taker | Order flow agresivo a 3 días | **Falla** | −27,3 % OOS · PF 0,9355 · top-5 −11.152; ninguna de las 5 variantes pasa |
 | H8 | Spread de funding entre venues | Binance contra Hyperliquid | **Falla** | +0,32 % · PF 10,46 · 0,0094 R · **17 episodios / 34 ops**; ninguna variante llega a 100 ops |
@@ -40,8 +40,10 @@ espacio estaba agotado.
 
 **Cómo fallan, agrupadas:**
 
-- **Por magnitud** (H5, H8, H9): la señal existe pero el edge por operación es
+- **Por magnitud** (H8, H9): la señal existe pero el edge por operación es
   demasiado pequeño frente a la puerta o frente al coste.
+- **Por ruido** (H5): su pata de carry pierde y lo que quedaba de precio no se
+  distingue de una permutación del funding (p = 0,078).
 - **Por concentración** (H5 raw, H6, H7): el resultado depende de cuatro o cinco
   operaciones; el top-5 se come el P&L en cada año.
 - **Por muestra** (H2, H8): cuatro o diecisiete episodios no sostienen nada.

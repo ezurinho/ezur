@@ -1,4 +1,7 @@
-# Archivo H5 — carry cross-sectional de funding
+# Archivo H5 — apuesta de precio con sesgo de funding
+
+*Pre-registrada como «carry cross-sectional de funding». La etiqueta cambió al
+medir la nulidad; el veredicto y las cifras no.*
 
 **Veredicto:** archivada el 2026-11-27. La candidata pre-registrada falla
 esperanza y concentración top-5. Una variante secundaria (funding bruto, sin

@@ -14,7 +14,7 @@ que no haya dudas.
 | Carry BTC (H2) | 5 | 2025-01/2026-11 | 4 episodios, +2,35 % anual, IC80 1,85-6,75 % | `docs/ARCHIVO-H2.md` |
 | Momentum cross-sectional (H3) | 5 | 2025-01/2026-11 | PF 0,7046, esperanza -0,0447 R, P&L -30,9 % | `docs/ARCHIVO-H3.md` |
 | Pares spot contra BTC (H4) | 5 | 2025-01/2026-11 | PF 0,9235, esperanza -0,0044 R, P&L -2,75 % | `docs/ARCHIVO-H4.md` |
-| Carry cross-sectional de funding (H5) | 5 | 2025-01/2026-11 | candidata PF 1,1114, esperanza 0,0301 R, top-5 -1.864; raw PF 1,1849 pero DSR 0,54 | `docs/ARCHIVO-H5.md` |
+| Apuesta de precio con sesgo de funding (H5) | 5 | 2025-01/2026-11 | candidata PF 1,1114, esperanza 0,0301 R, top-5 -1.864; raw PF 1,1849 pero DSR 0,54 | `docs/ARCHIVO-H5.md` |
 | TSMOM long-only en 20 perpetuos (H6) | 5 | 2025-01/2026-11 | candidata -40,8 %, PF 0,8766; 60 d bate a BTC pero con peor DD y top-5 -20.400 | `docs/ARCHIVO-H6.md` |
 | Flujo de taker (H7) | 5 | 2025-01/2026-11 | candidata -27,3 %, PF 0,9355, top-5 -11.152; ninguna variante pasa | `docs/ARCHIVO-H7.md` |
 | Spread de funding entre venues (H8) | 5 | 2025-01/2026-11 | candidata +0,32 %, PF 10,46, esperanza 0,0094 R, 17 episodios/34 ops; ninguna variante llega a 100 ops | `docs/ARCHIVO-H8.md` |
@@ -51,7 +51,8 @@ asumiendo que H10 llegaría a medirse, y no se midió.
 - La variante raw de H5 pasó PF, esperanza, coste y top-5 en la ventana
   completa, pero cayó en DSR (0,54) y en el top-5 de cada año. Es el primer
   casi-éxito y la mejor prueba de que el DSR y la concentración no son
-  decorativos.
+  decorativos. Su mecanismo era **precio, no carry**: aislada la pata de
+  funding, pierde sola (ver `docs/ARCHIVO-H5.md`).
 - El TSMOM long-only de H6 multiplicó por 148 en desarrollo con DD -89 % y
   perdió -40,8 % en OOS con peor drawdown que BTC. La puerta de benchmark evitó
   confundir beta de alts con una ventaja.
