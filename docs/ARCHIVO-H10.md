@@ -38,7 +38,8 @@ deslistados dentro y filtro de liquidez punto en tiempo.
 ## El cribado (regla 10)
 
 Ventanas no solapadas de 7 días desde cada lunes, con la misma elegibilidad que
-la cartera, quintil superior menos quintil inferior, sólo funding y sin precios.
+la cartera, los 8 nombres de funding más alto menos los 8 más bajo (ver el límite
+del tope más abajo), sólo funding y sin precios.
 
 | Métrica | Valor | Umbral |
 |---|---:|---:|
@@ -56,6 +57,45 @@ la cartera, quintil superior menos quintil inferior, sólo funding y sin precios
 | 2024 | 53 | 29,43 pb | 15,1 % |
 | 2025 | 52 | 114,82 pb | 48,1 % |
 | 2026 | 43 | 309,42 pb | 76,7 % |
+
+## Límite del cribado: el tope de 8 posiciones por lado
+
+El cribado topó la cartera en **8 posiciones por lado**. Con 183 elegibles de
+mediana, la fórmula del pre-registro (`k = max(2, round(n/5))`) da **37**, y la
+tabla de reglas declara **4** posiciones por lado de 3.125 USD. Las tres cifras no
+coinciden: el pre-registro es inconsistente y el cribado resolvió a favor del
+tope de 8.
+
+Eso mide **la cola extrema** —8 de 183, el 4,3 % superior e inferior— y no el
+quintil. La consecuencia es numérica:
+
+| Geometría | Posiciones por lado | Nocional por posición | Mediana capturada | Barra de la regla 10 |
+|---|---:|---:|---:|---:|
+| Reglas del pre-registro | 4 | 3.125 USD | 82,75 pb | 120 pb |
+| **Cribado ejecutado (tope)** | **8** | **1.562,50 USD** | **80,51 pb** | **240 pb** |
+| Quintil de la fórmula | 37 | 337,84 USD | 28,86 pb | 1.110 pb |
+
+Dos efectos, y **los dos favorecen a H10**:
+
+1. **La cola extrema paga más que el quintil.** Pasar de 8 a 37 nombres baja la
+   mediana de 80,51 a 28,86 pb: el tope infla la dispersión medida unas 2,8
+   veces. Es decir, el cribado no fue más exigente que el quintil, fue más
+   generoso.
+2. **La barra en pb depende del tamaño de posición.** Los 37,50 USD por posición
+   son 120 pb sobre 3.125, 240 sobre 1.562,50 y 1.110 sobre 337,84. El cribado
+   comparó la dispersión más ancha contra la barra más baja.
+
+Corregido en cualquier dirección el hueco se agranda: con el quintil puro la
+mediana es 28,86 pb frente a 1.110, y con 8 posiciones 80,51 frente a 240. **El
+fallo no depende del tope**; el tope sólo hacía que costara más verlo. Si el
+tope se hubiera aplicado con su propia barra (240 pb), H10 habría fallado por el
+triple.
+
+**Defecto del pre-registro, para la próxima familia.** `k` no puede depender de
+`n` y convivir con un nocional fijo por posición: si `k` crece, el nocional baja
+y la barra en pb sube. O se fija `k` y el nocional, o el umbral se declara en
+dólares por posición y se recalcula por geometría. Aquí quedó del lado generoso,
+que es el lado equivocado para fallar.
 
 ## Lectura
 
@@ -105,3 +145,5 @@ del 2027-02-26 se resuelve con el informe de cierre, no con otra medida.
 - Cribado: `scripts/screen_h10_dispersion.py`.
 - Datos: `data/h10/funding_daily.csv`, `perp_daily.csv`, `freeze.json` y
   `screen.json`. Los CSV no se trackean; `freeze.json` sí, por los hashes.
+- Sensibilidad del tope: `data/h10/screen_k4.json` y `screen_k37.json`
+  (`--max-per-side`).

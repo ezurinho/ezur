@@ -82,7 +82,7 @@ def panels(funding: pd.DataFrame, perp: pd.DataFrame):
 
 
 def screen(rate: pd.DataFrame, close: pd.DataFrame, quote: pd.DataFrame,
-           threshold: float) -> dict:
+           threshold: float, max_per_side: int = 8) -> dict:
     # Todo con datos hasta t-1: se desplaza un día antes de usarlo como filtro.
     adv = quote.rolling(30, min_periods=20).median().shift(1)
     history = close.notna().cumsum().shift(1)
@@ -114,7 +114,7 @@ def screen(rate: pd.DataFrame, close: pd.DataFrame, quote: pd.DataFrame,
 
         ranked = zscore.loc[date, members].sort_values()
         count = max(2, int(round(len(members) * 0.2)))
-        count = min(count, 8)
+        count = min(count, max_per_side)
         longs = list(ranked.index[:count])
         shorts = list(ranked.index[-count:])
 
@@ -171,6 +171,8 @@ def main() -> int:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(description="Cribado de dispersión de H10")
     parser.add_argument("--threshold", type=float, default=THRESHOLD_BP)
+    parser.add_argument("--max-per-side", type=int, default=8,
+                        help="tope de posiciones por lado (0 = sin tope, quintil puro)")
     parser.add_argument("--json", default=str(DATA / "screen.json"))
     args = parser.parse_args()
 
@@ -178,7 +180,9 @@ def main() -> int:
     print(f"panel congelado: {freeze['symbols']} símbolos, "
           f"{freeze['funding_rows']} filas de funding, {freeze['perp_rows']} de velas")
     is_rate_frame, close, quote = panels(funding, perp)
-    result = screen(is_rate_frame, close, quote, args.threshold)
+    cap = args.max_per_side if args.max_per_side > 0 else 10_000
+    result = screen(is_rate_frame, close, quote, args.threshold, cap)
+    result["max_per_side"] = args.max_per_side
 
     print(json.dumps({k: v for k, v in result.items() if k != "sample"}, indent=2, ensure_ascii=False))
     target = Path(args.json)
