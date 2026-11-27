@@ -132,6 +132,24 @@ Cada ejecución escribe una línea en `reports/experiments.jsonl`:
 
 Sin esa línea, el resultado es una descripción, no una validación.
 
+## Auditoría de fills contra 1 m
+
+Un backtest puede dar por bueno un precio que la vela de 1 m nunca ofreció. El
+flag `--audit-candles` compara las dos patas de cada operación con la vela que
+contiene su timestamp y añade `fill_audit` al JSON:
+
+```
+python -m server.backtest --dataset data/BTC_1m_2025.csv \
+    --config profiles/okx/config.json --audit-candles data/BTC_1m_2025.csv
+```
+
+El audit solo es exacto si la corrida usa velas de 1 m: con 15 m, el timestamp
+del fill es el inicio de la vela y la de 1 m no cubre todo su recorrido. La
+tolerancia sale de `execution.max_slippage_ticks`; un precio fuera del OHLC pero
+dentro de ese margen se cuenta como `tolerated`, no como imposible. Las
+operaciones con un fill imposible se eliminan y se comparan `pf_before` y
+`pf_after`; `pf_drop` mide cuánto baja el PF al quitarlas.
+
 ## Paridad backtest ↔ motor
 
 `tests/test_parity.py` ejecuta el mismo CSV por los dos caminos: `run_backtest`
