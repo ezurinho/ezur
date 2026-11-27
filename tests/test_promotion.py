@@ -476,6 +476,30 @@ def test_los_umbrales_de_seleccion_salen_del_contrato(tmp_path, monkeypatch):
     assert "PBO 0.110 > 0.05" in verdict["reason"]
 
 
+def test_el_reporte_publica_las_entradas_aleatorias_junto_a_pbo_y_dsr():
+    random_block = {
+        "available": True,
+        "config": "15m_7_21_a10_fast7",
+        "actual_pf": 0.785,
+        "random_pf_median": 0.812,
+        "random_pf_p05": 0.74,
+        "random_pf_p95": 0.89,
+        "percentile": 0.35,
+        "p_value": 0.66,
+        "trades": 650,
+    }
+
+    verdict = _evaluate(
+        EVIDENCE, STRESS, {**CYCLE, "random_entries": random_block}
+    )
+
+    assert verdict["random_entries"] == random_block
+    text = promotion.render(verdict)
+    assert "entradas aleatorias" in text
+    assert "0.785" in text
+    assert "0.812" in text
+
+
 def test_un_pbo_no_comparable_se_muestra_como_guion():
     from server import promotion
 
