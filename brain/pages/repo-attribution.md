@@ -5,7 +5,7 @@ category: decision
 status: active
 tags: [git, github, attribution]
 created: "2026-11-27T17:18:50"
-updated: "2026-11-27T17:18:50"
+updated: "2026-11-27T17:51:16"
 ---
 
 <!-- compiled_truth -->
@@ -50,5 +50,11 @@ por defecto.
 - time: 2026-11-27T17:18:50
   kind: decision
   summary: "Los commits no llevan trailer Co-Authored-By de Codebuff; el contributor codebuff-team se eliminó reescribiendo cinco repos el 2026-11-27."
+  source: "sesión 2026-11-27"
+  affects: [repo-attribution]
+
+- time: 2026-11-27T17:51:16
+  kind: decision
+  summary: "La regla se refuerza con .githooks/commit-msg y el job attribution de CI; ambos comparten scripts/check_attribution.py y el hook se activa con git config core.hooksPath .githooks."
   source: "sesión 2026-11-27"
   affects: [repo-attribution]
