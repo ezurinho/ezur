@@ -71,6 +71,13 @@ def _timeframe(dataset: Any) -> str:
     return match.group(1) if match else ""
 
 
+def _dataset_path(dataset: Any) -> str:
+    """Ruta declarada por una evidencia o por el bloque `inputs.dataset`."""
+    if isinstance(dataset, dict):
+        dataset = dataset.get("path") or dataset.get("dataset") or ""
+    return str(dataset or "").replace("\\", "/").lstrip("./").strip()
+
+
 def _limits() -> dict[str, float]:
     """Umbrales de selección del contrato compartido (`config/gates.json`).
 
@@ -588,6 +595,86 @@ def evaluate(
             )
         )
 
+        # La evidencia puede ser de la estrategia correcta y el ciclo medir otra
+        # implementación u otra fuente. Sin esta comprobación, el PBO/DSR de un
+        # artefacto ajeno se cuela en el veredicto del perfil.
+        cycle_provenance = isinstance(cycle, dict) and any(
+            key in cycle for key in ("strategy", "candidate", "inputs")
+        )
+        if research_hash or profile_hash or cycle_provenance:
+            cycle_strategy = (cycle or {}).get("strategy") or {}
+            cycle_strategy_id = str(cycle_strategy.get("id") or "")
+            cycle_strategy_version = str(cycle_strategy.get("version") or "")
+            cycle_matches = cycle_strategy_id == expected_id and (
+                not expected_version or cycle_strategy_version == expected_version
+            )
+            checks.append(
+                _check(
+                    "ciclo_de_la_estrategia",
+                    f"{cycle_strategy_id or '?'}@"
+                    f"{cycle_strategy_version or '?'}",
+                    expected,
+                    cycle_matches,
+                    "el ciclo no declara la estrategia del perfil"
+                    if not cycle_strategy_id
+                    else f"el ciclo mide {cycle_strategy_id}@"
+                    f"{cycle_strategy_version or '?'}, no {expected}",
+                )
+            )
+
+            evidence_dataset = _dataset_path((evidence or {}).get("dataset"))
+            cycle_dataset = _dataset_path(
+                (((cycle or {}).get("inputs") or {}).get("dataset"))
+            )
+            evidence_digest = str(
+                (evidence or {}).get("dataset_id")
+                or (evidence or {}).get("dataset_sha256")
+                or ""
+            )
+            cycle_dataset_block = (
+                ((cycle or {}).get("inputs") or {}).get("dataset") or {}
+            )
+            cycle_digest = str(
+                cycle_dataset_block.get("dataset_id")
+                or cycle_dataset_block.get("sha256")
+                or ""
+            )
+            dataset_matches = (
+                bool(evidence_dataset) and evidence_dataset == cycle_dataset
+            )
+            if evidence_digest and cycle_digest:
+                dataset_matches = dataset_matches and evidence_digest == cycle_digest
+            checks.append(
+                _check(
+                    "ciclo_del_dataset",
+                    cycle_dataset or "?",
+                    evidence_dataset or "?",
+                    dataset_matches,
+                    "el ciclo no declara dataset"
+                    if not cycle_dataset
+                    else f"el ciclo mide {cycle_dataset}, no {evidence_dataset}",
+                )
+            )
+
+            candidate = str((cycle or {}).get("candidate") or "").strip()
+            names = {
+                str(item.get("name"))
+                for item in ((cycle or {}).get("universe") or [])
+                if isinstance(item, dict) and item.get("name")
+            }
+            candidate_matches = bool(candidate) and (not names or candidate in names)
+            checks.append(
+                _check(
+                    "ciclo_declarar_candidato",
+                    candidate or "?",
+                    "un candidato del universo",
+                    candidate_matches,
+                    "el ciclo no declara el candidato del perfil"
+                    if not candidate
+                    else f"{candidate} no pertenece al universo del ciclo",
+                )
+            )
+
     expected_hash = str(config_hash or "")
     expected_research = str(research_hash or "")
     if expected_research:
@@ -669,6 +756,11 @@ def evaluate(
             "brakes": (evidence or {}).get("brakes"),
             "profile_hash_current": profile_hash,
             "brakes_current": brakes,
+            "cycle_strategy": (cycle or {}).get("strategy"),
+            "cycle_dataset": (
+                ((cycle or {}).get("inputs") or {}).get("dataset")
+            ),
+            "cycle_candidate": (cycle or {}).get("candidate"),
         },
     }
 
