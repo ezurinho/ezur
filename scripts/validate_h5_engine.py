@@ -46,9 +46,10 @@ def load_h5():
     return funding, prices
 
 
-def load_h10(min_adv: float = 0.0):
-    funding = pd.read_csv(ROOT / "data" / "h10" / "funding_daily.csv", parse_dates=["dt"])
-    perp = pd.read_csv(ROOT / "data" / "h10" / "perp_daily.csv", parse_dates=["dt"])
+def load_h10(min_adv: float = 0.0, folder: str = "h10",
+             start: pd.Timestamp = START, end: pd.Timestamp = END):
+    funding = pd.read_csv(ROOT / "data" / folder / "funding_daily.csv", parse_dates=["dt"])
+    perp = pd.read_csv(ROOT / "data" / folder / "perp_daily.csv", parse_dates=["dt"])
     for frame in (funding, perp):
         frame["dt"] = pd.to_datetime(frame["dt"], utc=True).dt.floor("D")
     rate = funding.pivot_table(index="dt", columns="symbol", values="rate", aggfunc="sum").sort_index()
@@ -56,9 +57,9 @@ def load_h10(min_adv: float = 0.0):
     quote = perp.pivot_table(index="dt", columns="symbol", values="quote_volume", aggfunc="last").sort_index()
     rate = rate.reindex(index=close.index, columns=close.columns)
     quote = quote.reindex(index=close.index, columns=close.columns)
-    rate = rate[(rate.index >= START) & (rate.index < END)]
-    close = close[(close.index >= START) & (close.index < END)]
-    quote = quote[(quote.index >= START) & (quote.index < END)]
+    rate = rate[(rate.index >= start) & (rate.index < end)]
+    close = close[(close.index >= start) & (close.index < end)]
+    quote = quote[(quote.index >= start) & (quote.index < end)]
     return rate, close, quote, min_adv
 
 
@@ -81,7 +82,7 @@ def replay(funding: pd.DataFrame, prices: pd.DataFrame, *, persistent: bool,
            ffill: bool, strict: bool, quantile: float = 0.2,
            per_side: int | None = None, min_eligible: int = 10,
            close_on_missing: bool = True, adv: pd.DataFrame | None = None,
-           min_adv: float = 0.0) -> dict:
+           min_adv: float = 0.0, daily_out: bool = False) -> dict:
     frame = prices.ffill() if ffill else prices
     dates = list(prices.index)
     positions: dict[str, dict] = {}
@@ -198,6 +199,8 @@ def replay(funding: pd.DataFrame, prices: pd.DataFrame, *, persistent: bool,
         "precio": round(float(frame_eps["price"].sum()), 2),
         "funding": round(float(frame_eps["funding"].sum()), 2),
         "costes": round(float(frame_eps["costs"].sum()), 2),
+        **({"diario": {d.strftime("%Y-%m-%d"): round(float(v), 10)
+                       for d, v in daily.items() if v != 0.0}} if daily_out else {}),
     }
 
 

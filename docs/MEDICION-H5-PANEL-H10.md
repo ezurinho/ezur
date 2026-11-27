@@ -4,11 +4,14 @@
 etiqueta cambió al medir la nulidad del motor, no aquí: las cifras de este
 documento son las mismas que se publicaron.)*
 
-**Respuesta corta:** el veredicto no cambia. H5 sigue archivada. La configuración
+**Respuesta corta:** el veredicto no cambia, y el panel extendido lo refuerza. H5 sigue archivada. La configuración
 que respeta sus reglas sobre el panel falla la puerta de esperanza por un factor
 de 7,6. La corrección del sesgo de supervivencia no escondía un resultado
 desplegable, y la única configuración que pasa las puertas simples agregadas
-falla el top-5 **en cada año por separado** y depende de cinco operaciones.
+falla el top-5 **en cada año por separado** y depende de cinco operaciones. El
+panel extendido, que la primera versión daba por inalcanzable, añade PBO, DSR y
+CPCV (§3.1): el DSR de k = 4 con 54 ensayos es 0,08 en 2020-2024 y 0,21 en
+2020-2026.
 
 **Fecha:** 2026-11-27. **Ventana:** 2025-01-01 / 2026-10-31.
 
@@ -75,10 +78,12 @@ igual a las dos cifras.
 | | Coste: 6 pb por posición y lado |
 | | R: 250 USD; puertas en R y en dólares, no en pb |
 
-El panel empieza el 2023-01-01: el bloque de desarrollo de H5 (2020-2024) no se
-puede reproducir, así que no hay PBO, DSR ni CPCV. Y la ventana 2025-01/2026-10
-ya la gastó H5: **nada de aquí puede confirmar una hipótesis**; sólo el fallo es
-informativo.
+El panel congelado de H10 empieza el 2023-01-01, pero `data/h10ext` reconstruye
+el mismo panel desde 2020-01 con la misma construcción y hashes propios. Con él
+el bloque de desarrollo (2020-2024) **sí** se reproduce, y PBO, DSR y CPCV están
+calculados en §3.1; la versión anterior de este documento decía que no se podía.
+La ventana 2025-01/2026-10 ya la gastó H5: **nada de aquí puede confirmar una
+hipótesis**; sólo el fallo es informativo.
 
 ## 3. Resultados, con el motor validado
 
@@ -105,6 +110,66 @@ el quintil el compuesto supera a las patas y en k = 4 se queda muy por debajo
 
 **La configuración fiel falla la esperanza por 7,6×** (0,0066 frente a 0,05). Las
 otras dos fallan por 19× y por ninguna.
+
+## 3.1 PBO, DSR y CPCV con el panel extendido
+
+La primera versión de este documento afirmaba que el bloque 2020-2024 no se podía
+reproducir y que por eso no había PBO, DSR ni CPCV. Era falso: `data/h10ext`
+cubre 2020-01/2026-10 con el mismo panel y el motor validado corre sobre él. El
+cálculo vive en `scripts/selection_h10ext.py` y su salida en
+`data/h10ext/selection.json`.
+
+**Espacio de búsqueda:** las tres geometrías de §3, ni una más. No se añaden
+variantes para tener más columnas: eso sería una búsqueda nueva y otro ensayo.
+La matriz diaria es de 1.675 días (2020-2024) y 2.344 (2020-2026); CSCV con 10
+bloques y 252 particiones; CPCV con 10 bloques, 2 de test y purga de 1, 45
+caminos; coste 6 pb, el de la medición.
+
+| Ventana | Días | PBO (≤ 0,20) | CPCV bajo mediana | Rango OOS medio |
+|---|---:|---:|---:|---:|
+| 2020-04 / 2024-12 | 1.675 | 0,2063 | 4,4 % | 81 % |
+| 2020-04 / 2026-10 | 2.344 | 0,1825 | 11,1 % | 81 % |
+
+| 2020-04 / 2024-12 | Ops | Compuesto | PF | Esperanza | Sin top-5 | Sharpe diario | DSR(3) | DSR(54) |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Quintil sin filtro | 15.324 | +111.367 | 1,1809 | 0,0117 R | +32.834 | 0,0979 | 0,9974 | **0,9641** |
+| Quintil con filtro 5M | 14.104 | +68.108 | 1,1390 | 0,0100 R | +20.591 | 0,0787 | 0,9723 | 0,8284 |
+| k = 4 con filtro 5M | 2.794 | +12.944 | 1,0625 | 0,0275 R | **−4.130** | 0,0223 | 0,3210 | **0,0798** |
+
+Sobre 2020-2026 los DSR(54) son 0,9912, 0,9299 y **0,2080** en el mismo orden.
+
+**DSR(3)** usa la dispersión empírica de las tres geometrías; **DSR(54)** usa el
+umbral de 54 ensayos bajo nulos independientes (Var(SR) = 1/T), que es el
+múltiplo del laboratorio. No son el mismo número: el segundo es más exigente y
+no se mezclan.
+
+**Lo que dicen.**
+
+- El PBO está en el borde: 0,2063 en el bloque de desarrollo —seis milésimas por
+  encima del umbral— y 0,1825 en el tramo completo. Con tres configuraciones esa
+diferencia es ruido; lo honesto es decir «en el borde», no aprobar ni suspender.
+- El CPCV es bajo (4,4 % y 11,1 % de caminos por debajo de la mediana, rango OOS
+  medio 81 %): la geometría elegida in-sample suele quedarse por encima de la
+  mediana out-of-sample. El espacio no es una máquina de sobreajuste.
+- Pero la geometría elegida **nunca es k = 4**: gana 1 de 45 caminos en el bloque
+  de desarrollo y 0 de 45 en el completo. Es la peor en Sharpe en las dos
+  ventanas y su DSR(54) es 0,0798 y 0,2080, lejos de 0,95 incluso antes de
+  deflactar por 54 ensayos. Su pase de puertas de 2025-2026 no sobrevive a la
+  ventana extendida, que es lo que el top-5 por año ya avisaba.
+- El quintil sí tiene un edge estadísticamente real sobre 2020-2026 (DSR(54)
+  0,96/0,99), pero su esperanza es 0,010-0,012 R por operación en el bloque de
+  desarrollo y 0,0026-0,0066 R en 2025-2026: entre 4 y 19 veces por debajo del
+  umbral de 0,05 R. Significativo no es desplegable.
+
+**Límites.** Tres configuraciones son un espacio pobre: el PBO y el CPCV son
+mucho más gruesos que con una rejilla, y por eso se reportan con su número de
+particiones. El bloque 2020-2024 comparte con el desarrollo de H5 los parámetros
+de la señal (7 días, z de 90) sobre otro universo, así que no es una muestra
+independiente al 100 %. Y el DSR(54) es un umbral bajo nulos, no la dispersión
+empírica del ledger de 54 ensayos, que no se guarda.
+
+Estas tres métricas son diagnóstico de selección sobre familias ya archivadas:
+no añaden ensayos, no cambian veredictos y no tocan el holdout.
 
 ## 4. Por qué falla la configuración fiel
 
