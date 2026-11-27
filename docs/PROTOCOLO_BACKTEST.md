@@ -150,6 +150,25 @@ dentro de ese margen se cuenta como `tolerated`, no como imposible. Las
 operaciones con un fill imposible se eliminan y se comparan `pf_before` y
 `pf_after`; `pf_drop` mide cuánto baja el PF al quitarlas.
 
+## Procedencia del ciclo
+
+El artefacto del ciclo declara `strategy` (id/version del perfil cuando se lanza
+con sus límites), `candidate` (la configuración que opera el perfil),
+`candidate_detail`, y `inputs.dataset.dataset_id`/`sha256`. El `method_version`
+se incrementó a `1.2.0`.
+
+La puerta de promoción comprueba tres cosas antes de aceptar el PBO/DSR:
+
+- `ciclo_de_la_estrategia`: el ciclo mide la misma estrategia que la evidencia
+  y que el perfil.
+- `ciclo_del_dataset`: la ruta y, si existen, los hashes del dataset coinciden.
+- `ciclo_declarar_candidato`: el ciclo nombra un candidato y pertenece a su
+  universo.
+
+Un ciclo antiguo, de otra implementación o de otra fuente queda rechazado. No
+se rellena el campo a mano para que pase: se vuelve a ejecutar el ciclo sobre la
+estrategia y el dataset que operan.
+
 ## Entradas aleatorias frente a PBO/DSR
 
 El ciclo publica `random_entries` junto a `pbo` y `dsr`. Compara el PF del
