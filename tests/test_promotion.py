@@ -23,7 +23,10 @@ STRESS = {"split": {"out_of_sample": {"trades": 169, "profit_factor": 1.03}}}
 CYCLE = {
     "pbo": {"pbo": 0.11},
     "dsr": {"dsr": 0.97},
-    "universe": [{"timeframe": "1h"}],
+    "strategy": {"id": "reference", "version": "0.1.0"},
+    "candidate": "reference",
+    "inputs": {"dataset": {"path": "data/BTC_1h_binance.csv"}},
+    "universe": [{"name": "reference", "timeframe": "1h"}],
 }
 
 EXECUTION = {
@@ -112,6 +115,45 @@ def test_la_evidencia_tiene_que_ser_de_la_estrategia_configurada():
     assert "reference@0.1.0" in verdict["reason"]
 
 
+def test_un_ciclo_de_otra_estrategia_no_promueve():
+    verdict = _evaluate(
+        {**EVIDENCE, "strategy": {"id": "reference", "version": "0.1.0"}},
+        STRESS,
+        {**CYCLE, "strategy": {"id": "donchian", "version": "0.1.0"}},
+        {"id": "reference", "version": "0.1.0"},
+    )
+
+    assert verdict["passed"] is False
+    assert "ciclo_de_la_estrategia" in verdict["failed"]
+    assert "donchian@0.1.0" in verdict["reason"]
+
+
+def test_un_ciclo_de_otro_dataset_no_promueve():
+    verdict = _evaluate(
+        {**EVIDENCE, "strategy": {"id": "reference", "version": "0.1.0"}},
+        STRESS,
+        {**CYCLE, "inputs": {"dataset": {"path": "data/btc_5m.pkl"}}},
+        {"id": "reference", "version": "0.1.0"},
+    )
+
+    assert verdict["passed"] is False
+    assert "ciclo_del_dataset" in verdict["failed"]
+    assert "btc_5m.pkl" in verdict["reason"]
+
+
+def test_un_ciclo_sin_candidato_no_promueve():
+    cycle = {**CYCLE, "candidate": ""}
+    verdict = _evaluate(
+        {**EVIDENCE, "strategy": {"id": "reference", "version": "0.1.0"}},
+        STRESS,
+        cycle,
+        {"id": "reference", "version": "0.1.0"},
+    )
+
+    assert verdict["passed"] is False
+    assert "ciclo_declarar_candidato" in verdict["failed"]
+
+
 def test_la_evidencia_de_la_estrategia_correcta_pasa():
     verdict = _evaluate(
         {**EVIDENCE, "strategy": {"id": "reference", "version": "0.1.0"}},
@@ -121,7 +163,7 @@ def test_la_evidencia_de_la_estrategia_correcta_pasa():
     )
 
     assert verdict["passed"] is True
-    assert len(verdict["checks"]) == 7
+    assert len(verdict["checks"]) == 10
 
 
 def test_la_evidencia_tiene_que_ser_de_la_configuracion_medida():
@@ -156,7 +198,7 @@ def test_la_configuracion_medida_promueve():
     )
 
     assert verdict["passed"] is True
-    assert len(verdict["checks"]) == 8
+    assert len(verdict["checks"]) == 11
 
 
 def test_una_evidencia_sin_hash_no_se_puede_atribuir():
