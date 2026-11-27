@@ -203,45 +203,72 @@ solo día del panel. No es un filtro de entrada: es la condición económica que
 H10 debe cumplir para que medirla tenga sentido. Si el panel no la cumple, la
 familia se archiva **sin calcular P&L**.
 
-**Unidad.** 25.000 USD brutos, dos patas de 12.500. R = 500 USD, la convención
-de H9 (8,75 USD de coste = 0,0175 R). Una pata paga dos lados × 10 pb = 20 pb por
-episodio; el par paga 40 pb = 50 USD, en línea con el coste declarado. Y
-0,05 R = 25 USD = 20 pb sobre 12.500.
+**Unidad.** 25.000 USD brutos: 4 posiciones largas y 4 cortas de 3.125 USD cada
+una. **Un episodio es una posición**, de entrada a salida, y son **dos
+operaciones**; así las cuenta el simulador (`operations = 2 * len(episodes)`).
+R = **250 USD**: `RISK_FRACTION = 0.01` sobre `CAPITAL = 25_000` en
+`server/funding_xs.py`, constante que importa `server/basis_carry.py`.
+
+Una posición paga 10 pb al abrir y 10 al cerrar: **20 pb = 6,25 USD** de ida y
+vuelta. La puerta de esperanza pide 0,05 R **por operación** = 12,5 USD; un
+episodio son dos operaciones, así que necesita **25 USD netos**, que sobre 3.125
+de nocional son **80 pb**.
+
+**Corrección del mismo día.** La primera versión decía R = 500 USD y 100 pb,
+deducidos de dos atajos: dividir el coste del episodio de H9 entre R sin
+repartirlo entre sus dos operaciones, y tratar el episodio como el par completo
+(40 pb) cuando el simulador cuenta una posición (20 pb). Con el código delante,
+8,75 / 2 / 250 = 0,0175 R, que es exactamente lo que publica H9. **El umbral
+queda en 120 pb, no en 100.**
 
 **De dónde sale el número.** Cada puerta impone un bruto mínimo distinto:
 
-| Requisito | Coste del episodio | Bruto mínimo | Neto que deja |
+| Requisito | Coste por posición | Bruto mínimo | Neto que deja |
 |---|---:|---:|---:|
-| Supervivencia (break-even) | 40 pb | 40 pb | 0 |
-| PF > 1,10 | 40 pb | 44 pb | 4 pb |
-| Esperanza > 0,05 R | 40 pb | 60 pb | 20 pb = 0,05 R |
-| Estrés 2× (PF > 1,00) | 80 pb | 80 pb | 0 |
-| Estrés 2× con 0,05 R de margen | 80 pb | **100 pb** | 20 pb = 0,05 R |
+| Supervivencia (break-even) | 20 pb | 20 pb | 0 |
+| PF > 1,10 | 20 pb | 22 pb | 2 pb |
+| Esperanza > 0,05 R/op | 20 pb | 100 pb | 80 pb = 25 USD |
+| Estrés 2× (PF > 1,00) | 40 pb | 40 pb | 0 |
+| **Estrés 2× con el mismo margen** | 40 pb | **120 pb** | 80 pb = 0,05 R/op |
 
-**Umbral declarado: 100 pb de dispersión capturada por episodio**, el 1,00 %
-del nocional por pata (125 USD). La regla que se lleva al pre-registro es
-**bruto ≥ 2,5 × coste de ida y vuelta**; con 40 pb, 100 pb.
+**Umbral declarado: 120 pb de dispersión capturada por posición y episodio**,
+37,50 USD. La regla que se lleva al pre-registro es una suma, no un múltiplo:
 
-**Por qué 2,5 y no 2,0.** 80 pb bastan para no perder con el coste duplicado,
-pero dejan un empate técnico: el mejor resultado posible sería «no pierde» en la
-prueba que más debería exigir. Los 20 pb que añade el 2,5 son el mismo 0,05 R de
-la puerta de esperanza, y son la diferencia entre sobrevivir y ser medible.
+> bruto por posición ≥ 0,1 R + 2 × coste de ida y vuelta
+
+Con R = 250 y 6,25 USD de coste: 25 + 12,5 = 37,50 USD = 120 pb sobre 3.125. El
+coste duplicado ya está dentro de la fórmula, así que el umbral no es «lo mínimo
+para empatar» sino lo mínimo para seguir cobrando 0,05 R por operación cuando el
+peaje se duplica.
+
+**Por qué no 100 pb.** 100 pb es justo el punto en que la esperanza toca 0,05 R
+con coste normal: cero margen, y la puerta pide «>». Con 120 pb el margen
+sobrevive al estrés 2×, que es la prueba que más debería exigir.
+
+**La cifra en pb no es universal.** 0,1 R son dólares fijos y el nocional por
+posición no: con 2 posiciones por lado (6.250 cada una) los mismos 37,50 USD son
+60 pb, y con 8 por lado (1.562,50) son 240 pb. Por eso el pre-registro fija el
+umbral en **dólares por posición** y publica 120 pb como su equivalente para la
+geometría de la candidata. Comparar variantes de distinta amplitud por bp sería
+comparar dos cosas distintas; entre variantes se compara en R, como siempre.
 
 **En el tiempo.** El umbral es por episodio; la permanencia la congela el
 pre-registro. La conversión, publicada ahora para que nadie elija la permanencia
 después de ver el resultado:
 
-| Permanencia | pb por día | Anualizado | Episodios por cesta en 22 meses | Cestas para 50 episodios |
-|---:|---:|---:|---:|---:|
-| 7 días | 14,29 | 52,1 % | 96 | 1 |
-| 14 días | 7,14 | 26,1 % | 48 | 2 |
-| 21 días | 4,76 | 17,4 % | 32 | 2 |
-| 28 días | 3,57 | 13,0 % | 24 | 3 |
-| 42 días | 2,38 | 8,7 % | 16 | 4 |
+| Permanencia | pb por día | Anualizado | Ventanas no solapadas en 22 meses |
+|---:|---:|---:|---:|
+| 7 días | 17,14 | 62,6 % | 96 |
+| 14 días | 8,57 | 31,3 % | 48 |
+| 21 días | 5,71 | 20,9 % | 32 |
+| 28 días | 4,29 | 15,6 % | 24 |
+| 42 días | 2,86 | 10,4 % | 16 |
 
-La última columna es la otra cara del umbral: no se puede pedir a la vez
-dispersión alta, permanencia larga y 100 operaciones. Con 21 días hacen falta
-dos cestas simultáneas; con 42, cuatro.
+La última columna es la otra cara del umbral: cuanto más larga la permanencia,
+menos ventanas independientes hay para calcular la mediana (96 con 7 días, 16
+con 42) y más frágil es el cribado. La muestra de operaciones no limita en
+ninguna: con 8 posiciones por rebalanceo, la puerta de 100 operaciones se cubre
+en siete semanas.
 
 La fila de 7 días se añadió el mismo 2026-11-27, al congelar la permanencia en
 `docs/PRE-REGISTRO-H10.md`, y antes de descargar un solo día del panel. Se deja
@@ -251,7 +278,7 @@ sólo se publicó la fila que el pre-registro necesitaba.
 **Cómo se mide, sin estrategia.** Sobre el panel congelado, sólo funding y sin
 precios: en ventanas no solapadas de la permanencia declarada, la media del decil
 superior de funding menos la media del decil inferior. Se publican mediana, p25 y
-proporción de ventanas ≥ 100 pb.
+proporción de ventanas ≥ 120 pb.
 
 **El criterio es la mediana, no la media.** El gate de top-5 ya castiga la
 concentración; usar la media aquí dejaría que una semana de 400 pb pagase
@@ -267,8 +294,15 @@ para mejorar el anualizado, no se cambia de decil y no se prueba un quintil
 el de H8 —positivo y por debajo de la puerta— y se archiva igual.
 
 **Si el coste real sube.** La regla se aplica al coste declarado: a 15 pb por
-pata y lado (60 pb de ida y vuelta) el umbral sería 150 pb. El coste declarado no
-se revisa después de ver los fills de un backtest.
+pata y lado el coste por posición sería 9,375 USD y el umbral 43,75 USD = 140 pb.
+El coste declarado no se revisa después de ver los fills de un backtest.
+
+**Qué pasa con las esperanzas ya publicadas.** Nada: no se recalculan. H5
+(0,0301 R) y H9 (−0,0047 R) salieron del mismo código con R = 250 y por
+operación, así que ya estaban bien. La comprobación cierra por los dos lados:
+0,0301 × 250 × 800 operaciones ≈ 6.020 USD, frente a los 6.087 USD del +24,35 %
+sobre 25.000 de H5; y −0,0047 × 250 × 44 = −51,7 USD, que es el neto de H9. El
+error era mío en esta sección, no en los archivos.
 
 **Beta.** Se publica el P&L de precio y el de funding por separado, y la beta
 residual de la cartera contra BTC. Si el neto es mayoritariamente precio, se
@@ -276,7 +310,7 @@ archiva: sería H5 otra vez, con más ruido.
 
 **Qué la mataría.** Menos de 100 operaciones; supervivencia no resuelta; neto
 explicado por precio; DSR por debajo de 0,95; top-5 que cambie el signo; y una
-dispersión mediana por episodio por debajo de 100 pb (§7.1).
+dispersión mediana por episodio por debajo de 120 pb (§7.1).
 
 **Qué significaría un éxito.** Que la prima del tramo largo existe y es el pago
 por iliquidez y riesgo de deslistado. Eso es un riesgo que este backtest no
@@ -298,7 +332,7 @@ sin haber medido ese riesgo, y no se mide con datos gratuitos.
 | Fecha | Hito | Entregable |
 |---|---|---|
 | **2026-11-27** | Esta revisión | `docs/REVISION-DISENO-H10.md` |
-| ~~2026-12-11~~ **2026-11-27** | H10 pre-registrada (adelantada) | `docs/PRE-REGISTRO-H10.md`: 5 variantes y 100 pb congelados |
+| ~~2026-12-11~~ **2026-11-27** | H10 pre-registrada (adelantada) | `docs/PRE-REGISTRO-H10.md`: 5 variantes y 120 pb congelados |
 | **2026-12-18** | H10 medida y archivada | `docs/ARCHIVO-H10.md`, `TRIALS.md` a 55 |
 | **2027-02-26** | Puerta dura de investigación | sin cambios |
 

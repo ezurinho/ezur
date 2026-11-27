@@ -37,7 +37,7 @@ por riesgo de deslistado, no una ley de precios.
 **Por qué no es H5 otra vez.** H5 midió la misma señal en nombres donde la
 dispersión de funding ya está arbitrada; su variante que casi pasó tenía el 78 %
 del P&L en precio, es decir, era momentum disfrazado. H10 fuerza la prueba al
-sitio donde el funding tendría que ser la fuente, y la puerta de 100 pb está
+sitio donde el funding tendría que ser la fuente, y la puerta de 120 pb está
 puesta precisamente para que no pueda pasar por precio.
 
 ## Datos
@@ -98,43 +98,52 @@ queda registrada; no se extrapola ni se rellena el hueco.
 | Funding | se cobra/paga en cada evento; el corto recibe funding positivo |
 | Costes | **10 pb por posición y lado** (4,5 pb taker + 5,5 pb spread e impacto) |
 | Capital | 25.000 USD; sin apalancamiento adicional |
-| R | **500 USD** (2 % del capital) |
+| R | **250 USD** (1 % del capital) |
 
-**Sobre R.** H10 fija R = 500 USD porque es el número que usó el simulador de H9,
-donde 8,75 USD de coste salen como 0,0175 R. El texto de los pre-registros H5 y
-H9 declaraba 250 y no coincide con lo que se midió; se anota aquí en lugar de
-arrastrarlo, porque el umbral de dispersión está calculado con 20 pb = 0,05 R.
-No cambia ninguna puerta: cambia la unidad con la que se expresan.
+**Sobre R.** R = **250 USD**, verificado en el código y no deducido de una cifra
+redondeada: `server/funding_xs.py` fija `RISK_FRACTION = 0.01` sobre
+`CAPITAL = 25_000`, y `server/basis_carry.py` importa esa misma constante. Las
+dos esperanzas y los dos costes publicados se expresan **por operación**, y cada
+episodio de una posición cuenta **dos** operaciones (`operations = 2 * len(...)`).
+Por eso los 8,75 USD de coste de H9 salen como 0,0175 R: 8,75 / 2 = 4,375 USD por
+operación, y 4,375 / 250 = 0,0175. El pre-registro de H10 había escrito 500 USD
+por no dividir entre dos; queda corregido aquí y en §7.1 de la revisión.
+
+**Coste en R.** 10 pb por lado sobre una posición de 3.125 USD son 6,25 USD de
+ida y vuelta (20 pb) y 3,125 USD por operación: **0,0125 R**, muy por debajo de
+la puerta de 0,25 R.
 
 Las dos patas se abren con el mismo notional. Una posición abierta al cierre t no
 devenga el funding de t; empieza en t+1. El P&L separa precio, funding y costes,
 y publica además la beta residual de la cartera contra BTC.
 
-## Umbral mínimo de dispersión: 100 pb por episodio
+## Umbral mínimo de dispersión: 120 pb por episodio
 
 Fijado en `docs/REVISION-DISENO-H10.md` §7.1 **antes de tocar el panel**, y no se
-renegocia aquí. Con 40 pb de coste de ida y vuelta y 0,05 R = 20 pb:
+renegocia aquí. Un episodio es una posición: 20 pb de coste (6,25 USD) y dos
+operaciones, así que la puerta de 0,05 R por operación pide 25 USD netos, que
+sobre 3.125 son 80 pb:
 
 | Requisito | Coste | Bruto mínimo |
 |---|---:|---:|
-| Esperanza > 0,05 R | 40 pb | 60 pb |
-| Estrés 2× con 0,05 R de margen | 80 pb | **100 pb** |
+| Esperanza > 0,05 R/op | 20 pb | 100 pb |
+| Estrés 2× con el mismo margen | 40 pb | **120 pb** |
 
-**Regla: bruto ≥ 2,5 × coste de ida y vuelta.** Con 40 pb, 100 pb.
+**Regla: bruto por posición ≥ 0,1 R + 2 × coste de ida y vuelta.** Con R = 250 y
+6,25 USD de coste, 25 + 12,5 = 37,50 USD = **120 pb** sobre 3.125.
 
-Con la permanencia de 7 días que fija este documento, 100 pb son **14,29 pb/día**
-o **52,1 % anualizado** de diferencial entre el quintil superior y el inferior.
+Con la permanencia de 7 días que fija este documento, 120 pb son **17,14 pb/día**
+o **62,6 % anualizado** de diferencial entre el quintil superior y el inferior.
 La fila de 7 días se añadió a la tabla de §7.1 al congelar la permanencia, antes
 de descargar un solo día, por la misma razón por la que se publicó la tabla: que
 nadie elija la duración después de ver el resultado.
 
 **Cómo se comprueba, sin estrategia.** Sobre el panel congelado y sólo con
 funding: en ventanas no solapadas de 7 días, media del quintil superior menos
-media del quintil inferior, con la misma elegibilidad que la cartera. Se publican
-mediana, p25 y proporción de ventanas ≥ 100 pb. **El criterio es la mediana**, no
-la media ni el máximo.
+media del quintil inferior, con la misma elegibilidad que la cartera. Se publican mediana, p25 y proporción de ventanas ≥ 120 pb. **El criterio es la
+mediana**, no la media ni el máximo.
 
-Si la mediana no llega a 100 pb, **H10 se archiva sin ejecutar el simulador**. No
+Si la mediana no llega a 120 pb, **H10 se archiva sin ejecutar el simulador**. No
 se baja el umbral, no se alarga la permanencia para maquillar el anualizado y no
 se prueba el decil «porque el quintil no daba».
 
@@ -174,7 +183,7 @@ No se descarga ni se usa nada posterior al 2026-10-31.
 
 | # | Criterio | Umbral |
 |---|---|---:|
-| 0 | Dispersión mediana por episodio | ≥ 100 pb |
+| 0 | Dispersión mediana por episodio | ≥ 120 pb |
 | 0b | Símbolos elegibles por fecha | ≥ 20 en la mediana |
 | 1 | Operaciones OOS | ≥ 100 |
 | 2 | PF OOS | > 1,10 |
@@ -223,7 +232,7 @@ restantes, con **55 ensayos** (50 previos + 5 de H10).
 
 ## Qué la mataría
 
-Dispersión mediana por debajo de 100 pb; menos de 20 elegibles; menos de 100
+Dispersión mediana por debajo de 120 pb; menos de 20 elegibles; menos de 100
 operaciones; PF ≤ 1,10; esperanza ≤ 0,05 R; P&L sin top-5 ≤ 0; DSR < 0,95;
 estrés 2× con PF ≤ 1,00; y —la más importante— que el neto sea mayoritariamente
 precio y no funding, en cuyo caso es H5 con otro nombre y se archiva igual.
