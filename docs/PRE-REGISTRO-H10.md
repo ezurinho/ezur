@@ -281,6 +281,14 @@ regla del registro es que sólo cuentan las variantes medidas. Las dos cifras de
 criterio de aceptación quedan como estaban; esta nota es la que anota por qué el
 resultado no las siguió.
 
+**Lo que el resto del documento sigue diciendo.** Varios pasajes de arriba no
+coinciden con lo ejecutado y se dejan **como están**, por ser texto congelado: la
+puerta 0 pide «≥ 120 pb» y el párrafo de «Cómo se comprueba» habla de quintil y de
+ventanas ≥ 120 pb, cuando el cribado usó 8 por lado y su barra de 240 pb; y la
+puerta 7 (DSR), el párrafo de «cada variante» y el control de DSR dicen «55
+ensayos», cuando el denominador real es **50**. Leídos con esta nota no hay
+ambigüedad; reescritos, dejarían de ser el pre-registro que se congeló.
+
 **Para la próxima familia.** O se fija `k` y el nocional, o el umbral se declara
 en dólares por posición y se recalcula por geometría. Las dos cosas a la vez
 producen un documento que se puede leer de dos maneras y un resultado que se puede

@@ -276,9 +276,10 @@ anotado para que la tabla no parezca ajustada a posteriori: la fórmula no cambi
 sólo se publicó la fila que el pre-registro necesitaba.
 
 **Cómo se mide, sin estrategia.** Sobre el panel congelado, sólo funding y sin
-precios: en ventanas no solapadas de la permanencia declarada, la media del decil
-superior de funding menos la media del decil inferior. Se publican mediana, p25 y
-proporción de ventanas ≥ 120 pb.
+precios: en ventanas no solapadas de la permanencia declarada, la media de los `k`
+nombres con señal más alta menos la de los `k` más baja. Se publican mediana, p25
+y proporción de ventanas ≥ la barra de su geometría (`30 × k` pb: 120 con 4 por
+lado, 240 con 8).
 
 **El criterio es la mediana, no la media.** El gate de top-5 ya castiga la
 concentración; usar la media aquí dejaría que una semana de 400 pb pagase
@@ -299,7 +300,8 @@ El coste declarado no se revisa después de ver los fills de un backtest.
 
 **Resultado del cribado (2026-11-27).** Se ejecutó sobre el panel congelado y
 **no pasó**: 187 ventanas, mediana **80,51 pb**, p25 21,01, p75 187,61, 39,6 % de
-ventanas por encima de 120. La media (149,30) sí pasaba, que es exactamente el
+ventanas por encima de la barra de su geometría (240 pb), margen mediano de
+−159 pb. La media (149,30) sí pasaba, que es exactamente el
 motivo por el que el criterio es la mediana. H10 quedó archivada sin backtest en
 `docs/ARCHIVO-H10.md`.
 
@@ -316,7 +318,8 @@ archiva: sería H5 otra vez, con más ruido.
 
 **Qué la mataría.** Menos de 100 operaciones; supervivencia no resuelta; neto
 explicado por precio; DSR por debajo de 0,95; top-5 que cambie el signo; y una
-dispersión mediana por episodio por debajo de 120 pb (§7.1).
+dispersión mediana por episodio por debajo de la barra de su geometría —240 pb con
+8 por lado, 120 con 4— (§7.1).
 
 **Qué significaría un éxito.** Que la prima del tramo largo existe y es el pago
 por iliquidez y riesgo de deslistado. Eso es un riesgo que este backtest no
@@ -339,15 +342,17 @@ sin haber medido ese riesgo, y no se mide con datos gratuitos.
 |---|---|---|
 | **2026-11-27** | Esta revisión | `docs/REVISION-DISENO-H10.md` |
 | ~~2026-12-11~~ **2026-11-27** | H10 pre-registrada (adelantada) | `docs/PRE-REGISTRO-H10.md`: 5 variantes y 120 pb congelados |
-| ~~2026-12-18~~ **2026-11-27** | H10 archivada sin backtest | `docs/ARCHIVO-H10.md`; cribado 80,51 pb < 120 pb |
+| ~~2026-12-18~~ **2026-11-27** | H10 archivada sin backtest | `docs/ARCHIVO-H10.md`; cribado 80,51 pb frente a 240 pb |
 | **2027-02-26** | Puerta dura de investigación | sin cambios |
 
 La pausa de dos semanas se cerró el **2026-11-27** al escribir el pre-registro,
 por indicación explícita y no por conveniencia del calendario. Se mantiene lo
-que la pausa protegía: el pre-registro y la medida caen en sesiones distintas
-(2026-11-27 y 2026-12-18), y entre las dos no se toca ningún umbral ni se
-añaden variantes. Lo que se gana son semanas de margen antes de la puerta dura,
-no semanas más de búsqueda.
+que la pausa protegía: la medida se hizo con las reglas ya congeladas y el panel
+cerrado con hash antes de mirar ninguna dispersión, y entre el pre-registro y el
+cribado no se tocó ningún umbral ni se añadieron variantes. Lo que no se mantuvo
+fue la separación de fechas —las dos cayeron el mismo 2026-11-27, tres semanas
+antes del 2026-12-18 previsto—; lo que se gana son semanas de margen antes de la
+puerta dura, no semanas más de búsqueda.
 
 ## 10. Anexo — de dónde salen los números
 

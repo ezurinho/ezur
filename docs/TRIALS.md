@@ -29,7 +29,7 @@ El DSR de cualquier hipótesis futura debe declarar al menos 50 ensayos, no 5.
 
 | Familia | Variantes declaradas | Estado |
 |---|---:|---|
-| Carry cross-sectional en el tramo largo (extensión de H5) | 5 | cribado económico fallido (80,51 pb < 120 pb); archivada sin backtest |
+| Carry cross-sectional en el tramo largo (extensión de H5) | 5 | cribado económico fallido (80,51 pb frente a los 240 pb de su geometría); archivada sin backtest |
 
 Las cinco variantes de H10 están congeladas en `docs/PRE-REGISTRO-H10.md` y no se
 midieron. **No se suman al total**: sólo cuentan las variantes que llegaron a
