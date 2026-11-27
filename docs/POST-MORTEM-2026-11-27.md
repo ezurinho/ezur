@@ -1,4 +1,4 @@
-# Post-mortem — seis familias, 35 variantes, ningún edge desplegable
+# Post-mortem — siete familias, 40 variantes, ningún edge desplegable
 
 **Fecha:** 2026-11-27
 **Alcance:** SMA 15 m, Donchian 1 h (H1), carry BTC (H2), momentum
@@ -16,8 +16,9 @@ archivadas. Ninguna pasa las puertas duras en OOS.
 | Pares contra BTC | 5 | PF 0,9235, -2,75 % | archivada |
 | Carry cross-sectional de funding | 5 | PF 1,1849 raw, DSR 0,54 | archivada |
 | TSMOM long-only | 5 | -40,8 %, peor que BTC | archivada |
+| Flujo de taker | 5 | -27,3 %, PF 0,9355 | archivada |
 
-**Total: 35 variantes medidas.** El registro está en `docs/TRIALS.md`.
+**Total: 40 variantes medidas.** El registro está en `docs/TRIALS.md`.
 
 ## El patrón
 
@@ -47,6 +48,11 @@ archivadas. Ninguna pasa las puertas duras en OOS.
    -61,7 % y P&L sin top-5 de -20.400: batir a BTC quedándose con más riesgo no
    es una ventaja. La puerta de benchmark se añadió antes de medir y evitó el
    autoengaño.
+8. **El flujo de taker tampoco paga a 3 días.** H7 pasó de +328,7 % en
+   desarrollo a -27,3 % en OOS (PF 0,9355). El coste es 0,0075 R: el bruto ya
+   es negativo. La única variante que no pierde (terciles) queda en -0,17 %,
+   ruido plano. Es la confirmación de que el order flow agregado tiene poder
+   explicativo contemporáneo, no una prima a este horizonte.
 
 ## Lo que sí mejoró
 
