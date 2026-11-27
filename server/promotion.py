@@ -651,6 +651,9 @@ def evaluate(
         "checks": checks,
         "reason": reason,
         "failed": [check["name"] for check in failed],
+        # Se publica junto a PBO/DSR, pero no es una puerta: mide si las entradas
+        # del candidato baten a entradas aleatorias con su mismo riesgo.
+        "random_entries": (cycle or {}).get("random_entries"),
         # De qué corrida sale el veredicto: sin esto, una tabla de criterios no
         # dice si se midió la estrategia, el marco temporal o la muestra buenos.
         "source": {
@@ -803,6 +806,21 @@ def render(verdict: dict[str, Any]) -> str:
         lines.append(
             f"{check['name']:<26} {shown:>10} "
             f"{check['threshold']:>14}  {'si' if check['pass'] else 'NO'}"
+        )
+    random = verdict.get("random_entries") or {}
+    if random.get("available"):
+        lines.append("")
+        lines.append(
+            "entradas aleatorias "
+            f"{random.get('config') or '':<26} "
+            f"PF real {_shown(random.get('actual_pf'))} vs "
+            f"mediana {_shown(random.get('random_pf_median'))} "
+            f"(p={_shown(random.get('p_value'))}, n={random.get('trades')})"
+        )
+        lines.append(
+            "  rango aleatorio "
+            f"{_shown(random.get('random_pf_p05'))}..{_shown(random.get('random_pf_p95'))} "
+            f"· percentil {_shown(random.get('percentile'))}"
         )
     lines.append("")
     lines.append("promovida" if verdict["passed"] else f"no promovida: {verdict['reason']}")
