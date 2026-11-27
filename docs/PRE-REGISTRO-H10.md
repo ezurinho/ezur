@@ -272,6 +272,15 @@ frente a los 240 pb que exige su propia geometría. Los números, la sensibilida
 con k = 4 y k = 37, y la corrección del script para que la barra salga de la
 geometría están en `docs/ARCHIVO-H10.md`.
 
+**Fecha y registro.** El cribado se ejecutó el **2026-11-27**, no el 2026-12-18
+que fija «Criterio de aceptación»: el panel estaba congelado con hash y las reglas
+cerradas, así que adelantar la fecha no cambia nada de lo pre-registrado, sólo
+acerca la respuesta. Y `docs/TRIALS.md` sigue en **50** variantes, no en las 55 que
+anuncia ese mismo criterio, porque las cinco de H10 no llegaron a medirse y la
+regla del registro es que sólo cuentan las variantes medidas. Las dos cifras del
+criterio de aceptación quedan como estaban; esta nota es la que anota por qué el
+resultado no las siguió.
+
 **Para la próxima familia.** O se fija `k` y el nocional, o el umbral se declara
 en dólares por posición y se recalcula por geometría. Las dos cosas a la vez
 producen un documento que se puede leer de dos maneras y un resultado que se puede
