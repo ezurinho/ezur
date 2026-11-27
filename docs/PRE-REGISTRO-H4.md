@@ -16,7 +16,7 @@ puede cambiar de régimen y el stop temporal es la única protección.
 
 **Datos nuevos:** 6 pares spot de Binance (ETHBTC, BNBBTC, ADABTC, LINKBTC,
 LTCBTC, XRPBTC), 10.962 cierres diarios 2020-01-01/2026-10-31, SHA-256
-`58282f73…`. No se usa el panel de perpetuos de H3 ni el dataset de BTC de
+`52c9c96b…` (corrección de parseo: los ficheros de 2025 traen microsegundos). No se usa el panel de perpetuos de H3 ni el dataset de BTC de
 H1/H2. Sesgo de supervivencia declarado: los pares se eligen por liquidez de
 2026, aunque todos existían en 2020.
 
