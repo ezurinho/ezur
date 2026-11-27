@@ -66,6 +66,14 @@ asumiendo que H10 llegaría a medirse, y no se midió.
   El funding por episodio (5,56 USD) no cubre el coste (8,75 USD); las cinco
   variantes pierden y el quintil superior acaba concentrado en BNB.
 
+## Pre-registradas, sin medir
+
+- **H11 — extremo del panel con tamaño de posición fijo** (`docs/PRE-REGISTRO-H11.md`,
+  2026-11-27): una sola configuración, k = 4 por lado con nocional fijo de
+  3.125 USD, coste 10 pb. Cuenta como **ensayo 54** en cuanto se mida; el DSR de
+  esa familia se calcula con denominador 54, no 53. No entra en el total de
+  variantes medidas mientras no haya medición.
+
 ## Regla de higiene
 
 Antes de medir una hipótesis nueva se añade aquí su familia y su número de
