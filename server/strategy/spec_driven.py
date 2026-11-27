@@ -22,7 +22,7 @@ from .base import (
     Warmup,
     Zone,
 )
-from .indicators import atr, highest, lowest
+from .indicators import atr, highest, lowest, sma
 
 
 # --------------------------------------------------------------------------- #
@@ -350,6 +350,175 @@ class EMAStateStrategy(BaseStrategy):
                 kind="entry",
                 side=side,
                 label=f"EMA {side}",
+            )
+        )
+        return output
+
+
+# --------------------------------------------------------------------------- #
+# SMA State (spec-driven)
+# --------------------------------------------------------------------------- #
+
+class SMAStateParams(BaseModel):
+    """Parameters matching strategy_spec schema for sma_state rule."""
+    model_config = ConfigDict(extra="forbid")
+
+    fast: int = Field(ge=2, le=200, description="SMA rápida")
+    slow: int = Field(ge=3, le=500, description="SMA lenta")
+    atr_period: int = Field(default=14, ge=2, le=200, description="Periodo del ATR")
+    atr_k: float = Field(gt=0, le=10, description="Stop en múltiplos de ATR")
+    tp_r: float = Field(gt=0, le=10, description="Objetivo en múltiplos del riesgo")
+    stop_floor_frac: float = Field(default=0.0, ge=0, le=0.2, description="Suelo del stop como fracción del precio")
+
+    @model_validator(mode="after")
+    def _ordered(self) -> "SMAStateParams":
+        if self.slow <= self.fast:
+            raise ValueError("slow must be greater than fast")
+        return self
+
+
+class SMAStateStrategy(BaseStrategy):
+    """Replica la estrategia `reference` dentro del contrato de specs."""
+
+    id = "sma_state"
+    name = "SMA State (spec-driven)"
+    version = "1.0.0"
+    params_model = SMAStateParams
+
+    def __init__(self, params: dict | None = None) -> None:
+        self.params = SMAStateParams.model_validate(params or {})
+
+    def warmup_requirements(self) -> Warmup:
+        needed = max(self.params.slow, self.params.atr_period) + 2
+        return Warmup(bars={"*": needed}, session_ready=False)
+
+    def evaluate(self, md: MarketData) -> StrategyOutput:
+        bars = md.bars.get(md.primary, [])
+        needed = max(self.params.slow, self.params.atr_period) + 2
+        phases = [
+            Phase(
+                key="warmup",
+                label="Calentamiento",
+                status="done" if len(bars) >= needed else "active",
+                ts=bars[-1].t if bars else None,
+                detail=f"{len(bars)}/{needed} velas",
+            )
+        ]
+        if len(bars) < needed:
+            return StrategyOutput(
+                state="warmup",
+                state_label="Calentando",
+                phases=phases,
+                metrics={"bars": Metric(label="Velas", value=len(bars), format="number", unit="barras")},
+            )
+
+        closes = [bar.c for bar in bars]
+        fast_sma = sma(closes, self.params.fast)
+        slow_sma = sma(closes, self.params.slow)
+        volatility = atr(bars, self.params.atr_period)
+        if fast_sma is None or slow_sma is None or volatility is None or volatility <= 0:
+            return StrategyOutput(state="warmup", state_label="Calentando", phases=phases)
+
+        prev_fast = sma(closes[:-1], self.params.fast)
+        prev_slow = sma(closes[:-1], self.params.slow)
+        crossed_up = (
+            prev_fast is not None
+            and prev_slow is not None
+            and prev_fast <= prev_slow
+            and fast_sma > slow_sma
+        )
+        crossed_down = (
+            prev_fast is not None
+            and prev_slow is not None
+            and prev_fast >= prev_slow
+            and fast_sma < slow_sma
+        )
+
+        last = bars[-1]
+        side = "long" if crossed_up else "short" if crossed_down else None
+
+        phases.append(
+            Phase(
+                key="smas",
+                label="SMAs",
+                status="done",
+                ts=last.t,
+                detail=f"fast={fast_sma:.2f} slow={slow_sma:.2f}",
+            )
+        )
+        phases.append(
+            Phase(
+                key="trigger",
+                label="Cruce SMA",
+                status="active" if side else "pending",
+                ts=last.t,
+                detail=side or "sin cruce",
+            )
+        )
+
+        metrics = {
+            "fast": Metric(label=f"SMA({self.params.fast})", value=round(fast_sma, 4), format="price"),
+            "slow": Metric(label=f"SMA({self.params.slow})", value=round(slow_sma, 4), format="price"),
+            "atr": Metric(
+                label=f"ATR({self.params.atr_period})",
+                value=round(volatility, 4),
+                format="price",
+            ),
+            "spread": Metric(
+                label="Separación",
+                value=round(fast_sma - slow_sma, 4),
+                format="price",
+                tone="good" if fast_sma > slow_sma else "bad" if fast_sma < slow_sma else "neutral",
+            ),
+        }
+
+        output = StrategyOutput(
+            state="armed" if side else "scanning",
+            state_label="Cruce SMA" if side else "Esperando cruce",
+            phases=phases,
+            metrics=metrics,
+        )
+        if side is None:
+            return output
+
+        distance = volatility * self.params.atr_k
+        floor = self.params.stop_floor_frac * last.c if self.params.stop_floor_frac else 0
+        distance = max(distance, floor)
+
+        stop_price = last.c - distance if side == "long" else last.c + distance
+        target_price = (
+            last.c + distance * self.params.tp_r if side == "long" else last.c - distance * self.params.tp_r
+        )
+
+        output.signal = Signal(
+            key=f"{md.session.id}:{side}:{_stamp(last.t)}",
+            side=side,
+            reason=f"cruce SMA{self.params.fast}/SMA{self.params.slow}",
+            ts=last.t,
+            stop_price=round(stop_price, 4),
+            target_price=round(target_price, 4),
+            strength=min(1.0, abs(fast_sma - slow_sma) / volatility) if volatility else None,
+        )
+        output.zones.append(
+            Zone(
+                id=f"risk-{_stamp(last.t)}",
+                kind="box",
+                label="Riesgo/objetivo",
+                from_ts=last.t,
+                price_low=min(stop_price, target_price),
+                price_high=max(stop_price, target_price),
+                style={"color": "#2ea043" if side == "long" else "#f85149", "opacity": 0.1},
+                active=True,
+            )
+        )
+        output.markers.append(
+            Marker(
+                id=f"marker-{_stamp(last.t)}",
+                ts=last.t,
+                price=last.c,
+                kind="entry",
+                side=side,
+                label=f"SMA {side}",
             )
         )
         return output
