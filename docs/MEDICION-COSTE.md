@@ -93,6 +93,17 @@ la diferencia con los 6.029 y 8.343 de la tabla es sólo composición (57,03 y 7
 USD). Para H8, H9 y H10 el neto compuesto exigiría reejecutar sus motores y aquí
 sólo se compara coste.
 
+**Por qué el neto medido de H10 quintil sólo sube 413 USD.** En esa configuración
+el coste se cobra **por rebalanceo sobre los 25.000 USD de bruto** —unos 60
+rebalanceos × 25.000 × 10 pb ≈ 1.500, que es su `costs` publicado (1.502,03)—, no
+por operación sobre el nocional de cada posición como en H5 (800 operaciones ×
+3.125 × 6 pb = 1.500). La sensibilidad escala ese total por el cociente
+medido/declarado (`scripts/cost_sensitivity.py`), así que el delta es 1.502,03 ×
+(1 − 7,25/10) ≈ 413 (la tabla redondea el coste medido a 7,26 pb). El tamaño del ajuste no mide la cartera sino cuánto se
+equivocó la declaración: H10 declaró 10 pb y la realidad son 7,26 (rebaja del
+27 %); H5 declaró 6 y la realidad 1,33 (rebaja del 78 %), que sobre los mismos
+1.500 USD de coste da 1.167.
+
 | Familia | Declarado | Medido | Neto declarado (patas) | Neto medido (patas) | Esperanza declarada | Esperanza medida |
 |---|---:|---|---:|---|---:|---|
 | H5 candidata | 6 pb | 1,33-5,23 | +6.029 | +7.196 / +6.221 | 0,0301 R | 0,0360 / 0,0311 R |
