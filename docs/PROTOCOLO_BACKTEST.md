@@ -97,6 +97,11 @@ Un segundo `seal_holdout` sobre el mismo lock lanza `HoldoutAlreadySealed`.
 `verify_seal` detecta dataset, configuración o estrategia modificados después
 del sellado, y también la edición manual del propio lock.
 
+El holdout canónico de Income Lab está declarado, todavía sin abrir, en
+`data/research/holdouts/income-lab-2027.json` (2026-12-01 a 2027-05-31). No se
+descarga ni se mira hasta que el ciclo canónico pase las puertas de desarrollo:
+usarlo antes sería convertir el holdout en otra partición de entrenamiento.
+
 ## 5. Veredicto
 
 | Situación | Veredicto |
