@@ -67,7 +67,7 @@ export function TopBar({ snapshot, connection, onOpenPalette }: Props) {
             <Logo size={26} />
           </span>
           <span className="brand-text">
-            <span className="brand-name">ezur</span>
+            <span className="brand-name">ezur bot</span>
             <span className="brand-sub">trading terminal</span>
           </span>
         </div>
