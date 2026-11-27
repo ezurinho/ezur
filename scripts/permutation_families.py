@@ -19,6 +19,15 @@ La pregunta no es «¿es significativo el beneficio?» —las tres pierden— si
 «¿es el veredicto distinguible del ruido?»: si el observado cae dentro de la
 nulidad, el archivo se sostiene en la puerta, no en evidencia de daño.
 
+Los p-valores usan la corrección de +1, `(1 + #{nulo ≥ observado}) / (N + 1)`;
+`proporcion_peores` es otra cosa —la fracción de permutaciones por debajo del
+observado— y no debe leerse como p.
+
+En H6 la permutación conserva el drift por símbolo, así que el contraste válido
+es la diferencia observado − nulidad, no el nivel. `--diagnostico-demean N`
+repite la nulidad con retornos demeaneados sólo para documentar por qué esa vía
+no vale (deja arrastre de varianza).
+
 Uso:
     python scripts/permutation_families.py --permutations 50
     python scripts/permutation_families.py --family H7 --permutations 20
@@ -58,13 +67,22 @@ def shuffle_columns(frame: pd.DataFrame, rng: np.random.Generator) -> pd.DataFra
     return pd.DataFrame(values, index=frame.index, columns=frame.columns)
 
 
-def shuffle_returns(prices: pd.DataFrame, rng: np.random.Generator) -> pd.DataFrame:
-    """Baraja retornos y reconstruye el precio, conservando los huecos."""
+def shuffle_returns(
+    prices: pd.DataFrame, rng: np.random.Generator, demean: bool = False
+) -> pd.DataFrame:
+    """Baraja retornos y reconstruye el precio, conservando los huecos.
+
+    `demean=True` existe sólo como diagnóstico: resta el retorno aritmético medio
+    de cada símbolo. No es una nulidad válida (ver el docstring del script), y su
+    resultado se cita en `docs/ARCHIVO-H6.md`.
+    """
     returns = prices.pct_change(fill_method=None)
     values = returns.to_numpy(dtype=float, copy=True)
     for column in range(values.shape[1]):
         series = values[:, column]
         mask = np.isfinite(series)
+        if demean and mask.any():
+            series[mask] = series[mask] - series[mask].mean()
         block = series[mask]
         rng.shuffle(block)
         series[mask] = block
@@ -130,6 +148,8 @@ def main() -> int:
     parser.add_argument("--seed", type=int, default=20261127)
     parser.add_argument("--family", default="all", choices=("all", "H6", "H7", "H9"))
     parser.add_argument("--json", default=str(ROOT / "data" / "permutation_families.json"))
+    parser.add_argument("--diagnostico-demean", dest="diagnostico_demean", type=int,
+                        default=0, help="permutaciones extra con retornos demeaneados (H6)")
     args = parser.parse_args()
     rng = np.random.default_rng(args.seed)
     results: dict[str, dict] = {}
@@ -142,13 +162,27 @@ def main() -> int:
                 for _ in range(args.permutations)]
         results["H6"] = summarise("H6", observed, null)
         values = np.array(null, dtype=float)
-        results["H6"]["p_unilateral_mejor"] = round(
-            (1 + int((values <= observed["esperanza_R"]).sum())) / (len(values) + 1), 4)
+        observed_r = observed["esperanza_R"]
+        worse = float((values < observed_r).mean())
+        results["H6"]["proporcion_peores"] = round(worse, 4)
+        results["H6"]["p_unilateral"] = round(
+            (1 + int((values >= observed_r).sum())) / (len(values) + 1), 4)
         results["H6"]["diferencia_observado_nulo_R"] = round(
-            float(observed["esperanza_R"] - values.mean()), 4)
-        print(f"H6 observado {observed['esperanza_R']} R · p mejor = "
-              f"{results['H6']['p_unilateral_mejor']} · diferencia vs nulidad "
-              f"{results['H6']['diferencia_observado_nulo_R']} R")
+            float(observed_r - values.mean()), 4)
+        print(f"H6 observado {observed_r} R · p unilateral "
+              f"{results['H6']['p_unilateral']} · mejor que el {worse * 100:.0f} % · "
+              f"diferencia vs nulidad {results['H6']['diferencia_observado_nulo_R']} R")
+        if args.diagnostico_demean:
+            clean = np.array([run_h6(shuffle_returns(prices, rng, demean=True))["esperanza_R"]
+                              for _ in range(args.diagnostico_demean)])
+            results["H6"]["diagnostico_demean"] = {
+                "permutaciones": len(clean),
+                "media_R": round(float(clean.mean()), 4),
+                "p50_R": round(float(np.median(clean)), 4),
+            }
+            print(f"H6 demean aritmético (diagnóstico) media "
+                  f"{results['H6']['diagnostico_demean']['media_R']} R · mediana "
+                  f"{results['H6']['diagnostico_demean']['p50_R']} R")
 
     if args.family in ("all", "H7"):
         ratio, close, notional, funding = load_flow(

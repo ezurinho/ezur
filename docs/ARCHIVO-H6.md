@@ -90,19 +90,21 @@ mercado.
 | Nulidad, p5 / p95 | −0,2161 / −0,0230 R |
 | Diferencia observado − nulidad | **+0,0715 R** |
 
-El observado supera al **88 %** de las permutaciones: p unilateral 0,12. El timing
-añade unos 0,07 R por episodio —17,9 USD, unos 3.400 USD en los 192 episodios—
-frente a una entrada al azar con la misma exposición, y **no alcanza
-significación** con 50 permutaciones. Lo que sí queda claro es que el −40,8 % es
+El observado supera al **88 %** de las permutaciones: p unilateral **0,14** (con la
+corrección de +1 sobre 50 permutaciones; la proporción de permutaciones peores,
+0,88, no es un p-valor). El timing añade unos 0,07 R por episodio —17,9 USD, unos
+3.400 USD en los 192 episodios— frente a una entrada al azar con la misma
+exposición, y **no alcanza significación** con 50 permutaciones. Lo que sí queda claro es que el −40,8 % es
 drift, no una señal invertida: la tendencia evita parte de la caída y aun así
 pierde.
 
 **Por qué no se neutraliza el drift en el precio.** Se probó: restar el retorno
 aritmético de cada símbolo antes de barajar deja esperanza cero pero el precio
-compuesto se hunde por arrastre de varianza —−0,061 R por episodio, siete veces
-el coste de 0,009—; en log-retornos el artefacto se invierte y la nulidad gana.
-Cualquier demeaning fabrica un drift distinto del real, así que el test es de
-diferencia y no de nivel. El veredicto no cambia: pierde 40,8 %, peor que BTC, y
+compuesto se hunde por arrastre de varianza —mediana −0,0608 R por episodio, 6,8
+veces el coste de 0,009, reproducible con `--diagnostico-demean 50`—; en
+log-retornos el artefacto se invierte y la nulidad gana. Cualquier demeaning
+fabrica un drift distinto del real, así que el test es de diferencia y no de
+nivel. El veredicto no cambia: pierde 40,8 %, peor que BTC, y
 el timing no compensa coste ni beta negativa.
 
 ## Artefactos
