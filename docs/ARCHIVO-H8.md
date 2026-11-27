@@ -83,6 +83,27 @@ rescatarla.
   la fuente, pero su magnitud no compensa la fricción y la baja frecuencia.
 - **El holdout sigue sellado.** No se usó 2026-11-01/2027-05-31.
 
+## Nulidad por permutación (2026-11-27)
+
+`python scripts/permutation_families.py --family H8` baraja el funding de cada
+(activo, venue) en el tiempo (50 permutaciones, semilla 20261127). Precios,
+ejecución y costes quedan reales; lo único que se rompe es la relación entre la
+señal y el spread que después se cobra.
+
+| | Esperanza |
+|---|---:|
+| Observado (S7-W-12) | +0,0094 R |
+| Nulidad, mediana | −0,0036 R |
+| Nulidad, p5 / p95 | −0,0076 / −0,0006 R |
+
+El observado supera a **las 50** permutaciones: p de dos colas 0,020, el mínimo
+alcanzable con 50. La señal de spread **sí distingue del ruido** —al contrario que
+en H7— y eso precisa el veredicto en vez de cambiarlo: el problema no es que el
+spread no exista, es que aparece 17 veces en 95 semanas y paga 0,0094 R cuando la
+puerta pide 100 operaciones y 0,05 R. Con 17 episodios la permutación no da
+potencia —condiciona sobre los episodios que hubo—, así que respalda la dirección
+de la señal, no su significación económica.
+
 ## Artefactos
 
 - Pre-registro: `docs/PRE-REGISTRO-H8.md`.

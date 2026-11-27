@@ -10,6 +10,9 @@ degenerado).
   persistencia de tendencia y se conserva la distribución marginal.
 - **H7 (flujo de taker)**: se baraja el **ratio de flujo** de cada símbolo en el
   tiempo; precios, volumen y funding quedan reales.
+- **H8 (spread entre venues)**: se baraja el **funding** de cada (activo, venue);
+  precios y ejecución quedan reales, así que la señal deja de saber cuál está
+  caro.
 - **H9 (basis)**: se baraja el **funding** de cada símbolo. Aviso: la señal de H9
   suma basis y funding, y el basis queda intacto, así que esta nulidad sólo mide
   la parte de funding. Para la parte de basis se corre además el motor con
@@ -47,6 +50,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from server.basis_carry import load_panels as load_basis, run_basis_carry  # noqa: E402
+from server.funding_spread import load_panels as load_spread, run_spread  # noqa: E402
 from server.taker_flow import load_data as load_flow, run_flow  # noqa: E402
 from server.tsmom import load_prices, run_tsmom  # noqa: E402
 
@@ -112,6 +116,12 @@ def run_h7(ratio, close, notional, funding) -> dict:
                             signal_days=3, hold=3, quantile=0.2).summary(years=YEARS))
 
 
+def run_h8(funding, prices) -> dict:
+    return metrics(run_spread(funding, prices, start=START.strftime("%Y-%m-%d"),
+                              end=END.strftime("%Y-%m-%d"), lookback=7,
+                              rebalance="W", entry=0.12, exit=0.03).summary(years=YEARS))
+
+
 def run_h9(spot, perp, funding, basis_override=None) -> dict:
     return metrics(run_basis_carry(spot, perp, funding,
                                    start=START.strftime("%Y-%m-%d"),
@@ -157,7 +167,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Permutaciones de H6, H7 y H9")
     parser.add_argument("--permutations", type=int, default=50)
     parser.add_argument("--seed", type=int, default=20261127)
-    parser.add_argument("--family", default="all", choices=("all", "H6", "H7", "H9"))
+    parser.add_argument("--family", default="all",
+                        choices=("all", "H6", "H7", "H8", "H9"))
     parser.add_argument("--json", default=str(ROOT / "data" / "permutation_families.json"))
     parser.add_argument("--diagnostico-demean", dest="diagnostico_demean", type=int,
                         default=0, help="permutaciones extra con retornos demeaneados (H6)")
@@ -208,6 +219,16 @@ def main() -> int:
         results["H7"] = summarise("H7", observed, null)
         print(f"H7 observado {observed['esperanza_R']} R · "
               f"p = {results['H7']['p_valor_dos_colas']}")
+
+    if args.family in ("all", "H8"):
+        funding, prices = load_spread(ROOT / "data" / "funding_spread" / "funding_daily.csv",
+                                      ROOT / "data" / "funding_spread" / "prices_daily.csv")
+        observed = run_h8(funding, prices)
+        null = [run_h8(shuffle_columns(funding, rng), prices)["esperanza_R"]
+                for _ in range(args.permutations)]
+        results["H8"] = summarise("H8", observed, null)
+        print(f"H8 observado {observed['esperanza_R']} R · "
+              f"p = {results['H8']['p_valor_dos_colas']}")
 
     if args.family in ("all", "H9"):
         spot, perp, funding = load_basis(ROOT / "data" / "basis" / "spot_daily.csv",
