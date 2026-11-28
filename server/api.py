@@ -668,6 +668,7 @@ def post_backtest(request: Request, body: BacktestRequest) -> dict[str, Any]:
             notes="" if body.stress else "costes y determinismo no medidos",
             run_id=result.run_id,
             run_group=result.run_group or "",
+            holdout=result.diagnostics.get("holdout"),
         )
     except HoldoutSealed as error:
         if permit_id:
