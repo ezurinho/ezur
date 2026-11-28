@@ -547,6 +547,11 @@ class PromotionConfig(_Model):
     evidence: str | None = None
     stress_evidence: str | None = None
     cycle: str | None = None
+    # La promoción no se conforma con un JSON que diga «passed»: exige una
+    # atestación CONSUMED del ledger del holdout. Se puede apagar solo para
+    # investigación explícita, nunca para operar.
+    require_holdout: bool = True
+    holdout_evidence: str | None = None
 
     @field_validator("size_factor")
     @classmethod
