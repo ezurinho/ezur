@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 from collections.abc import Callable
 from datetime import time
@@ -21,6 +22,8 @@ from .resample import timeframe_minutes
 
 DEFAULT_CONFIG_PATH = Path("data/config.json")
 MIN_TICK_SIZE = 1e-12
+_MONTH_RE = re.compile(r"^\d{4}-(?:0[1-9]|1[0-2])$")
+_SYMBOL_RE = re.compile(r"^[A-Z0-9]+(?:_\d{6})?$")
 
 
 class _Model(BaseModel):
@@ -421,6 +424,66 @@ class ExecutionConfig(_Model):
         return self
 
 
+class DataConfig(_Model):
+    """Contrato del dataset histórico; no cambia el feed vivo ni el motor.
+
+    ``symbol`` es el nombre exacto del vendor. El CSV del bot usa el símbolo
+    normalizado (``BTC-USDT``), de modo que el motor no aprende nombres de
+    exchange. ``provider=simulated`` sigue siendo el camino completo por
+    defecto; ``vision`` solo habilita el constructor de datos.
+    """
+
+    provider: Literal["simulated", "vision"] = "simulated"
+    market: Literal["spot", "um", "quarterly"] = "spot"
+    symbol: str = "BTCUSDT"
+    interval: Literal["1m"] = "1m"
+    history_start: str = "2020-01"
+    # Opcional: sin él, el constructor usa el último mes cerrado.
+    history_end: str | None = None
+    manifest: str = "data/vision/manifest.json"
+
+    @field_validator("symbol")
+    @classmethod
+    def _valid_symbol(cls, value: str) -> str:
+        if not _SYMBOL_RE.fullmatch(value):
+            raise ValueError("symbol debe ser un símbolo de Binance en mayúsculas")
+        return value
+
+    @field_validator("history_start", "history_end")
+    @classmethod
+    def _valid_month(cls, value: str | None) -> str | None:
+        if value is not None and not _MONTH_RE.fullmatch(value):
+            raise ValueError("se espera un mes YYYY-MM")
+        return value
+
+    @field_validator("manifest")
+    @classmethod
+    def _manifest_is_not_empty(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("manifest no puede estar vacío")
+        return value
+
+    @model_validator(mode="after")
+    def _market_matches_symbol(self) -> "DataConfig":
+        contract = "_" in self.symbol
+        if self.market == "quarterly" and not contract:
+            raise ValueError("market=quarterly exige un contrato BTCUSDT_YYMMDD")
+        if self.market != "quarterly" and contract:
+            raise ValueError("un contrato con vencimiento exige market=quarterly")
+        if self.history_end is not None and self.history_end < self.history_start:
+            raise ValueError("history_end no puede ser anterior a history_start")
+        return self
+
+    @property
+    def normalized_symbol(self) -> str:
+        """``BTCUSDT`` y ``BTCUSDT_240329`` → ``BTC-USDT``."""
+        underlying = self.symbol.split("_", 1)[0]
+        for quote in ("USDT", "USDC", "BUSD"):
+            if underlying.endswith(quote):
+                return f"{underlying[:-len(quote)]}-{quote}"
+        return underlying
+
+
 class FeedConfig(_Model):
     provider: Literal["simulated", "csv", "live", "okx"] = "simulated"
     csv_path: str = "data/bars.csv"
@@ -500,6 +563,7 @@ class Settings(_Model):
     risk: RiskConfig = Field(default_factory=RiskConfig)
     promotion: PromotionConfig = Field(default_factory=PromotionConfig)
     execution: ExecutionConfig = Field(default_factory=ExecutionConfig)
+    data: DataConfig = Field(default_factory=DataConfig)
     feed: FeedConfig = Field(default_factory=FeedConfig)
     live: LiveConfig = Field(default_factory=LiveConfig)
     alerts: AlertsConfig = Field(default_factory=AlertsConfig)
