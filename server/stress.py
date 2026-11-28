@@ -62,16 +62,63 @@ def run_stress(
     multiplier: float = 2.0,
     start: datetime | None = None,
     end: datetime | None = None,
+    holdout_permit: str | None = None,
 ) -> StressReport:
-    first = run_backtest(settings, dataset_path, strategy, start=start, end=end)
-    again = run_backtest(settings, dataset_path, strategy, start=start, end=end)
+    # Las tres corridas son sub-corridas del mismo estudio. Si hay holdout, el
+    # permiso lo abre el runner/CLI/API y aquí solo se reutiliza; no se consume
+    # una lectura por cada pasada.
+    permit_id = (
+        holdout_permit
+        if isinstance(holdout_permit, str)
+        else getattr(holdout_permit, "permit_id", None)
+    )
+    first = run_backtest(
+        settings,
+        dataset_path,
+        strategy,
+        start=start,
+        end=end,
+        holdout_permit=permit_id,
+        holdout_study=True,
+    )
+    if permit_id is None:
+        permit_id = (first.diagnostics.get("holdout") or {}).get("permit_id")
+    again = run_backtest(
+        settings,
+        dataset_path,
+        strategy,
+        start=start,
+        end=end,
+        holdout_permit=permit_id,
+        holdout_study=True,
+    )
     stressed = run_backtest(
         stressed_settings(settings, multiplier),
         dataset_path,
         strategy,
         start=start,
         end=end,
+        holdout_permit=permit_id,
+        holdout_study=True,
     )
+    if holdout_permit is None and permit_id:
+        from .holdout import consume_study
+
+        consume_study(
+            permit_id,
+            {
+                "dataset_id": first.dataset_id,
+                "strategy": {
+                    "id": first.strategy_id,
+                    "version": first.strategy_version,
+                },
+                "stress": {
+                    "base": first.metrics,
+                    "again": again.metrics,
+                    "stressed": stressed.metrics,
+                },
+            },
+        )
     return StressReport(
         base=first.metrics,
         stressed=stressed.metrics,
@@ -119,6 +166,7 @@ def measure_gates(
     multiplier: float = 2.0,
     start: datetime | None = None,
     end: datetime | None = None,
+    holdout_permit: str | None = None,
 ) -> dict[str, GateOutcome]:
     """G8, G2 and G1/G3/G14 as real outcomes, ready to override the placeholders."""
     from .integrity import measure_integrity
@@ -130,6 +178,7 @@ def measure_gates(
         multiplier=multiplier,
         start=start,
         end=end,
+        holdout_permit=holdout_permit,
     )
     return {
         "G8": cost_outcome(report.base, report.stressed, multiplier),
