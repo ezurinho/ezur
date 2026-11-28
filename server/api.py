@@ -18,6 +18,7 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 
 from .config import Settings, apply_settings, save_settings
+from .holdout import HoldoutSealed
 from .promotion import effective_settings_and_verdict
 from .market.csv_data import validate_dataset
 from .models import DayStats
@@ -589,6 +590,8 @@ def post_backtest(request: Request, body: BacktestRequest) -> dict[str, Any]:
             start=start,
             end=end,
         )
+    except HoldoutSealed as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
     except (ValueError, FileNotFoundError) as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
     if body.save:
@@ -698,6 +701,8 @@ def post_backtest_compare(request: Request, body: CompareRequest) -> dict[str, A
                 resolve_strategy(strategy_id, None),
                 run_group=group,
             )
+        except HoldoutSealed as error:
+            raise HTTPException(status_code=409, detail=str(error)) from error
         except (ValueError, FileNotFoundError) as error:
             raise HTTPException(status_code=422, detail=str(error)) from error
         stats = aggregate(
