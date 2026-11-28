@@ -26,6 +26,8 @@ class ValidationReport:
     symbols: list[str] = field(default_factory=list)
     rows: int = 0
     sessions: int = 0
+    first_ts: datetime | None = None
+    last_ts: datetime | None = None
     errors: list[ValidationIssue] = field(default_factory=list)
 
     def as_dict(self) -> dict:
@@ -34,6 +36,8 @@ class ValidationReport:
             "symbols": self.symbols,
             "rows": self.rows,
             "sessions": self.sessions,
+            "first_ts": self.first_ts.isoformat() if self.first_ts else None,
+            "last_ts": self.last_ts.isoformat() if self.last_ts else None,
             "errors": [
                 {"code": issue.code, "message": issue.message, "row": issue.row}
                 for issue in self.errors
@@ -127,11 +131,16 @@ def validate_dataset(
                 )
             )
 
-    sessions = len({stamp.date() for values in stamps.values() for stamp in values})
+    all_stamps = [stamp for values in stamps.values() for stamp in values]
+    sessions = len({stamp.date() for stamp in all_stamps})
     return ValidationReport(
         ok=not errors,
         symbols=[symbol for symbol in instruments if stamps[symbol]],
         rows=rows,
         sessions=sessions,
+        # La ventana real del CSV permite comprobar el candado del holdout sin
+        # releer el fichero: el validador ya pasó por todas las filas.
+        first_ts=min(all_stamps) if all_stamps else None,
+        last_ts=max(all_stamps) if all_stamps else None,
         errors=errors,
     )
