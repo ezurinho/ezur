@@ -12,7 +12,6 @@ New-Item -ItemType Directory -Force -Path $stateDir | Out-Null
 
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $logPath = Join-Path $stateDir "run-$stamp.log"
-$lastPath = Join-Path $stateDir 'last-message.md'
 $promptPath = Join-Path $root 'scripts\afk_night_agent_prompt.md'
 $lockPath = Join-Path $stateDir 'runner.lock'
 $failPath = Join-Path $stateDir 'consecutive-failures.txt'
@@ -49,26 +48,12 @@ try {
         exit 0
     }
 
-    $codex = (Get-Command codex -ErrorAction SilentlyContinue).Source
-    if (-not $codex) {
-        $codex = Join-Path $env:LOCALAPPDATA 'Programs\OpenAI\Codex\bin\codex.exe'
+    $copilot = Join-Path $env:LOCALAPPDATA 'GitHub CLI\copilot\copilot.exe'
+    if (-not (Test-Path $copilot)) {
+        $copilot = (Get-Command copilot -ErrorAction SilentlyContinue).Source
     }
-    if (-not (Test-Path $codex)) {
-        Write-RunLog 'No se encontró el ejecutable de Codex.'
-        exit 1
-    }
-
-    $previousPreference = $ErrorActionPreference
-    $ErrorActionPreference = 'Continue'
-    try {
-        $auth = & $codex login status 2>&1
-        $authCode = $LASTEXITCODE
-    }
-    finally {
-        $ErrorActionPreference = $previousPreference
-    }
-    if ($authCode -ne 0 -or (($auth -join "`n") -notmatch 'Logged in')) {
-        Write-RunLog 'Codex no tiene sesión iniciada; se aborta.'
+    if (-not $copilot -or -not (Test-Path $copilot)) {
+        Write-RunLog 'No se encontró el ejecutable de GitHub Copilot CLI.'
         exit 1
     }
 
@@ -78,21 +63,22 @@ try {
         exit 1
     }
 
-    Write-RunLog "Inicio del turno. Codex: $codex"
+    Write-RunLog "Inicio del turno. Copilot: $copilot"
     if ($DryRun) {
-        Write-RunLog 'Dry run correcto; no se invoca a Codex.'
+        Write-RunLog 'Dry run correcto; no se invoca a Copilot.'
         exit 0
     }
 
     $previousPreference = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
-        $prompt | & $codex exec `
-            --cd $root `
-            --dangerously-bypass-approvals-and-sandbox `
-            --color never `
-            --output-last-message $lastPath `
-            - 2>&1 | ForEach-Object {
+        $output = & $copilot `
+            -p $prompt `
+            --allow-all `
+            --no-ask-user `
+            --silent `
+            --no-auto-update `
+            --log-dir $stateDir 2>&1 | ForEach-Object {
                 Add-Content -Path $logPath -Value $_ -Encoding UTF8
                 Write-Output $_
             }
@@ -116,7 +102,7 @@ try {
     else {
         $fails++
         Set-Content -Path $failPath -Value "$fails" -Encoding ASCII
-        Write-RunLog "Codex falló con código $exitCode; fallos consecutivos: $fails."
+        Write-RunLog "Copilot falló con código $exitCode; fallos consecutivos: $fails."
         if ($fails -ge 3) {
             try {
                 Disable-ScheduledTask -TaskName 'ezur-night-agent' -ErrorAction Stop | Out-Null
@@ -128,11 +114,9 @@ try {
         }
     }
 
-    $lastText = if (Test-Path $lastPath) {
-        Get-Content -Path $lastPath -Raw
-    }
-    else {
-        '(Codex no dejó mensaje final.)'
+    $lastText = ($output | Select-Object -Last 160) -join "`n"
+    if ([string]::IsNullOrWhiteSpace($lastText)) {
+        $lastText = '(El agente no dejó mensaje final.)'
     }
 
     $summary = @"
@@ -143,7 +127,7 @@ try {
 - Log: $logPath
 - Prompt: $promptPath
 
-## Mensaje final de Codex
+## Mensaje final del agente
 
 $lastText
 "@
