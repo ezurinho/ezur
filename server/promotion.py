@@ -399,8 +399,52 @@ def evaluate(
     research_hash: str | None = None,
     profile_hash: str | None = None,
     brakes: dict[str, Any] | None = None,
+    require_holdout: bool = False,
+    study_hash: str | None = None,
+    strategy_hash: str | None = None,
+    dataset_id: str | None = None,
+    window: tuple[str, str] | None = None,
+    holdout: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     checks: list[dict[str, Any]] = []
+    holdout_block: dict[str, Any] | None = None
+    if require_holdout:
+        from .holdout import verify_consumed
+
+        evidence_for_holdout = evidence or {}
+        if holdout is not None and "holdout" not in evidence_for_holdout:
+            evidence_for_holdout = {**evidence_for_holdout, "holdout": holdout}
+        try:
+            verified = verify_consumed(
+                evidence_for_holdout,
+                dataset_id=dataset_id,
+                study_hash=study_hash,
+                strategy_hash=strategy_hash,
+                window=window,
+            )
+            holdout_block = verified.get("block")
+            reasons = verified.get("reasons") or []
+            for name, item in verified["checks"].items():
+                checks.append(
+                    _check(
+                        name,
+                        (holdout_block or {}).get(name, (holdout_block or {}).get("state")),
+                        "CONSUMED y atestación válida",
+                        bool(item["pass"]),
+                        str(item["reason"] or (reasons[0] if reasons else "holdout no válido")),
+                    )
+                )
+        except Exception as error:  # ledger roto o bloque ilegible: fail closed
+            reason = f"no se pudo verificar el holdout: {error}"
+            for name in (
+                "holdout_consumido",
+                "holdout_atestacion",
+                "holdout_identidad",
+                "holdout_ventana",
+                "holdout_unico",
+                "holdout_sin_incidentes",
+            ):
+                checks.append(_check(name, None, "CONSUMED y atestación válida", False, reason))
     if execution is None and config_hash:
         # La puerta por hash puede usar el modelo que declara la evidencia;
         # sin hash sigue siendo obligatorio el perfil que va a operar.
@@ -762,6 +806,20 @@ def evaluate(
             ),
             "cycle_candidate": (cycle or {}).get("candidate"),
         },
+        "holdout": (
+            {
+                "state": (holdout_block or {}).get("state"),
+                "attestation": (holdout_block or {}).get("attestation_sha256"),
+                "consumed_at": (holdout_block or {}).get("consumed_at"),
+                "checks": {
+                    check["name"]: check["pass"]
+                    for check in checks
+                    if check["name"].startswith("holdout_")
+                },
+            }
+            if require_holdout
+            else None
+        ),
     }
 
 
@@ -788,6 +846,12 @@ def evaluate_paths(
     research_hash: str | None = None,
     profile_hash: str | None = None,
     brakes: dict[str, Any] | None = None,
+    require_holdout: bool = False,
+    study_hash: str | None = None,
+    strategy_hash: str | None = None,
+    dataset_id: str | None = None,
+    window: tuple[str, str] | None = None,
+    holdout: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return evaluate(
         load(evidence_path),
@@ -799,6 +863,12 @@ def evaluate_paths(
         research_hash,
         profile_hash,
         brakes,
+        require_holdout=require_holdout,
+        study_hash=study_hash,
+        strategy_hash=strategy_hash,
+        dataset_id=dataset_id,
+        window=window,
+        holdout=holdout,
     )
 
 
@@ -841,6 +911,18 @@ def effective_settings_and_verdict(
     from .backtest import profile_fingerprint, research_fingerprint, risk_brakes
 
     execution = execution_model(settings)
+    from .holdout import holdout_config, strategy_payload
+    from .confirmatory import canonical_hash
+    from .strategy.registry import resolve_strategy
+
+    require_holdout = settings.promotion.required and settings.promotion.require_holdout
+    if require_holdout:
+        study_strategy = resolve_strategy(settings.strategy.id, settings.strategy.params)
+        study_hash = canonical_hash(holdout_config(settings))
+        strategy_hash = canonical_hash(strategy_payload(study_strategy))
+    else:
+        study_hash = None
+        strategy_hash = None
     verdict = evaluate_paths(
         settings.promotion.evidence,
         settings.promotion.stress_evidence,
@@ -851,6 +933,9 @@ def effective_settings_and_verdict(
         research_hash=research_fingerprint(settings),
         profile_hash=profile_fingerprint(settings),
         brakes=risk_brakes(settings),
+        require_holdout=require_holdout,
+        study_hash=study_hash,
+        strategy_hash=strategy_hash,
     )
     if verdict["passed"] or settings.promotion.mode != "reduce":
         return settings, verdict
@@ -969,8 +1054,19 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     execution = execution_model(profile)
     from .backtest import config_fingerprint
+    from .confirmatory import canonical_hash
+    from .holdout import holdout_config, strategy_payload
+    from .strategy.registry import resolve_strategy
 
     config_hash = config_fingerprint(profile)
+    require_holdout = profile.promotion.required and profile.promotion.require_holdout
+    if require_holdout:
+        study_strategy = resolve_strategy(profile.strategy.id, profile.strategy.params)
+        study_hash = canonical_hash(holdout_config(profile))
+        strategy_hash = canonical_hash(strategy_payload(study_strategy))
+    else:
+        study_hash = None
+        strategy_hash = None
     verdict = evaluate_paths(
         args.evidence,
         args.stress,
@@ -978,12 +1074,19 @@ def main(argv: list[str] | None = None) -> int:
         expected,
         config_hash=config_hash,
         execution=execution,
+        require_holdout=require_holdout,
+        study_hash=study_hash,
+        strategy_hash=strategy_hash,
     )
     if args.json:
         print(json.dumps(verdict, indent=2, ensure_ascii=False))
     else:
         print(render(verdict))
-    return 0 if verdict["passed"] else 1
+    if verdict["passed"]:
+        return 0
+    if any(name.startswith("holdout_") for name in verdict["failed"]):
+        return 2
+    return 1
 
 
 if __name__ == "__main__":
