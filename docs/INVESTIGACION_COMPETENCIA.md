@@ -11,6 +11,9 @@ La revisión de 2026-11-28 recalcula todos los totales con la ponderación decla
 (antes no cuadraban), contrasta las notas propias con el código y corrige
 validación (9→8) y datos (3→5). Las notas por criterio de los competidores son
 las de la revisión original y no se re-auditaron; solo se corrigió su total.
+El cierre del mismo día devuelve validación a 9 al cablear el candado del holdout
+en el runner y unificar la medición de G8/G2/G1/G3/G14 entre CLI y API; el total
+propio se recalcula con esa nota. No se cambió ningún peso.
 
 ## 1. Qué hay ahí fuera (datos reales)
 
@@ -106,7 +109,7 @@ backtest de esta lista: repintado, fills idealizados, sin portfolio risk.
 | NautilusTrader | 9 | 4 | 9 | 7 | 3 | 8 | 7 | 8 | **7,0** |
 | Freqtrade | 9 | 4 | 7 | 5 | 8 | 8 | 9 | 6 | **7,0** |
 | Jesse | 6 | 5 | 8 | 6 | 7 | 7 | 8 | 6 | **6,4** |
-| **este repositorio** | **2** | **8** | **6** | **9** | **8** | **9** | **8** | **5** | **6,3** |
+| **este repositorio** | **2** | **9** | **6** | **9** | **8** | **9** | **8** | **5** | **6,5** |
 | Hummingbot | 10 | 2 | 2 | 7 | 4 | 9 | 8 | 8 | **6,0** |
 | OctoBot | 8 | 2 | 4 | 5 | 9 | 6 | 7 | 6 | **5,7** |
 | SaaS (3Commas & cía.) | 9 | 1 | 3 | 6 | 9 | 2 | 7 | 6 | **5,3** |
@@ -126,7 +129,7 @@ motor sea mejor que el de Nautilus.
 | Criterio | Nota | Por qué |
 |---|---:|---|
 | Ejecución en vivo | 2 | No hay adaptador de broker: `LiveConfig.can_start()` exige `adapter_implemented`, `live_enabled`, confirmación y un broker distinto de `none`, y los valores por defecto lo bloquean. El motor paper y el feed OKX son reales, pero no hay órdenes reales. 2, no 1, por la paridad paper/backtest |
-| Disciplina de validación | 8 | Puertas G4–G13 con umbrales versionados; G8 (costes ×2)/G2 (determinismo) y la integridad G1/G3/G14 se miden en la ruta API con `stress=True`; IC bootstrap, concentración top-5, walk-forward en `server/walkforward.py`, ledger append-only y promoción PBO/DSR. Baja de 9: el holdout está implementado como sello pero no cableado al flujo de ejecución (solo librería y tests), el CLI `--gates` no mide G8/G2/G1/G3/G14 y G3 pasa en series continuas con «sin rolls que verificar» |
+| Disciplina de validación | 9 | Puertas G4–G13 con umbrales versionados; G8 (costes ×2)/G2 (determinismo) y la integridad G1/G3/G14 se miden en la ruta API y ahora también en el CLI `--gates`; el candado del holdout bloquea runner, API y CLI sin pre-registro y sello reproducible; IC bootstrap, concentración top-5, walk-forward, ledger append-only y promoción PBO/DSR. No llega a 10 porque G3 sigue sin poder verificar rolls en una serie continua: eso se penaliza en Datos (5), no se disfraza aquí |
 | Backtesting realista | 6 | `next_open`, comisión, slippage con tope, gana el stop en barra ambigua, coste de sesión. Falta modelo intrabar, funding/rolls y datos de futuros; el histórico spot real ya se usa |
 | Gestión de riesgo | 9 | Riesgo por operación, pérdida diaria, máximo de operaciones, cooldown, tope de stop, cierre de sesión y emergencia que veta entradas sin bloquear salidas (no aplana automáticamente). Límites sobre P&L realizado; el stop acota el riesgo abierto |
 | Interfaz | 8 | Contrato de snapshot agnóstico, siete vistas, HUD oscuro con un solo acento, sparklines y medidores de límite propios. Falta historial de snapshots y multi-ventana |
@@ -134,15 +137,15 @@ motor sea mejor que el de Nautilus.
 | Documentación | 8 | Arquitectura, protocolo, API, runbook, cómo escribir una estrategia, ADR con valores por defecto |
 | Datos | 5 | Feed OKX real en paper e histórico Binance Vision spot/UM con `.CHECKSUM` (3.591.915 velas 1 m medidas, 2.496 días sin huecos); sintético y CSV siguen disponibles. Falta integrar futuros/rolls/funding en el pipeline, manifiesto y reconciliación |
 
-**6,3/10** (6,1 antes del rediseño de interfaz, con las notas corregidas). Por
-debajo de LEAN (7,7), Nautilus (7,0), Freqtrade (7,0) y Jesse (6,4), y por encima
-de Hummingbot (6,0) y del resto; a 0,1 de Jesse y a 0,7 de Nautilus, no «lejos».
+**6,5/10** (6,3 antes de cablear el holdout y las puertas del CLI, con las notas
+corregidas). Por debajo de LEAN (7,7), Nautilus (7,0) y Freqtrade (7,0), y por
+encima de Jesse (6,4), Hummingbot (6,0) y del resto; a 0,5 de Nautilus, no «lejos».
 Somos el mejor de la lista en lo que impide engañarse a uno mismo y estamos en el
 furgón de cola en ejecución real y por debajo de la media en datos. Ese es
 exactamente el perfil de un esqueleto de investigación serio con el motor de
 mercado pendiente.
 
-Un 6,3 con histórico spot real vale menos que uno con futuros, rolls y ejecución
+Un 6,5 con histórico spot real vale menos que uno con futuros, rolls y ejecución
 real: la nota mide capacidades, no resultados. Ninguno de estos proyectos tiene
 ventaja demostrada en su repositorio, y el nuestro tampoco.
 
@@ -215,7 +218,7 @@ Reglas de diseño que se aplican en `frontend/src/styles.css`:
 
 Nuestro punto fuerte no es el motor: es el método. La lista de arriba está llena
 de motores mejores con métodos peores, y por eso casi todos sus repositorios
-públicos no pueden demostrar que funcionan. Un 6,3 con la mejor disciplina de
+públicos no pueden demostrar que funcionan. Un 6,5 con la mejor disciplina de
 validación de la tabla es una base honesta; el histórico spot real ya se usa y el
 feed OKX alimenta el paper, pero todavía no hay ejecución real ni futuros/rolls.
 
