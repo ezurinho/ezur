@@ -8,7 +8,7 @@ import pytest
 
 from server import holdout
 from server.backtest import main, run_backtest
-from server.confirmatory import canonical_hash
+from server.confirmatory import canonical_hash, file_hash
 from server.stress import run_stress
 from server.holdout import HoldoutSealed, guard_window, holdout_config, seal_run
 from server.market import synthetic
@@ -200,6 +200,45 @@ def _aligned_holdout_csv(path, settings, *, bars=60):
                     [bar.t.isoformat(), symbol, bar.o, bar.h, bar.l, bar.c, bar.v]
                 )
     return path
+
+
+def test_end_to_end_autoriza_ejecuta_y_deja_la_traza_del_ledger(
+    settings, tmp_path, monkeypatch
+):
+    """Sello creado, unseal activo y una corrida real dentro del holdout."""
+    monkeypatch.setenv(holdout.SEAL_ENV, "1")
+    monkeypatch.setattr(holdout, "PREREG_FILE", tmp_path / "PREREGISTRO.sha256")
+    monkeypatch.setattr(holdout, "LOCK_FILE", tmp_path / "lock.json")
+    monkeypatch.setattr(holdout, "EVENTS_FILE", tmp_path / "events.jsonl")
+    monkeypatch.setattr(holdout, "ATTESTATION_DIR", tmp_path / "attestations")
+    holdout.PREREG_FILE.write_text("a" * 64, encoding="utf-8")
+    path = _aligned_holdout_csv(tmp_path / "holdout.csv", settings)
+    strategy = NullStrategy()
+    seal_run(path, settings, strategy)
+
+    result = run_backtest(settings, path, strategy)
+
+    trace = result.diagnostics["holdout"]
+    assert trace["authorized"] is True
+    assert trace["state"] == "CONSUMED"
+    assert trace["permit_id"]
+    assert trace["sealed_ts"]
+    assert result.dataset_id == file_hash(path)
+
+    events = [
+        json.loads(line)
+        for line in holdout.EVENTS_FILE.read_text(encoding="utf-8").splitlines()
+    ]
+    assert [event["event"] for event in events] == ["authorized", "claimed", "consumed"]
+    assert events[0]["state_after"] == "AUTHORIZED"
+    assert events[1]["state_after"] == "RUNNING"
+    assert events[2]["state_after"] == "CONSUMED"
+    assert all(event["permit_id"] == trace["permit_id"] for event in events)
+    assert events[0]["dataset_id"] == result.dataset_id
+    assert events[0]["surface"] == "runner"
+    assert events[0]["prereg_sha256"] == "a" * 64
+    assert events[0]["seal_sha256"] == file_hash(holdout.LOCK_FILE)
+    assert holdout.status()["state"] == "CONSUMED"
 
 
 def test_una_corrida_autorizada_consume_el_holdout_y_la_segunda_no_pasa(
