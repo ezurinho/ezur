@@ -27,6 +27,9 @@ on:
       overrides:
         description: 'JSON que se mezcla con el perfil, ej. {"execution":{"commission_pct_side":0.00082}}'
         default: "{}"
+      gates:
+        description: "Evalua las puertas medibles (G8/G2 repiten la corrida con coste x2)"
+        default: "false"
 
 permissions:
   contents: read
@@ -81,6 +84,7 @@ jobs:
           INPUT_CONFIG: ${{ inputs.config }}
           INPUT_SPLIT: ${{ inputs.split }}
           INPUT_OVERRIDES: ${{ inputs.overrides }}
+          INPUT_GATES: ${{ inputs.gates }}
         run: |
           python - <<'PY'
           import json
@@ -100,11 +104,16 @@ jobs:
       - name: Backtest
         env:
           SPLIT: ${{ inputs.split }}
+          GATES: ${{ inputs.gates }}
         run: |
           args=(--dataset "$RUNNER_TEMP/dataset.csv" \
                 --config "$RUNNER_TEMP/config.json" \
                 --json --out "$RUNNER_TEMP/backtest.json")
           if [ -n "$SPLIT" ]; then args+=(--split "$SPLIT"); fi
+          # Sin veredicto, una tabla de metricas se lee como se quiera. Con
+          # --gates el artefacto lleva el APROBADA/RECHAZADA/INCONCLUSO y la
+          # lista de puertas que fallan o que no se pudieron medir.
+          if [ "$GATES" = "true" ]; then args+=(--gates); fi
           python -m server.backtest "${args[@]}"
 
       - name: Resumen
@@ -129,6 +138,11 @@ jobs:
           print("cost_r", doc.get("cost_per_trade_r"))
           print("config_hash", doc.get("config_hash"))
           print("diagnostics", json.dumps(doc.get("diagnostics") or {}, sort_keys=True))
+          gates = doc.get("gates") or {}
+          if gates:
+              print("verdict", gates.get("verdict"))
+              print("failed", ",".join(gates.get("failed") or []) or "-")
+              print("not_measured", ",".join(gates.get("not_measured") or []) or "-")
           PY
 
       - uses: actions/upload-artifact@v4
