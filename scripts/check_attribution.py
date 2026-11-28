@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rechaza mensajes de commit con `Co-Authored-By` de Codebuff.
+"""Rechaza mensajes de commit con atribución a Codebuff.
 
 Lo ejecuta el hook `.githooks/commit-msg` sobre el mensaje que se está
 escribiendo y el job `attribution` de CI sobre los commits que entran en la
@@ -16,7 +16,10 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-_TRAILER = re.compile(r"^\s*co-authored-by\s*:.*codebuff", re.IGNORECASE)
+_ATTRIBUTION_PATTERNS = (
+    re.compile(r"^\s*co-authored-by\s*:.*codebuff", re.IGNORECASE),
+    re.compile(r"^\s*(?:🤖\s*)?generated with\s+codebuff\b", re.IGNORECASE),
+)
 
 
 @dataclass(frozen=True)
@@ -26,11 +29,16 @@ class Offence:
 
 
 def offending_lines(text: str) -> list[Offence]:
-    """Líneas del mensaje que atribuyen el commit a Codebuff."""
+    """Líneas del mensaje que atribuyen el commit a Codebuff.
+
+    Cubre las dos formas que usa el footer de la herramienta: el coautor y la
+    línea «Generated with Codebuff». Un asunto que mencione Codebuff sin ser
+    atribución no se rechaza.
+    """
     return [
         Offence(number, line.strip())
         for number, line in enumerate(text.splitlines(), start=1)
-        if _TRAILER.search(line)
+        if any(pattern.search(line) for pattern in _ATTRIBUTION_PATTERNS)
     ]
 
 
@@ -102,7 +110,7 @@ def main(argv: list[str] | None = None) -> int:
     for problem in problems:
         print(f"  {problem}", file=sys.stderr)
     print(
-        "Quita el trailer Co-Authored-By de Codebuff "
+        "Quita la atribución a Codebuff "
         "(git commit --amend o git rebase -i) antes de continuar.",
         file=sys.stderr,
     )
