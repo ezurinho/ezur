@@ -13,6 +13,7 @@ un solo operador. Todos los cuerpos son JSON.
 | GET | `/health` | `{status, version}` |
 | GET | `/status` | snapshot completo del contrato v1 |
 | GET | `/validation` | veredicto de puertas + detalle por puerta |
+| GET | `/holdout/status` | estado derivado del ledger del holdout; no autoriza ni consume |
 
 ## Motor
 
@@ -74,8 +75,8 @@ curva. Los desgloses usan la zona horaria de la sesión, y `closed` incluye
 | Método | Ruta | Efecto |
 |---|---|---|
 | GET | `/datasets` | CSV disponibles en el directorio de datos |
-| POST | `/data/validate` | valida alineación, huecos y símbolos |
-| POST | `/backtest/run` | ejecuta un backtest, guarda resultado y registra experimento |
+| POST | `/data/validate` | valida alineación, huecos y símbolos; rechaza el tramo del holdout |
+| POST | `/backtest/run` | ejecuta un backtest, guarda resultado y registra experimento; `stress` comparte un solo permiso de holdout |
 | GET | `/backtest/runs` | listado con cursor (`has_more`, `next_cursor`) |
 | GET | `/experiments` | ledger de experimentos + resumen por veredicto |
 | GET | `/funnel` | embudo de evaluación: etapas, tasa de supervivencia y desglose |
@@ -85,6 +86,13 @@ curva. Los desgloses usan la zona horaria de la sesión, y `closed` incluye
 
 Por defecto (`"stress": true`) re-ejecuta el backtest dos veces más para medir
 G8 (costes ×2) y G2 (determinismo). Con `"save": true` guarda el resultado.
+
+Si el tramo solicitado solapa el holdout, hace falta `EZUR_HOLDOUT_UNSEAL=1`,
+un pre-registro válido y un sello reproducible. La corrida abre un único permiso
+y lo consume al terminar; la segunda corrida devuelve `409` con `code`
+`HO-005`. La respuesta incluye `holdout` con la atestación y
+`diagnostics.holdout`. Comparar estrategias sobre el holdout se rechaza siempre
+con `HO-009`, y `/data/validate` no devuelve el tramo sellado.
 
 ## Gráfico
 
@@ -119,7 +127,7 @@ Los contadores existen para que un webhook roto se vea en vez de suponerse.
 | Código | Cuándo |
 |---|---|
 | `404` | acción de motor o estrategia inexistente |
-| `409` | arranque rechazado (emergencia activa, LIVE sin adaptador) |
+| `409` | arranque rechazado (emergencia activa, LIVE sin adaptador) o holdout sellado/consumido |
 | `422` | payload o configuración inválida |
 
 ## Laboratorio
@@ -129,7 +137,7 @@ Los contadores existen para que un webhook roto se vea en vez de suponerse.
 | GET | `/api/datasets` | CSV disponibles (`data/` o `EZUR_DATA_DIR`) |
 | GET | `/api/backtest/strategies` | plugins con versión y parámetros por defecto |
 | POST | `/api/backtest/run` | una corrida; `stress` mide G8 y G2 con dos corridas extra |
-| POST | `/api/backtest/compare` | mismo dataset, N estrategias, un veredicto por fila |
+| POST | `/api/backtest/compare` | mismo dataset, N estrategias, un veredicto por fila; nunca sobre el holdout |
 | GET | `/api/backtest/runs` | últimas corridas guardadas (resumen, no el payload entero) |
 | POST | `/api/alerts/test` | entrega una alerta y responde `sent` o el motivo |
 
