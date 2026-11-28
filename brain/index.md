@@ -1,6 +1,6 @@
 # Brain Index
 
-_Auto-generated. Last updated 2026-11-28T00:38:56.650Z._
+_Auto-generated. Last updated 2026-11-28T01:39:08.271Z._
 
 - [app-electron-estructura](pages/app-electron-estructura.md) — category: project | tags: [electron, arquitectura, seguridad] | Ezuryseth es una app Electron de optimizacion de Windows. `main.js` (1441 lineas) es el proceso principal y registra todo el IPC; `preload.j
 - [app-gotchas](pages/app-gotchas.md) — category: reference | tags: [electron, gotchas, pack, updates] | - Si Ezuryseth esta abierto, `publish-local.js` no puede reemplazar `Downloads/ezuryseth`: reintenta el renombrado y, si sigue bloqueado, fa
