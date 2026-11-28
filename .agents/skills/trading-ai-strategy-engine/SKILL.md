@@ -1,7 +1,7 @@
 ---
 name: trading-ai-strategy-engine
 description: "Trabaja con el motor IA de estrategias del repo (research_engine/PROMPT_V4): convierte una hipótesis en strategy_spec, la mide en el runner determinista, interpreta PBO/DSR/WFA y audita el veredicto sin inventar cifras. Úsala cuando se hable de AI trading bot, motor IA, agente investigador, LLM, prompt de quant, strategy_spec, PBO/DSR, backtest de investigación, selección de estrategias o promoción."
-version: 1.0.0
+version: 1.1.0
 ---
 
 # Motor IA de estrategias
@@ -37,6 +37,32 @@ Regla base: **la IA especifica y audita; el runner mide**. Cualquier número sin
 7. **Verificación**: `verify_all.py --quick` antes de tocar nada; el completo antes de citar el estado del motor.
 8. **Auditoría**: recorre las puertas una a una, cita `result.json#/...`, escribe el veredicto y los riesgos residuales. Si falta una métrica, `INCONCLUSIVE`, nunca la inventes.
 9. **Paper, no live**: una aprobación de investigación no enciende el bot. El bot sigue con su propia puerta (`promotion.required=true`, `mode=block`, `config_hash`) y en paper.
+
+## Bucle AFK de research
+
+El paper y el research pueden correr a la vez, pero el bucle no es una licencia para
+generar estrategias sin fin. Primero se prepara una cola explícita; después se mide y
+se para cuando la cola queda vacía:
+
+```powershell
+python -m server.research --seeds       # solo si hay familias nuevas que medir
+python -m server.research --generate    # variantes declaradas por las semillas
+python -m server.research --loop --cooldown 30
+```
+
+- `--loop` termina cuando no quedan specs pendientes. No lo reinicies con `--force`
+  ni generando variantes nuevas para que «siga haciendo algo»: cada pasada extra sobre
+  el mismo dato aumenta el riesgo de selección, no la evidencia.
+- Tres fallos seguidos paran el bucle. Se investiga el error; no se relanza en caliente
+  para que la gráfica parezca ocupada.
+- Los artefactos van a `data/research/artifacts`, el ciclo a `data/research/cycles` y
+  el ledger a `data/research/runs.jsonl`. Un bucle sin esas huellas no es una medición.
+- El bucle **no** promociona, no cambia el perfil y no enciende LIVE. Una aprobación
+  de research sigue siendo solo eso; la puerta del bot y el holdout son aparte.
+
+Para dejarlo desatendido junto al paper, usa `trading-afk`; allí está el arranque con
+log, el PID y la vigilancia. No uses un LLM dentro del bucle: el runner determinista es
+el que mide.
 
 ## Comandos del motor
 
@@ -118,3 +144,4 @@ Una puerta ausente no es una puerta aprobada. Si el artefacto no trae la evidenc
 - `trading-strategy-plugin`: contrato `BaseStrategy` para implementar la estrategia.
 - `trading-bot-ops`: operación, `/health`, watchdog y perfiles.
 - `trading-incident-triage`: contención cuando el bot o el motor fallan.
+- `trading-afk`: sesión desatendida en paper, keepalive y paradas duras.
