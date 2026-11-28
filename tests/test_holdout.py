@@ -1,13 +1,18 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+import csv
+import json
+from datetime import date, datetime, timezone
 
 import pytest
 
 from server import holdout
-from server.backtest import run_backtest
+from server.backtest import main, run_backtest
+from server.stress import run_stress
 from server.holdout import HoldoutSealed, guard_window, holdout_config, seal_run
+from server.market import synthetic
 from server.market.csv_data import validate_dataset
+from server.simulation import session_start_utc
 from server.strategy.null_strategy import NullStrategy
 
 
@@ -117,7 +122,115 @@ def test_the_backtest_never_opens_the_holdout_without_authorization(
         run_backtest(settings, path, NullStrategy())
 
 
-def test_the_validator_reports_the_dataset_span(
+def _aligned_holdout_csv(path, settings, *, bars=60):
+    day = date(2026, 12, 1)
+    symbols = settings.instruments.symbols
+    series = {
+        symbol: synthetic.generate_session(
+            day.isoformat(),
+            symbol,
+            start=session_start_utc(settings, day),
+            bars=bars,
+        )
+        for symbol in symbols
+    }
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(["ts", "symbol", "o", "h", "l", "c", "v"])
+        for index in range(bars):
+            for symbol in symbols:
+                bar = series[symbol][index]
+                writer.writerow(
+                    [bar.t.isoformat(), symbol, bar.o, bar.h, bar.l, bar.c, bar.v]
+                )
+    return path
+
+
+def test_una_corrida_autorizada_consume_el_holdout_y_la_segunda_no_pasa(
+    settings, tmp_path, monkeypatch
+):
+    monkeypatch.setenv(holdout.SEAL_ENV, "1")
+    monkeypatch.setattr(holdout, "PREREG_FILE", tmp_path / "PREREGISTRO.sha256")
+    monkeypatch.setattr(holdout, "LOCK_FILE", tmp_path / "lock.json")
+    monkeypatch.setattr(holdout, "EVENTS_FILE", tmp_path / "events.jsonl")
+    monkeypatch.setattr(holdout, "ATTESTATION_DIR", tmp_path / "attestations")
+    holdout.PREREG_FILE.write_text("a" * 64, encoding="utf-8")
+    path = _aligned_holdout_csv(tmp_path / "holdout.csv", settings)
+    strategy = NullStrategy()
+    seal_run(path, settings, strategy)
+
+    first = run_backtest(settings, path, strategy)
+
+    assert first.diagnostics["holdout"]["state"] == "CONSUMED"
+    assert first.diagnostics["holdout"]["permit_id"]
+    assert holdout.status()["state"] == "CONSUMED"
+    with pytest.raises(HoldoutSealed, match="consumido"):
+        run_backtest(settings, path, strategy)
+
+
+def test_el_estres_directo_comparte_un_solo_permiso(
+    settings, tmp_path, monkeypatch
+):
+    monkeypatch.setenv(holdout.SEAL_ENV, "1")
+    monkeypatch.setattr(holdout, "PREREG_FILE", tmp_path / "PREREGISTRO.sha256")
+    monkeypatch.setattr(holdout, "LOCK_FILE", tmp_path / "lock.json")
+    monkeypatch.setattr(holdout, "EVENTS_FILE", tmp_path / "events.jsonl")
+    monkeypatch.setattr(holdout, "ATTESTATION_DIR", tmp_path / "attestations")
+    holdout.PREREG_FILE.write_text("a" * 64, encoding="utf-8")
+    path = _aligned_holdout_csv(tmp_path / "holdout.csv", settings)
+    strategy = NullStrategy()
+    seal_run(path, settings, strategy)
+
+    run_stress(settings, path, strategy)
+
+    assert holdout.status()["state"] == "CONSUMED"
+    with pytest.raises(holdout.HoldoutSealed) as error:
+        run_stress(settings, path, strategy)
+    assert error.value.code == "HO-005"
+
+
+def test_el_cli_consume_el_holdout_y_la_segunda_corrida_sale_con_dos(
+    settings, tmp_path, monkeypatch, capsys
+):
+    monkeypatch.setenv(holdout.SEAL_ENV, "1")
+    monkeypatch.setattr(holdout, "PREREG_FILE", tmp_path / "PREREGISTRO.sha256")
+    monkeypatch.setattr(holdout, "LOCK_FILE", tmp_path / "lock.json")
+    monkeypatch.setattr(holdout, "EVENTS_FILE", tmp_path / "events.jsonl")
+    monkeypatch.setattr(holdout, "ATTESTATION_DIR", tmp_path / "attestations")
+    holdout.PREREG_FILE.write_text("a" * 64, encoding="utf-8")
+    path = _aligned_holdout_csv(tmp_path / "holdout.csv", settings)
+    strategy = NullStrategy()
+    seal_run(path, settings, strategy)
+    config = tmp_path / "config.json"
+    config.write_text(settings.model_dump_json(), encoding="utf-8")
+    target = tmp_path / "run.json"
+    argv = [
+        "backtest",
+        "--config",
+        str(config),
+        "--dataset",
+        str(path),
+        "--gates",
+        "--no-stress",
+        "--out",
+        str(target),
+    ]
+    monkeypatch.setattr("sys.argv", argv)
+
+    main()
+
+    payload = json.loads(target.read_text(encoding="utf-8"))
+    assert payload["holdout"]["state"] == "CONSUMED"
+    assert payload["diagnostics"]["holdout"]["state"] == "CONSUMED"
+
+    monkeypatch.setattr("sys.argv", argv)
+    with pytest.raises(SystemExit) as error:
+        main()
+    assert error.value.code == 2
+    assert "holdout" in capsys.readouterr().err
+
+
+def test_el_validator_reports_the_dataset_span(
     settings, tmp_path, synthetic_csv
 ):
     path = synthetic_csv(tmp_path / "span.csv", day="2026-12-01", bars=30)
