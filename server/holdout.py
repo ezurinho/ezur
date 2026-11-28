@@ -179,6 +179,25 @@ def _prereg_digest() -> str | None:
     return digest if _SHA256.fullmatch(digest) else None
 
 
+def _seal_time_error(sealed_ts: Any) -> str | None:
+    """Un sello posterior al inicio del holdout firma después de ver los datos.
+
+    El corte es estricto: el sello tiene que existir antes de
+    ``2026-12-01T00:00:00Z``. Un sello exactamente en el inicio ya no puede
+    demostrar que el pre-registro se congeló antes de que el tramo existiera.
+    """
+    sealed_at = _instant(sealed_ts)
+    if sealed_at is None:
+        return "el sello no tiene una fecha de creación válida"
+    if sealed_at >= HOLDOUT_START:
+        return (
+            f"el sello se creó el {sealed_at.isoformat()}, después de que empezara "
+            f"el holdout ({HOLDOUT_START.isoformat()}); el pre-registro debe ser "
+            "anterior a los datos"
+        )
+    return None
+
+
 def _check_pre_registration() -> str:
     if os.environ.get(SEAL_ENV) != "1":
         raise HoldoutSealed(
@@ -264,6 +283,9 @@ def guard_window(
             code="HO-003",
             state="SEALED",
         )
+    time_error = _seal_time_error(verdict.get("sealed_ts"))
+    if time_error:
+        raise HoldoutSealed(time_error, code="HO-003", state="SEALED")
     trace["authorized"] = True
     trace["sealed_ts"] = verdict.get("sealed_ts")
     return trace
@@ -550,6 +572,9 @@ def begin_study(
                 code="HO-003",
                 state="SEALED",
             )
+        time_error = _seal_time_error(seal.get("sealed_ts"))
+        if time_error:
+            raise HoldoutSealed(time_error, code="HO-003", state="SEALED")
         events = _read_events()
         state, active, _reason = _state_from_events(events)
         if state == "CONSUMED":
@@ -925,14 +950,24 @@ def verify_consumed(
     stored_ok = bool(stored) and canonical_hash(stored_body) == stored.get(
         "attestation_sha256"
     )
+    try:
+        seal_payload = json.loads(Path(LOCK_FILE).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        seal_payload = None
+    seal_time_error = (
+        _seal_time_error(seal_payload.get("sealed_ts"))
+        if isinstance(seal_payload, dict)
+        else "no se puede leer la fecha del sello"
+    )
     check(
         "holdout_atestacion",
         bool(consumed)
         and consumed.get("evidence_sha256") == digest
         and block.get("evidence_sha256") == digest
         and consumed.get("attestation_sha256") == block.get("attestation_sha256")
-        and stored_ok,
-        "la evidencia no coincide con la atestación",
+        and stored_ok
+        and seal_time_error is None,
+        seal_time_error or "la evidencia no coincide con la atestación",
     )
     expected_dataset = (
         dataset_id
