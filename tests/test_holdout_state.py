@@ -57,6 +57,46 @@ def _hashes(settings, strategy):
     )
 
 
+def _rewrite_sealed_ts(lock_path, sealed_ts: str) -> None:
+    payload = json.loads(lock_path.read_text(encoding="utf-8"))
+    payload["sealed_ts"] = sealed_ts
+    payload["seal_sha256"] = canonical_hash(
+        {key: value for key, value in payload.items() if key != "seal_sha256"}
+    )
+    lock_path.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
+
+
+def test_un_sello_posterior_no_abre_el_estudio(holdout_env):
+    dataset, settings, strategy = holdout_env
+    _rewrite_sealed_ts(holdout.LOCK_FILE, "2026-12-01T00:00:00+00:00")
+
+    with pytest.raises(HoldoutSealed) as error:
+        _begin(dataset, settings, strategy)
+
+    assert error.value.code == "HO-003"
+    assert "pre-registro" in str(error.value)
+
+
+def test_la_atestacion_no_vale_con_un_sello_posterior(holdout_env):
+    dataset, settings, strategy = holdout_env
+    permit = _begin(dataset, settings, strategy)
+    evidence = {"dataset_id": file_hash(dataset), "metrics": {"trades": 0}}
+    evidence["holdout"] = consume_study(permit.permit_id, evidence)
+    _rewrite_sealed_ts(holdout.LOCK_FILE, "2026-12-02T00:00:00+00:00")
+    study_hash, strategy_hash = _hashes(settings, strategy)
+
+    verified = verify_consumed(
+        evidence,
+        dataset_id=file_hash(dataset),
+        study_hash=study_hash,
+        strategy_hash=strategy_hash,
+    )
+
+    assert verified["ok"] is False
+    assert verified["checks"]["holdout_atestacion"]["pass"] is False
+    assert "pre-registro" in verified["reasons"][0]
+
+
 def test_el_estudio_pasa_de_ready_a_running_y_se_consume_una_vez(holdout_env):
     dataset, settings, strategy = holdout_env
     assert status()["state"] == "READY"
