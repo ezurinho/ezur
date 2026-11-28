@@ -108,6 +108,22 @@ def test_backtest_rejects_invalid_dataset(app_client):
     assert "invalid dataset" in response.json()["detail"]
 
 
+def test_backtest_refuses_the_sealed_holdout(app_client, monkeypatch):
+    client, tmp_path, settings = app_client
+    monkeypatch.delenv("EZUR_HOLDOUT_UNSEAL", raising=False)
+    path = _dataset(
+        tmp_path / "holdout.csv",
+        settings,
+        ["PRIMARY", "CTX_A"],
+        days=[date(2026, 12, 1)],
+    )
+
+    response = client.post("/api/backtest/run", json={"dataset_path": str(path)})
+
+    assert response.status_code == 409
+    assert "holdout" in response.json()["detail"]
+
+
 def test_backtest_runs_endpoint_lists_saved_runs(app_client):
     client, tmp_path, settings = app_client
     path = _dataset(tmp_path / "bars.csv", settings, ["PRIMARY", "CTX_A"], bars=60)
