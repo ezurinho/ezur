@@ -19,9 +19,22 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
 from .config import Settings
+from .confirmatory import canonical_hash
 from .db import Store
 from .engine import TradingEngine
-from .holdout import HoldoutSealed, guard_window, holdout_config, seal_run, strategy_payload
+from .holdout import (
+    HoldoutPermit,
+    HoldoutSealed,
+    begin_study,
+    consume_study,
+    fail_study,
+    guard_window,
+    holdout_config,
+    permit_from_id,
+    seal_run,
+    strategy_payload,
+    verify_permit,
+)
 from .market.csv_data import validate_dataset
 from .market.feed import CSVFeed
 from .models import TradeRecord
@@ -124,6 +137,9 @@ def run_backtest(
     run_group: str | None = None,
     start: datetime | None = None,
     end: datetime | None = None,
+    holdout_permit: HoldoutPermit | str | None = None,
+    holdout_study: bool = False,
+    holdout_surface: str = "runner",
 ) -> BacktestResult:
     symbols = settings.instruments.symbols
     dataset = Dataset.load(dataset_path, symbols)
@@ -146,6 +162,52 @@ def run_backtest(
         config=holdout_config(settings),
         strategy=strategy_payload(engine_strategy),
     )
+    permit: HoldoutPermit | None = None
+    owned_permit = False
+    if holdout.get("overlaps"):
+        study_hash = canonical_hash(holdout_config(settings))
+        strategy_hash = canonical_hash(strategy_payload(engine_strategy))
+        if holdout_permit is None:
+            window = holdout.get("window") or []
+            if len(window) != 2:
+                raise HoldoutSealed(
+                    "no se pudo fijar la ventana efectiva del holdout",
+                    code="HO-003",
+                )
+            permit = begin_study(
+                surface=holdout_surface,
+                dataset_path=dataset.path,
+                dataset_id=dataset.dataset_id,
+                settings=settings,
+                strategy=engine_strategy,
+                window=(datetime.fromisoformat(window[0]), datetime.fromisoformat(window[1])),
+                request_id=run_group,
+            )
+            owned_permit = True
+        else:
+            permit = (
+                permit_from_id(holdout_permit)
+                if isinstance(holdout_permit, str)
+                else holdout_permit
+            )
+            permit = verify_permit(
+                permit,
+                dataset_id=dataset.dataset_id,
+                study_hash=study_hash,
+                strategy_hash=strategy_hash,
+            )
+        holdout["permit_id"] = permit.permit_id
+        holdout["state"] = "RUNNING"
+        holdout["study_id"] = permit.study_id
+        holdout["expires_at"] = permit.expires_at
+    elif holdout_permit is not None:
+        raise HoldoutSealed(
+            "el permiso de holdout no corresponde a una ventana que lo toque",
+            code="HO-004",
+            state="RUNNING",
+            status_code=403,
+        )
+
     store = Store(":memory:")
     open_position = None
     pending_count = 0
@@ -164,6 +226,16 @@ def run_backtest(
         equity = [point["equity"] for point in store.equity_curve(limit=1_000_000)]
         open_position = engine.execution.position
         pending_count = len(engine.execution.pending_orders())
+    except Exception as error:
+        if permit is not None:
+            # Una vez reclamado, el estudio no se reintenta. Se cierra FAILED
+            # antes de devolver el error original.
+            fail_study(
+                permit.permit_id,
+                f"fallo al ejecutar el estudio: {type(error).__name__}",
+                code="HO-012",
+            )
+        raise
     finally:
         store.close()
 
@@ -171,7 +243,7 @@ def run_backtest(
     metrics = compute_stats(
         trades, initial_equity=settings.risk.initial_capital, equity=equity
     )
-    return BacktestResult(
+    result = BacktestResult(
         # El hash del dataset identifica los datos; el run_id, esta ejecución.
         # Antes eran lo mismo y dos estrategias sobre el mismo CSV no se podían
         # distinguir en un informe.
@@ -202,6 +274,16 @@ def run_backtest(
             "marked_to_market": True,
         },
     )
+    if owned_permit and not holdout_study:
+        # Una corrida suelta consume el estudio al terminar. Las corridas de
+        # CLI/API piden `holdout_study=True` para que estrés y G2 compartan el
+        # mismo permiso y solo se cierre cuando exista el informe completo.
+        attestation = consume_study(
+            permit.permit_id,
+            result.model_dump(mode="json"),
+        )
+        result.diagnostics["holdout"] = {**holdout, **attestation}
+    return result
 
 
 def _trade_row(row: dict[str, Any]) -> dict[str, Any]:
@@ -346,9 +428,19 @@ def main() -> None:
         print(f"holdout sellado: {seal['sealed_ts']} · {seal['seal_sha256'][:16]}")
         return
     try:
-        result = run_backtest(settings, args.dataset, start=start, end=end)
+        # El CLI abre el estudio y lo cierra al escribir el informe. Así las
+        # corridas extra de G8/G2 no se interpretan como lecturas distintas.
+        result = run_backtest(
+            settings,
+            args.dataset,
+            start=start,
+            end=end,
+            holdout_study=True,
+            holdout_surface="cli",
+        )
     except HoldoutSealed as error:
         parser.exit(2, f"holdout: {error}\n")
+    holdout_permit = (result.diagnostics.get("holdout") or {}).get("permit_id")
     primary = settings.instruments.primary
     timezone_name = settings.instruments.template_for(primary).timezone
 
@@ -412,11 +504,20 @@ def main() -> None:
 
         # El CLI mide lo mismo que la API: G8 y G2 no se estiman desde una sola
         # corrida. `--no-stress` deja constancia de que quedan sin medir.
-        measured = (
-            {}
-            if args.no_stress
-            else measure_gates(settings, args.dataset, start=start, end=end)
-        )
+        try:
+            measured = (
+                {}
+                if args.no_stress
+                else measure_gates(
+                    settings,
+                    args.dataset,
+                    start=start,
+                    end=end,
+                    holdout_permit=holdout_permit,
+                )
+            )
+        except HoldoutSealed as error:
+            parser.exit(2, f"holdout: {error}\n")
         report = evaluate_gates(
             stats,
             initial_capital=settings.risk.initial_capital,
@@ -429,7 +530,10 @@ def main() -> None:
             if outcome.status == "fail":
                 print(f"  {outcome.id}: {outcome.detail}")
 
-    _report_run(args, settings, result, stats, report, fill_audit)
+    try:
+        _report_run(args, settings, result, stats, report, fill_audit)
+    except HoldoutSealed as error:
+        parser.exit(2, f"holdout: {error}\n")
 
 
 def _iso_day(value: str) -> datetime:
@@ -601,6 +705,19 @@ def _report_run(
             ratio = blocks["out_of_sample"]["profit_factor"] / base if base else 0.0
             print(f"degradación   PF fuera / dentro {ratio:.2f}×")
         payload["split"] = {"at": cut.isoformat(), **blocks}
+
+    permit_id = (result.diagnostics.get("holdout") or {}).get("permit_id")
+    if permit_id:
+        from .holdout import consume_study
+
+        # La evidencia se hashea antes de añadir el bloque de atestación; el
+        # bloque es lo que promoción verifica contra el ledger.
+        attestation = consume_study(permit_id, payload)
+        payload["holdout"] = attestation
+        payload["diagnostics"]["holdout"] = {
+            **(result.diagnostics.get("holdout") or {}),
+            **attestation,
+        }
 
     document = json.dumps(payload, ensure_ascii=False, indent=2, default=str)
     if args.json:
