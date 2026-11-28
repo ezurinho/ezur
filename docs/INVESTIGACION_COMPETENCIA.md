@@ -1,10 +1,16 @@
 # Investigación: dónde estamos frente al resto
 
-Fecha: 2026-11-23. Método: métricas de GitHub obtenidas en vivo de la API pública
-(estrellas, forks, último push, licencia, issues abiertos) y evaluación técnica de
-cada proyecto a partir de su documentación y su arquitectura. Lo que no pude
-verificar aparece marcado como tal. Ningún número de este documento es estimado
-a ojo: los de GitHub son los que devolvió la API ese día.
+Fecha: 2026-11-23. Revisión: 2026-11-28. Método: métricas de GitHub obtenidas en
+vivo de la API pública (estrellas, forks, último push, licencia, issues abiertos)
+y evaluación técnica de cada proyecto a partir de su documentación y su
+arquitectura. Lo que no pude verificar aparece marcado como tal. Ningún número de
+este documento es estimado a ojo: los de GitHub son los que devolvió la API ese
+día y los totales son la suma ponderada de la matriz.
+
+La revisión de 2026-11-28 recalcula todos los totales con la ponderación declarada
+(antes no cuadraban), contrasta las notas propias con el código y corrige
+validación (9→8) y datos (3→5). Las notas por criterio de los competidores son
+las de la revisión original y no se re-auditaron; solo se corrigió su total.
 
 ## 1. Qué hay ahí fuera (datos reales)
 
@@ -46,97 +52,107 @@ pesa más lo que rompe cuentas (ejecución) y lo que produce falsos positivos
 
 ## 3. Notas por proyecto
 
-**Freqtrade (7,1/10)** — El estándar de facto en cripto. `ccxt` le da 100+ exchanges,
+**Freqtrade (7,0/10)** — El estándar de facto en cripto. `ccxt` le da 100+ exchanges,
 dry-run real, FreqUI es una UI web competente, Telegram, Docker. Su debilidad es
 la disciplina estadística: `hyperopt` optimiza in-sample con un sesgo conocido, y
 el análisis de *lookahead* avisa pero no impide. Riesgo por operación básico
 (stake fijo o tamaño por saldo), sin límite de pérdida diaria nativo.
 
-**NautilusTrader (8,6/10)** — Lo técnicamente mejor construido: núcleo Rust,
+**NautilusTrader (7,0/10)** — Lo técnicamente mejor construido: núcleo Rust,
 event-driven, paridad backtest/live, nanosegundos, tipos de dominio serios. Cuesta
 entrar y no opina sobre validación: te da el motor, no el método. Sin UI propia.
 
-**QuantConnect LEAN (8,2/10)** — Institucional: datos, `alpha streams`, risk
+**QuantConnect LEAN (7,7/10)** — Institucional: datos, `alpha streams`, risk
 management integrado (`MaximumDrawdownPercentPerSecurity`, etc.), cloud. C#
 pesado para iterar, y el código del usuario vive dentro de su plataforma.
 
-**Hummingbot (7,0/10)** — Ejecución y market making de primera; backtesting casi
+**Hummingbot (6,0/10)** — Ejecución y market making de primera; backtesting casi
 nulo. Es una herramienta de ejecución, no de investigación.
 
-**Jesse (7,3/10)** — API de backtest muy limpia, sintaxis agradable, buen
+**Jesse (6,4/10)** — API de backtest muy limpia, sintaxis agradable, buen
 `optimize` con advertencias. Solo cripto, live limitado a pocos exchanges, sin
 puertas de validación.
 
-**Backtrader (5,4/10)** — Motor de backtest excelente y flexible; muerto desde
+**Backtrader (4,6/10)** — Motor de backtest excelente y flexible; muerto desde
 2024, sin live creíble, sin UI, sin validación.
 
-**Zipline (4,8/10)** — Histórico de acciones intradía/diario, ecosistema
+**Zipline (3,1/10)** — Histórico de acciones intradía/diario, ecosistema
 Quantopian desaparecido, proyecto congelado.
 
-**OctoBot (6,0/10)** — UI web muy buena, muchos exchanges, pero es un producto de
+**OctoBot (5,7/10)** — UI web muy buena, muchos exchanges, pero es un producto de
 automatización (DCA, grid) más que una plataforma de investigación.
 
-**VectorBT (6,2/10)** — Insuperable para barridos masivos de parámetros; nada de
+**VectorBT (4,2/10)** — Insuperable para barridos masivos de parámetros; nada de
 live; invita al sobreajuste si no se pone disciplina encima.
 
-**Backtesting.py (5,6/10)** — Simple y honesto, con advertencias contra optimizar;
+**Backtesting.py (3,4/10)** — Simple y honesto, con advertencias contra optimizar;
 sin live, sin riesgo, sin UI.
 
-**Superalgos (5,0/10)** — Diseñador visual llamativo, rigor estadístico dudoso,
+**Superalgos (4,9/10)** — Diseñador visual llamativo, rigor estadístico dudoso,
 crypto solamente.
 
-**SaaS tipo 3Commas / Cryptohopper / Bitsgap (5,5/10)** — UI de 9, ejecución
+**SaaS tipo 3Commas / Cryptohopper / Bitsgap (5,3/10)** — UI de 9, ejecución
 decente con claves de exchange, cero capacidad de investigación propia y cero
 auditoría del método.
 
-**TradingView + Pine (6,0/10)** — El mejor gráfico del mercado (10/10) y el peor
+**TradingView + Pine (4,3/10)** — El mejor gráfico del mercado (10/10) y el peor
 backtest de esta lista: repintado, fills idealizados, sin portfolio risk.
 
 ## 4. Matriz de puntuaciones
 
 | Proyecto | Live | Valid. | Backtest | Riesgo | UI | Extend. | Docs | Datos | **Total** |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| NautilusTrader | 9 | 4 | 9 | 7 | 3 | 8 | 7 | 8 | **8,6** |
-| QuantConnect LEAN | 9 | 5 | 9 | 8 | 7 | 7 | 8 | 9 | **8,2** |
-| Jesse | 6 | 5 | 8 | 6 | 7 | 7 | 8 | 6 | **7,3** |
-| Freqtrade | 9 | 4 | 7 | 5 | 8 | 8 | 9 | 6 | **7,1** |
-| Hummingbot | 10 | 2 | 2 | 7 | 4 | 9 | 8 | 8 | **7,0** |
-| VectorBT | 1 | 4 | 7 | 2 | 3 | 9 | 6 | 7 | **6,2** |
-| OctoBot | 8 | 2 | 4 | 5 | 9 | 6 | 7 | 6 | **6,0** |
-| TradingView + Pine | 4 | 2 | 3 | 2 | 10 | 4 | 9 | 8 | **6,0** |
-| Backtesting.py | 1 | 4 | 6 | 2 | 2 | 5 | 7 | 4 | **5,6** |
-| SaaS (3Commas & cía.) | 9 | 1 | 3 | 6 | 9 | 2 | 7 | 6 | **5,5** |
-| Backtrader | 3 | 3 | 8 | 4 | 2 | 8 | 8 | 5 | **5,4** |
-| Superalgos | 6 | 2 | 4 | 4 | 8 | 6 | 6 | 5 | **5,0** |
-| Zipline | 1 | 2 | 6 | 2 | 2 | 5 | 6 | 6 | **4,8** |
-| **este repositorio** | **2** | **9** | **6** | **9** | **8** | **9** | **8** | **3** | **6,4** |
+| QuantConnect LEAN | 9 | 5 | 9 | 8 | 7 | 7 | 8 | 9 | **7,7** |
+| NautilusTrader | 9 | 4 | 9 | 7 | 3 | 8 | 7 | 8 | **7,0** |
+| Freqtrade | 9 | 4 | 7 | 5 | 8 | 8 | 9 | 6 | **7,0** |
+| Jesse | 6 | 5 | 8 | 6 | 7 | 7 | 8 | 6 | **6,4** |
+| **este repositorio** | **2** | **8** | **6** | **9** | **8** | **9** | **8** | **5** | **6,3** |
+| Hummingbot | 10 | 2 | 2 | 7 | 4 | 9 | 8 | 8 | **6,0** |
+| OctoBot | 8 | 2 | 4 | 5 | 9 | 6 | 7 | 6 | **5,7** |
+| SaaS (3Commas & cía.) | 9 | 1 | 3 | 6 | 9 | 2 | 7 | 6 | **5,3** |
+| Superalgos | 6 | 2 | 4 | 4 | 8 | 6 | 6 | 5 | **4,9** |
+| Backtrader | 3 | 3 | 8 | 4 | 2 | 8 | 8 | 5 | **4,6** |
+| TradingView + Pine | 4 | 2 | 3 | 2 | 10 | 4 | 9 | 8 | **4,3** |
+| VectorBT | 1 | 4 | 7 | 2 | 3 | 9 | 6 | 7 | **4,2** |
+| Backtesting.py | 1 | 4 | 6 | 2 | 2 | 5 | 7 | 4 | **3,4** |
+| Zipline | 1 | 2 | 6 | 2 | 2 | 5 | 6 | 6 | **3,1** |
+
+Totales = suma ponderada de las ocho notas con los pesos de la §2, redondeados a
+un decimal. LEAN queda primero por amplitud (datos, riesgo, UI), no porque su
+motor sea mejor que el de Nautilus.
 
 ### Desglose de la nota propia
 
 | Criterio | Nota | Por qué |
 |---|---:|---|
-| Ejecución en vivo | 2 | No hay adaptador de broker. LIVE está bloqueado por diseño y así debe seguir hasta el ADR 0.3 |
-| Disciplina de validación | 9 | Puertas G con umbrales versionados, IC bootstrap, concentración top-5, costes ×2, determinismo, walk-forward, ledger append-only y holdout sellado |
-| Backtesting realista | 6 | `next_open`, comisión, slippage con tope, gana el stop en barra ambigua, costo de sesión. Falta modelo intrabar y datos reales |
-| Gestión de riesgo | 9 | Riesgo por operación, pérdida diaria, máximo de operaciones, cooldown, tope de stop, cierre de sesión, emergencia que no bloquea salidas |
+| Ejecución en vivo | 2 | No hay adaptador de broker: `LiveConfig.can_start()` exige `adapter_implemented`, `live_enabled`, confirmación y un broker distinto de `none`, y los valores por defecto lo bloquean. El motor paper y el feed OKX son reales, pero no hay órdenes reales. 2, no 1, por la paridad paper/backtest |
+| Disciplina de validación | 8 | Puertas G4–G13 con umbrales versionados; G8 (costes ×2)/G2 (determinismo) y la integridad G1/G3/G14 se miden en la ruta API con `stress=True`; IC bootstrap, concentración top-5, walk-forward en `server/walkforward.py`, ledger append-only y promoción PBO/DSR. Baja de 9: el holdout está implementado como sello pero no cableado al flujo de ejecución (solo librería y tests), el CLI `--gates` no mide G8/G2/G1/G3/G14 y G3 pasa en series continuas con «sin rolls que verificar» |
+| Backtesting realista | 6 | `next_open`, comisión, slippage con tope, gana el stop en barra ambigua, coste de sesión. Falta modelo intrabar, funding/rolls y datos de futuros; el histórico spot real ya se usa |
+| Gestión de riesgo | 9 | Riesgo por operación, pérdida diaria, máximo de operaciones, cooldown, tope de stop, cierre de sesión y emergencia que veta entradas sin bloquear salidas (no aplana automáticamente). Límites sobre P&L realizado; el stop acota el riesgo abierto |
 | Interfaz | 8 | Contrato de snapshot agnóstico, siete vistas, HUD oscuro con un solo acento, sparklines y medidores de límite propios. Falta historial de snapshots y multi-ventana |
 | Extensibilidad | 9 | Tres plugins incompatibles sin tocar el núcleo; un test prohíbe nombres de activo en `server/` y `frontend/` |
 | Documentación | 8 | Arquitectura, protocolo, API, runbook, cómo escribir una estrategia, ADR con valores por defecto |
-| Datos | 3 | Sintético determinista y CSV; sin vendor, sin rolls reales, sin calidad de feed |
+| Datos | 5 | Feed OKX real en paper e histórico Binance Vision spot/UM con `.CHECKSUM` (3.591.915 velas 1 m medidas, 2.496 días sin huecos); sintético y CSV siguen disponibles. Falta integrar futuros/rolls/funding en el pipeline, manifiesto y reconciliación |
 
-**6,4/10** (6,2 antes del rediseño de interfaz). Por encima de VectorBT y de
-Backtrader o Zipline, por debajo de Jesse o Freqtrade, lejos de Nautilus. Somos el mejor de la lista en lo que impide engañarse a uno
-mismo y el peor en lo que produce datos y ejecución. Ese es exactamente el perfil
-de un esqueleto de investigación serio con el motor de mercado pendiente.
+**6,3/10** (6,1 antes del rediseño de interfaz, con las notas corregidas). Por
+debajo de LEAN (7,7), Nautilus (7,0), Freqtrade (7,0) y Jesse (6,4), y por encima
+de Hummingbot (6,0) y del resto; a 0,1 de Jesse y a 0,7 de Nautilus, no «lejos».
+Somos el mejor de la lista en lo que impide engañarse a uno mismo y estamos en el
+furgón de cola en ejecución real y por debajo de la media en datos. Ese es
+exactamente el perfil de un esqueleto de investigación serio con el motor de
+mercado pendiente.
 
-Un 6,4 con datos sintéticos vale menos que un 6,4 con datos reales: la nota mide
-capacidades, no resultados. Ninguno de estos proyectos tiene ventaja demostrada
-en su repositorio, y el nuestro tampoco.
+Un 6,3 con histórico spot real vale menos que uno con futuros, rolls y ejecución
+real: la nota mide capacidades, no resultados. Ninguno de estos proyectos tiene
+ventaja demostrada en su repositorio, y el nuestro tampoco.
 
 ## 5. Lo que hay que copiar, por orden
 
-1. **Adaptador de datos real (Nautilus/LEAN).** Sin esto, todo lo demás mide el
-   vacío. Es el ADR 0.2 y desbloquea G1/G3/G14 con rolls de verdad.
+1. **Integrar el histórico real en el pipeline (Nautilus/LEAN).** El ADR 0.2 ya
+   está cerrado y `binance_vision` descarga spot/UM con checksums; falta cablearlo
+   al estudio y al flujo de promoción, añadir funding/rolls y reconciliación. Sin
+   rolls, G3 puede pasar con «sin rolls que verificar»: la puerta necesita datos,
+   no solo un hash.
 2. **Adaptador de ejecución paper contra un broker real (Freqtrade).** `ccxt` o
    el sandbox del broker: reconciliación de posiciones al arrancar, que es donde
    todos los bots caseros fallan.
@@ -199,9 +215,9 @@ Reglas de diseño que se aplican en `frontend/src/styles.css`:
 
 Nuestro punto fuerte no es el motor: es el método. La lista de arriba está llena
 de motores mejores con métodos peores, y por eso casi todos sus repositorios
-públicos no pueden demostrar que funcionan. Un 6,4 con la mejor disciplina de
-validación de la tabla es una base honesta; sin datos reales es una base que
-todavía no ha tocado el mercado.
+públicos no pueden demostrar que funcionan. Un 6,3 con la mejor disciplina de
+validación de la tabla es una base honesta; el histórico spot real ya se usa y el
+feed OKX alimenta el paper, pero todavía no hay ejecución real ni futuros/rolls.
 
 La nota de interfaz subió de 6 a 8 al reescribir la capa visual: HUD oscuro con
 un solo acento, cifras tabulares en todo, sparkline por KPI y medidores de uso de
