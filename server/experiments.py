@@ -26,6 +26,25 @@ from .confirmatory import canonical_hash
 DEFAULT_LEDGER = Path("reports/experiments.jsonl")
 
 
+def _holdout_trace(value: Any) -> dict[str, Any] | None:
+    """Copia la autorización al asiento sin arrastrar el diagnóstico entero."""
+    if not isinstance(value, dict) or not value.get("authorized") or not value.get(
+        "permit_id"
+    ):
+        return None
+    keys = (
+        "authorized",
+        "state",
+        "permit_id",
+        "study_id",
+        "sealed_ts",
+        "window",
+        "expires_at",
+    )
+    trace = {key: value[key] for key in keys if key in value}
+    return trace or None
+
+
 def build_record(
     *,
     kind: str,
@@ -38,6 +57,7 @@ def build_record(
     notes: str = "",
     run_id: str = "",
     run_group: str = "",
+    holdout: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     payload: dict[str, Any] = {
         "kind": kind,
@@ -48,6 +68,11 @@ def build_record(
         "verdict": verdict,
         "notes": notes,
     }
+    trace = _holdout_trace(holdout)
+    if trace:
+        # El permiso queda en el asiento: aunque el JSON de respuesta se pierda,
+        # el ledger de experimentos permite enlazar con el consumo del holdout.
+        payload["holdout"] = trace
     # Un identificador de corrida es lo que permite citar «la ejecución X» sin
     # ambigüedad; `run_group` agrupa comparaciones sobre el mismo dataset.
     if run_id:
