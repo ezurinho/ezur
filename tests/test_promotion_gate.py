@@ -7,7 +7,10 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
+from server import holdout
 from server import main as server_main
+from server.confirmatory import file_hash
+from server.holdout import HOLDOUT_END_EXCLUSIVE, HOLDOUT_START
 from server.backtest import (
     config_fingerprint,
     profile_fingerprint,
@@ -17,6 +20,7 @@ from server.backtest import (
 from server.config import Settings
 from server.engine import TradingEngine
 from server.promotion import evaluate
+from server.strategy.null_strategy import NullStrategy
 
 GATE_CONFIG = {
     "auto_start": True,
@@ -56,6 +60,32 @@ CYCLE = {
 def _write(path: Path, payload: dict) -> str:
     path.write_text(json.dumps(payload), encoding="utf-8")
     return str(path)
+
+
+def _with_consumed_holdout(tmp_path: Path, monkeypatch, evidence: dict) -> dict:
+    """Atestación real para probar la puerta de promoción sin leer el holdout."""
+    monkeypatch.setenv(holdout.SEAL_ENV, "1")
+    monkeypatch.setattr(holdout, "PREREG_FILE", tmp_path / "PREREGISTRO.sha256")
+    monkeypatch.setattr(holdout, "LOCK_FILE", tmp_path / "lock.json")
+    monkeypatch.setattr(holdout, "EVENTS_FILE", tmp_path / "events.jsonl")
+    monkeypatch.setattr(holdout, "ATTESTATION_DIR", tmp_path / "attestations")
+    holdout.PREREG_FILE.write_text("a" * 64, encoding="utf-8")
+    dataset = tmp_path / "holdout.csv"
+    dataset.write_text("ts,symbol\n", encoding="utf-8")
+    profile = Settings.model_validate(GATE_CONFIG)
+    strategy = NullStrategy()
+    holdout.seal_run(dataset, profile, strategy)
+    permit = holdout.begin_study(
+        surface="runner",
+        dataset_path=dataset,
+        dataset_id=file_hash(dataset),
+        settings=profile,
+        strategy=strategy,
+        window=(HOLDOUT_START, HOLDOUT_END_EXCLUSIVE),
+    )
+    payload = {key: value for key, value in evidence.items() if key != "holdout"}
+    block = holdout.consume_study(permit.permit_id, payload)
+    return {**payload, "holdout": block}
 
 
 def _cycle_with_stress(pf: float) -> dict:
@@ -124,12 +154,13 @@ def test_sin_promocion_el_motor_no_arranca_solo(tmp_path, monkeypatch):
 def test_con_la_evidencia_completa_arranca(tmp_path, monkeypatch):
     started: list[bool] = []
     monkeypatch.setattr(TradingEngine, "start_task", lambda self: asyncio.sleep(0, result=started.append(True)))
+    evidence = _with_consumed_holdout(tmp_path, monkeypatch, EVIDENCE)
 
     config, _ = _boot(
         tmp_path,
         {
             "required": True,
-            "evidence": _write(tmp_path / "bt.json", EVIDENCE),
+            "evidence": _write(tmp_path / "bt.json", evidence),
             "stress_evidence": _write(tmp_path / "bt2x.json", STRESS),
             "cycle": _write(tmp_path / "ciclo.json", CYCLE),
         },
