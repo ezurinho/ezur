@@ -5,7 +5,7 @@ category: decision
 status: active
 tags: [laboratorio, holdout, dsr]
 created: "2026-11-27T16:08:22"
-updated: "2026-11-27T16:08:22"
+updated: "2026-11-27T19:39:08"
 ---
 
 <!-- compiled_truth -->
@@ -26,4 +26,10 @@ El denominador del DSR es 53 ensayos: 50 de las diez familias archivadas (5 vari
   kind: decision
   summary: Registra el holdout y el denominador del DSR
   source: brain update-truth
+  affects: [lab-holdout-y-ensayos]
+
+- time: 2026-11-27T19:39:08
+  kind: decision
+  summary: "El holdout se abre con un permiso de estudio y se cierra con una atestación CONSUMED; la promoción exige ese consumo y el ledger encadenado impide una segunda lectura."
+  source: "sesión 2026-11-28, mejora 1"
   affects: [lab-holdout-y-ensayos]
