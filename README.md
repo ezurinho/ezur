@@ -311,18 +311,27 @@ El gráfico se redibuja cuando llega una vela nueva. Ver `docs/OPERACION.md`.
 ## Datos largos (Binance Vision)
 
 La API de OKX da 600 velas; para validar una tendencia diaria hacen falta años.
-Los ficheros mensuales públicos de Binance se descargan con su `.CHECKSUM`, se
-guardan en caché y se convierten al CSV del bot:
+El constructor de Binance Vision descarga los ficheros mensuales, revalida
+siempre su `.CHECKSUM`, escribe el CSV del bot y deja un manifiesto con URLs,
+hashes y cobertura. El esquema está en
+[`docs/ADR-0.2-MANIFIESTO.md`](docs/ADR-0.2-MANIFIESTO.md).
 
 ```bash
-python -m server.datasets vision --start 2020-01 --end 2026-10 \
-    --out data/BTC_1m_binance.csv --cache data/vision
-python -m server.datasets resample --in data/BTC_1m_binance.csv \
-    --out data/BTC_1d_binance.csv --rule 1D
-python -m server.backtest --dataset data/BTC_1d_binance.csv \
+python -m server.market.vision_builder \
+    --market spot --symbol BTCUSDT --start 2020-01 --end 2026-10 \
+    --out data/vision/BTC-USDT.spot.1m.csv \
+    --manifest data/vision/BTC-USDT.spot.1m.manifest.json \
+    --cache data/vision
+python -m server.backtest --dataset data/vision/BTC-USDT.spot.1m.1D.csv \
     --config config/okx-daily.json --strategy donchian \
     --params '{"channel":40,"atr_period":14,"stop_atr":1.5,"rr":2.0}' --gates
 ```
+
+`data.provider=vision` solo activa este constructor; el feed vivo y el motor
+no cambian, y `simulated` sigue siendo el valor por defecto. El manifiesto
+declara `rolls: []` y el estado de funding (`not_included` en UM/trimestral,
+`not_applicable` en spot): los trimestrales continuos y el funding son fases
+posteriores, no se simulan aquí.
 
 `config/okx-daily.json` es el perfil de **validación**, no el que opera: mismo
 instrumento, capital 1 M para que el 1 % de riesgo dé unidades reales,
