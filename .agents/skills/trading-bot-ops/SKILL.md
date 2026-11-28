@@ -1,7 +1,7 @@
 ---
 name: trading-bot-ops
 description: "Opera la terminal de trading ezur: arranque por perfil, estados del motor, liveness, salud del feed, controles, copias de seguridad, cambio de estrategia y reconciliación de equity. Úsala cuando haya que arrancar o parar el bot, revisar por qué no opera, cambiar de perfil, hacer una copia o recuperar una cuenta descuadrada."
-version: 1.1.0
+version: 1.3.1
 ---
 
 # Operación de la terminal
@@ -39,10 +39,12 @@ Sin `EZUR_PROFILE_DIR` se usan
 `data/config.json` y `data/terminal.db`. El panel queda en `http://127.0.0.1:8765`;
 `EZUR_HOST`, `EZUR_PORT` y `EZUR_OPEN=1` cambian host, puerto y apertura del navegador.
 
-Las tareas `ezur-paper` (motor) y `ezur-watchdog` (vigilante) se recrean desde esta
+Las tareas `ezur-paper` (motor), `ezur-watchdog` (vigilante) y
+`ezur-watchdog-keepalive` (relanza al vigilante cada 5 min) se recrean desde esta
 copia con `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\tarea_programada.ps1`;
 comprueba que la acción registrada de cada una apunta al fichero de este repo y falla
-si no. Se quitan las dos añadiendo `-Borrar` al final.
+si no. Se quitan las tres añadiendo `-Borrar` al final. El keepalive usa el mismo lock
+que el vigilante: si ya hay uno vivo, la copia nueva sale sin reiniciar nada.
 
 Con `auto_start: true` (por defecto) el motor ya está `running` al abrir. Con `false`
 queda `idle`/`stopped` hasta `POST /api/bot/start`. Con `promotion.required=true` y
@@ -83,8 +85,9 @@ python scripts/watchdog.py
 Comprueba `/health` cada 5 s; a los 3 fallos mata solo el PID que escucha en 8765 y
 relanza `run.py` con el perfil `okx`. Nunca llama a `/api/bot/start`: el paper se
 reanuda solo si el perfil trae `auto_start: true`, que es lo que tiene `okx`.
-La tarea `ezur-watchdog` lo arranca al iniciar sesión, 60 s después del motor; el
-comando manual sigue sirviendo para una sesión suelta.
+La tarea `ezur-watchdog` lo arranca al iniciar sesión, 60 s después del motor; la
+tarea `ezur-watchdog-keepalive` lo relanza cada 5 min por si el propio vigilante
+muere. El comando manual sigue sirviendo para una sesión suelta.
 Log: `data/watchdog.log`;
 salida del servidor: `data/paper-15m-server.log`. No lo confundas con el watchdog de
 frescura del motor, que solo marca `degraded`/`stale` y cancela pendientes.
@@ -165,8 +168,27 @@ Detén el motor (`POST /api/bot/stop`) y no lo reinicies a ciegas si:
 
 Después: `trading-incident-triage`. No borres la base para «arreglarlo».
 
+## Interfaz y preview
+
+- El panel se sirve desde `frontend/dist`; si cambias `frontend/src`, recompila con
+  `cd frontend && npm run build` antes de recargar. No hace falta reiniciar el motor
+  para servir el build nuevo.
+- La estética vigente es una cabina viva: `frontend/src/styles.css` conserva la
+  base funcional y `frontend/src/hud-live.css` añade retícula, profundidad y
+  telemetría. No reintroduzcas «AI slop» (orbes, degradados morados, cristal
+  genérico ni adornos sin dato). La decisión vive en `brain/pages/ui-cabina-viva.md`.
+- La red de decisión del héroe básico es la traza real de `buildReasoning`, no un
+  modelo neuronal: seis nodos con marcas ✓/✗/!/· y el sello «traza determinista».
+  Recibe `live`; los pulsos y el flujo de aristas solo se animan con motor
+  `running` y feed fresco. Si cambias el orden de las fases, actualiza también
+  `DecisionNetwork`; respeta `prefers-reduced-motion`.
+- Si el usuario pide dejar el panel abierto, regístralo en el navegador local y no
+  cierres el servidor ni el preview al terminar. Comprueba el render con una captura
+  antes de afirmar que se ve bien.
+
 ## Referencias
 
 - `docs/OPERACION.md` — runbook completo, alertas, racha de pérdidas.
 - `docs/API.md` — contratos de los endpoints.
 - `README.md` — arranque, escritorio e instalador.
+- `trading-afk` — sesión desatendida en paper, keepalive y paradas duras.
