@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import json
 from datetime import date
 from pathlib import Path
 
@@ -137,6 +138,40 @@ def test_una_corrida_autorizada_consume_una_sola_vez(holdout_api):
         strategy_hash=canonical_hash(holdout.strategy_payload(NullStrategy())),
     )
     assert verified["ok"] is True, verified["reasons"]
+
+
+def test_el_asiento_guarda_la_autorizacion_para_auditarla_despues(holdout_api):
+    app, path, settings, tmp_path = holdout_api
+    _seal(path, settings)
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/backtest/run",
+            json={"dataset_path": str(path), "stress": False},
+        )
+        ledger = client.get("/api/experiments").json()
+
+    assert response.status_code == 200
+    entry = next(
+        item
+        for item in ledger["entries"]
+        if item["experiment_id"] == response.json()["experiment_id"]
+    )
+    trace = entry["holdout"]
+    assert trace["authorized"] is True
+    assert trace["state"] == "RUNNING"
+    assert trace["permit_id"].startswith("hp_")
+    assert trace["study_id"]
+    assert trace["sealed_ts"] < HOLDOUT_START.isoformat()
+    assert trace["window"]
+
+    events = [
+        json.loads(line)
+        for line in (tmp_path / "events.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    assert any(
+        event["event"] == "consumed" and event["permit_id"] == trace["permit_id"]
+        for event in events
+    )
 
 
 def test_validate_no_expone_el_tramo_sellado(holdout_api):
