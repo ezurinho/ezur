@@ -21,6 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from .config import Settings
 from .db import Store
 from .engine import TradingEngine
+from .holdout import HoldoutSealed, guard_window, holdout_config, seal_run, strategy_payload
 from .market.csv_data import validate_dataset
 from .market.feed import CSVFeed
 from .models import TradeRecord
@@ -133,6 +134,18 @@ def run_backtest(
     engine_strategy = strategy or resolve_strategy(
         settings.strategy.id, settings.strategy.params
     )
+    # El candado se comprueba antes de abrir el motor. La ventana efectiva es
+    # la intersección del CSV con `start`/`end`, no el rango entero del fichero:
+    # un backtest que termina en noviembre no toca el holdout de diciembre.
+    holdout = guard_window(
+        report.first_ts,
+        report.last_ts,
+        start=start,
+        end=end,
+        dataset_path=dataset.path,
+        config=holdout_config(settings),
+        strategy=strategy_payload(engine_strategy),
+    )
     store = Store(":memory:")
     open_position = None
     pending_count = 0
@@ -177,6 +190,7 @@ def run_backtest(
         diagnostics={
             "dataset_sessions": report.sessions,
             "rows": report.rows,
+            "holdout": holdout,
             "rejections": engine.rejection_totals(),
             # La curva se marca a mercado: mientras hay posicion abierta, cada
             # vela anota una marca intradía (engine._record_equity_point); la
@@ -234,7 +248,29 @@ def main() -> None:
         default=None,
         help="comisión por unidad y lado (moneda de cotización); pisa la del perfil",
     )
-    parser.add_argument("--gates", action="store_true", help="evalúa las puertas G4-G13")
+    parser.add_argument(
+        "--gates",
+        action="store_true",
+        help="evalúa todas las puertas medibles (incluye G8/G2 con dos corridas extra)",
+    )
+    parser.add_argument(
+        "--no-stress",
+        action="store_true",
+        help="con --gates, no repite la corrida con costes duplicados ni mide G2",
+    )
+    parser.add_argument(
+        "--seal-holdout",
+        action="store_true",
+        help=(
+            "crea data/holdout/lock.json con el dataset, perfil y estrategia; "
+            "no ejecuta el backtest"
+        ),
+    )
+    parser.add_argument(
+        "--protocol",
+        default="holdout 2026-12-01/2027-05-31",
+        help="texto libre que queda dentro del sello del holdout",
+    )
     parser.add_argument(
         "--split",
         default=None,
@@ -301,7 +337,18 @@ def main() -> None:
 
     start = _iso_day(args.date_from) if args.date_from else None
     end = _iso_day(args.date_to) if args.date_to else None
-    result = run_backtest(settings, args.dataset, start=start, end=end)
+    if args.seal_holdout:
+        strategy = resolve_strategy(settings.strategy.id, settings.strategy.params)
+        try:
+            seal = seal_run(args.dataset, settings, strategy, protocol=args.protocol)
+        except (OSError, ValueError, RuntimeError) as error:
+            parser.exit(2, f"holdout: {error}\n")
+        print(f"holdout sellado: {seal['sealed_ts']} · {seal['seal_sha256'][:16]}")
+        return
+    try:
+        result = run_backtest(settings, args.dataset, start=start, end=end)
+    except HoldoutSealed as error:
+        parser.exit(2, f"holdout: {error}\n")
     primary = settings.instruments.primary
     timezone_name = settings.instruments.template_for(primary).timezone
 
@@ -361,8 +408,23 @@ def main() -> None:
 
     report = None
     if args.gates:
-        report = evaluate_gates(stats, initial_capital=settings.risk.initial_capital)
+        from .stress import measure_gates
+
+        # El CLI mide lo mismo que la API: G8 y G2 no se estiman desde una sola
+        # corrida. `--no-stress` deja constancia de que quedan sin medir.
+        measured = (
+            {}
+            if args.no_stress
+            else measure_gates(settings, args.dataset, start=start, end=end)
+        )
+        report = evaluate_gates(
+            stats,
+            initial_capital=settings.risk.initial_capital,
+            measured=measured,
+        )
         print(f"veredicto {report.verdict} · falla {', '.join(report.failed) or '—'}")
+        if report.not_measured:
+            print(f"no medido  {', '.join(report.not_measured)}")
         for outcome in report.outcomes:
             if outcome.status == "fail":
                 print(f"  {outcome.id}: {outcome.detail}")
@@ -508,9 +570,9 @@ def _report_run(
             result.diagnostics.get("rejections")
         ),
         "cap_rate": cost["cap_rate"],
-        "gates": (
-            {"verdict": report.verdict, "failed": report.failed} if report else None
-        ),
+        # El JSON del CLI lleva el informe completo, no solo el veredicto: sin
+        # los outcomes no se puede auditar qué se midió y qué quedó abierto.
+        "gates": report.model_dump(mode="json") if report else None,
     }
 
     if args.split:
