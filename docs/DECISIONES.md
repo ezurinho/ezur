@@ -1,6 +1,6 @@
 # Decisiones pendientes (Fase 0)
 
-Puerta **P0**: sin estos siete ADR cerrados no se empieza la Fase 4. Un holdout
+Puerta **P0**: sin estos ADR cerrados no se empieza la Fase 4. Un holdout
 evaluado con criterios que luego cambian no es un holdout.
 
 Cada ADR necesita: decisión, alternativa descartada, motivo y fecha. Mientras
@@ -22,12 +22,58 @@ evidencia válida.
 
 | Campo | Valor |
 |---|---|
-| Estado | PENDIENTE |
-| Proveedor | — |
-| Granularidad | tick / 1m |
-| Coste | — |
-| Contratos y vencimientos documentados | — |
-| Alternativa descartada | — |
+| Estado | CERRADO (2026-11-27) |
+| Proveedor | Binance Vision (`data.binance.vision`) para histórico; API pública de OKX para papel y confirmación |
+| Granularidad | 1 minuto; tick se pospone a la fase de ejecución |
+| Coste | 0: datos públicos, sin clave ni cuota; solo almacenamiento y tiempo de descarga |
+| Contratos y vencimientos documentados | Spot `BTCUSDT` (sin vencimiento); UM perpetuo `BTCUSDT` (sin vencimiento, funding 8 h); trimestrales `BTCUSDT_YYMMDD` (último viernes de mar/jun/sep/dic, 08:00 UTC) |
+| Alternativa descartada | OKX como única fuente histórica; API de Binance para vivo; vendors de pago (Kaiko, Tardis, Amberdata, Crypto Lake); tick inmediato |
+| Motivo | Es la única fuente gratuita, verificable por checksum y con historia suficiente para 2020-2026; desbloquea G1/G3/G14 y permite verificar rolls con contratos reales |
+| Criterio mínimo | ≥ 12 meses de historia con volumen real (ADR 0.1); la ventana canónica es 2020-01-01 → presente |
+
+**Contexto.** La nota de datos es 3/10: el bot mide sobre velas sintéticas y CSV, y el propio README lo dice. La API pública de OKX entrega cientos de velas por llamada, suficiente para el gráfico y el backfill de 4 h, pero no para validar una tendencia diaria. `api.binance.com` responde 451/403 desde esta región; `data.binance.vision` sí responde y publica los ZIP mensuales con su `.CHECKSUM`. Ya se midió: 3.591.915 velas de 1 m de `BTCUSDT` entre 2020-01-01 y 2026-10-31, 2.496 velas diarias y ningún día ausente. G1/G3/G14 siguen en «no medible» porque el dataset sintético no puede pasar el validador con datos reales ni verificar rolls.
+
+**Decisión.**
+
+1. **Dos venues, un solo dataset.** El histórico largo se descarga de **Binance Vision**; el feed de papel sigue en **OKX**. La razón no es preferencia: Binance no deja usar su API desde aquí, y OKX no entrega años de 1 m sin decenas de miles de peticiones. Vision se usa solo para construir el dataset; OKX se usa para el vivo y para confirmar que el histórico no se ha desviado.
+2. **Cobertura.** Spot `BTCUSDT`, UM perpetuo `BTCUSDT` y trimestrales `BTCUSDT_YYMMDD`. Base de 1 minuto; 15 m, 1 h, 4 h y 1 D se obtienen con el `resample` determinista que ya existe. Ventana canónica: **2020-01-01 → presente**; 2017-08 a 2019-12 queda como contexto opcional y no se usa para puertas ni holdout.
+3. **Símbolo normalizado.** En el CSV del bot el símbolo es `BTC-USDT` para spot y perpetuo; el símbolo exacto del vendor (`BTCUSDT`, `BTCUSDT_YYMMDD`) vive en el manifiesto. Así el motor no aprende nombres de exchange y el mismo dataset sirve para OKX y Binance.
+4. **Manifiesto y hash.** Cada dataset lleva un `manifest.json` con vendor, URLs, checksums, mercado, símbolos, intervalo, rango, filas, huecos, rolls, cobertura de funding, fecha de construcción y versión del código. `dataset_id` sigue siendo el SHA-256 del CSV (compatibilidad con el ledger); el manifiesto añade su propio `manifest_sha256`. Un dataset sin manifiesto no es válido para un veredicto.
+5. **Rolls con contratos reales, no una serie sintética.** Para trimestrales se descarga cada contrato por separado y se construye una serie continua con un **ledger de rolls explícito**: se cierra el contrato que vence y se abre el siguiente en la misma barra, con comisión y slippage de ambos lados; el evento queda en el manifiesto con símbolos, precios y coste. La serie que ven las señales es **sin ajustar**; la ajustada, si se usa, es solo para el gráfico. Así G3 puede verificar la continuidad contra los contratos reales en vez de responder «sin rolls que verificar».
+6. **Política de roll.** Vencimiento el último viernes de marzo, junio, septiembre y diciembre a las 08:00 UTC. Roll **T-3 días a las 08:00 UTC**. Si el contrato entrante no tiene barras en la ventana, se rechaza el roll y se documenta; no se rellena.
+7. **Funding y mark price.** Se descargan `fundingRate` y `markPriceKlines` del UM. El dataset los incluye; si el motor los cobra o no es ADR 0.6, no este.
+8. **Basis entre venues.** El histórico es de Binance y el papel de OKX; la diferencia de precio se mide (ver calidad) y el **holdout final se confirma con datos de OKX**, no solo de Binance. Un backtest de research no es evidencia de ejecución en otro venue.
+
+**Calidad del feed (G1/G3/G14).**
+
+| Comprobación | Umbral | Si falla |
+|---|---|---|
+| Checksum del ZIP contra `.CHECKSUM` | 100 % de los meses | Re-descargar; si persiste, abortar el mes |
+| Esquema, UTC, barras cerradas | exacto | Rechazar el fichero |
+| Duplicados y timestamps monótonos | 0 | Rechazar |
+| Invariantes OHLC (`low ≤ o,c ≤ high`, `v ≥ 0`) | 0 violaciones | Rechazar |
+| Completitud 1 m | 1.440 barras/día; huecos > 5 barras/día se marcan; > 1 día se rechaza | Cuarentena y revisión |
+| Días diarios completos | 2.496/2.496 en 2020-2026 | Rechazar la ventana |
+| Precio Binance vs OKX (90 días solapados) | mediana ≤ 5 pb; p99 ≤ 25 pb | Investigar antes de usar; no ajustar el umbral después de ver resultados |
+| Funding UM | una tasa cada 8 h, sin huecos | Rechazar la ventana |
+| Frescura del feed vivo | ≤ 150 s vivo; ≤ 15 min retrasado (ADR 0.12) | Mostrar «retrasado/parado», no operar |
+| Reproducibilidad | mismo CSV y mismo manifiesto ⇒ mismo hash dos veces | Rechazar (G1/G2) |
+| Continuidad de roll | sin hueco en la costura, coste registrado, contrato viejo sin barras tras vencer | Rechazar el roll |
+
+Nunca se rellena un hueco hacia delante ni se inventa una barra: un hueco se declara y, si afecta a la ventana de validación, invalida el dataset. La reconciliación de precio compara cierres, no volumen: el volumen es del venue y no tiene por qué coincidir.
+
+**Plan para conectarla (sin implementar el adaptador todavía).**
+
+- **Fase 0 · Contrato.** Añadir al esquema de configuración `data.provider` con `vision` y `data.market` (`spot`/`um`/`quarterly`), `data.symbol`, `data.history_start` y `data.manifest`; documentar el manifiesto. No se toca el motor. *Aceptación:* la configuración valida, los tests siguen verdes y el valor por defecto continúa siendo `simulated`.
+- **Fase 1 · Constructor histórico.** Descargar ZIPs + `.CHECKSUM`, verificar, convertir al CSV del bot, remuestrear y escribir el manifiesto; descarga incremental mensual. *Aceptación:* 2020-01 → 2026-10 con 3.591.915 filas de 1 m, 2.496 días diarios, 100 % de checksums y hash reproducible; el CSV canónico queda por debajo del límite de 250 MB del loader.
+- **Fase 2 · Reconciliación.** Informe de 90 días solapados Binance/OKX con mediana y p99 de la diferencia de cierre. *Aceptación:* dentro de los umbrales de la tabla; si no, se para y se investiga antes de tocar puertas.
+- **Fase 3 · Validador y puertas.** El dataset real entra por el mismo `Dataset.load`; G1/G3/G14 pasan de «no medible» a medidos; un backtest golden congelado demuestra determinismo. *Aceptación:* `--gates` con datos reales, sin filas «no medible» en G1/G3/G14, mismo `dataset_id` en dos corridas.
+- **Fase 4 · Futuros y rolls.** Si ADR 0.1 elige perpetuo o trimestral: ficheros por contrato, calendario de vencimientos, ledger de rolls y serie continua. *Aceptación:* un trimestre con vencimiento conocido cuadra, el coste del roll se registra y G3 verifica la costura contra los contratos.
+- **Fase 5 · Holdout.** Congelar el manifiesto antes de abrir la ventana; evaluar una sola vez; confirmar con OKX. *Aceptación:* hashes registrados antes de la evaluación y una única lectura del holdout.
+
+**Consecuencias.** G1/G3/G14 dejan de ser un límite y la nota de datos debería subir de 3 a 8–9 sin tocar el motor. A cambio aparece una dependencia operativa: descarga mensual, verificación de checksums y reconciliación; si Vision cambia una ruta o deja de publicar, el dataset se congela y se documenta, no se rellena. El espacio es del orden de 1 GB de ZIPs y 160 MB de CSV; los ZIPs van a `data/vision` (ignorado por git) y solo los manifiestos pequeños se versionan. Los datos son públicos; no se redistribuyen los ficheros crudos del vendor.
+
+**Lo que este ADR no decide.** El instrumento primario y los de contexto (ADR 0.1), la ejecución (0.3), la temporalidad de decisión (0.5) y si el funding se cobra en el P&L (0.6). Tampoco implementa el adaptador: hasta que exista, `data.provider=simulated` sigue siendo el único camino completo y el valor por defecto del código no cambia.
 
 ## ADR 0.3 — Ejecución
 
@@ -185,7 +231,7 @@ puerta cambió de criterio.
 
 | Fecha | ADR | Decisión | Autor |
 |---|---|---|---|
-| — | — | — | — |
+| 2026-11-27 | 0.2 | Binance Vision para histórico y OKX para papel; 1 m con checksums, funding y rolls por contrato | Ezuryseth |
 
 ## Valores por defecto del código
 
@@ -212,6 +258,8 @@ Ninguno de estos valores es una decisión de producto, son supuestos heredados.
 | 0.7 | Zona horaria de sesión | `America/New_York` | `instruments.session.timezone` |
 | 0.7 | Horario operativo | 09:30–16:00, cierre de posiciones 15:55 | `session.open/close`, `risk.session_close_time` |
 | 0.7 | Feriados y cierres anticipados | vacíos en el código; se inyectan como datos | `Calendar(holidays=..., early_closes=...)` |
+
+El ADR 0.2 se cerró el 2026-11-27 con Binance Vision para el histórico y OKX para papel. La tabla sigue mostrando `simulated` porque el adaptador aún no existe: la decisión fija el destino, no adelanta el estado del código.
 
 Los valores de coste del ADR 0.6 son un supuesto de trabajo, no un dato del
 broker: el propio ADR exige que vengan del broker. Hasta entonces cuentan como
