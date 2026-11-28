@@ -17,6 +17,17 @@ from pydantic import BaseModel
 
 NOW = datetime(2026, 1, 15, 15, 0, tzinfo=timezone.utc)
 
+# Los tests crean sellos reales, pero no pueden depender del reloj: después del
+# 2026-12-01 un sello nuevo ya no autoriza el holdout. La suite los firma antes
+# de esa fecha y el test del corte los reescribe a propósito.
+_SEAL_TEST_TIME = datetime(2026, 11, 30, 12, 0, tzinfo=timezone.utc)
+
+
+class _SealTestDatetime(datetime):
+    @classmethod
+    def now(cls, tz=None):
+        return _SEAL_TEST_TIME if tz is not None else _SEAL_TEST_TIME.replace(tzinfo=None)
+
 
 class EmptyParams(BaseModel):
     pass
@@ -26,6 +37,12 @@ def make_bar(**overrides) -> Bar:
     payload = dict(t=NOW, o=100.0, h=101.0, l=99.8, c=100.5, v=100.0)
     payload.update(overrides)
     return Bar(**payload)
+
+
+@pytest.fixture(autouse=True)
+def _seal_test_clock(monkeypatch):
+    """Fija solo el reloj de `seal_holdout`; el resto de la app usa el real."""
+    monkeypatch.setattr("server.confirmatory.datetime", _SealTestDatetime)
 
 
 @pytest.fixture
