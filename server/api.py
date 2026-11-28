@@ -18,7 +18,14 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 
 from .config import Settings, apply_settings, save_settings
-from .holdout import HoldoutSealed
+from .holdout import (
+    HoldoutSealed,
+    assert_no_compare,
+    consume_study,
+    fail_study,
+    overlaps_holdout,
+    status as holdout_status,
+)
 from .promotion import effective_settings_and_verdict
 from .market.csv_data import validate_dataset
 from .models import DayStats
@@ -92,6 +99,18 @@ async def _backtest_slot(request: Request):
         yield
 
 
+def _holdout_response(error: HoldoutSealed) -> JSONResponse:
+    """Error estructurado: el cliente no tiene que parsear el mensaje."""
+    headers = {}
+    if error.incident_id:
+        headers["X-Holdout-Incident"] = error.incident_id
+    return JSONResponse(
+        status_code=error.status_code,
+        content=error.as_dict(),
+        headers=headers,
+    )
+
+
 class ConfigPatch(BaseModel):
     patch: dict[str, Any] = Field(default_factory=dict)
 
@@ -162,6 +181,12 @@ def health(request: Request) -> dict[str, Any]:
         "session": getattr(engine.state, "session", None),
     }
     return payload
+
+
+@router.get("/holdout/status")
+def get_holdout_status() -> dict[str, Any]:
+    """Solo lectura: no autoriza, no consume y no expone datos del tramo."""
+    return holdout_status()
 
 
 @router.get("/ready")
@@ -544,6 +569,18 @@ def post_validate(request: Request, body: ValidateRequest) -> dict[str, Any]:
     if size > 250 * 1024 * 1024:
         raise HTTPException(status_code=422, detail="el dataset supera el límite de 250 MB")
     report = validate_dataset(path, engine.settings.instruments.symbols)
+    if (
+        report.first_ts is not None
+        and report.last_ts is not None
+        and overlaps_holdout(report.first_ts, report.last_ts)
+    ):
+        return _holdout_response(
+            HoldoutSealed(
+                "no se puede validar el tramo del holdout sin una lectura autorizada",
+                code="HO-001",
+                state=holdout_status()["state"],
+            )
+        )
     return report.as_dict()
 
 
@@ -582,6 +619,7 @@ def post_backtest(request: Request, body: BacktestRequest) -> dict[str, Any]:
     end = _day_bound(body.end, "end")
     if start is not None and end is not None and start >= end:
         raise HTTPException(status_code=422, detail="start debe ser anterior a end")
+    permit_id: str | None = None
     try:
         result = run_backtest(
             settings,
@@ -589,44 +627,62 @@ def post_backtest(request: Request, body: BacktestRequest) -> dict[str, Any]:
             run_group=body.run_group,
             start=start,
             end=end,
+            holdout_study=True,
+            holdout_surface="api",
+        )
+        permit_id = (result.diagnostics.get("holdout") or {}).get("permit_id")
+        stats = aggregate(
+            result.trades,
+            initial,
+            timezone_name=settings.instruments.template_for(
+                settings.instruments.primary
+            ).timezone,
+        )
+        measured = {}
+        if body.stress:
+            # G8 and G2 need a second and third run: do them, do not estimate
+            # them. En holdout comparten el permiso del estudio base.
+            measured = measure_gates(
+                settings,
+                body.dataset_path,
+                start=start,
+                end=end,
+                holdout_permit=permit_id,
+            )
+        report = evaluate_gates(
+            stats,
+            initial_capital=initial,
+            measured=measured,
+        )
+        if body.save:
+            _store(request).save_backtest(result.run_id, result.model_dump(mode="json"))
+        entry = record(
+            request.app.state.experiment_ledger,
+            kind="backtest",
+            strategy_id=result.strategy_id,
+            strategy_version=result.strategy_version,
+            dataset_id=result.dataset_id,
+            config=settings.model_dump(mode="json"),
+            metrics={**result.metrics, "validation": report.model_dump(mode="json")},
+            verdict=report.verdict,
+            notes="" if body.stress else "costes y determinismo no medidos",
+            run_id=result.run_id,
+            run_group=result.run_group or "",
         )
     except HoldoutSealed as error:
-        raise HTTPException(status_code=409, detail=str(error)) from error
+        if permit_id:
+            fail_study(permit_id, str(error), code=error.code, request_id=body.run_group)
+        return _holdout_response(error)
     except (ValueError, FileNotFoundError) as error:
+        if permit_id:
+            fail_study(permit_id, str(error), code="HO-012", request_id=body.run_group)
         raise HTTPException(status_code=422, detail=str(error)) from error
-    if body.save:
-        _store(request).save_backtest(result.run_id, result.model_dump(mode="json"))
+    except Exception as error:
+        if permit_id:
+            fail_study(permit_id, str(error), code="HO-012", request_id=body.run_group)
+        raise
 
-    stats = aggregate(
-        result.trades,
-        initial,
-        timezone_name=settings.instruments.template_for(
-            settings.instruments.primary
-        ).timezone,
-    )
-    measured = {}
-    if body.stress:
-        # G8 and G2 need a second and third run: do them, do not estimate them.
-        measured = measure_gates(settings, body.dataset_path, start=start, end=end)
-    report = evaluate_gates(
-        stats,
-        initial_capital=initial,
-        measured=measured,
-    )
-    entry = record(
-        request.app.state.experiment_ledger,
-        kind="backtest",
-        strategy_id=result.strategy_id,
-        strategy_version=result.strategy_version,
-        dataset_id=result.dataset_id,
-        config=settings.model_dump(mode="json"),
-        metrics={**result.metrics, "validation": report.model_dump(mode="json")},
-        verdict=report.verdict,
-        notes="" if body.stress else "costes y determinismo no medidos",
-        run_id=result.run_id,
-        run_group=result.run_group or "",
-    )
-    return {
+    payload = {
         "run_id": result.run_id,
         "dataset_id": result.dataset_id,
         "config_hash": result.config_hash,
@@ -645,6 +701,18 @@ def post_backtest(request: Request, body: BacktestRequest) -> dict[str, Any]:
         "validation": report.model_dump(mode="json"),
         "experiment_id": entry["experiment_id"],
     }
+    if permit_id:
+        try:
+            attestation = consume_study(permit_id, payload, request_id=body.run_group)
+        except HoldoutSealed as error:
+            fail_study(permit_id, str(error), code=error.code, request_id=body.run_group)
+            return _holdout_response(error)
+        payload["holdout"] = attestation
+        payload["diagnostics"]["holdout"] = {
+            **(result.diagnostics.get("holdout") or {}),
+            **attestation,
+        }
+    return payload
 
 
 @router.get("/backtest/strategies")
@@ -686,6 +754,12 @@ def post_backtest_compare(request: Request, body: CompareRequest) -> dict[str, A
     engine = _engine(request)
     settings = engine.settings
     initial = settings.risk.initial_capital
+    try:
+        # Comparar sobre el tramo final es selección: se rechaza antes de
+        # ejecutar cualquier estrategia, aunque el sello sea válido.
+        assert_no_compare(body.dataset_path, settings.instruments.symbols)
+    except HoldoutSealed as error:
+        return _holdout_response(error)
     wanted = body.strategies or available()
     unknown = [item for item in wanted if item not in available()]
     if unknown:
@@ -702,7 +776,7 @@ def post_backtest_compare(request: Request, body: CompareRequest) -> dict[str, A
                 run_group=group,
             )
         except HoldoutSealed as error:
-            raise HTTPException(status_code=409, detail=str(error)) from error
+            return _holdout_response(error)
         except (ValueError, FileNotFoundError) as error:
             raise HTTPException(status_code=422, detail=str(error)) from error
         stats = aggregate(
