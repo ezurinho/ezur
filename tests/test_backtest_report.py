@@ -117,6 +117,37 @@ def test_el_coste_del_json_se_mide_en_el_fuera_de_muestra(
         payload["cost_per_trade_r_weighted"]
     )
 
+
+def test_el_cli_mide_g8_y_g2_igual_que_la_api(
+    settings, tmp_path, synthetic_csv, monkeypatch
+):
+    """El CLI no puede declarar INCONCLUSO por puertas que la API sí mide."""
+    target = tmp_path / "gates.json"
+    path = synthetic_csv(tmp_path / "gates.csv", bars=120)
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "backtest",
+            "--dataset",
+            str(path),
+            "--strategy",
+            "reference",
+            "--gates",
+            "--out",
+            str(target),
+        ],
+    )
+
+    main()
+
+    payload = json.loads(target.read_text(encoding="utf-8"))
+    outcomes = {item["id"]: item["status"] for item in payload["gates"]["outcomes"]}
+    assert outcomes["G8"] != "not_measured"
+    assert outcomes["G2"] in {"pass", "fail"}
+    assert "G8" not in payload["gates"]["not_measured"]
+    assert "G2" not in payload["gates"]["not_measured"]
+
+
 def test_el_informe_declara_la_curva_marcada_a_mercado(settings, dataset_path):
     # El motor anota equity + P&L no realizado en cada vela con posicion. Si el
     # informe dijera lo contrario, el drawdown de una posicion abierta se leeria
