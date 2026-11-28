@@ -8,6 +8,7 @@ import pytest
 
 from server import holdout
 from server.backtest import main, run_backtest
+from server.confirmatory import canonical_hash
 from server.stress import run_stress
 from server.holdout import HoldoutSealed, guard_window, holdout_config, seal_run
 from server.market import synthetic
@@ -33,6 +34,61 @@ def _guard(path, settings, first, last, **overrides):
     }
     payload.update(overrides)
     return guard_window(first, last, **payload)
+
+
+def _rewrite_sealed_ts(lock_path, sealed_ts: str) -> None:
+    payload = json.loads(lock_path.read_text(encoding="utf-8"))
+    payload["sealed_ts"] = sealed_ts
+    payload["seal_sha256"] = canonical_hash(
+        {key: value for key, value in payload.items() if key != "seal_sha256"}
+    )
+    lock_path.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
+
+
+@pytest.mark.parametrize(
+    "sealed_ts",
+    [
+        "2026-12-01T00:00:00+00:00",
+        "2026-12-01T00:00:01+00:00",
+    ],
+)
+def test_un_sello_posterior_al_inicio_no_autoriza(
+    tmp_path, settings, monkeypatch, sealed_ts
+):
+    monkeypatch.setenv(holdout.SEAL_ENV, "1")
+    monkeypatch.setattr(holdout, "PREREG_FILE", tmp_path / "PREREGISTRO.sha256")
+    monkeypatch.setattr(holdout, "LOCK_FILE", tmp_path / "lock.json")
+    holdout.PREREG_FILE.write_text("a" * 64, encoding="utf-8")
+    path = tmp_path / "late-seal.csv"
+    path.write_text("ts,symbol\n", encoding="utf-8")
+    strategy = NullStrategy()
+    seal_run(path, settings, strategy)
+    _rewrite_sealed_ts(holdout.LOCK_FILE, sealed_ts)
+
+    with pytest.raises(HoldoutSealed) as error:
+        _guard(path, settings, *_inside())
+
+    assert error.value.code == "HO-003"
+    assert "pre-registro" in str(error.value)
+
+
+def test_un_sello_antes_del_inicio_sigue_autorizando(
+    tmp_path, settings, monkeypatch
+):
+    monkeypatch.setenv(holdout.SEAL_ENV, "1")
+    monkeypatch.setattr(holdout, "PREREG_FILE", tmp_path / "PREREGISTRO.sha256")
+    monkeypatch.setattr(holdout, "LOCK_FILE", tmp_path / "lock.json")
+    holdout.PREREG_FILE.write_text("a" * 64, encoding="utf-8")
+    path = tmp_path / "early-seal.csv"
+    path.write_text("ts,symbol\n", encoding="utf-8")
+    strategy = NullStrategy()
+    seal_run(path, settings, strategy)
+    _rewrite_sealed_ts(holdout.LOCK_FILE, "2026-11-30T23:59:59+00:00")
+
+    trace = _guard(path, settings, *_inside())
+
+    assert trace["authorized"] is True
+    assert trace["sealed_ts"] == "2026-11-30T23:59:59+00:00"
 
 
 def test_holdout_is_not_touched_outside_its_window(tmp_path, settings, monkeypatch):
