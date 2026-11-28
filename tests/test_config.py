@@ -6,6 +6,7 @@ import pytest
 from pydantic import ValidationError
 
 from server.config import (
+    DataConfig,
     InstrumentConfig,
     InstrumentsConfig,
     Settings,
@@ -38,6 +39,48 @@ def test_strategy_timeframe_defaults_to_one_minute():
 def test_strategy_timeframe_rejects_unknown():
     with pytest.raises(ValidationError):
         Settings.model_validate({"strategy": {"timeframe": "1w"}})
+
+
+def test_data_defaults_keep_simulated_as_the_only_complete_path():
+    data = Settings().data
+    assert data.provider == "simulated"
+    assert data.market == "spot"
+    assert data.symbol == "BTCUSDT"
+    assert data.history_start == "2020-01"
+    assert data.manifest == "data/vision/manifest.json"
+    assert data.normalized_symbol == "BTC-USDT"
+
+
+@pytest.mark.parametrize(
+    ("market", "symbol"),
+    [("spot", "BTCUSDT"), ("um", "BTCUSDT"), ("quarterly", "BTCUSDT_240329")],
+)
+def test_data_accepts_the_three_markets_with_the_right_symbol(market, symbol):
+    data = DataConfig(provider="vision", market=market, symbol=symbol)
+    assert data.market == market
+    assert data.normalized_symbol == "BTC-USDT"
+
+
+@pytest.mark.parametrize(
+    ("market", "symbol"),
+    [("quarterly", "BTCUSDT"), ("spot", "BTCUSDT_240329"), ("um", "BTCUSDT_240329")],
+)
+def test_data_rejects_a_market_symbol_mismatch(market, symbol):
+    with pytest.raises(ValidationError):
+        DataConfig(market=market, symbol=symbol)
+
+
+@pytest.mark.parametrize("month", ["2020-1", "2020-13", "202001", "2020-00"])
+def test_data_rejects_an_invalid_month(month):
+    with pytest.raises(ValidationError):
+        DataConfig(history_start=month)
+
+
+def test_data_rejects_an_inverted_or_empty_range():
+    with pytest.raises(ValidationError):
+        DataConfig(history_start="2024-02", history_end="2024-01")
+    with pytest.raises(ValidationError):
+        DataConfig(manifest="  ")
 
 
 def test_corrupt_config_is_archived_and_defaults_restored(tmp_path):
