@@ -23,6 +23,8 @@ El bot corre en **paper**. LIVE está prohibido.
 - No toques archivos fuera de este repo.
 - No modifiques archivos que ya estaban sucios al empezar. Si `git status` muestra cambios previos, dejalos intactos y no los agregues.
 - No uses `git add -A` ni `git add .`. Agregá solo archivos que cambiaste vos.
+- No commitees `data/afk/**` ni archivos generados por el runner; el reporte se escribe fuera de git y `data/*` está ignorado. Tampoco uses `git add -f`.
+- No commitees únicamente un reporte de tu propio turno: el commit debe aportar código, test, operación o una skill con valor verificable.
 - No debilites tests, no agregues skips, no bajes umbrales y no silencies errores para que pase una verificación.
 - No instales dependencias nuevas ni servicios externos salvo que sea imprescindible; justificalo y verificá.
 - No reinicies el bot ni el watchdog. Podés consultar `/api/health`, `/api/ready` y `/api/status` en solo lectura.
@@ -52,7 +54,7 @@ Evitá features especulativas, refactors cosméticos y cambios de estilo masivos
 6. Commiteá **un archivo por commit**, en español, sin `Co-Authored-By` ni `Generated with Codebuff`.
 7. Pusheá a `origin/master`. Si el push se rechaza, traé los cambios remotos y rebaseá solo tus commits; nunca uses force.
 8. No esperes CI más de 5 minutos. Si falla por tu cambio, corregilo; si falla por infraestructura, dejalo documentado.
-9. Escribí `data/afk/night-agent/latest.md` con: qué cambiaste, por qué, comandos ejecutados, resultado, commit y riesgos residuales.
+9. Escribí `data/afk/night-agent/latest.md` con: qué cambiaste, por qué, comandos ejecutados, resultado, commit y riesgos residuales. No lo agregues a git.
 
 ## Salida
 
