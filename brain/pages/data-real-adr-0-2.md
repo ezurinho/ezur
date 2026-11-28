@@ -5,7 +5,7 @@ category: decision
 status: active
 tags: [data, adr]
 created: "2026-11-27T18:04:59"
-updated: "2026-11-27T18:05:10"
+updated: "2026-11-27T18:38:56"
 ---
 
 <!-- compiled_truth -->
@@ -54,4 +54,10 @@ G1/G3/G14 pasan de «no medible» a medibles y la nota de datos debería subir d
   kind: decision
   summary: Rewrote compiled_truth to the new best understanding
   source: brain update-truth
+  affects: [data-real-adr-0-2]
+
+- time: 2026-11-27T18:38:56
+  kind: evidence
+  summary: "Prueba seca ADR 0.2: spot/UM/funding 2020-01..2026-10 con 82 meses y checksums OK; los trimestrales empiezan en 2021-02 (25 contratos) y sus ZIP incluyen barras planas con volumen 0 después del vencimiento."
+  source: prueba seca local 2026-11-28
   affects: [data-real-adr-0-2]
