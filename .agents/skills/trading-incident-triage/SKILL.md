@@ -1,7 +1,7 @@
 ---
 name: trading-incident-triage
 description: "Diagnostica incidentes de ezur sin destruir evidencia: motor parado, liveness, feed stale, cero operaciones, equity descuadrada, trades duplicados, ledger roto, replay atascado o base bloqueada. Úsala cuando el bot no opera, los datos envejecen, los números no cuadran o hay que decidir si parar y cómo contener."
-version: 1.1.0
+version: 1.1.1
 ---
 
 # Triaje de incidentes
@@ -60,8 +60,10 @@ Get-Content profiles/okx/config.json | Select-String 'auto_start|live_enabled|pr
 - `/health` 200 pero `engine.status` `stopped` → el proceso vive; mira perfil y
   promoción; no es un cuelgue.
 - `/health` no responde → `scripts/watchdog.py` (cada 5 s) debería relanzar el
-  listener con `auto_start=false`; revisa `data/watchdog.log`. No llames a
-  `/api/bot/start` para “arreglar” un cuelgue.
+  listener con `auto_start=false`; revisa `data/watchdog.log`. Si el vigilante
+  tampoco está, `ezur-watchdog-keepalive` lo relanza cada 5 min; comprueba la tarea
+  antes de lanzar una copia a mano. No llames a `/api/bot/start` para “arreglar” un
+  cuelgue.
 - `status: error` → mira el último evento `error` y el log del proceso.
 - El proceso no responde → comprueba que no hay otra instancia:
 
@@ -183,3 +185,6 @@ señales. Un `kind` desconocido se descarta y se registra: no rompe el render.
 Al terminar, deja en `events` o en el reporte: hora, síntoma, comandos ejecutados,
 causa, arreglo y qué se evitó. Si el incidente afectó a una operación, revisa si el
 dry-run sigue siendo válido antes de promocionar nada.
+
+Para una sesión desatendida, el preflight, las paradas duras y el keepalive están en
+`trading-afk`; este triaje empieza cuando esa sesión ya falló.
